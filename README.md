@@ -2,7 +2,7 @@
 
 ## Overview
 
-Cramer is an English practice platform that delivers curated IELTS-style tests in a modern web experience. Inspired by study4, the project focuses on letting learners sign up, log in, and work through materials the team extracts from trusted sources, beginning with IELTS Cambridge 17 Test 1 Reading. The immediate goal of this codebase is to shape a dependable backend foundation before building rich application features.
+Cramer is an English practice platform that delivers curated IELTS-style tests in a modern web experience. The project focuses on letting learners sign up, log in, and work through materials the team extracts from trusted sources. The development begins with IELTS Cambridge 17. The immediate goal of this codebase is to shape a dependable backend foundation before building rich application features.
 
 ## Current Status
 
