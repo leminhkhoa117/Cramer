@@ -1,37 +1,147 @@
-body { font-family: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin: 0; padding: 0; background: #f7f7fb }
-.app-root { min-height: 100vh; display: flex; flex-direction: column; }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-.container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+* {
+  font-family: '"Be Vietnam Pro"', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
 
-h1 { margin-top: 0 }
+body {
+  margin: 0;
+  padding: 0;
+  background: #ffffff;
+  color: #1f2937;
+}
 
-/* Header */
-.site-header { background: white; border-bottom: 1px solid #eee; }
-.header-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; gap: 1rem; padding: 1rem 2rem; }
-.brand { font-weight: 700; font-size: 1.25rem; color: #111 }
-.nav { margin-left: 1rem; display: flex; gap: 1rem; flex: 1 }
-.nav-link { color: #333; text-decoration: none; padding: 0.25rem 0.5rem }
-.nav-link:hover { color: #0077ff }
-.auth { margin-left: auto }
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex: 1;
+}
+
+/* General Styles */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+p {
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+a {
+  color: #7c3aed;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: #6366f1;
+}
 
 /* Buttons */
-.btn { display: inline-block; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; }
-.btn-primary { background: #0077ff; color: white }
-.btn-secondary { background: #28a745; color: white }
-.btn-outline { border: 1px solid #ddd; color: #333 }
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
 
-/* Home / Hero */
-.home-page { flex: 1; }
-.hero { background: white; max-width: 1100px; margin: 2rem auto; padding: 3rem; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.06); text-align: center }
-.hero h1 { margin: 0 0 0.5rem }
-.hero p { margin: 0 0 1.25rem; color: #555 }
-.hero-actions { display: flex; gap: 1rem; justify-content: center }
+.btn-primary {
+  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+  border: none;
+}
 
-.features { max-width: 1100px; margin: 1rem auto 3rem; padding: 1rem 2rem }
-.features ul { list-style: disc; padding-left: 1.25rem }
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(124, 58, 237, 0.3);
+}
 
-/* Footer */
-.site-footer { background: #f1f5f9; border-top: 1px solid #e6e9ef }
-.footer-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; gap: 1rem; padding: 1rem 2rem; align-items: center }
-.contact { color: #333 }
-.copyright { color: #666 }
+.btn-light {
+  background: white;
+  color: #7c3aed;
+  border: none;
+  font-weight: 600;
+}
+
+.btn-light:hover {
+  background: #f3f4f6;
+  transform: translateY(-2px);
+}
+
+/* Form Controls */
+.form-control {
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  padding: 0.8rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 0.2rem rgba(124, 58, 237, 0.15);
+}
+
+.form-select {
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+}
+
+/* Cards */
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Navbar customization */
+.navbar {
+  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #8b5cf6 100%) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: white !important;
+}
+
+.nav-link {
+  color: white !important;
+  font-weight: 500;
+  margin-right: 1.5rem;
+  transition: opacity 0.3s ease;
+}
+
+.nav-link:hover {
+  opacity: 0.8;
+}
+
+/* Utilities */
+.rounded-lg {
+  border-radius: 12px;
+}
+
+.shadow-lg {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive - Hero Section */
+@media (max-width: 991px) {
+  /* Reduce margin on mobile for Find a Test box since it's already inline */
+  main > div:first-child .col-lg-6:last-child {
+    margin-top: 2rem !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+  }
+}
