@@ -3,8 +3,20 @@
 
 $ErrorActionPreference = "Stop"
 
-# Set JAVA_HOME
-$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-21.0.8.9-hotspot"
+# Set JAVA_HOME only if not already configured
+if (-not $env:JAVA_HOME) {
+    $defaultJdk = "C:\Program Files\Eclipse Adoptium\jdk-21.0.8.9-hotspot"
+    if (Test-Path $defaultJdk) {
+        $env:JAVA_HOME = $defaultJdk
+        Write-Host "JAVA_HOME not set. Using default: $defaultJdk" -ForegroundColor Yellow
+    } else {
+        Write-Host "JAVA_HOME not set and default JDK path not found. Ensure Java 21 is installed and JAVA_HOME is configured." -ForegroundColor Red
+        exit 1
+    }
+}
+
+# Ensure Java binaries are on PATH
+$env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
 
 # Get script directory
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path

@@ -111,6 +111,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const signInWithGoogle = async () => {
+    return await supabase.auth.signInWithOAuth({
+      provider: 'google',
+    });
+  };
+
+  const signInWithFacebook = async () => {
+    return await supabase.auth.signInWithOAuth({
+      provider: 'facebook',
+    });
+  };
+
   const value = {
     user,
     profile,
@@ -119,6 +131,8 @@ export const AuthProvider = ({ children }) => {
     signUp,
     signIn,
     signOut,
+    signInWithGoogle,
+    signInWithFacebook,
   };
 
   return (

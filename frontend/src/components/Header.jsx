@@ -1,7 +1,9 @@
 import React from 'react';
 import { Navbar, Nav, Container, Button } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 
 export default function Header() {
+  const navigate = useNavigate();
   return (
     <Navbar expand="lg" className="w-100" style={{
       background: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #8b5cf6 100%)',
@@ -18,7 +20,7 @@ export default function Header() {
             <Nav.Link href="/" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }}>Home</Nav.Link>
             <Nav.Link href="/courses" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }}>Courses</Nav.Link>
             <Nav.Link href="/about" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }}>About</Nav.Link>
-            <Button 
+            <Button onClick={() => navigate('/login')}
               variant="light" 
               style={{ 
                 color: '#7c3aed',
