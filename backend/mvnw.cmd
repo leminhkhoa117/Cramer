@@ -32,6 +32,15 @@
 @SET __MVNW_PSMODULEP_SAVE=%PSModulePath%
 @SET PSModulePath=
 @FOR /F "usebackq tokens=1* delims==" %%A IN (`SET`) DO @IF "%%A"=="JAVA_HOME" (SET __MVNW_CMD__=%%B)
+@IF NOT "%__MVNW_CMD__%"=="" (
+    @IF EXIST "%__MVNW_CMD__%\bin\java.exe" (
+        @SET "__MVNW_CMD__=%__MVNW_CMD__%\bin\java.exe"
+    ) ELSE (
+        @IF NOT EXIST "%__MVNW_CMD__%" (
+            @SET "__MVNW_CMD__="
+        )
+    )
+)
 @SET PSModulePath=%__MVNW_PSMODULEP_SAVE%
 @SET __MVNW_PSMODULEP_SAVE=
 

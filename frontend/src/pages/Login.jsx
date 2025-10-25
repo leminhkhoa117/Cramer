@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { FaGoogle, FaFacebook } from 'react-icons/fa';
+import '../css/Login.css';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -10,7 +12,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signInWithGoogle, signInWithFacebook } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -23,6 +25,7 @@ export default function Login() {
         const { error } = await signUp(email, password, username);
         if (error) throw error;
         alert('Check your email for confirmation link!');
+        setIsSignUp(false); // Switch back to login after sign up
       } else {
         const { error } = await signIn(email, password);
         if (error) throw error;
@@ -35,101 +38,105 @@ export default function Login() {
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {isSignUp ? 'Create your account' : 'Sign in to your account'}
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-            <button
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setError('');
-              }}
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              {isSignUp ? 'Sign in' : 'Sign up'}
-            </button>
-          </p>
-        </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-800">{error}</div>
-            </div>
-          )}
-          
-          <div className="rounded-md shadow-sm -space-y-px">
-            {isSignUp && (
-              <div>
-                <label htmlFor="username" className="sr-only">
-                  Username
-                </label>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  required={isSignUp}
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Username"
-                />
-              </div>
-            )}
-            
-            <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 ${
-                  isSignUp ? '' : 'rounded-t-md'
-                } focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
-                placeholder="Email address"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-              />
-            </div>
-          </div>
+  const handleSocialLogin = async (provider) => {
+    setError('');
+    setLoading(true);
+    try {
+        let error;
+        if (provider === 'google') {
+            ({ error } = await signInWithGoogle());
+        } else if (provider === 'facebook') {
+            ({ error } = await signInWithFacebook());
+        }
+        if (error) throw error;
+        navigate('/dashboard');
+    } catch (err) {
+        setError(err.message || `An error occurred with ${provider} login.`);
+    } finally {
+        setLoading(false);
+    }
+  };
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Loading...' : isSignUp ? 'Sign up' : 'Sign in'}
-            </button>
-          </div>
-        </form>
+  const FormContent = (
+    <form className="login-form" onSubmit={handleSubmit}>
+      <h2>{isSignUp ? 'Sign Up' : 'Login'}</h2>
+      {error && <p style={{ color: 'red', textAlign: 'center', marginTop: '10px' }}>{error}</p>}
+      
+      {isSignUp && (
+        <div className="input-box">
+          <input 
+            type="text" 
+            required={isSignUp}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+          <span>Username</span>
+          <i></i>
+        </div>
+      )}
+
+      <div className="input-box">
+        <input 
+          type="email" 
+          required 
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <span>Email</span>
+        <i></i>
       </div>
+
+      <div className="input-box">
+        <input 
+          type="password" 
+          required 
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <span>Password</span>
+        <i></i>
+      </div>
+
+      <div className="links">
+        <a href="#">Forgot Password?</a>
+        <a href="#" onClick={(e) => { e.preventDefault(); setIsSignUp(!isSignUp); setError(''); }}>
+          {isSignUp ? 'Login' : 'Sign Up'}
+        </a>
+      </div>
+
+      <input type="submit" value={loading ? '...' : (isSignUp ? 'Sign Up' : 'Login')} disabled={loading} />
+
+      <div className="social-login">
+        <p>Or sign in with:</p>
+        <div className="social-icons">
+          <button type="button" onClick={() => handleSocialLogin('google')} aria-label="Login with Google">
+            <FaGoogle />
+          </button>
+          <button type="button" onClick={() => handleSocialLogin('facebook')} aria-label="Login with Facebook">
+            <FaFacebook />
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+
+  return (
+    <div className="login-page-container">
+        <div className="intro-section">
+          <h1>Welcome to Cramer</h1>
+          <p>Your personal platform for mastering new subjects through interactive quizzes and smart learning tools. Log in to continue your journey or sign up to get started!</p>
+        </div>
+        <div className="form-section">
+          <div className="login-box">
+            <div className="login-box-border">
+              <div className="login-mask"></div>
+              <div className="login-initial">{isSignUp ? 'SIGN UP' : 'LOGIN'}</div>
+              <div className="login-form-wrapper">
+                {FormContent}
+              </div>
+            </div>
+          </div>
+        </div>
     </div>
   );
 }
