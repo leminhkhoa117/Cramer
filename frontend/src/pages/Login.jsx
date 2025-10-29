@@ -132,7 +132,7 @@ export default function Login() {
         setLoading(false);
         
       } else {
-        // Login flow - remove timeout, let Supabase handle it
+        // Login flow
         console.log('Starting login for:', email);
         const { data, error } = await signIn(email, password);
         
@@ -148,11 +148,11 @@ export default function Login() {
           throw new Error('Login failed: No session created');
         }
         
-        console.log('Login successful, user:', data.user.id, 'session:', data.session.access_token?.substring(0, 20) + '...');
+        console.log('Login successful, user:', data.user.id);
         setSuccess('Logged in successfully! Redirecting...');
         setLoading(false);
         
-        // Redirect immediately
+        // Redirect to dashboard - signIn already updated auth state
         console.log('Redirecting to dashboard...');
         navigate('/dashboard');
       }
