@@ -41,6 +41,9 @@ export const AuthProvider = ({ children }) => {
         } else {
           setProfile(null);
         }
+        
+        // Always set loading to false after auth state changes
+        setLoading(false);
       }
     );
 
@@ -56,9 +59,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.warn('Could not load profile from backend (backend may be down):', error.message);
       
-      // DON'T auto-create profile - only load existing profiles
-      // Profile will be created manually after OTP verification or in signup flow
       // Set a minimal profile so app can continue without blocking
+      // Profile will be created/loaded when backend is available
       setProfile({
         id: userId,
         username: 'User'
@@ -132,6 +134,17 @@ export const AuthProvider = ({ children }) => {
   const signIn = async (email, password) => {
     try {
       const { data, error } = await authHelpers.signIn(email, password);
+      
+      // If login successful, immediately update state and load profile
+      if (data?.session && data?.user) {
+        console.log('SignIn successful, updating state immediately');
+        setSession(data.session);
+        setUser(data.user);
+        
+        // Load profile right away
+        await loadUserProfile(data.user.id);
+      }
+      
       return { data, error };
     } catch (error) {
       return { data: null, error };

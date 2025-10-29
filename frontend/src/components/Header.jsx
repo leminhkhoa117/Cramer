@@ -1,9 +1,18 @@
 import React from 'react';
-import { Navbar, Nav, Container, Button } from 'react-bootstrap';
+import { Navbar, Nav, Container, Button, Dropdown } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { FaUserCircle } from 'react-icons/fa';
 
 export default function Header() {
   const navigate = useNavigate();
+  const { user, profile, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
+
   return (
     <Navbar expand="lg" className="w-100" style={{
       background: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #8b5cf6 100%)',
@@ -20,17 +29,52 @@ export default function Header() {
             <Nav.Link href="/" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }}>Home</Nav.Link>
             <Nav.Link href="/courses" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }}>Courses</Nav.Link>
             <Nav.Link href="/about" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }}>About</Nav.Link>
-            <Button onClick={() => navigate('/login')}
-              variant="light" 
-              style={{ 
-                color: '#7c3aed',
-                fontWeight: '600',
-                fontSize: '0.95rem',
-                marginRight: 0
-              }}
-            >
-              Login
-            </Button>
+            
+            {user ? (
+              <Dropdown align="end">
+                <Dropdown.Toggle 
+                  variant="light" 
+                  id="dropdown-user"
+                  style={{
+                    color: '#7c3aed',
+                    fontWeight: '600',
+                    fontSize: '0.95rem',
+                    marginRight: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <FaUserCircle size={20} />
+                  {profile?.username || 'User'}
+                </Dropdown.Toggle>
+
+                <Dropdown.Menu>
+                  <Dropdown.Item onClick={() => navigate('/dashboard')}>
+                    Dashboard
+                  </Dropdown.Item>
+                  <Dropdown.Item onClick={() => navigate('/profile')}>
+                    Profile
+                  </Dropdown.Item>
+                  <Dropdown.Divider />
+                  <Dropdown.Item onClick={handleLogout}>
+                    Logout
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+            ) : (
+              <Button onClick={() => navigate('/login')}
+                variant="light" 
+                style={{ 
+                  color: '#7c3aed',
+                  fontWeight: '600',
+                  fontSize: '0.95rem',
+                  marginRight: 0
+                }}
+              >
+                Login
+              </Button>
+            )}
           </Nav>
         </Navbar.Collapse>
       </Container>
