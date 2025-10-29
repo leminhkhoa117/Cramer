@@ -8,10 +8,47 @@
     font-family: 'Poppins', sans-serif;
 }
 
+/* Animated Gradient Background */
+.animated-gradient {
+    background: linear-gradient(-45deg, #6b21a8, #c026d3, #1d4ed8, #2563eb);
+    background-size: 400% 400%;
+    animation: gradient-flow 15s ease infinite;
+}
+
+@keyframes gradient-flow {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Float Animation */
+.float-animation {
+    animation: float-anim 6s ease-in-out infinite;
+}
+
+@keyframes float-anim {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
 .login-page-container {
     display: flex;
     min-height: 100vh;
-    background: #f0f2f5; /* Light background */
+    background: #f0f2f5;
+    /* Light background */
     width: 100%;
 }
 
@@ -24,27 +61,43 @@
 .intro-section {
     flex: 1;
     padding: 50px;
-    color: #333; /* Dark text */
+    color: #fff;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    background: #f7f9fc;
+    background: linear-gradient(-45deg, #6b21a8, #c026d3, #1d4ed8, #2563eb);
+    background-size: 400% 400%;
+    animation: gradient-flow 15s ease infinite;
+}
+
+.intro-content {
+    max-width: 28rem;
+}
+
+.intro-section svg {
+    width: 240px;
+    height: 240px;
+    margin-bottom: 2rem;
+    opacity: 0.9;
 }
 
 .intro-section h1 {
-    font-size: 3.5em;
-    margin-bottom: 20px;
-    color: #007bff; /* Primary color */
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+    margin-bottom: 1rem;
+    color: #fff;
     text-shadow: none;
+    font-weight: 900;
+    letter-spacing: -0.025em;
 }
 
 .intro-section p {
-    font-size: 1.2em;
-    line-height: 1.6;
-    color: #555;
-    max-width: 600px;
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    color: #ede9fe;
+    font-weight: 300;
 }
 
 .form-section {
@@ -58,12 +111,12 @@
 
 .login-box {
     position: relative;
-    width: 400px;
-    height: 100px;
+    width: 280px;
+    height: 120px;
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: height 0.6s ease-in-out, width 0.6s ease-in-out;
+    transition: width 0.45s ease, height 0.45s ease;
     border-radius: 20px;
 }
 
@@ -76,39 +129,32 @@
     position: absolute;
     inset: 0;
     border-radius: 20px;
-    overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
+    border: 3px solid transparent;
+    background: conic-gradient(from var(--angle), rgba(0, 123, 255, 1), rgba(255, 69, 180, 1), rgba(0, 123, 255, 1)) border-box;
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: rotate 4s linear infinite;
 }
 
-.login-box-border::before,
-.login-box-border::after {
-    content: '';
-    position: absolute;
-    top: -60%;
-    left: -60%;
-    width: 220%;
-    height: 220%;
-    z-index: 0;
-    transform-origin: 50% 50%;
-    animation: animate 6s linear infinite;
-    background-size: 100% 100%;
-    border-radius: 50%;
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
 }
 
-.login-box-border::before {
-    background: linear-gradient(0deg, transparent 65%, rgba(0, 123, 255, 0.9) 80%, rgba(0, 123, 255, 0.9) 100%);
-}
-
-.login-box-border::after {
-    background: linear-gradient(0deg, transparent 65%, rgba(255, 69, 180, 0.9) 80%, rgba(255, 69, 180, 0.9) 100%);
-    animation-delay: -3s;
-}
-
-@keyframes animate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+@keyframes rotate {
+  to {
+    --angle: 360deg;
+  }
 }
 
 .login-mask {
@@ -124,15 +170,14 @@
     position: relative;
     z-index: 2;
     color: #007bff;
-    font-size: 2.5em;
+    font-size: 2.2em;
     font-weight: 700;
     letter-spacing: 0.1em;
-    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+    transition: opacity 0.3s ease-in-out;
 }
 
 .form-section:hover .login-initial {
     opacity: 0;
-    transform: translateY(-10px);
 }
 
 .login-form-wrapper {
@@ -144,9 +189,10 @@
     padding: 40px;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.5s 0.2s ease-in-out, visibility 0.5s 0.2s, transform 0.5s 0.2s;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .form-section:hover .login-form-wrapper {
@@ -172,18 +218,19 @@
 .input-box {
     position: relative;
     width: 100%;
-    margin-top: 25px;
+    margin-top: 40px;
 }
 
 .input-box input {
     position: relative;
     width: 100%;
-    padding: 20px 10px 10px;
+    padding: 10px 10px;
     background: transparent;
     outline: none;
     border: none;
     box-shadow: none;
-    color: #333; /* Dark text for input */
+    color: #333;
+    /* Dark text for input */
     font-size: 1em;
     letter-spacing: 0.05em;
     transition: 0.5s;
@@ -193,19 +240,22 @@
 .input-box span {
     position: absolute;
     left: 0;
-    padding: 20px 10px 10px;
+    top: -20px;
+    padding: 0;
     pointer-events: none;
     color: #8f8f8f;
-    font-size: 1em;
+    font-size: 0.85em;
     letter-spacing: 0.05em;
-    transition: 0.5s;
+    transition: 0.3s;
+    z-index: 5;
 }
 
-.input-box input:valid ~ span,
-.input-box input:focus ~ span {
+.input-box input:valid~span,
+.input-box input:focus~span {
     color: #007bff;
-    font-size: 0.75em;
-    transform: translateY(-34px);
+    font-size: 0.85em;
+    top: -20px;
+    z-index: 5;
 }
 
 .input-box i {
@@ -221,10 +271,11 @@
     pointer-events: none;
 }
 
-.input-box input:valid ~ i,
-.input-box input:focus ~ i {
+.input-box input:valid~i,
+.input-box input:focus~i {
     height: 44px;
-    background: #e3f2fd; /* Light blue background on focus */
+    background: #e3f2fd;
+    /* Light blue background on focus */
 }
 
 .links {

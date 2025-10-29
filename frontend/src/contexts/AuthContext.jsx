@@ -55,37 +55,75 @@ export const AuthProvider = ({ children }) => {
       setProfile(response.data);
     } catch (error) {
       console.error('Error loading profile:', error);
-      // Profile doesn't exist, create one
-      if (error.response?.status === 404 && user?.email) {
-        try {
-          const newProfile = {
-            id: userId,
-            username: user.email.split('@')[0], // Default username from email
-          };
-          const response = await profileApi.create(newProfile);
-          setProfile(response.data);
-        } catch (createError) {
-          console.error('Error creating profile:', createError);
-        }
+      
+      // DON'T auto-create profile - only load existing profiles
+      // Profile will be created manually after OTP verification or in signup flow
+      if (error.response?.status === 404) {
+        console.log('Profile not found for user:', userId);
+        setProfile(null);
       }
     }
   };
 
   const signUp = async (email, password, username) => {
+    console.log('AuthContext signUp called with:', { email, username });
+    
     try {
+      // Sign up with Supabase Auth (will send OTP email if enabled)
+      console.log('Calling Supabase signUp...');
       const { data, error } = await authHelpers.signUp(email, password);
-      if (error) throw error;
-
-      // Create profile in backend
-      if (data.user) {
-        await profileApi.create({
-          id: data.user.id,
-          username: username || email.split('@')[0],
-        });
+      console.log('Supabase signUp response:', { data, error });
+      
+      if (error) {
+        console.error('Supabase signup error:', error);
+        throw error;
       }
+
+      // Store username temporarily for later use after OTP verification
+      if (data.user) {
+        console.log('Storing pending user info in sessionStorage');
+        sessionStorage.setItem('pendingUsername', username);
+        sessionStorage.setItem('pendingUserId', data.user.id);
+      }
+
+      console.log('SignUp completed successfully');
+      return { data, error: null };
+    } catch (error) {
+      console.error('Sign up error in AuthContext:', error);
+      return { data: null, error };
+    }
+  };
+
+  const verifyOtp = async (email, otpCode) => {
+    try {
+      console.log('AuthContext: Verifying OTP for:', email);
+      // Verify OTP with Supabase
+      const { data, error } = await authHelpers.verifyOtp(email, otpCode);
+      
+      if (error) {
+        console.error('AuthContext: OTP verification failed:', error);
+        throw error;
+      }
+
+      console.log('AuthContext: OTP verified successfully', data);
+      
+      // Profile will be created in Login.jsx handleVerifyOtp()
+      // Don't create it here to avoid duplication
 
       return { data, error: null };
     } catch (error) {
+      console.error('AuthContext: OTP verification error:', error);
+      return { data: null, error };
+    }
+  };
+
+  const resendOtp = async (email) => {
+    try {
+      const { data, error } = await authHelpers.resendOtp(email);
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Resend OTP error:', error);
       return { data: null, error };
     }
   };
@@ -131,6 +169,8 @@ export const AuthProvider = ({ children }) => {
     signUp,
     signIn,
     signOut,
+    verifyOtp,
+    resendOtp,
     signInWithGoogle,
     signInWithFacebook,
   };
