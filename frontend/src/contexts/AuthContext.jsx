@@ -54,14 +54,15 @@ export const AuthProvider = ({ children }) => {
       const response = await profileApi.getById(userId);
       setProfile(response.data);
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.warn('Could not load profile from backend (backend may be down):', error.message);
       
       // DON'T auto-create profile - only load existing profiles
       // Profile will be created manually after OTP verification or in signup flow
-      if (error.response?.status === 404) {
-        console.log('Profile not found for user:', userId);
-        setProfile(null);
-      }
+      // Set a minimal profile so app can continue without blocking
+      setProfile({
+        id: userId,
+        username: 'User'
+      });
     }
   };
 

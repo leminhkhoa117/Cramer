@@ -50,14 +50,18 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('=== handleSubmit called ===', { isSignUp, email });
     setError('');
     setSuccess('');
     setLoading(true);
 
     if (!validateForm()) {
+      console.log('Validation failed');
       setLoading(false);
       return;
     }
+
+    console.log('Validation passed, proceeding with', isSignUp ? 'signup' : 'login');
 
     try {
       if (isSignUp) {
@@ -128,21 +132,29 @@ export default function Login() {
         setLoading(false);
         
       } else {
-        // Login flow with timeout
-        const loginPromise = signIn(email, password);
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Login timeout. Backend may be down. Please try again later.')), 10000)
-        );
+        // Login flow - remove timeout, let Supabase handle it
+        console.log('Starting login for:', email);
+        const { data, error } = await signIn(email, password);
         
-        const { error } = await Promise.race([loginPromise, timeoutPromise]);
-        if (error) throw error;
+        console.log('Login result:', { hasData: !!data, hasSession: !!data?.session, hasUser: !!data?.user, hasError: !!error, error });
         
+        if (error) {
+          console.error('Login error:', error);
+          throw error;
+        }
+        
+        if (!data?.session || !data?.user) {
+          console.error('No session or user returned from login');
+          throw new Error('Login failed: No session created');
+        }
+        
+        console.log('Login successful, user:', data.user.id, 'session:', data.session.access_token?.substring(0, 20) + '...');
         setSuccess('Logged in successfully! Redirecting...');
+        setLoading(false);
         
-        // Redirect after short delay
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 1000);
+        // Redirect immediately
+        console.log('Redirecting to dashboard...');
+        navigate('/dashboard');
       }
     } catch (err) {
       setError(err.message || 'An error occurred. Please try again.');
@@ -395,9 +407,19 @@ export default function Login() {
           />
         )}
         
+        <div className="form-section">
+          <div className="login-box">
+            <div className="login-box-border"></div>
+            <div className="login-initial">{isSignUp ? 'SIGN UP' : 'LOGIN'}</div>
+            <div className="login-form-wrapper">
+              {FormContent}
+            </div>
+          </div>
+        </div>
+        
         <div className="intro-section">
           <div className="intro-content">
-            <svg className="float-animation" width="240" height="240" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg className="float-animation" width="160" height="160" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <linearGradient id="svg-grad" x1="0" y1="0" x2="1" y2="1">
                   <stop offset="0%" stopColor="rgba(255,255,255,0.8)"/>
@@ -414,15 +436,6 @@ export default function Login() {
             </svg>
             <h1>Welcome to Cramer</h1>
             <p>Your personal platform for mastering new subjects through interactive quizzes and smart learning tools. Log in to continue your journey or sign up to get started!</p>
-          </div>
-        </div>
-        <div className="form-section">
-          <div className="login-box">
-            <div className="login-box-border"></div>
-            <div className="login-initial">{isSignUp ? 'SIGN UP' : 'LOGIN'}</div>
-            <div className="login-form-wrapper">
-              {FormContent}
-            </div>
           </div>
         </div>
     </div>

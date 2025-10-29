@@ -1,16 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap');
 
 /* Reset and base styles */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Be Vietnam Pro', sans-serif;
 }
 
 /* Animated Gradient Background */
 .animated-gradient {
-    background: linear-gradient(-45deg, #6b21a8, #c026d3, #1d4ed8, #2563eb);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.95) 0%, rgba(99, 102, 241, 0.95) 50%, rgba(139, 92, 246, 0.95) 100%);
     background-size: 400% 400%;
     animation: gradient-flow 15s ease infinite;
 }
@@ -46,67 +46,94 @@
 
 .login-page-container {
     display: flex;
+    flex-direction: column;
     min-height: 100vh;
-    background: #f0f2f5;
-    /* Light background */
+    background: #f9fafb;
+    /* Light background matching homepage */
     width: 100%;
 }
 
 .login-container {
     display: flex;
+    flex-direction: column;
     width: 100%;
-    height: 100vh;
+    min-height: 100vh;
 }
 
 .intro-section {
-    flex: 1;
-    padding: 50px;
+    flex: 0;
+    padding: 60px 50px 40px;
     color: #fff;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    background: linear-gradient(-45deg, #6b21a8, #c026d3, #1d4ed8, #2563eb);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.95) 0%, rgba(99, 102, 241, 0.95) 50%, rgba(139, 92, 246, 0.95) 100%);
     background-size: 400% 400%;
     animation: gradient-flow 15s ease infinite;
 }
 
 .intro-content {
-    max-width: 28rem;
+    max-width: 42rem;
 }
 
 .intro-section svg {
-    width: 240px;
-    height: 240px;
-    margin-bottom: 2rem;
+    width: 160px;
+    height: 160px;
+    margin-bottom: 1.5rem;
     opacity: 0.9;
 }
 
 .intro-section h1 {
-    font-size: 2.25rem;
-    line-height: 2.5rem;
-    margin-bottom: 1rem;
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    margin-bottom: 0.75rem;
     color: #fff;
     text-shadow: none;
-    font-weight: 900;
+    font-weight: 800;
     letter-spacing: -0.025em;
 }
 
 .intro-section p {
-    font-size: 1.125rem;
-    line-height: 1.75rem;
+    font-size: 1rem;
+    line-height: 1.625rem;
     color: #ede9fe;
     font-weight: 300;
 }
 
 .form-section {
-    flex: 1;
+    flex: 0 0 100vh;
+    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 40px;
-    background: #ffffff;
+    padding: 60px 40px;
+    position: relative;
+    background-image: url('https://ygo-assets-websites-editorial-emea.yougov.net/images/Englishness_illustrative.original.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.form-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(124, 58, 237, 0.3);
+    /* Purple overlay */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 0;
+}
+
+.form-section::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.2);
+    /* Darken overlay */
+    z-index: 1;
 }
 
 .login-box {
@@ -116,33 +143,59 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: width 0.45s ease, height 0.45s ease;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Faster, smoother easing */
     border-radius: 20px;
+    z-index: 10;
+    /* Higher z-index to be above overlays */
+    background: transparent;
+    /* Transparent to show border */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    /* Strong shadow for depth */
+    padding: 4px;
+    /* Space for border */
+    overflow: hidden;
+    /* Clip content to rounded corners */
+    will-change: width, height;
+    /* GPU acceleration hint */
+    backface-visibility: hidden;
+    /* Prevent flickering */
+    -webkit-font-smoothing: antialiased;
+    /* Smooth font rendering */
 }
 
 .form-section:hover .login-box {
     width: 420px;
-    height: 580px;
+    height: 650px;
+    /* Fixed height for smooth animation */
 }
 
 .login-box-border {
     position: absolute;
     inset: 0;
     border-radius: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border: 3px solid transparent;
-    background: conic-gradient(from var(--angle), rgba(0, 123, 255, 1), rgba(255, 69, 180, 1), rgba(0, 123, 255, 1)) border-box;
-    -webkit-mask:
-        linear-gradient(#fff 0 0) content-box,
-        linear-gradient(#fff 0 0);
-    mask:
-        linear-gradient(#fff 0 0) content-box,
-        linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
+    background: conic-gradient(from var(--angle), #7c3aed, #6366f1, #8b5cf6, #a855f7, #7c3aed);
     animation: rotate 4s linear infinite;
+    z-index: 0;
+    pointer-events: none;
+    will-change: transform;
+    /* GPU acceleration for rotation */
+    backface-visibility: hidden;
+}
+
+/* White content area on top of border */
+.login-box::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    /* Inside the border */
+    background: #ffffff;
+    border-radius: 16px;
+    z-index: 1;
+    overflow: hidden;
+    /* Ensure clipping */
+    will-change: auto;
+    /* Let browser optimize */
 }
 
 @property --angle {
@@ -158,46 +211,68 @@
 }
 
 .login-mask {
-    position: absolute;
-    inset: 4px;
-    background: #fff;
-    border-radius: 16px;
-    z-index: 1;
-    pointer-events: none;
+    display: none;
+    /* Remove mask as we don't need it anymore */
 }
 
 .login-initial {
     position: relative;
-    z-index: 2;
-    color: #007bff;
+    z-index: 5;
+    /* Above the white background layer */
+    color: #5b21b6;
+    /* Very deep purple for maximum contrast on white */
     font-size: 2.2em;
-    font-weight: 700;
+    font-weight: 900;
     letter-spacing: 0.1em;
-    transition: opacity 0.3s ease-in-out;
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    /* Faster, simpler transitions */
+    text-shadow: 0 2px 4px rgba(91, 33, 182, 0.15);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    will-change: opacity, transform;
+    /* GPU acceleration */
+    backface-visibility: hidden;
 }
 
 .form-section:hover .login-initial {
     opacity: 0;
+    transform: scale(0.9);
+    /* Slight zoom out when hiding */
 }
 
 .login-form-wrapper {
     position: absolute;
     inset: 4px;
-    background: #fff;
+    /* Inside the border, matching ::before */
+    background: #ffffff;
+    /* Pure white background */
     border-radius: 16px;
-    z-index: 3;
-    padding: 40px;
+    /* Match ::before radius */
+    z-index: 5;
+    /* Above the white background layer */
+    padding: 30px;
+    /* Reduced from 40px to 30px for more content space */
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.4s ease, visibility 0.4s ease;
+    transition: opacity 0.4s ease-out 0.1s, 
+                visibility 0.4s ease-out 0.1s,
+                transform 0.4s ease-out 0.1s;
+    /* Smoother, faster transitions with delay */
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transform: translateY(10px);
+    /* Start slightly lower */
+    will-change: opacity, transform;
+    /* GPU acceleration */
+    backface-visibility: hidden;
 }
 
 .form-section:hover .login-form-wrapper {
     opacity: 1;
     visibility: visible;
+    transform: translateY(0);
+    /* Move up to position */
 }
 
 .login-form {
@@ -205,20 +280,23 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+    font-family: 'Be Vietnam Pro', sans-serif;
 }
 
 .login-form h2 {
-    color: #007bff;
+    color: #7c3aed;
     font-weight: 600;
     text-align: center;
     letter-spacing: 0.1em;
     margin-bottom: 20px;
+    font-family: 'Be Vietnam Pro', sans-serif;
 }
 
 .input-box {
     position: relative;
     width: 100%;
-    margin-top: 40px;
+    margin-top: 30px;
+    /* Reduced from 40px to 30px for tighter spacing */
 }
 
 .input-box input {
@@ -235,6 +313,7 @@
     letter-spacing: 0.05em;
     transition: 0.5s;
     z-index: 10;
+    font-family: 'Be Vietnam Pro', sans-serif;
 }
 
 .input-box span {
@@ -248,11 +327,12 @@
     letter-spacing: 0.05em;
     transition: 0.3s;
     z-index: 5;
+    font-family: 'Be Vietnam Pro', sans-serif;
 }
 
 .input-box input:valid~span,
 .input-box input:focus~span {
-    color: #007bff;
+    color: #7c3aed;
     font-size: 0.85em;
     top: -20px;
     z-index: 5;
@@ -264,7 +344,7 @@
     bottom: 0;
     width: 100%;
     height: 2px;
-    background: #007bff;
+    background: #7c3aed;
     border-radius: 4px;
     overflow: hidden;
     transition: 0.5s;
@@ -274,8 +354,8 @@
 .input-box input:valid~i,
 .input-box input:focus~i {
     height: 44px;
-    background: #e3f2fd;
-    /* Light blue background on focus */
+    background: #f3f4f6;
+    /* Light gray background on focus, matching homepage */
 }
 
 .links {
@@ -288,18 +368,19 @@
     font-size: 0.85em;
     color: #8f8f8f;
     text-decoration: none;
+    font-family: 'Be Vietnam Pro', sans-serif;
 }
 
 .links a:hover,
 .links a:nth-child(2) {
-    color: #007bff;
+    color: #7c3aed;
 }
 
 input[type="submit"] {
     border: none;
     outline: none;
     padding: 11px 25px;
-    background: #007bff;
+    background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
     color: #fff;
     cursor: pointer;
     font-size: 0.9em;
@@ -307,11 +388,13 @@ input[type="submit"] {
     font-weight: 600;
     width: 100%;
     margin-top: 20px;
-    transition: background 0.3s;
+    transition: transform 0.3s, box-shadow 0.3s;
+    font-family: 'Be Vietnam Pro', sans-serif;
 }
 
 input[type="submit"]:hover {
-    background: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(124, 58, 237, 0.3);
 }
 
 input[type="submit"]:active {
@@ -322,10 +405,12 @@ input[type="submit"]:active {
     margin-top: 25px;
     text-align: center;
     color: #8f8f8f;
+    font-family: 'Be Vietnam Pro', sans-serif;
 }
 
 .social-login p {
     font-size: 0.9em;
+    font-family: 'Be Vietnam Pro', sans-serif;
 }
 
 .social-icons {
@@ -351,9 +436,9 @@ input[type="submit"]:active {
 }
 
 .social-icons button:hover {
-    color: #007bff;
-    border-color: #007bff;
+    color: #7c3aed;
+    border-color: #7c3aed;
     background: #fff;
     transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
 }
