@@ -8,6 +8,7 @@ export default function Dashboard() {
   const [sections, setSections] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,24 +18,38 @@ export default function Dashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      setError(null); // Clear previous errors
       
       // Load sections
-      const sectionsResponse = await sectionApi.getAll();
-      setSections(sectionsResponse.data);
+      try {
+        const sectionsResponse = await sectionApi.getAll();
+        setSections(sectionsResponse.data);
+      } catch (sectionError) {
+        console.error('Error loading sections:', sectionError);
+        setSections([]); // Set empty array on error
+        
+        // Check if it's a network error
+        if (sectionError.code === 'ERR_NETWORK') {
+          setError('Cannot connect to server. Please make sure the backend is running.');
+        }
+      }
 
       // Load user stats if user is logged in
       if (user?.id) {
         try {
           const statsResponse = await userAnswerApi.getUserStats(user.id);
           setStats(statsResponse.data);
-        } catch (error) {
-          // User might not have any answers yet
-          console.log('No stats available yet');
+        } catch (statsError) {
+          // User might not have any answers yet or backend is down
+          console.log('No stats available:', statsError.message);
+          setStats(null);
         }
       }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
+      setError('Failed to load dashboard data. Please try again.');
     } finally {
+      // Always set loading to false, even if there are errors
       setLoading(false);
     }
   };
@@ -60,6 +75,30 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              </div>
+              <button
+                onClick={loadDashboardData}
+                className="ml-4 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Stats Section */}
         {stats && (
           <div className="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">

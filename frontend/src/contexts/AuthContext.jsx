@@ -17,54 +17,179 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
-    // Get initial session
-    authHelpers.getSession().then(({ session, error }) => {
-      if (session) {
-        setSession(session);
-        setUser(session.user);
-        loadUserProfile(session.user.id);
+    let mounted = true;
+    let isInitialLoad = true;
+
+    const initializeAuth = async () => {
+      try {
+        console.log('🔐 Initializing auth...');
+        
+        // Get initial session
+        const { session, error } = await authHelpers.getSession();
+        
+        if (!mounted) return;
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setLoading(false);
+          return;
+        }
+
+        if (session?.user) {
+          console.log('✅ Found existing session for user:', session.user.id);
+          setSession(session);
+          setUser(session.user);
+          
+          // Load profile BEFORE setting loading to false
+          await loadUserProfile(session.user.id);
+        } else {
+          console.log('ℹ️ No existing session found');
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+          isInitialLoad = false;
+        }
       }
-      setLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = authHelpers.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event);
+        if (!mounted) return;
+
+        console.log('🔄 Auth state changed:', event, session?.user?.id);
+        
+        // Skip if this is the initial SIGNED_IN event (already handled by initializeAuth)
+        if (isInitialLoad && event === 'SIGNED_IN') {
+          console.log('⏭️ Skipping initial SIGNED_IN (already loaded)');
+          return;
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          // Load profile when user signs in
           await loadUserProfile(session.user.id);
         } else {
+          // Clear profile when user signs out
           setProfile(null);
         }
-        
-        // Always set loading to false after auth state changes
-        setLoading(false);
       }
     );
 
     return () => {
+      mounted = false;
       subscription?.unsubscribe();
     };
   }, []);
 
   const loadUserProfile = async (userId) => {
+    if (!userId) {
+      console.error('❌ loadUserProfile called without userId');
+      return;
+    }
+
+    setProfileLoading(true);
+    console.log('📥 Loading profile for user:', userId);
+
     try {
       const response = await profileApi.getById(userId);
-      setProfile(response.data);
-    } catch (error) {
-      console.warn('Could not load profile from backend (backend may be down):', error.message);
       
-      // Set a minimal profile so app can continue without blocking
-      // Profile will be created/loaded when backend is available
-      setProfile({
-        id: userId,
-        username: 'User'
+      if (response?.data) {
+        console.log('✅ Profile loaded successfully:', response.data.username);
+        setProfile(response.data);
+      } else {
+        console.warn('⚠️ Empty response from backend');
+        setProfile(null);
+      }
+    } catch (error) {
+      console.error('❌ Failed to load profile:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        data: error.response?.data
       });
+      
+      // If profile doesn't exist (404), try to create it
+      if (error.response?.status === 404) {
+        console.log('🔨 Profile not found (404), attempting to create...');
+        await createProfileForUser(userId);
+      } else if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
+        console.error('🔌 Network error or timeout - backend might be down or not responding');
+        setProfile(null);
+      } else if (error.response?.status >= 500) {
+        console.error('🔥 Server error');
+        setProfile(null);
+      } else {
+        console.error('⚠️ Unknown error type');
+        setProfile(null);
+      }
+    } finally {
+      setProfileLoading(false);
+      console.log('🏁 Profile loading finished. Profile set:', !!profile);
+    }
+  };
+
+  const createProfileForUser = async (userId) => {
+    try {
+      console.log('📝 Creating profile for user:', userId);
+      
+      // Get user email from auth
+      const { user: authUser } = await authHelpers.getUser();
+      
+      if (!authUser) {
+        console.error('❌ Cannot create profile - no auth user found');
+        return;
+      }
+
+      // Generate username from email or use a default
+      const username = authUser.email?.split('@')[0] || `user_${userId.substring(0, 8)}`;
+      
+      const newProfile = {
+        id: userId,
+        username: username,
+      };
+
+      console.log('� Creating profile with data:', newProfile);
+      const response = await profileApi.create(newProfile);
+      
+      if (response?.data) {
+        console.log('✅ Profile created successfully:', response.data);
+        setProfile(response.data);
+      }
+    } catch (createError) {
+      console.error('❌ Failed to create profile:', createError);
+      
+      // If username already exists, try with timestamp
+      if (createError.response?.status === 409 || createError.response?.status === 400) {
+        console.log('⚠️ Username conflict, retrying with timestamp...');
+        
+        try {
+          const timestampUsername = `user_${Date.now()}`;
+          const retryProfile = {
+            id: userId,
+            username: timestampUsername,
+          };
+          
+          const retryResponse = await profileApi.create(retryProfile);
+          if (retryResponse?.data) {
+            console.log('✅ Profile created with timestamp username:', retryResponse.data);
+            setProfile(retryResponse.data);
+          }
+        } catch (retryError) {
+          console.error('❌ Failed to create profile even with timestamp:', retryError);
+        }
+      }
     }
   };
 
@@ -133,20 +258,29 @@ export const AuthProvider = ({ children }) => {
 
   const signIn = async (email, password) => {
     try {
+      console.log('🔑 Signing in user:', email);
       const { data, error } = await authHelpers.signIn(email, password);
       
-      // If login successful, immediately update state and load profile
+      if (error) {
+        console.error('❌ Sign in error:', error);
+        return { data: null, error };
+      }
+      
+      // If login successful, update state and load profile
       if (data?.session && data?.user) {
-        console.log('SignIn successful, updating state immediately');
+        console.log('✅ Sign in successful for user:', data.user.id);
         setSession(data.session);
         setUser(data.user);
         
-        // Load profile right away
+        // Load profile and WAIT for it
         await loadUserProfile(data.user.id);
+        
+        console.log('✅ Profile loaded after sign in');
       }
       
-      return { data, error };
+      return { data, error: null };
     } catch (error) {
+      console.error('❌ Sign in exception:', error);
       return { data: null, error };
     }
   };
@@ -180,6 +314,7 @@ export const AuthProvider = ({ children }) => {
     profile,
     session,
     loading,
+    profileLoading,
     signUp,
     signIn,
     signOut,
@@ -187,6 +322,7 @@ export const AuthProvider = ({ children }) => {
     resendOtp,
     signInWithGoogle,
     signInWithFacebook,
+    loadUserProfile, // Expose for manual reload if needed
   };
 
   return (
