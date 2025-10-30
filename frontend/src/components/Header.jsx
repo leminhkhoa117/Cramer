@@ -6,12 +6,17 @@ import { FaUserCircle } from 'react-icons/fa';
 
 export default function Header() {
   const navigate = useNavigate();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, profileLoading, signOut } = useAuth();
 
   const handleLogout = async () => {
     await signOut();
     navigate('/');
   };
+
+  // Display username with proper loading state
+  const displayName = profileLoading 
+    ? 'Loading...' 
+    : profile?.username || user?.email?.split('@')[0] || 'User';
 
   return (
     <Navbar expand="lg" className="w-100" style={{
@@ -46,7 +51,7 @@ export default function Header() {
                   }}
                 >
                   <FaUserCircle size={20} />
-                  {profile?.username || 'User'}
+                  {displayName}
                 </Dropdown.Toggle>
 
                 <Dropdown.Menu>

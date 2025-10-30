@@ -10,11 +10,14 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 second timeout
 });
 
 // Request interceptor to add JWT token from Supabase
 apiClient.interceptors.request.use(
   async (config) => {
+    console.log('🌐 API Request:', config.method?.toUpperCase(), config.url);
+    
     // Get current session from Supabase
     if (supabase?.auth) {
       const {
@@ -23,25 +26,41 @@ apiClient.interceptors.request.use(
 
       if (session?.access_token) {
         config.headers.Authorization = `Bearer ${session.access_token}`;
+        console.log('🔑 JWT token attached');
+      } else {
+        console.warn('⚠️ No JWT token available');
       }
     }
     
     return config;
   },
   (error) => {
+    console.error('❌ Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('✅ API Response:', response.config.method?.toUpperCase(), response.config.url, response.status);
+    return response;
+  },
   async (error) => {
+    console.error('❌ API Error:', error.config?.method?.toUpperCase(), error.config?.url);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status,
+      data: error.response?.data
+    });
+    
     if (error.response?.status === 401) {
       // Token expired or invalid, redirect to login
-      console.error('Unauthorized. Please log in again.');
+      console.error('🔒 Unauthorized. Please log in again.');
       // You can dispatch a logout action here
     }
+    
     return Promise.reject(error);
   }
 );
