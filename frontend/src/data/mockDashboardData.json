@@ -1,0 +1,70 @@
+{
+  "userName": "Lê Minh Khoa",
+  "hero": {
+    "greeting": "Chào mừng",
+    "welcomeMessage": "Chào mừng Lê Minh Khoa!",
+    "tagline": "Mục tiêu",
+    "backgroundImage": "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=80"
+  },
+  "targets": [
+    {
+      "label": "Kì thi sắp tới",
+      "value": "IELTS Academic"
+    },
+    {
+      "label": "Ngày thi",
+      "value": "15 tháng 1, 2026"
+    }
+  ],
+  "skills": {
+    "label": "Điểm kỹ năng",
+    "items": [
+      {
+        "label": "Listening - Nghe",
+        "score": "8.0"
+      },
+      {
+        "label": "Reading - Đọc",
+        "score": "8.0"
+      },
+      {
+        "label": "Writing - Viết",
+        "score": "7.0"
+      },
+      {
+        "label": "Speaking - Nói",
+        "score": "7.0"
+      }
+    ]
+  },
+  "coursesSection": {
+    "title": "Khoá học của bạn",
+    "filterLabel": "Lọc",
+    "viewAllLabel": "Xem tất cả",
+    "note": "Các khoá học được đề xuất dựa trên tiến trình luyện tập gần đây",
+    "courses": [
+      {
+        "id": "cambridge-17-reading",
+        "series": "IELTS CAMBRIDGE 17",
+        "skill": "Reading - Đọc",
+        "duration": "55 phút",
+        "lastAttempt": "10 tháng 1, 2026",
+        "score": "32/40",
+        "band": "7.5",
+        "status": "Hoàn thành",
+        "icon": "book"
+      },
+      {
+        "id": "cambridge-17-listening",
+        "series": "IELTS CAMBRIDGE 17",
+        "skill": "Listening - Nghe",
+        "duration": "Chưa xong",
+        "lastAttempt": "10 tháng 1, 2026",
+        "score": "XX/40",
+        "band": "XX",
+        "status": "Đang học",
+        "icon": "headphones"
+      }
+    ]
+  }
+}
