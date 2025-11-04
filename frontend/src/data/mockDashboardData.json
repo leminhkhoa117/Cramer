@@ -64,6 +64,28 @@
         "band": "XX",
         "status": "Đang học",
         "icon": "headphones"
+      },
+      {
+        "id": "cambridge-18-reading",
+        "series": "IELTS CAMBRIDGE 18",
+        "skill": "Reading - Đọc",
+        "duration": "60 phút",
+        "lastAttempt": "8 tháng 1, 2026",
+        "score": "29/40",
+        "band": "7.0",
+        "status": "Hoàn thành",
+        "icon": "book"
+      },
+      {
+        "id": "cambridge-18-listening",
+        "series": "IELTS CAMBRIDGE 18",
+        "skill": "Listening - Nghe",
+        "duration": "Chưa xong",
+        "lastAttempt": "8 tháng 1, 2026",
+        "score": "XY/40",
+        "band": "XX",
+        "status": "Đang học",
+        "icon": "headphones"
       }
     ]
   }

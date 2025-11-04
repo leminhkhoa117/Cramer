@@ -39,51 +39,53 @@ export default function Dashboard() {
         />
         <div className="dashboard-hero__overlay" aria-hidden="true" />
 
-        <div className="dashboard-hero__shell">
-          <div className="dashboard-hero__panel">
-            <div className="dashboard-hero__intro">
-              <span className="dashboard-hero__eyebrow">{dashboardData.hero.greeting}</span>
-              <h1 className="dashboard-hero__title">{dashboardData.hero.welcomeMessage}</h1>
-            </div>
+        <div className="dashboard-hero__content">
+          <header className="dashboard-hero__heading">
+            <h1 className="dashboard-hero__title">{dashboardData.hero.welcomeMessage}</h1>
+          </header>
 
-            <div className="dashboard-goal-row">
-              <div className="dashboard-goal-label">{dashboardData.hero.tagline}</div>
-              <div className="dashboard-goal-grid">
-                {dashboardData.targets.map((target) => (
-                  <article key={target.label} className="dashboard-goal-card">
-                    <span className="dashboard-goal-card__label">{target.label}</span>
-                    <span className="dashboard-goal-card__value">{target.value}</span>
+          <div className="dashboard-hero__goals container-fluid px-0">
+            <div className="dashboard-hero__goals-label">{dashboardData.hero.tagline}</div>
+            <div className="row gx-4 gy-4 align-items-stretch dashboard-hero__cards">
+              {dashboardData.targets.map((target) => (
+                <div key={target.label} className="col-12 col-md-6 col-lg-2 d-flex">
+                  <article className="dashboard-target-card h-100 w-100">
+                    <span className="dashboard-target-card__label">{target.label}</span>
+                    <span className="dashboard-target-card__value">{target.value}</span>
                   </article>
-                ))}
+                </div>
+              ))}
 
-                <article className="dashboard-goal-card dashboard-goal-card--skills">
-                  <header className="dashboard-goal-card__header">{dashboardData.skills.label}</header>
-                  <div className="dashboard-skill-grid">
+              <div className="col-12 col-md-6 col-lg-8 d-flex">
+                <article className="dashboard-skill-card h-100 w-100">
+                  <div className="dashboard-skill-card__title">{dashboardData.skills.label}</div>
+                  <div className="dashboard-skill-card__items">
                     {dashboardData.skills.items.map((skill) => (
-                      <div key={skill.label} className="dashboard-skill-pill">
-                        <span className="dashboard-skill-pill__label">{skill.label}</span>
-                        <span className="dashboard-skill-pill__score">{skill.score}</span>
+                      <div key={skill.label} className="dashboard-skill-item">
+                        <span className="dashboard-skill-item__label">{skill.label}</span>
+                        <span className="dashboard-skill-item__score">{skill.score}</span>
                       </div>
                     ))}
                   </div>
                 </article>
               </div>
             </div>
-
-            <button type="button" className="dashboard-filter-floating">
-              <FaFilter />
-              <span>{dashboardData.coursesSection.filterLabel}</span>
-            </button>
           </div>
         </div>
       </section>
 
       <section className="dashboard-courses">
-        <div className="dashboard-section-header">
-          <h2>{dashboardData.coursesSection.title}</h2>
-          {dashboardData.coursesSection.note && (
-            <p className="dashboard-section-note">{dashboardData.coursesSection.note}</p>
-          )}
+        <div className="dashboard-courses__header">
+          <div>
+            <h2>{dashboardData.coursesSection.title}</h2>
+            {dashboardData.coursesSection.note && (
+              <p className="dashboard-section-note">{dashboardData.coursesSection.note}</p>
+            )}
+          </div>
+          <button type="button" className="dashboard-courses__filter">
+            <FaFilter />
+            <span>{dashboardData.coursesSection.filterLabel}</span>
+          </button>
         </div>
 
         <div className="dashboard-course-grid">
@@ -92,8 +94,10 @@ export default function Dashboard() {
 
             return (
               <article key={course.id} className="dashboard-course-card">
-                <div className="dashboard-course-card__badge">
-                  <IconComponent />
+                <div className="dashboard-course-card__icon">
+                  <span className="dashboard-course-card__icon-circle">
+                    <IconComponent />
+                  </span>
                 </div>
 
                 <div className="dashboard-course-card__body">
