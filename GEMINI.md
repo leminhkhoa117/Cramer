@@ -71,4 +71,6 @@ The backend will be available at `http://localhost:8080`.
 
 - **Code Style:** Follow the existing code style in the frontend and backend.
 
+- **CSS Styling:** For React components, prefer creating a dedicated CSS file (e.g., `MyComponent.css`) in the `src/css` directory and importing it directly into the corresponding JSX file (e.g., `MyComponent.jsx`). This approach is favored over appending styles to a global stylesheet to ensure encapsulation and prevent unforeseen conflicts.
+
 - **API:** The backend provides a REST API. Refer to the Swagger documentation at `http://localhost:8080/swagger-ui.html` for details on the available endpoints.
