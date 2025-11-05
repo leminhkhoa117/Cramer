@@ -1,9 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 * {
-  font-family: '"Be Vietnam Pro"', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+@layer utilities {
+  .all-\[unset\] {
+    all: unset;
+  }
 }
 
 body {
@@ -144,4 +152,271 @@ a:hover {
     padding-left: 2rem !important;
     padding-right: 2rem !important;
   }
+}
+
+
+/* --- Appended Styles from About.css --- */
+
+.about-page {
+  background-color: #f8f9fa;
+  color: #343a40;
+}
+
+.about-page .container {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.section-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.section-subtitle {
+  font-size: 1.1rem;
+  color: #6b7280;
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto 4rem auto;
+}
+
+/* --- Animation Styles --- */
+.animated-item {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.animated-item.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
+/* Hero Section */
+.about-hero {
+  padding: 6rem 0;
+  position: relative;
+  background-image: url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center;
+  color: white;
+}
+
+.about-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(86, 38, 163, 0.85) 0%, rgba(69, 72, 168, 0.85) 100%);
+}
+
+.about-hero .container {
+  position: relative;
+  z-index: 1;
+}
+
+.about-hero__title {
+  font-size: 3rem;
+  font-weight: 800;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  margin-bottom: 1rem;
+}
+
+.about-hero__subtitle {
+  font-size: 1.25rem;
+  line-height: 1.7;
+  max-width: 700px;
+  margin: 0 auto;
+  color: white; /* Explicitly set color to white */
+  opacity: 0.95;
+}
+
+/* Founders Section */
+.about-founders {
+  padding: 6rem 0;
+  background-color: #ffffff;
+}
+
+.founders-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-top: 4rem;
+}
+
+.founder-card {
+  background: #f8f9fa;
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.founder-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+}
+
+.founder-card__image-wrapper {
+  height: 300px;
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  overflow: hidden; /* Add this to contain the zooming image */
+}
+
+.founder-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.8;
+  transition: transform 0.4s ease; /* Add transition for zoom effect */
+}
+
+.founder-card:hover .founder-card__image {
+  transform: scale(1.1); /* Zoom effect on hover */
+}
+
+.founder-card__content {
+  padding: 2rem;
+}
+
+.founder-card__name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.founder-card__role {
+  color: #7c3aed;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.founder-card__bio {
+  color: #4b5563;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.founder-card__hobby {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+.founder-card__github {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #343a40;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.founder-card__github:hover {
+  color: #7c3aed;
+}
+
+/* Values Section */
+.about-values {
+  padding: 6rem 0;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f3ff 100%);
+}
+
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-top: 4rem;
+}
+
+.value-card {
+  text-align: center;
+  padding: 2rem;
+}
+
+.value-card__icon {
+  font-size: 3rem;
+  color: #7c3aed;
+  margin-bottom: 1.5rem;
+  display: inline-block;
+  transition: transform 0.3s ease; /* Add transition for hover effect */
+}
+
+.value-card:hover .value-card__icon {
+  transform: rotate(15deg) scale(1.1); /* Rotate and scale effect on hover */
+}
+
+.value-card__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.value-card__text {
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+/* CTA Section */
+.about-cta {
+  padding: 5rem 0;
+  background-color: #1f2937;
+  color: white;
+}
+
+.cta-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.cta-text {
+  font-size: 1.1rem;
+  color: #e5e7eb;
+  margin-bottom: 2rem;
+}
+
+.cta-button {
+  padding: 1rem 2.5rem;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.cta-button:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(124, 58, 237, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .founders-grid {
+    grid-template-columns: 1fr;
+  }
+  .values-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .section-title { font-size: 2rem; }
+  .about-hero__title { font-size: 2.5rem; }
+  .about-hero__subtitle { font-size: 1.1rem; }
 }

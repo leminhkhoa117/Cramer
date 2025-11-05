@@ -6,6 +6,7 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import About from './pages/About';
 
 // Protected Route component
 function ProtectedRoute({ children }) {
@@ -28,6 +29,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/about" element={<About />} />
               <Route
                 path="/dashboard"
                 element={
