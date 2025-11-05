@@ -49,10 +49,10 @@ export default function Footer() {
         <div style={{
           borderTop: '1px solid rgba(255, 255, 255, 0.2)',
           paddingTop: '2rem',
-          textAlign: 'center',
-          color: 'rgba(255, 255, 255, 0.8)'
+          textAlign: 'center'
+          // Color style moved to the <p> tag
         }}>
-          <p style={{ margin: 0 }}>
+          <p style={{ margin: 0, color: 'rgba(255, 255, 255, 0.9)' }}>
             &copy; {new Date().getFullYear()} Cramer. All rights reserved.
           </p>
         </div>
