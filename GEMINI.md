@@ -25,7 +25,7 @@ Before running the application, you need to set up the environment variables.
 **Backend (`.env` file at the root or environment variables):**
 ```
 SPRING_DATASOURCE_URL=jdbc:postgresql://db.jpocdgkrvohmjkejclpl.supabase.co:5432/postgres?sslmode=require
-SPRING_DATASOURCE_USERNAME=postgres
+SPRING_DATASource_USERNAME=postgres
 SPRING_DATASOURCE_PASSWORD=<your-database-password>
 SUPABASE_JWT_SECRET=<your-supabase-jwt-secret>
 ```

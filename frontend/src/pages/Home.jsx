@@ -56,13 +56,13 @@ export default function Home() {
                 </div>
                 <div className="search-form__row">
                   {/* These should be replaced with custom dropdown components for full styling control */}
-                  <select className="form-control">
-                    <option disabled selected hidden>IELTS Cambridge</option>
+                  <select className="form-control" defaultValue="">
+                    <option value="" disabled hidden>IELTS Cambridge</option>
                     <option>Cambridge 18</option>
                     <option>Cambridge 17</option>
                   </select>
-                  <select className="form-control">
-                    <option disabled selected hidden>Skill</option>
+                  <select className="form-control" defaultValue="">
+                    <option value="" disabled hidden>Skill</option>
                     <option>Speaking</option>
                     <option>Reading</option>
                   </select>

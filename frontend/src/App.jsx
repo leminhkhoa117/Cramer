@@ -26,7 +26,7 @@ export default function App() {
         <div className="flex flex-col min-h-screen">
           <Header />
           <main className="flex-grow">
-            <Routes>
+            <Routes future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/about" element={<About />} />

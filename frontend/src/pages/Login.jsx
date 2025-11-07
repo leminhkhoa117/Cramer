@@ -326,6 +326,7 @@ export default function Login() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={loading}
+          autoComplete="email"
         />
         <span>Email</span>
         <i></i>
@@ -338,6 +339,7 @@ export default function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
+          autoComplete={isSignUp ? 'new-password' : 'current-password'}
         />
         <span>Password</span>
         <i></i>

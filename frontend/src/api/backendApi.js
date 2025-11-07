@@ -47,7 +47,9 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error) => {
-    console.error('❌ API Error:', error.config?.method?.toUpperCase(), error.config?.url);
+    const method = (error.config?.method || 'UNKNOWN_METHOD').toUpperCase();
+    const url = error.config?.url || 'UNKNOWN_URL';
+    console.error(`❌ API Error: ${method} ${url}`);
     console.error('Error details:', {
       message: error.message,
       code: error.code,
