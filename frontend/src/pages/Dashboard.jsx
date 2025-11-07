@@ -147,37 +147,45 @@ export default function Dashboard() {
 
           {/* Glass pill */}
           <div className="goals-pill">
-            <div className="goals-group">
-              <div className="goal-targets-row">
-                {targets.length > 0 ? (
-                  targets.map((target) => (
-                    <div key={`${target.label}-${target.value}`} className="goal-card">
-                      <div className="goal-card__badge">{target.label}</div>
-                      <div className="goal-card__value">{target.value}</div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="goal-empty">Chưa có mục tiêu. Nhấn biểu tượng cây bút để đặt mục tiêu.</div>
-                )}
+            {targets.length === 0 && formattedSkills.length === 0 ? (
+              <div className="goals-pill-empty">
+                Chưa có mục tiêu hay dữ liệu kỹ năng để hiển thị.
               </div>
-
-              <div className="goal-divider">
-                <span>Điểm kỹ năng</span>
-              </div>
-            </div>
-
-            <div className="goal-skills-group">
-              {formattedSkills.length > 0 ? (
-                formattedSkills.map((skill) => (
-                  <div key={skill.label} className="goal-skill">
-                    <div className="goal-skill__name">{skill.label}</div>
-                    <div className="goal-skill__score">{skill.score}</div>
+            ) : (
+              <>
+                <div className="goals-group">
+                  <div className="goal-targets-row">
+                    {targets.length > 0 ? (
+                      targets.map((target) => (
+                        <div key={`${target.label}-${target.value}`} className="goal-card">
+                          <div className="goal-card__badge">{target.label}</div>
+                          <div className="goal-card__value">{target.value}</div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="goal-empty">Chưa có mục tiêu. Nhấn biểu tượng cây bút để đặt mục tiêu.</div>
+                    )}
                   </div>
-                ))
-              ) : (
-                <div className="goal-empty">Chưa có dữ liệu kỹ năng.</div>
-              )}
-            </div>
+
+                  <div className="goal-divider">
+                    <span>Điểm kỹ năng</span>
+                  </div>
+                </div>
+
+                <div className="goal-skills-group">
+                  {formattedSkills.length > 0 ? (
+                    formattedSkills.map((skill) => (
+                      <div key={skill.label} className="goal-skill">
+                        <div className="goal-skill__name">{skill.label}</div>
+                        <div className="goal-skill__score">{skill.score}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="goal-empty">Chưa có dữ liệu kỹ năng.</div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>

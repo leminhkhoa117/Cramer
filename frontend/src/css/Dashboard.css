@@ -58,7 +58,7 @@
 
 .dash-hero__subtitle-row {
   display: flex;
-  align-items: center;
+  align-items: baseline; /* Better for text and icon alignment */
   gap: 0.75rem;
 }
 
@@ -66,12 +66,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px; /* Reduced size */
+  height: 36px; /* Reduced size */
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.6);
   background: rgba(255, 255, 255, 0.15);
   color: #fff;
+  font-size: 18px; /* Added to control icon size */
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -113,6 +114,10 @@
   max-width: 280px;
   text-align: center;
   font-weight: 500;
+  /* Add flex properties for vertical centering */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .goal-card {
@@ -190,6 +195,18 @@
   font-weight: 700;
   font-size: clamp(2rem, 4vw, 2.8rem);
   line-height: 1;
+}
+
+/* New style for the unified empty state */
+.goals-pill-empty {
+  width: 100%;
+  padding: 2rem;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
 }
 
 /* Courses Section */
