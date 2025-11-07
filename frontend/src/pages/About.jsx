@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaGithub } from 'react-icons/fa';
 import { FiHeart, FiTarget, FiUsers } from 'react-icons/fi';
 
@@ -48,6 +49,7 @@ const AnimatedItem = ({ children, delay = 0 }) => {
 const placeholderImg = 'https://st3.depositphotos.com/6672868/13701/v/450/depositphotos_137014128-stock-illustration-user-profile-icon.jpg';
 
 const AboutPage = () => {
+  const navigate = useNavigate();
   return (
     <main className="about-page">
       {/* Section 1: Hero */}
@@ -152,7 +154,7 @@ const AboutPage = () => {
           <AnimatedItem>
             <h2 className="cta-title">Cùng đồng hành nhé?</h2>
             <p className="cta-text">Bắt đầu hành trình chinh phục IELTS của bạn ngay hôm nay.</p>
-            <button onClick={() => window.location.href = '/dashboard'} className="cta-button">
+            <button onClick={() => navigate('/dashboard')} className="cta-button">
               Bắt đầu luyện tập ngay
             </button>
           </AnimatedItem>

@@ -20,77 +20,23 @@ export const AuthProvider = ({ children }) => {
   const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-    let isInitialLoad = true;
-
-    const initializeAuth = async () => {
-      try {
-        console.log('🔐 Initializing auth...');
-        
-        // Get initial session
-        const { session, error } = await authHelpers.getSession();
-        
-        if (!mounted) return;
-        
-        if (error) {
-          console.error('Error getting session:', error);
-          setLoading(false);
-          return;
-        }
-
-        if (session?.user) {
-          console.log('✅ Found existing session for user:', session.user.id);
-          setSession(session);
-          setUser(session.user);
-          
-          // Load profile BEFORE setting loading to false
-          await loadUserProfile(session.user.id);
-        } else {
-          console.log('ℹ️ No existing session found');
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-          isInitialLoad = false;
-        }
-      }
-    };
-
-    initializeAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = authHelpers.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-
-        console.log('🔄 Auth state changed:', event, session?.user?.id);
-        
-        // Skip if this is the initial SIGNED_IN event (already handled by initializeAuth)
-        if (isInitialLoad && event === 'SIGNED_IN') {
-          console.log('⏭️ Skipping initial SIGNED_IN (already loaded)');
-          return;
-        }
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Load profile when user signs in
-          await loadUserProfile(session.user.id);
-        } else {
-          // Clear profile when user signs out
-          setProfile(null);
-        }
-      }
-    );
+    setLoading(true);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
     return () => {
-      mounted = false;
       subscription?.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadUserProfile(user.id);
+    }
+  }, [user]);
 
   const loadUserProfile = async (userId) => {
     if (!userId) {

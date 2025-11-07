@@ -140,4 +140,11 @@ export const userAnswerApi = {
   deleteAllByUser: (userId) => apiClient.delete(`/user-answers/user/${userId}`),
 };
 
+// ============================================
+// DASHBOARD APIs
+// ============================================
+export const dashboardApi = {
+  getSummary: (userId) => apiClient.get(`/dashboard/summary/${userId}`),
+};
+
 export default apiClient;

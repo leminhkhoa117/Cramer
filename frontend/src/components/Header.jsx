@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navbar, Nav, Container, Button, Dropdown } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { FaUserCircle } from 'react-icons/fa';
 
@@ -25,15 +25,15 @@ export default function Header() {
       padding: '1rem 0'
     }}>
       <Container fluid style={{ paddingLeft: '2rem', paddingRight: '2rem' }}>
-        <Navbar.Brand href="/" className="font-bold text-2xl" style={{ color: 'white', fontFamily: '"Be Vietnam Pro", sans-serif', marginLeft: 0 }}>
+        <Navbar.Brand as={Link} to="/" className="font-bold text-2xl" style={{ color: 'white', fontFamily: '"Be Vietnam Pro", sans-serif', marginLeft: 0 }}>
           Cramer
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" style={{ borderColor: 'rgba(255,255,255,0.5)' }} />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto">
-            <Nav.Link href="/" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }}>Home</Nav.Link>
-            <Nav.Link href="/courses" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }}>Courses</Nav.Link>
-            <Nav.Link href="/about" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }}>About</Nav.Link>
+            <Nav.Link as={NavLink} end to="/" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }}>Home</Nav.Link>
+            <Nav.Link as={NavLink} to="/courses" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }}>Courses</Nav.Link>
+            <Nav.Link as={NavLink} to="/about" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }}>About</Nav.Link>
             
             {user ? (
               <Dropdown align="end">
