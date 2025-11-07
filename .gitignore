@@ -43,3 +43,7 @@ coverage/
 *.swp
 *.swo
 *~
+
+.gemini/
+gha-creds-*.json
+frontend/pictures/
