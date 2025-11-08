@@ -1,7 +1,11 @@
 package com.cramer.service;
 
+import com.cramer.dto.FullSectionDTO;
+import com.cramer.dto.QuestionDTO;
 import com.cramer.entity.Section;
+import com.cramer.exception.ResourceNotFoundException;
 import com.cramer.repository.SectionRepository;
+import com.cramer.util.EntityMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Service layer for Section entity.
@@ -22,10 +27,39 @@ public class SectionService {
     private static final Logger logger = LoggerFactory.getLogger(SectionService.class);
 
     private final SectionRepository sectionRepository;
+    private final QuestionService questionService;
 
     @Autowired
-    public SectionService(SectionRepository sectionRepository) {
+    public SectionService(SectionRepository sectionRepository, QuestionService questionService) {
         this.sectionRepository = sectionRepository;
+        this.questionService = questionService;
+    }
+
+    /**
+     * Get a full section with all its questions.
+     *
+     * @param id the section ID
+     * @return DTO containing the section and its questions
+     * @throws ResourceNotFoundException if section not found
+     */
+    @Transactional(readOnly = true)
+    public FullSectionDTO getFullSectionById(Long id) {
+        logger.info("Fetching full section by ID: {}", id);
+
+        // 1. Fetch the section entity
+        Section section = sectionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Section", "id", id));
+
+        // 2. Fetch the associated questions
+        List<QuestionDTO> questions = questionService.getQuestionsBySectionId(id)
+                .stream()
+                .map(EntityMapper::toDTO)
+                .collect(Collectors.toList());
+
+        // 3. Combine them into a FullSectionDTO
+        FullSectionDTO fullSectionDTO = new FullSectionDTO(EntityMapper.toDTO(section), questions);
+
+        return fullSectionDTO;
     }
 
     /**

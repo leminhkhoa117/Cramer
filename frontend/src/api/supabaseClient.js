@@ -14,8 +14,46 @@ if (!isSupabaseConfigured) {
 const createConfigurationError = () =>
   new Error('Supabase credentials are not configured. Update frontend/.env to enable authentication features.');
 
+// Test if localStorage is available (can be blocked by browser privacy settings)
+function isLocalStorageAvailable() {
+  try {
+    const testKey = '__supabase_test__';
+    localStorage.setItem(testKey, 'test');
+    localStorage.removeItem(testKey);
+    return true;
+  } catch (e) {
+    console.warn('⚠️ localStorage is not available, falling back to in-memory storage');
+    return false;
+  }
+}
+
+// Create Supabase client with appropriate storage based on browser support
 const supabaseClient = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        // Use in-memory storage if localStorage is blocked (e.g., Edge privacy mode)
+        storage: isLocalStorageAvailable() ? undefined : {
+          getItem: (key) => {
+            return window.__supabaseMemoryStorage?.[key] || null;
+          },
+          setItem: (key, value) => {
+            if (!window.__supabaseMemoryStorage) {
+              window.__supabaseMemoryStorage = {};
+            }
+            window.__supabaseMemoryStorage[key] = value;
+          },
+          removeItem: (key) => {
+            if (window.__supabaseMemoryStorage) {
+              delete window.__supabaseMemoryStorage[key];
+            }
+          },
+        },
+        // Reduce auto-refresh to minimize issues
+        autoRefreshToken: true,
+        persistSession: isLocalStorageAvailable(),
+        detectSessionInUrl: true,
+      },
+    })
   : null;
 
 export const supabase = supabaseClient;

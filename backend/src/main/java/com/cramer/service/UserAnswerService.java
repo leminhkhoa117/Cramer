@@ -165,8 +165,14 @@ public class UserAnswerService {
         logger.info("Getting statistics for user: {}", userId);
         
         long totalAnswers = userAnswerRepository.countByUserId(userId);
+
+        // If the user has no answers, return zero stats to avoid division by zero.
+        if (totalAnswers == 0) {
+            return new UserStats(0, 0, 0, 0.0);
+        }
+
         long correctAnswers = userAnswerRepository.countCorrectAnswersByUserId(userId);
-        long incorrectAnswers = userAnswerRepository.countIncorrectAnswersByUserId(userId);
+        long incorrectAnswers = totalAnswers - correctAnswers;
         Double accuracy = calculateUserAccuracy(userId);
         
         return new UserStats(totalAnswers, correctAnswers, incorrectAnswers, accuracy);

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { FiEdit3 } from 'react-icons/fi';
 import { dashboardApi } from '../api/backendApi';
 import { useAuth } from '../contexts/AuthContext';
+import GoalModal from '../components/GoalModal'; // Import the modal
 import heroFallback from '../pictures/cambridge-ielts-17.avif';
 import '../css/Dashboard.css';
 
@@ -10,39 +11,41 @@ export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  
+  // Track the last profile ID we fetched for to avoid unnecessary refetches
+  const [lastFetchedProfileId, setLastFetchedProfileId] = useState(null);
 
+  // Use useEffect directly instead of useCallback to avoid dependency issues
   useEffect(() => {
-    if (!profile?.id) {
-      return;
-    }
-
-    let cancelled = false;
     const fetchSummary = async () => {
+      if (!profile?.id) {
+        return;
+      }
+      
+      // Don't fetch if we already have data for this profile
+      if (profile.id === lastFetchedProfileId) {
+        console.log('📊 Dashboard data already loaded for this user, skipping fetch');
+        return;
+      }
+      
       try {
+        console.log('📥 Fetching dashboard summary for:', profile.id);
         setLoading(true);
         const response = await dashboardApi.getSummary(profile.id);
-        if (!cancelled) {
-          setSummary(response.data);
-          setError(null);
-        }
+        setSummary(response.data);
+        setLastFetchedProfileId(profile.id);
+        setError(null);
       } catch (err) {
         console.error('Failed to load dashboard summary:', err);
-        if (!cancelled) {
-          setError('Không thể tải dữ liệu dashboard.');
-        }
+        setError('Không thể tải dữ liệu dashboard.');
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
-
+    
     fetchSummary();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [profile?.id]);
+  }, [profile?.id, lastFetchedProfileId]); // Only depend on profile.id and lastFetchedProfileId
 
   const targets = summary?.goals ?? [];
   const skills = summary?.skillSummary ?? [];
@@ -52,10 +55,10 @@ export default function Dashboard() {
     const username = summary?.profile?.username || profile?.username || 'bạn';
     return {
       welcomeMessage: `Chào mừng, ${username}!`,
-      tagline: targets.length > 0 ? 'Mục tiêu của tôi' : 'Mục tiêu',
+      tagline: 'Mục tiêu của tôi', // Keep it consistent
       backgroundImage: heroFallback,
     };
-  }, [profile?.username, summary?.profile?.username, targets.length]);
+  }, [profile?.username, summary?.profile?.username]);
 
   const formattedSkills = useMemo(() => {
     if (!skills.length) return [];
@@ -138,11 +141,9 @@ export default function Dashboard() {
 
           <div className="dash-hero__subtitle-row">
             <h2 className="dash-hero__subtitle">{heroData.tagline}</h2>
-            {targets.length === 0 && (
-              <button type="button" className="goal-edit-btn" aria-label="Đặt mục tiêu">
-                <FiEdit3 aria-hidden="true" />
-              </button>
-            )}
+            <button type="button" className="goal-edit-btn" aria-label="Chỉnh sửa mục tiêu" onClick={() => setIsGoalModalOpen(true)}>
+              <FiEdit3 aria-hidden="true" />
+            </button>
           </div>
 
           {/* Glass pill */}
@@ -241,6 +242,16 @@ export default function Dashboard() {
           )}
         </div>
       </section>
+
+      <GoalModal
+        isOpen={isGoalModalOpen}
+        onClose={() => setIsGoalModalOpen(false)}
+        currentTarget={summary?.target}
+        onSave={() => {
+          setIsGoalModalOpen(false);
+          fetchSummary();
+        }}
+      />
     </div>
   );
 }

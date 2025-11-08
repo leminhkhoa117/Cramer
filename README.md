@@ -36,6 +36,16 @@ Cramer is an English practice platform that delivers curated IELTS-style tests i
 3. Set the required Supabase environment variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, etc.) when beginning frontend or integration work.
 4. Follow future instructions (to be documented) for running the application locally once the client is scaffolded.
 
+### Browser Compatibility
+
+**Recommended browsers:**
+- ✅ Google Chrome
+- ✅ Mozilla Firefox  
+- ✅ Zen Browser
+- ⚠️ Microsoft Edge (requires cookie settings adjustment - see [EDGE_BROWSER_FIX.md](EDGE_BROWSER_FIX.md))
+
+**Note:** If you see "Initializing Application..." stuck on Edge, please follow the [Edge Browser Fix Guide](EDGE_BROWSER_FIX.md).
+
 ## Roadmap
 
 - Finalize database constraints, indexes, and Row Level Security policies.

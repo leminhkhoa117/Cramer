@@ -1,5 +1,6 @@
 package com.cramer.controller;
 
+import com.cramer.dto.FullSectionDTO;
 import com.cramer.dto.SectionDTO;
 import com.cramer.entity.Section;
 import com.cramer.exception.ResourceNotFoundException;
@@ -45,6 +46,17 @@ public class SectionController {
                 .map(EntityMapper::toDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(sections);
+    }
+
+    /**
+     * Get a full section, including its questions.
+     * GET /api/sections/{id}/full
+     */
+    @GetMapping("/{id}/full")
+    public ResponseEntity<FullSectionDTO> getFullSectionById(@PathVariable Long id) {
+        logger.info("REST request to get full section by ID: {}", id);
+        FullSectionDTO fullSection = sectionService.getFullSectionById(id);
+        return ResponseEntity.ok(fullSection);
     }
 
     /**

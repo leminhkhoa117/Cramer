@@ -53,16 +53,13 @@
             <version>2.3.0</version>
         </dependency>
         
-        <!-- Spring Security for authentication - TEMPORARILY DISABLED -->
-        <!--
+        <!-- Spring Security for authentication -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
-        -->
         
-        <!-- JWT for token handling - TEMPORARILY DISABLED -->
-        <!--
+        <!-- JWT for token handling -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
@@ -80,7 +77,19 @@
             <version>0.12.5</version>
             <scope>runtime</scope>
         </dependency>
-        -->
+
+        <!-- Spring Security OAuth2 for JWT processing in controllers -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+
+        <!-- Lombok for boilerplate code reduction -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>
@@ -96,6 +105,14 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
             </plugin>
         </plugins>
     </build>

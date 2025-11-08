@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react';
 import { supabase, authHelpers } from '../api/supabaseClient';
-import { profileApi } from '../api/backendApi';
+import { profileApi, setupApiClient } from '../api/backendApi';
 
 const AuthContext = createContext({});
 
@@ -18,29 +18,93 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Track the last user ID we loaded profile for to prevent duplicate loads
+  const lastLoadedUserIdRef = useRef(null);
 
   useEffect(() => {
     setLoading(true);
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    
+    // Try to set up auth state listener with error handling for browser security issues
+    try {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('🔐 Auth state change:', event);
+        
+        // On tab focus, Supabase client might refresh the token, triggering this.
+        // We only want to trigger a profile reload if the user actually changes (signs in/out).
+        // The 'TOKEN_REFRESHED' event should not cause a full user state update.
+        if (event !== 'TOKEN_REFRESHED') {
+          setUser(session?.user ?? null);
+          // Update session for non-refresh events (login, logout, etc.)
+          setSession(session);
+        } else {
+          // For TOKEN_REFRESHED, only update if session actually changed
+          // This prevents unnecessary re-renders and API calls
+          setSession(prevSession => {
+            // Only update if the access token actually changed
+            if (prevSession?.access_token !== session?.access_token) {
+              console.log('🔄 Token refreshed, updating session');
+              return session;
+            }
+            return prevSession;
+          });
+        }
+        
+        setLoading(false);
+      });
 
-    return () => {
-      subscription?.unsubscribe();
-    };
+      return () => {
+        subscription?.unsubscribe();
+      };
+    } catch (error) {
+      console.error('❌ Failed to initialize auth listener:', error);
+      
+      // If we get a SecurityError (Edge/browser blocking storage), 
+      // show a helpful error message
+      if (error.name === 'SecurityError') {
+        console.error('🔒 Browser security settings are blocking authentication.');
+        console.error('💡 Please enable cookies/storage for this site in your browser settings.');
+        console.error('💡 Or try using a different browser (Chrome, Firefox).');
+      }
+      
+      setLoading(false);
+      setError('Trình duyệt đang chặn xác thực. Vui lòng bật cookies hoặc thử trình duyệt khác.');
+    }
   }, []);
 
+  // Set up the API client with the token whenever the session changes
+  // Use access_token as dependency to avoid unnecessary updates
   useEffect(() => {
-    if (user) {
-      loadUserProfile(user.id);
+    if (session?.access_token) {
+      setupApiClient(() => session.access_token);
     }
-  }, [user]);
+  }, [session?.access_token]);
+
+  useEffect(() => {
+    const userId = user?.id;
+    
+    // Only load profile if:
+    // 1. We have a user ID
+    // 2. We haven't loaded this user's profile yet
+    if (userId && userId !== lastLoadedUserIdRef.current) {
+      loadUserProfile(userId);
+    } else if (!userId) {
+      // User logged out, clear profile
+      setProfile(null);
+      lastLoadedUserIdRef.current = null;
+    }
+  }, [user?.id]); // Only depend on user.id, not the entire user object
 
   const loadUserProfile = async (userId) => {
     if (!userId) {
       console.error('❌ loadUserProfile called without userId');
+      return;
+    }
+    
+    // Check if we already loaded this user's profile
+    if (userId === lastLoadedUserIdRef.current && profile !== null) {
+      console.log('✅ Profile already loaded for user:', userId);
       return;
     }
 
@@ -53,18 +117,18 @@ export const AuthProvider = ({ children }) => {
       if (response?.data) {
         console.log('✅ Profile loaded successfully:', response.data.username);
         setProfile(response.data);
+        lastLoadedUserIdRef.current = userId; // Mark as loaded
       } else {
         console.warn('⚠️ Empty response from backend');
         setProfile(null);
       }
     } catch (error) {
       console.error('❌ Failed to load profile:', error);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        status: error.response?.status,
-        data: error.response?.data
-      });
+      // Only set profile to null if there wasn't one to begin with.
+      // A failed background refresh shouldn't clear the user's existing data.
+      if (!profile) {
+        setProfile(null);
+      }
       
       // If profile doesn't exist (404), try to create it
       if (error.response?.status === 404) {
@@ -72,17 +136,13 @@ export const AuthProvider = ({ children }) => {
         await createProfileForUser(userId);
       } else if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
         console.error('🔌 Network error or timeout - backend might be down or not responding');
-        setProfile(null);
       } else if (error.response?.status >= 500) {
         console.error('🔥 Server error');
-        setProfile(null);
       } else {
         console.error('⚠️ Unknown error type');
-        setProfile(null);
       }
     } finally {
       setProfileLoading(false);
-      console.log('🏁 Profile loading finished. Profile set:', !!profile);
     }
   };
 
@@ -112,6 +172,7 @@ export const AuthProvider = ({ children }) => {
       if (response?.data) {
         console.log('✅ Profile created successfully:', response.data);
         setProfile(response.data);
+        lastLoadedUserIdRef.current = userId; // Mark as loaded
       }
     } catch (createError) {
       console.error('❌ Failed to create profile:', createError);
@@ -131,6 +192,7 @@ export const AuthProvider = ({ children }) => {
           if (retryResponse?.data) {
             console.log('✅ Profile created with timestamp username:', retryResponse.data);
             setProfile(retryResponse.data);
+            lastLoadedUserIdRef.current = userId; // Mark as loaded
           }
         } catch (retryError) {
           console.error('❌ Failed to create profile even with timestamp:', retryError);
@@ -212,16 +274,11 @@ export const AuthProvider = ({ children }) => {
         return { data: null, error };
       }
       
-      // If login successful, update state and load profile
+      // If login successful, update state. The useEffect hooks will handle the rest.
       if (data?.session && data?.user) {
         console.log('✅ Sign in successful for user:', data.user.id);
         setSession(data.session);
         setUser(data.user);
-        
-        // Load profile and WAIT for it
-        await loadUserProfile(data.user.id);
-        
-        console.log('✅ Profile loaded after sign in');
       }
       
       return { data, error: null };
@@ -237,6 +294,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setProfile(null);
       setSession(null);
+      lastLoadedUserIdRef.current = null; // Reset the loaded user ID ref
       return { error };
     } catch (error) {
       return { error };
@@ -255,12 +313,13 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     profile,
     session,
     loading,
     profileLoading,
+    error,
     signUp,
     signIn,
     signOut,
@@ -269,7 +328,22 @@ export const AuthProvider = ({ children }) => {
     signInWithGoogle,
     signInWithFacebook,
     loadUserProfile, // Expose for manual reload if needed
-  };
+  }), [
+    user,
+    profile,
+    session,
+    loading,
+    error,
+    profileLoading,
+    signUp,
+    signIn,
+    signOut,
+    verifyOtp,
+    resendOtp,
+    signInWithGoogle,
+    signInWithFacebook,
+    loadUserProfile,
+  ]);
 
   return (
     <AuthContext.Provider value={value}>

@@ -1,5 +1,6 @@
 package com.cramer.service;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -20,6 +21,7 @@ import com.cramer.dto.ProfileDTO;
 import com.cramer.dto.RecentActivityDTO;
 import com.cramer.dto.SectionDTO;
 import com.cramer.dto.SkillSummaryDTO;
+import com.cramer.dto.TargetDTO;
 import com.cramer.dto.UserStatsDTO;
 import com.cramer.entity.Question;
 import com.cramer.entity.Section;
@@ -28,6 +30,7 @@ import com.cramer.exception.ResourceNotFoundException;
 import com.cramer.repository.ProfileRepository;
 import com.cramer.repository.QuestionRepository;
 import com.cramer.repository.SectionRepository;
+import com.cramer.repository.TargetRepository;
 import com.cramer.repository.UserAnswerRepository;
 import com.cramer.util.EntityMapper;
 
@@ -39,16 +42,20 @@ public class DashboardService {
     private final UserAnswerRepository userAnswerRepository;
     private final UserAnswerService userAnswerService;
     private final QuestionRepository questionRepository;
+    private final TargetRepository targetRepository;
+
     public DashboardService(ProfileRepository profileRepository,
                             SectionRepository sectionRepository,
                             UserAnswerRepository userAnswerRepository,
                             UserAnswerService userAnswerService,
-                            QuestionRepository questionRepository) {
+                            QuestionRepository questionRepository,
+                            TargetRepository targetRepository) {
         this.profileRepository= profileRepository;
         this.sectionRepository= sectionRepository;
         this.userAnswerRepository=userAnswerRepository;
         this.userAnswerService=userAnswerService;
         this.questionRepository = questionRepository;
+        this.targetRepository = targetRepository;
     }
 
     public DashboardSummaryDTO buildDashboardSummary(UUID userId) {
@@ -72,6 +79,11 @@ public class DashboardService {
 
         AggregatedDashboardData aggregates = aggregateUserProgress(userAnswers);
 
+        // Fetch target and convert to DTO
+        TargetDTO targetDto = targetRepository.findByUserId(userId)
+                .map(EntityMapper::toDTO)
+                .orElse(null);
+
         DashboardSummaryDTO dto = new DashboardSummaryDTO();
         dto.setProfile(profile);
         dto.setStats(stats);
@@ -79,7 +91,19 @@ public class DashboardService {
         dto.setEnrolledSections(aggregates.sections());
         dto.setSkillSummary(aggregates.skillSummaries());
         dto.setCourseProgress(aggregates.courseProgress());
-        dto.setGoals(new ArrayList<>()); // placeholder until goal feature is defined
+        dto.setTarget(targetDto); // Set the target DTO
+
+        // Dynamically build goals list from target DTO
+        List<com.cramer.dto.DashboardGoalDTO> goals = new ArrayList<>();
+        if (targetDto != null) {
+            LocalDate examDate = targetDto.getExamDate();
+            if (targetDto.getListening() != null) goals.add(new com.cramer.dto.DashboardGoalDTO("Listening", String.valueOf(targetDto.getListening()), examDate));
+            if (targetDto.getReading() != null) goals.add(new com.cramer.dto.DashboardGoalDTO("Reading", String.valueOf(targetDto.getReading()), examDate));
+            if (targetDto.getWriting() != null) goals.add(new com.cramer.dto.DashboardGoalDTO("Writing", String.valueOf(targetDto.getWriting()), examDate));
+            if (targetDto.getSpeaking() != null) goals.add(new com.cramer.dto.DashboardGoalDTO("Speaking", String.valueOf(targetDto.getSpeaking()), examDate));
+        }
+        dto.setGoals(goals);
+
         return dto;
     }
 
@@ -108,8 +132,9 @@ public class DashboardService {
         Map<Long, Section> sections = sectionRepository.findAllById(sectionIdIterable).stream()
             .collect(Collectors.toMap(Section::getId, Function.identity()));
 
-        Map<Long, Long> totalQuestionsPerSection = sectionIds.stream()
-            .collect(Collectors.toMap(Function.identity(), questionRepository::countBySectionId));
+        // Efficiently count questions per section from in-memory data
+        Map<Long, Long> totalQuestionsPerSection = questions.values().stream()
+                .collect(Collectors.groupingBy(Question::getSectionId, Collectors.counting()));
 
         Map<CourseKey, CourseAggregate> courseAggregates = new LinkedHashMap<>();
         Map<String, SkillAggregate> skillAggregates = new LinkedHashMap<>();
@@ -121,6 +146,12 @@ public class DashboardService {
             }
             Section section = sections.get(question.getSectionId());
             if (section == null) {
+                return;
+            }
+
+            // More robust check to ensure all key parts for aggregation are present
+            if (section.getSkill() == null || section.getExamSource() == null || section.getTestNumber() == null) {
+                // Optionally log this data inconsistency
                 return;
             }
 

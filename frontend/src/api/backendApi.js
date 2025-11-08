@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { supabase } from './supabaseClient';
 
 // Base URL from environment or default to localhost
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
@@ -13,25 +12,27 @@ const apiClient = axios.create({
   timeout: 10000, // 10 second timeout
 });
 
-// Request interceptor to add JWT token from Supabase
-apiClient.interceptors.request.use(
-  async (config) => {
-    console.log('🌐 API Request:', config.method?.toUpperCase(), config.url);
-    
-    // Get current session from Supabase
-    if (supabase?.auth) {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+// A function that will hold the latest token provider function.
+// It's defined in the module scope.
+let getAuthToken = () => null;
 
-      if (session?.access_token) {
-        config.headers.Authorization = `Bearer ${session.access_token}`;
-        console.log('🔑 JWT token attached');
-      } else {
-        console.warn('⚠️ No JWT token available');
-      }
+/**
+ * Sets up the token provider function. This should be called from the AuthContext
+ * whenever the session changes.
+ * @param {() => string | null} provider A function that returns the access token.
+ */
+export const setupApiClient = (provider) => {
+  getAuthToken = provider;
+};
+
+// Add the request interceptor ONCE.
+// It will use the `getAuthToken` function to get the latest token.
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = getAuthToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    
     return config;
   },
   (error) => {
@@ -84,9 +85,26 @@ export const profileApi = {
 // ============================================
 // SECTION APIs
 // ============================================
+
+/**
+ * Fetches a full section including its questions.
+ * @param {number|string} id The ID of the section.
+ * @returns {Promise<object>} The full section data.
+ */
+export const getFullSection = async (id) => {
+  try {
+    const response = await apiClient.get(`/sections/${id}/full`);
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch full section for id ${id}:`, error);
+    throw error;
+  }
+};
+
 export const sectionApi = {
   getAll: () => apiClient.get('/sections'),
   getById: (id) => apiClient.get(`/sections/${id}`),
+  getFullById: getFullSection, // Add the new function here
   getByExam: (examSource) => apiClient.get(`/sections/exam/${examSource}`),
   getByExamAndTest: (examSource, testNumber) => 
     apiClient.get(`/sections/exam/${examSource}/test/${testNumber}`),
@@ -147,6 +165,14 @@ export const userAnswerApi = {
 // ============================================
 export const dashboardApi = {
   getSummary: (userId) => apiClient.get(`/dashboard/summary/${userId}`),
+};
+
+// ============================================
+// TARGET APIs
+// ============================================
+export const targetApi = {
+  getMyTarget: () => apiClient.get('/targets/me'),
+  saveMyTarget: (targetData) => apiClient.put('/targets/me', targetData),
 };
 
 export default apiClient;

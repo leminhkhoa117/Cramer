@@ -80,4 +80,14 @@ public class DashboardSummaryDTO {
     public void setGoals(List<DashboardGoalDTO> goals) {
         this.goals = goals;
     }
+
+    private TargetDTO target;
+
+    public TargetDTO getTarget() {
+        return target;
+    }
+
+    public void setTarget(TargetDTO target) {
+        this.target = target;
+    }
 }

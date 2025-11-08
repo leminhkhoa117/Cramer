@@ -129,16 +129,45 @@ public class EntityMapper {
         return userAnswer;
     }
 
-    /**
-     * Convert UserStats to DTO.
-     */
     public static UserStatsDTO toDTO(UserAnswerService.UserStats stats) {
-        if (stats == null) return null;
         return new UserStatsDTO(
-                stats.getTotalAnswers(),
-                stats.getCorrectAnswers(),
-                stats.getIncorrectAnswers(),
-                stats.getAccuracy()
+            stats.getTotalAnswers(),
+            stats.getCorrectAnswers(),
+            stats.getIncorrectAnswers(),
+            stats.getAccuracy()
         );
+    }
+
+    // Mappings for Target
+    public static TargetDTO toDTO(Target target) {
+        if (target == null) {
+            return null;
+        }
+        TargetDTO dto = new TargetDTO();
+        dto.setId(target.getId());
+        dto.setUserId(target.getUserId());
+        dto.setExamName(target.getExamName());
+        dto.setExamDate(target.getExamDate());
+        dto.setListening(target.getListening());
+        dto.setReading(target.getReading());
+        dto.setWriting(target.getWriting());
+        dto.setSpeaking(target.getSpeaking());
+        return dto;
+    }
+
+    public static Target toEntity(TargetDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+        Target target = new Target();
+        // We don't map ID from DTO to prevent client-side ID generation
+        target.setUserId(dto.getUserId());
+        target.setExamName(dto.getExamName());
+        target.setExamDate(dto.getExamDate());
+        target.setListening(dto.getListening());
+        target.setReading(dto.getReading());
+        target.setWriting(dto.getWriting());
+        target.setSpeaking(dto.getSpeaking());
+        return target;
     }
 }
