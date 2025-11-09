@@ -170,4 +170,16 @@ public class EntityMapper {
         target.setSpeaking(dto.getSpeaking());
         return target;
     }
+
+    public static void updateTargetFromDTO(Target target, TargetDTO dto) {
+        if (dto == null || target == null) {
+            return;
+        }
+        target.setExamName(dto.getExamName());
+        target.setExamDate(dto.getExamDate());
+        target.setListening(dto.getListening());
+        target.setReading(dto.getReading());
+        target.setWriting(dto.getWriting());
+        target.setSpeaking(dto.getSpeaking());
+    }
 }

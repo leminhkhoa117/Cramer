@@ -29,13 +29,8 @@ public class TargetService {
 
         Target target = targetRepository.findByUserId(userId)
                 .map(existingTarget -> {
-                    // Update existing target
-                    existingTarget.setExamName(targetDTO.getExamName());
-                    existingTarget.setExamDate(targetDTO.getExamDate());
-                    existingTarget.setListening(targetDTO.getListening());
-                    existingTarget.setReading(targetDTO.getReading());
-                    existingTarget.setWriting(targetDTO.getWriting());
-                    existingTarget.setSpeaking(targetDTO.getSpeaking());
+                    // Update existing target using the new mapper method
+                    EntityMapper.updateTargetFromDTO(existingTarget, targetDTO);
                     return existingTarget;
                 })
                 .orElseGet(() -> {
