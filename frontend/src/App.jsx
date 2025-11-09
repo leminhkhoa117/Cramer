@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import About from './pages/About';
 import TestPage from './pages/TestPage';
+import Courses from './pages/Courses';
 
 // This component waits for the initial auth loading to complete
 function AuthInitializer({ children }) {
@@ -82,6 +83,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <TestPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/courses"
+            element={
+              <ProtectedRoute>
+                <Courses />
               </ProtectedRoute>
             }
           />

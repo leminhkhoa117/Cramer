@@ -108,32 +108,32 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
       case 'enterEmail':
         return (
           <form className="login-form" onSubmit={handleEmailSubmit}>
-            <h2>Quên mật khẩu</h2>
+            <h2>Reset Password</h2>
             {error && <div style={{ background: '#fee', color: '#c33', padding: '10px', borderRadius: '4px', marginBottom: '15px', textAlign: 'center' }}>{error}</div>}
             <div className="input-box">
               <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} autoComplete="email" />
               <span>Email</span><i></i>
             </div>
             <div className="links">
-              <a href="#" onClick={(e) => { e.preventDefault(); onSwitchToLogin(); }}>← Quay lại Đăng nhập</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); onSwitchToLogin(); }}>← Back to login</a>
             </div>
-            <input type="submit" value={loading ? '...' : 'Xác nhận Email'} disabled={loading} />
+            <input type="submit" value={loading ? '...' : 'Confirm Email'} disabled={loading} />
           </form>
         );
 
       case 'enterPassword':
         return (
           <form className="login-form" onSubmit={handlePasswordSubmit}>
-            <h2>Tạo mật khẩu mới</h2>
+            <h2>Create new password</h2>
             {success && <div style={{ background: '#efe', color: '#3c3', padding: '10px', borderRadius: '4px', marginBottom: '15px', textAlign: 'center' }}>{success}</div>}
             {error && <div style={{ background: '#fee', color: '#c33', padding: '10px', borderRadius: '4px', marginBottom: '15px', textAlign: 'center' }}>{error}</div>}
             <div className="input-box">
               <input type="password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={loading} />
-              <span>Mật khẩu mới</span><i></i>
+              <span>New password</span><i></i>
             </div>
             <div className="input-box">
               <input type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={loading} />
-              <span>Xác nhận mật khẩu</span><i></i>
+              <span>Confirm password</span><i></i>
             </div>
             <div className="links">
               <a href="#" onClick={(e) => { e.preventDefault(); onSwitchToLogin(); }}>Hủy</a>
