@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { FiEdit3 } from 'react-icons/fi';
 import { dashboardApi } from '../api/backendApi';
 import { useAuth } from '../contexts/AuthContext';
@@ -17,37 +17,111 @@ export default function Dashboard() {
   const [lastFetchedProfileId, setLastFetchedProfileId] = useState(null);
 
   // Use useEffect directly instead of useCallback to avoid dependency issues
-  useEffect(() => {
-    const fetchSummary = async () => {
-      if (!profile?.id) {
-        return;
-      }
-      
-      // Don't fetch if we already have data for this profile
-      if (profile.id === lastFetchedProfileId) {
-        console.log('📊 Dashboard data already loaded for this user, skipping fetch');
-        return;
-      }
-      
-      try {
-        console.log('📥 Fetching dashboard summary for:', profile.id);
-        setLoading(true);
-        const response = await dashboardApi.getSummary(profile.id);
-        setSummary(response.data);
-        setLastFetchedProfileId(profile.id);
-        setError(null);
-      } catch (err) {
-        console.error('Failed to load dashboard summary:', err);
-        setError('Không thể tải dữ liệu dashboard.');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchDashboardData = async () => {
+    if (!profile?.id) {
+      return;
+    }
     
-    fetchSummary();
+    // Don't fetch if we already have data for this profile
+    if (profile.id === lastFetchedProfileId) {
+      console.log('📊 Dashboard data already loaded for this user, skipping fetch');
+      return;
+    }
+    
+    try {
+      console.log('📥 Fetching dashboard summary for:', profile.id);
+      setLoading(true);
+      const response = await dashboardApi.getSummary(profile.id);
+      setSummary(response.data);
+      setLastFetchedProfileId(profile.id);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to load dashboard summary:', err);
+      setError('Không thể tải dữ liệu dashboard.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
   }, [profile?.id, lastFetchedProfileId]); // Only depend on profile.id and lastFetchedProfileId
 
-  const targets = summary?.goals ?? [];
+  const { overallTarget, skillTargets } = useMemo(() => {
+    if (!summary?.target) {
+      return { overallTarget: null, skillTargets: [] };
+    }
+
+    const skillMeta = {
+      listening: { label: 'Listening', shortLabel: 'Nghe' },
+      speaking: { label: 'Speaking', shortLabel: 'Nói' },
+      reading: { label: 'Reading', shortLabel: 'Đọc' },
+      writing: { label: 'Writing', shortLabel: 'Viết' },
+    };
+
+    const overallScore = summary.target.overall ?? (() => {
+      const scores = [
+        summary.target.listening,
+        summary.target.reading,
+        summary.target.writing,
+        summary.target.speaking,
+      ].filter((s) => s !== null && s !== undefined);
+
+      if (scores.length === 0) return null;
+
+      const sum = scores.reduce((acc, score) => acc + score, 0);
+      const avg = sum / scores.length;
+      return Math.round(avg * 2) / 2;
+    })();
+
+    const allTargets = {
+      ...summary.target,
+      overall: overallScore,
+    };
+
+    let overall = null;
+    if (allTargets.overall !== null && allTargets.overall !== undefined) {
+      overall = {
+        label: 'Overall',
+        value: allTargets.overall.toFixed(1),
+      };
+    }
+
+    const skillsOrder = ['listening', 'speaking', 'reading', 'writing'];
+    const sTargets = skillsOrder
+      .map((key) => {
+        const value = allTargets[key];
+        const meta = skillMeta[key];
+        if (meta && value !== null && value !== undefined) {
+          return {
+            id: key,
+            label: meta.label,
+            shortLabel: meta.shortLabel,
+            value: value.toFixed(1),
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    return { overallTarget: overall, skillTargets: sTargets };
+  }, [summary?.target]);
+
+  const targetExamName = summary?.target?.examName || 'Chưa đặt';
+  const examDateDisplay = useMemo(() => {
+    const isoDate = summary?.target?.examDate;
+    if (!isoDate) return 'Chưa đặt';
+    const parsed = new Date(isoDate);
+    if (Number.isNaN(parsed.getTime())) {
+      return isoDate;
+    }
+    return parsed.toLocaleDateString('vi-VN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }, [summary?.target?.examDate]);
+
   const skills = summary?.skillSummary ?? [];
   const courses = summary?.courseProgress ?? [];
 
@@ -148,43 +222,57 @@ export default function Dashboard() {
 
           {/* Glass pill */}
           <div className="goals-pill">
-            {targets.length === 0 && formattedSkills.length === 0 ? (
+            {(!overallTarget && skillTargets.length === 0) && formattedSkills.length === 0 ? (
               <div className="goals-pill-empty">
                 Chưa có mục tiêu hay dữ liệu kỹ năng để hiển thị.
               </div>
             ) : (
               <>
                 <div className="goals-group">
-                  <div className="goal-targets-row">
-                    {targets.length > 0 ? (
-                      targets.map((target) => (
-                        <div key={`${target.label}-${target.value}`} className="goal-card">
-                          <div className="goal-card__badge">{target.label}</div>
+                  <div className="goal-meta-row">
+                    <div className="goal-meta-card">
+                      <p className="goal-meta-card__label">Kì thi sắp tới</p>
+                      <p className="goal-meta-card__value">{targetExamName}</p>
+                    </div>
+                    <div className="goal-meta-card">
+                      <p className="goal-meta-card__label">Ngày thi</p>
+                      <p className="goal-meta-card__value">{examDateDisplay}</p>
+                    </div>
+                    <div className="goal-meta-card goal-meta-card--overall">
+                      <p className="goal-meta-card__label">Điểm kỹ năng</p>
+                      <p className="goal-meta-card__value goal-meta-card__value--badge">
+                        {overallTarget?.value ?? '--'}
+                      </p>
+                      <span className="goal-meta-card__hint">Band tổng kỳ vọng</span>
+                    </div>
+                  </div>
+
+                  {skillTargets.length > 0 ? (
+                    <div className="goal-targets-grid">
+                      {skillTargets.map((target) => (
+                        <div key={target.id} className="goal-card">
+                          <div className="goal-card__badge">{target.shortLabel || target.label}</div>
                           <div className="goal-card__value">{target.value}</div>
                         </div>
-                      ))
-                    ) : (
-                      <div className="goal-empty">Chưa có mục tiêu. Nhấn biểu tượng cây bút để đặt mục tiêu.</div>
-                    )}
-                  </div>
-
-                  <div className="goal-divider">
-                    <span>Điểm kỹ năng</span>
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="goal-empty goal-empty--inline">
+                      Chưa có điểm mục tiêu. Nhấn biểu tượng cây bút để thiết lập.
+                    </div>
+                  )}
                 </div>
 
-                <div className="goal-skills-group">
-                  {formattedSkills.length > 0 ? (
-                    formattedSkills.map((skill) => (
+                {formattedSkills.length > 0 && (
+                  <div className="goal-skills-group">
+                    {formattedSkills.map((skill) => (
                       <div key={skill.label} className="goal-skill">
                         <div className="goal-skill__name">{skill.label}</div>
                         <div className="goal-skill__score">{skill.score}</div>
                       </div>
-                    ))
-                  ) : (
-                    <div className="goal-empty">Chưa có dữ liệu kỹ năng.</div>
-                  )}
-                </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -249,9 +337,14 @@ export default function Dashboard() {
         currentTarget={summary?.target}
         onSave={() => {
           setIsGoalModalOpen(false);
-          fetchSummary();
+          // Invalidate the cache and re-fetch
+          setLastFetchedProfileId(null);
+          fetchDashboardData();
         }}
       />
     </div>
   );
 }
+
+
+
