@@ -69,6 +69,13 @@ apiClient.interceptors.response.use(
 );
 
 // ============================================
+// AUTH APIs
+// ============================================
+export const authApi = {
+  checkEmail: (email) => apiClient.post('/auth/check-email', { email }),
+};
+
+// ============================================
 // PROFILE APIs
 // ============================================
 export const profileApi = {

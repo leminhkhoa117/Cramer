@@ -117,6 +117,53 @@ export const authHelpers = {
     return { data, error };
   },
 
+  // =============================
+  // Password reset (OTP) helpers
+  // =============================
+  // Request an OTP for password recovery. This relies on Supabase being
+  // configured to send a recovery OTP (email template added in Supabase).
+  requestPasswordReset: async (email) => {
+    if (!supabase) {
+      return { data: null, error: createConfigurationError() };
+    }
+    // This function triggers the password recovery email. If you have configured
+    // an OTP-based recovery email template in Supabase, this will send the OTP.
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+    return { data, error };
+  },
+
+  // Verify recovery OTP. Supabase supports verifyOtp with type: 'recovery'.
+  verifyRecoveryOtp: async (email, token) => {
+    if (!supabase) {
+      return { data: null, error: createConfigurationError() };
+    }
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'recovery',
+      });
+      return { data, error };
+    } catch (err) {
+      return { data: null, error: err };
+    }
+  },
+
+  // Update current user's password. This requires a valid session (verifyRecoveryOtp
+  // may return a session/token depending on Supabase configuration). If verify step
+  // did not create a session, the user may need to follow a link-based flow.
+  updatePassword: async (newPassword) => {
+    if (!supabase) {
+      return { data: null, error: createConfigurationError() };
+    }
+    try {
+      const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+      return { data, error };
+    } catch (err) {
+      return { data: null, error: err };
+    }
+  },
+
   // Sign in existing user
   signIn: async (email, password) => {
     if (!supabase) {
