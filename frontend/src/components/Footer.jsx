@@ -10,7 +10,13 @@ export default function Footer() {
         <div className="footer-content">
           {/* Left Section: Brand */}
           <div className="footer-brand">
-            <Link to="/" className="footer-brand__logo">Cramer</Link>
+            <Link to="/" className="footer-brand__logo">
+              <img 
+                src="/pictures/Icon_Black - Edited.png" 
+                alt="Cramer Logo" 
+                style={{ height: '40px', objectFit: 'contain' }}
+              />
+            </Link>
             <p className="footer-brand__tagline">Góc nhỏ thân thiện để luyện thi IELTS.</p>
           </div>
 

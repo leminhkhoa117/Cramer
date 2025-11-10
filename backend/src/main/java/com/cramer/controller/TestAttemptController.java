@@ -57,9 +57,26 @@ public class TestAttemptController {
 
     @PostMapping("/{id}/submit")
     public ResponseEntity<TestResultDTO> submitAttempt(@PathVariable Long id, @RequestBody AnswerSubmissionDTO submissionDTO, Authentication authentication) {
-        String userIdStr = authentication.getName();
-        UUID userId = UUID.fromString(userIdStr);
-        TestResultDTO result = testAttemptService.submitAttempt(id, submissionDTO.getAnswers(), userId);
-        return ResponseEntity.ok(result);
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptController.class);
+        logger.info("📥 POST /api/test-attempts/{}/submit - Received request", id);
+        
+        try {
+            if (authentication == null || authentication.getName() == null) {
+                logger.error("❌ No authentication provided for submit");
+                throw new IllegalArgumentException("Authentication required");
+            }
+            
+            String userIdStr = authentication.getName();
+            UUID userId = UUID.fromString(userIdStr);
+            logger.info("🔐 User authenticated: userId={}, answersCount={}", userId, 
+                        submissionDTO != null && submissionDTO.getAnswers() != null ? submissionDTO.getAnswers().size() : 0);
+            
+            TestResultDTO result = testAttemptService.submitAttempt(id, submissionDTO.getAnswers(), userId);
+            logger.info("✅ Test submitted successfully: score={}/{}", result.getScore(), result.getTotalQuestions());
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.error("❌ Error submitting test attempt: attemptId={}, error={}", id, e.getMessage(), e);
+            throw e;
+        }
     }
 }

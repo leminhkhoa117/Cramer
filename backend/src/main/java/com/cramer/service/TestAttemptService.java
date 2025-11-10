@@ -9,6 +9,8 @@ import com.cramer.repository.QuestionRepository;
 import com.cramer.repository.TestAttemptRepository;
 import com.cramer.repository.UserAnswerRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,9 @@ public class TestAttemptService {
     private final TestAttemptRepository testAttemptRepository;
     private final UserAnswerRepository userAnswerRepository;
     private final QuestionRepository questionRepository;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Autowired
     public TestAttemptService(TestAttemptRepository testAttemptRepository,
@@ -88,6 +93,10 @@ public class TestAttemptService {
 
     @Transactional
     public TestResultDTO submitAttempt(Long testAttemptId, Map<Long, JsonNode> answers, UUID userId) {
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
+        logger.info("📝 Submitting test attempt: attemptId={}, userId={}, answersCount={}", 
+                    testAttemptId, userId, answers != null ? answers.size() : 0);
+        
         TestAttempt testAttempt = testAttemptRepository.findById(testAttemptId)
                 .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + testAttemptId));
 
@@ -97,11 +106,16 @@ public class TestAttemptService {
         }
 
         // Allow re-submission by deleting old answers
+        long startDelete = System.currentTimeMillis();
         userAnswerRepository.deleteByAttemptId(testAttemptId);
+        entityManager.flush(); // Force delete to execute immediately before insert
+        long deleteTime = System.currentTimeMillis() - startDelete;
+        logger.info("🗑️ Deleted old answers in {}ms", deleteTime);
 
         List<UserAnswer> userAnswers = new ArrayList<>();
         int correctCount = 0;
 
+        long startGrading = System.currentTimeMillis();
         for (Map.Entry<Long, JsonNode> entry : answers.entrySet()) {
             Long questionId = entry.getKey();
             JsonNode answerValue = entry.getValue();
@@ -116,9 +130,11 @@ public class TestAttemptService {
             boolean isCorrect = compareAnswers(answerValue, question.getCorrectAnswer());
 
             UserAnswer userAnswer = new UserAnswer();
+            userAnswer.setUserId(userId);
             userAnswer.setAttempt(testAttempt);
             userAnswer.setQuestion(question);
             userAnswer.setAnswerContent(answerValue);
+            userAnswer.setUserAnswer(answerValue.get("value").asText()); // Set the text value
             userAnswer.setCorrect(isCorrect);
             userAnswers.add(userAnswer);
 
@@ -126,20 +142,33 @@ public class TestAttemptService {
                 correctCount++;
             }
         }
+        long gradingTime = System.currentTimeMillis() - startGrading;
+        logger.info("✅ Graded {} answers in {}ms", answers.size(), gradingTime);
 
+        long startSave = System.currentTimeMillis();
         userAnswerRepository.saveAll(userAnswers);
+        long saveTime = System.currentTimeMillis() - startSave;
+        logger.info("💾 Saved {} answers in {}ms", userAnswers.size(), saveTime);
 
         testAttempt.setStatus("COMPLETED");
         testAttempt.setCompletedAt(OffsetDateTime.now());
         testAttempt.setScore(correctCount);
+        
+        long startUpdateAttempt = System.currentTimeMillis();
         testAttemptRepository.save(testAttempt);
+        long updateTime = System.currentTimeMillis() - startUpdateAttempt;
+        logger.info("🔄 Updated test attempt in {}ms", updateTime);
 
+        long startCountQuestions = System.currentTimeMillis();
         int totalQuestions = questionRepository.countBySection_ExamSourceAndSection_TestNumberAndSection_Skill(
             testAttempt.getExamSource(),
             Integer.valueOf(testAttempt.getTestNumber()),
             testAttempt.getSkill()
         );
+        long countTime = System.currentTimeMillis() - startCountQuestions;
+        logger.info("🔢 Counted total questions in {}ms", countTime);
 
+        logger.info("🎉 Test submission completed: score={}/{}", correctCount, totalQuestions);
         return new TestResultDTO(testAttempt.getId(), correctCount, totalQuestions, testAttempt.getStatus());
     }
 
@@ -148,10 +177,14 @@ public class TestAttemptService {
             return false;
         }
 
-        // The user's answer, e.g., "innovation"
-        String userText = userAnswer.get("value").asText().trim().toLowerCase();
+        // The user's answer, e.g., "innovation" or "NOT_GIVEN"
+        // Normalize: replace underscore with space, trim, lowercase
+        String userText = userAnswer.get("value").asText()
+                .replace("_", " ")
+                .trim()
+                .toLowerCase();
 
-        // The correct answers are stored in your DB as a simple array of strings, e.g., ["innovation"]
+        // The correct answers are stored in your DB as a simple array of strings, e.g., ["innovation"] or ["NOT GIVEN"]
         // So, the `correctAnswer` JsonNode is the array itself.
         if (!correctAnswer.isArray()) {
             // If the DB stores it as {"answers": [...]}, then use:
@@ -161,7 +194,12 @@ public class TestAttemptService {
         }
 
         for (JsonNode correctNode : correctAnswer) {
-            if (correctNode.asText().trim().toLowerCase().equals(userText)) {
+            String correctText = correctNode.asText()
+                    .replace("_", " ")
+                    .trim()
+                    .toLowerCase();
+            
+            if (correctText.equals(userText)) {
                 return true;
             }
         }

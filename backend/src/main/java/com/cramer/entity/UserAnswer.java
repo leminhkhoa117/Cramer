@@ -6,6 +6,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "user_answers")
@@ -14,6 +15,9 @@ public class UserAnswer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "user_id", nullable = false)
+    private UUID userId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "attempt_id", nullable = false)
@@ -27,15 +31,22 @@ public class UserAnswer {
     @Column(name = "answer_content", columnDefinition = "jsonb", nullable = false)
     private JsonNode answerContent;
 
+    @Column(name = "user_answer")
+    private String userAnswer;
+
     @Column(name = "is_correct")
     private Boolean isCorrect;
 
     @Column(name = "submitted_at", nullable = false)
     private OffsetDateTime submittedAt;
 
+    @Column(name = "created_at", nullable = false)
+    private OffsetDateTime createdAt;
+
     // Constructors
     public UserAnswer() {
         this.submittedAt = OffsetDateTime.now();
+        this.createdAt = OffsetDateTime.now();
     }
 
     // Getters and Setters
@@ -45,6 +56,14 @@ public class UserAnswer {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public void setUserId(UUID userId) {
+        this.userId = userId;
     }
 
     public TestAttempt getAttempt() {
@@ -71,6 +90,14 @@ public class UserAnswer {
         this.answerContent = answerContent;
     }
 
+    public String getUserAnswer() {
+        return userAnswer;
+    }
+
+    public void setUserAnswer(String userAnswer) {
+        this.userAnswer = userAnswer;
+    }
+
     public Boolean getCorrect() {
         return isCorrect;
     }
@@ -85,5 +112,13 @@ public class UserAnswer {
 
     public void setSubmittedAt(OffsetDateTime submittedAt) {
         this.submittedAt = submittedAt;
+    }
+
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(OffsetDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

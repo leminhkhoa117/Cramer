@@ -46,7 +46,11 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer }) => {
                         {index < parts.length - 1 && (
                             <select value={userAnswer?.value || ''} onChange={handleInputChange} className="fill-in-blank-select">
                                 <option value="">Select...</option>
-                                {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                {options.map(opt => {
+                                    // Extract only the letter (first character) as the value
+                                    const letter = opt.charAt(0);
+                                    return <option key={opt} value={letter}>{opt}</option>;
+                                })}
                             </select>
                         )}
                     </React.Fragment>

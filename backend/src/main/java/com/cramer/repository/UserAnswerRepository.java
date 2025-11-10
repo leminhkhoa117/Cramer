@@ -2,6 +2,7 @@ package com.cramer.repository;
 
 import com.cramer.entity.UserAnswer;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -29,6 +30,7 @@ public interface UserAnswerRepository extends JpaRepository<UserAnswer, Long> {
      * This is useful for allowing users to re-submit a test.
      * @param testAttemptId The ID of the test attempt whose answers should be deleted.
      */
+    @Modifying
     void deleteByAttemptId(Long testAttemptId);
 
     /**

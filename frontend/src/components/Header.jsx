@@ -26,8 +26,12 @@ export default function Header() {
       padding: '1rem 0'
     }}>
       <Container fluid style={{ paddingLeft: '2rem', paddingRight: '2rem' }}>
-        <Navbar.Brand as={Link} to="/" className="font-bold text-2xl" style={{ color: 'white', fontFamily: '"Be Vietnam Pro", sans-serif', marginLeft: 0 }}>
-          Cramer
+        <Navbar.Brand as={Link} to="/" className="font-bold text-2xl" style={{ marginLeft: 0, display: 'flex', alignItems: 'center' }}>
+          <img 
+            src="/pictures/logo/Icon.png" 
+            alt="Cramer Logo" 
+            style={{ height: '40px', objectFit: 'contain' }}
+          />
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" style={{ borderColor: 'rgba(255,255,255,0.5)' }} />
         <Navbar.Collapse id="basic-navbar-nav">

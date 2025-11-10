@@ -77,7 +77,7 @@ const AboutPage = () => {
             <AnimatedItem delay={200}>
               <div className="founder-card">
                 <div className="founder-card__image-wrapper">
-                  <img src={placeholderImg} alt="Huynh Quoc Huu" className="founder-card__image" />
+                  <img src="/pictures/about/HuynhQuocHuu.png" alt="Huynh Quoc Huu" className="founder-card__image" />
                 </div>
                 <div className="founder-card__content">
                   <h3 className="founder-card__name">Huỳnh Quốc Hữu (Jacob)</h3>
@@ -96,7 +96,7 @@ const AboutPage = () => {
             <AnimatedItem delay={400}>
               <div className="founder-card">
                 <div className="founder-card__image-wrapper">
-                  <img src={placeholderImg} alt="Le Minh Khoa" className="founder-card__image" />
+                  <img src="/pictures/about/LeMinhKhoa.jpg" alt="Le Minh Khoa" className="founder-card__image" />
                 </div>
                 <div className="founder-card__content">
                   <h3 className="founder-card__name">Lê Minh Khoa</h3>
