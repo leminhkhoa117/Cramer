@@ -47,7 +47,8 @@ const GoalModal = ({ isOpen, onClose, currentTarget, onSave }) => {
         setError(null);
 
         const payload = {
-            ...targetData,
+            examName: targetData.examName,
+            examDate: targetData.examDate === '' ? null : targetData.examDate,
             listening: targetData.listening === '' ? null : parseFloat(targetData.listening),
             reading: targetData.reading === '' ? null : parseFloat(targetData.reading),
             writing: targetData.writing === '' ? null : parseFloat(targetData.writing),
