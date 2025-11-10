@@ -32,12 +32,25 @@ public class TestController {
             @RequestParam Integer test,
             @RequestParam String skill) {
         
-        List<FullSectionDTO> fullTest = testService.getFullTest(source, test, skill);
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestController.class);
+        logger.info("📥 GET /api/tests/data - source={}, test={}, skill={}", source, test, skill);
         
-        if (fullTest == null || fullTest.isEmpty()) {
-            return ResponseEntity.notFound().build();
+        try {
+            List<FullSectionDTO> fullTest = testService.getFullTest(source, test, skill);
+            
+            if (fullTest == null || fullTest.isEmpty()) {
+                logger.warn("⚠️ No test data found for source={}, test={}, skill={}", source, test, skill);
+                return ResponseEntity.notFound().build();
+            }
+            
+            logger.info("✅ Returning {} sections", fullTest.size());
+            return ResponseEntity.ok(fullTest);
+        } catch (IllegalArgumentException e) {
+            logger.error("❌ Invalid parameters: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("❌ Error fetching test data: source={}, test={}, skill={}", source, test, skill, e);
+            throw e;
         }
-        
-        return ResponseEntity.ok(fullTest);
     }
 }

@@ -31,9 +31,28 @@ public class TestAttemptController {
             @RequestParam String skill,
             Authentication authentication) {
 
-        UUID userId = UUID.fromString(authentication.getName());
-        TestAttempt attempt = testAttemptService.startOrGetAttempt(source, test, skill, userId);
-        return ResponseEntity.ok(attempt);
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptController.class);
+        logger.info("📥 POST /api/test-attempts/start - source={}, test={}, skill={}", source, test, skill);
+        
+        try {
+            if (authentication == null || authentication.getName() == null) {
+                logger.error("❌ No authentication provided");
+                throw new IllegalArgumentException("Authentication required");
+            }
+            
+            UUID userId = UUID.fromString(authentication.getName());
+            logger.info("🔐 User authenticated: userId={}", userId);
+            
+            TestAttempt attempt = testAttemptService.startOrGetAttempt(source, test, skill, userId);
+            logger.info("✅ Test attempt returned: attemptId={}", attempt.getId());
+            return ResponseEntity.ok(attempt);
+        } catch (IllegalArgumentException e) {
+            logger.error("❌ Invalid parameters: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("❌ Error starting test attempt", e);
+            throw e;
+        }
     }
 
     @PostMapping("/{id}/submit")

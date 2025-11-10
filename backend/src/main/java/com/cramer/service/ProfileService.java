@@ -48,8 +48,29 @@ public class ProfileService {
      */
     @Transactional(readOnly = true)
     public Optional<Profile> getProfileById(UUID id) {
-        logger.info("Fetching profile by ID: {}", id);
-        return profileRepository.findById(id);
+        try {
+            logger.info("🔍 Fetching profile by ID: {}", id);
+            
+            if (id == null) {
+                logger.error("❌ Profile ID cannot be null");
+                throw new IllegalArgumentException("Profile ID cannot be null");
+            }
+            
+            Optional<Profile> profile = profileRepository.findById(id);
+            
+            if (profile.isPresent()) {
+                logger.info("✅ Profile found: id={}, username={}", id, profile.get().getUsername());
+            } else {
+                logger.warn("⚠️ Profile not found for id={}", id);
+            }
+            
+            return profile;
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("❌ Error fetching profile by ID: {}", id, e);
+            throw new RuntimeException("Failed to fetch profile: " + e.getMessage(), e);
+        }
     }
 
     /**

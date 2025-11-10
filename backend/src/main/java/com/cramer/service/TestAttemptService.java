@@ -40,18 +40,49 @@ public class TestAttemptService {
 
     @Transactional
     public TestAttempt startOrGetAttempt(String source, String testNum, String skill, UUID userId) {
-        Optional<TestAttempt> existingAttempt = testAttemptRepository
-                .findByUserIdAndExamSourceAndTestNumberAndSkill(userId, source, testNum, skill);
+        try {
+            org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
+            logger.info("🎯 Starting/Getting test attempt: userId={}, source={}, testNum={}, skill={}", 
+                        userId, source, testNum, skill);
+            
+            // Validate inputs
+            if (userId == null) {
+                throw new IllegalArgumentException("User ID cannot be null");
+            }
+            if (source == null || source.trim().isEmpty()) {
+                throw new IllegalArgumentException("Source cannot be null or empty");
+            }
+            if (testNum == null || testNum.trim().isEmpty()) {
+                throw new IllegalArgumentException("Test number cannot be null or empty");
+            }
+            if (skill == null || skill.trim().isEmpty()) {
+                throw new IllegalArgumentException("Skill cannot be null or empty");
+            }
+            
+            Optional<TestAttempt> existingAttempt = testAttemptRepository
+                    .findByUserIdAndExamSourceAndTestNumberAndSkill(userId, source, testNum, skill);
 
-        if (existingAttempt.isPresent()) {
-            return existingAttempt.get();
-        } else {
-            TestAttempt newAttempt = new TestAttempt();
-            newAttempt.setUserId(userId);
-            newAttempt.setExamSource(source);
-            newAttempt.setTestNumber(testNum);
-            newAttempt.setSkill(skill);
-            return testAttemptRepository.save(newAttempt);
+            if (existingAttempt.isPresent()) {
+                logger.info("✅ Found existing attempt with id={}", existingAttempt.get().getId());
+                return existingAttempt.get();
+            } else {
+                logger.info("📝 Creating new test attempt");
+                TestAttempt newAttempt = new TestAttempt();
+                newAttempt.setUserId(userId);
+                newAttempt.setExamSource(source);
+                newAttempt.setTestNumber(testNum);
+                newAttempt.setSkill(skill);
+                TestAttempt saved = testAttemptRepository.save(newAttempt);
+                logger.info("✅ Created new attempt with id={}", saved.getId());
+                return saved;
+            }
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
+            logger.error("❌ Error in startOrGetAttempt: userId={}, source={}, testNum={}, skill={}", 
+                        userId, source, testNum, skill, e);
+            throw new RuntimeException("Failed to start/get test attempt: " + e.getMessage(), e);
         }
     }
 

@@ -80,10 +80,23 @@ public class ProfileController {
     public ResponseEntity<ProfileDTO> getProfileById(
             @Parameter(description = "UUID of the profile to retrieve") 
             @PathVariable UUID id) {
-        logger.info("REST request to get profile by ID: {}", id);
-        Profile profile = profileService.getProfileById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Profile", "id", id));
-        return ResponseEntity.ok(EntityMapper.toDTO(profile));
+        logger.info("📥 GET /api/profiles/{} - Fetching profile", id);
+        
+        try {
+            Profile profile = profileService.getProfileById(id)
+                    .orElseThrow(() -> {
+                        logger.warn("⚠️ Profile not found: id={}", id);
+                        return new ResourceNotFoundException("Profile", "id", id);
+                    });
+            
+            logger.info("✅ Profile found: id={}, username={}", id, profile.getUsername());
+            return ResponseEntity.ok(EntityMapper.toDTO(profile));
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("❌ Error fetching profile by ID: {}", id, e);
+            throw e;
+        }
     }
 
     /**

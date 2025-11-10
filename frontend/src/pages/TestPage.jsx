@@ -25,15 +25,27 @@ const itemVariants = {
 // Helper to group questions for rendering
 const groupQuestions = (questions) => {
     if (!questions || questions.length === 0) return [];
+    
+    // First, deduplicate questions by ID to prevent rendering duplicates
+    const uniqueQuestions = Array.from(
+        new Map(questions.map(q => [q.id, q])).values()
+    );
+    
+    // Debug log
+    if (questions.length !== uniqueQuestions.length) {
+        console.warn(`⚠️ Removed ${questions.length - uniqueQuestions.length} duplicate questions`);
+    }
+    
     const groups = [];
     let currentGroup = {
-        type: questions[0].questionType,
-        questions: [questions[0]],
-        startNum: questions[0].questionNumber,
-        instructions: questions[0].instructions
+        type: uniqueQuestions[0].questionType,
+        questions: [uniqueQuestions[0]],
+        startNum: uniqueQuestions[0].questionNumber,
+        instructions: uniqueQuestions[0].instructions
     };
-    for (let i = 1; i < questions.length; i++) {
-        const q = questions[i];
+    
+    for (let i = 1; i < uniqueQuestions.length; i++) {
+        const q = uniqueQuestions[i];
         if (q.questionType === currentGroup.type) {
             currentGroup.questions.push(q);
         } else {
@@ -179,6 +191,7 @@ const TestPage = () => {
                         <p>Reading Passage {currentPart.partNumber} has several paragraphs, A-F.</p>
                         <p>Which paragraph contains the following information?</p>
                         <p>Write the correct letter, <strong>A-F</strong>, in boxes {start}-{end} on your answer sheet.</p>
+                        <p><strong><em>NB</em></strong> You may use any letter more than once.</p>
                     </>
                 );
             case 'YES_NO_NOT_GIVEN':
@@ -242,7 +255,25 @@ const TestPage = () => {
                         <HighlightableText text={currentPart.passageText} />
                     </div>
                 </Panel>
-                <PanelResizeHandle className="resize-handle" />
+                <PanelResizeHandle className="resize-handle">
+                    <div className="resize-handle-icon">
+                        <svg 
+                            width="20" 
+                            height="20" 
+                            viewBox="0 0 20 20" 
+                            fill="none" 
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path 
+                                d="M6 10L2 10M2 10L4 8M2 10L4 12M14 10L18 10M18 10L16 8M18 10L16 12" 
+                                stroke="#6b7280" 
+                                strokeWidth="1.5" 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </div>
+                </PanelResizeHandle>
                 <Panel defaultSize={50} minSize={30}>
                     <div className="questions-column">
                         <motion.div
@@ -253,22 +284,29 @@ const TestPage = () => {
                             animate="visible"
                         >
                             <h2>Questions</h2>
-                            {questionGroups.map((group, index) => (
-                                <motion.div key={index} className="question-group" variants={itemVariants}>
-                                    <div className="group-instructions">
-                                        {renderGroupInstructions(group)}
-                                    </div>
-                                    {group.questions.map(q => (
-                                        <div id={`q-block-${q.id}`} key={q.id}>
-                                            <QuestionRenderer
-                                                question={q}
-                                                onAnswerChange={handleAnswerChange}
-                                                userAnswer={answers[q.id]}
-                                            />
-                                        </div>
-                                    ))}
-                                </motion.div>
-                            ))}
+                            {questionGroups.map((group, index) => {
+                                // Only show instructions if this is the first group or type changed from previous group
+                                const showInstructions = index === 0 || group.type !== questionGroups[index - 1].type;
+                                
+                                return (
+                                    <motion.div key={index} className="question-group" variants={itemVariants}>
+                                        {showInstructions && (
+                                            <div className="group-instructions">
+                                                {renderGroupInstructions(group)}
+                                            </div>
+                                        )}
+                                        {group.questions.map(q => (
+                                            <div id={`q-block-${q.id}`} key={q.id}>
+                                                <QuestionRenderer
+                                                    question={q}
+                                                    onAnswerChange={handleAnswerChange}
+                                                    userAnswer={answers[q.id]}
+                                                />
+                                            </div>
+                                        ))}
+                                    </motion.div>
+                                );
+                            })}
                         </motion.div>
                     </div>
                 </Panel>

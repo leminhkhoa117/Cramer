@@ -85,13 +85,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Object> handleGlobalException(
             Exception ex, WebRequest request) {
         
-        logger.error("Internal server error: ", ex);
+        logger.error("❌ INTERNAL SERVER ERROR ❌", ex);
+        logger.error("Exception type: {}", ex.getClass().getName());
+        logger.error("Exception message: {}", ex.getMessage());
+        if (ex.getCause() != null) {
+            logger.error("Root cause: {}", ex.getCause().getMessage());
+        }
         
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         body.put("error", "Internal Server Error");
-        body.put("message", "An unexpected error occurred");
+        body.put("message", ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred");
+        body.put("exceptionType", ex.getClass().getSimpleName());
         body.put("path", request.getDescription(false).replace("uri=", ""));
         
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
