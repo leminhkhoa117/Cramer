@@ -11,20 +11,20 @@ export default function Footer() {
           {/* Left Section: Brand */}
           <div className="footer-brand">
             <Link to="/" className="footer-brand__logo">Cramer</Link>
-            <p className="footer-brand__tagline">Your friendly corner for IELTS practice.</p>
+            <p className="footer-brand__tagline">Góc nhỏ thân thiện để luyện thi IELTS.</p>
           </div>
 
           {/* Middle Section: Navigation & Contact */}
           <div className="footer-links-wrapper">
             <nav className="footer-nav">
-              <h4 className="footer-links__title">Navigate</h4>
-              <Link to="/" className="footer-nav__link">Home</Link>
-              <Link to="/about" className="footer-nav__link">About</Link>
-              <Link to="/dashboard" className="footer-nav__link">Dashboard</Link>
+              <h4 className="footer-links__title">Điều hướng</h4>
+              <Link to="/" className="footer-nav__link">Trang chủ</Link>
+              <Link to="/about" className="footer-nav__link">Về chúng tôi</Link>
+              <Link to="/dashboard" className="footer-nav__link">Bảng điều khiển</Link>
             </nav>
 
             <div className="footer-contact">
-              <h4 className="footer-links__title">Contact</h4>
+              <h4 className="footer-links__title">Liên hệ</h4>
               <a href="mailto:hello@cramer.vn" className="footer-nav__link">hello@cramer.vn</a>
             </div>
           </div>
@@ -41,7 +41,7 @@ export default function Footer() {
         </div>
 
         <div className="footer-bottom">
-          <p>&copy; {new Date().getFullYear()} Cramer. Project by students, for students.</p>
+          <p>&copy; {new Date().getFullYear()} Cramer. Đồ án của sinh viên, vì sinh viên.</p>
         </div>
       </div>
     </footer>

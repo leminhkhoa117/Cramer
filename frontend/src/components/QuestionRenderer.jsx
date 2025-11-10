@@ -1,18 +1,33 @@
 import React from 'react';
 
-const QuestionRenderer = ({ question }) => {
-    const { questionType, questionContent, questionNumber } = question;
+const QuestionRenderer = ({ question, onAnswerChange, userAnswer }) => {
+    const { id, questionType, questionContent, questionNumber } = question;
 
-    // A helper to render the question text, replacing blanks with inputs
+    const handleInputChange = (e) => {
+        const { value } = e.target;
+        onAnswerChange(id, { value });
+    };
+
+    // Helper to bold the number within a question's text
+    const renderPartWithBoldNumber = (part) => {
+        return part.replace(/(\b\d+\b)/g, '<strong>$1</strong>');
+    };
+
+    // Renders text with a fill-in-the-blank <input>
     const renderTextWithInput = (text) => {
         const parts = text.split('____');
         return (
-            <p>
+            <p className="question-text-interactive">
                 {parts.map((part, index) => (
                     <React.Fragment key={index}>
-                        {part}
+                        <span dangerouslySetInnerHTML={{ __html: renderPartWithBoldNumber(part) }} />
                         {index < parts.length - 1 && (
-                            <input type="text" className="fill-in-blank-input" />
+                            <input
+                                type="text"
+                                className="fill-in-blank-input"
+                                value={userAnswer?.value || ''}
+                                onChange={handleInputChange}
+                            />
                         )}
                     </React.Fragment>
                 ))}
@@ -20,7 +35,40 @@ const QuestionRenderer = ({ question }) => {
         );
     };
 
+    // Renders text with a <select> dropdown in the blank
+    const renderTextWithSelect = (text, options) => {
+        const parts = text.split('____');
+        return (
+            <p className="question-text-interactive">
+                {parts.map((part, index) => (
+                    <React.Fragment key={index}>
+                        <span dangerouslySetInnerHTML={{ __html: renderPartWithBoldNumber(part) }} />
+                        {index < parts.length - 1 && (
+                            <select value={userAnswer?.value || ''} onChange={handleInputChange} className="fill-in-blank-select">
+                                <option value="">Select...</option>
+                                {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                            </select>
+                        )}
+                    </React.Fragment>
+                ))}
+            </p>
+        );
+    };
+
+    // Renders a multiple choice option with bolded letter and period
+    const renderMcqOption = (optionText) => {
+        const letter = optionText.charAt(0);
+        const rest = optionText.substring(1).trim();
+        return (
+            <>
+                <strong>{letter}.</strong> {rest}
+            </>
+        );
+    };
+
     const renderQuestion = () => {
+        const currentAnswer = userAnswer?.value || '';
+
         switch (questionType) {
             case 'FILL_IN_BLANK':
             case 'SUMMARY_COMPLETION':
@@ -31,9 +79,9 @@ const QuestionRenderer = ({ question }) => {
                     <div>
                         <p>{questionContent.text}</p>
                         <div className="tfn-options">
-                            <label><input type="radio" name={`q_${question.id}`} value="TRUE" /> True</label>
-                            <label><input type="radio" name={`q_${question.id}`} value="FALSE" /> False</label>
-                            <label><input type="radio" name={`q_${question.id}`} value="NOT_GIVEN" /> Not Given</label>
+                            <label><input type="radio" name={`q_${id}`} value="TRUE" checked={currentAnswer === 'TRUE'} onChange={handleInputChange} /> True</label>
+                            <label><input type="radio" name={`q_${id}`} value="FALSE" checked={currentAnswer === 'FALSE'} onChange={handleInputChange} /> False</label>
+                            <label><input type="radio" name={`q_${id}`} value="NOT_GIVEN" checked={currentAnswer === 'NOT_GIVEN'} onChange={handleInputChange} /> Not Given</label>
                         </div>
                     </div>
                 );
@@ -43,9 +91,9 @@ const QuestionRenderer = ({ question }) => {
                     <div>
                         <p>{questionContent.text}</p>
                         <div className="tfn-options">
-                            <label><input type="radio" name={`q_${question.id}`} value="YES" /> Yes</label>
-                            <label><input type="radio" name={`q_${question.id}`} value="NO" /> No</label>
-                            <label><input type="radio" name={`q_${question.id}`} value="NOT_GIVEN" /> Not Given</label>
+                            <label><input type="radio" name={`q_${id}`} value="YES" checked={currentAnswer === 'YES'} onChange={handleInputChange} /> Yes</label>
+                            <label><input type="radio" name={`q_${id}`} value="NO" checked={currentAnswer === 'NO'} onChange={handleInputChange} /> No</label>
+                            <label><input type="radio" name={`q_${id}`} value="NOT_GIVEN" checked={currentAnswer === 'NOT_GIVEN'} onChange={handleInputChange} /> Not Given</label>
                         </div>
                     </div>
                 );
@@ -54,50 +102,31 @@ const QuestionRenderer = ({ question }) => {
                 return (
                     <div>
                         <p>{questionContent.text}</p>
-                        <select>
-                            <option value="">Select...</option>
+                        <select value={currentAnswer} onChange={handleInputChange} className="matching-select">
+                            <option value="">Select Paragraph...</option>
                             {questionContent.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                         </select>
                     </div>
                 );
 
             case 'MULTIPLE_CHOICE':
+            case 'MULTIPLE_CHOICE_MULTIPLE_ANSWERS':
                 return (
                     <div>
                         <p>{questionContent.text}</p>
                         <div className="mcq-options">
                             {questionContent.options.map((opt, index) => (
                                 <label key={index}>
-                                    <input type="radio" name={`q_${question.id}`} value={opt.charAt(0)} />
-                                    {opt}
+                                    <input type="radio" name={`q_${id}`} value={opt.charAt(0)} checked={currentAnswer === opt.charAt(0)} onChange={handleInputChange} />
+                                    {renderMcqOption(opt)}
                                 </label>
                             ))}
                         </div>
                     </div>
                 );
 
-            case 'MULTIPLE_CHOICE_MULTIPLE_ANSWERS':
-                 return (
-                    <div>
-                        <p>{questionContent.text}</p>
-                        <div className="mcq-options">
-                            {questionContent.options.map((opt, index) => (
-                                <label key={index}>
-                                    <input type="checkbox" name={`q_${question.id}`} value={opt.charAt(0)} />
-                                    {opt}
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-                );
-            
             case 'SUMMARY_COMPLETION_OPTIONS':
-                 return (
-                    <div>
-                        {/* The options box should be rendered once for the group */}
-                        {renderTextWithInput(questionContent.text)}
-                    </div>
-                )
+                return renderTextWithSelect(questionContent.text, questionContent.options);
 
             default:
                 return <pre>{JSON.stringify(questionContent, null, 2)}</pre>;
@@ -106,7 +135,6 @@ const QuestionRenderer = ({ question }) => {
 
     return (
         <div className="question-block">
-            <strong>Question {questionNumber}</strong>
             {renderQuestion()}
         </div>
     );

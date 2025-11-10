@@ -29,28 +29,28 @@ export default function Home() {
         <div className="home-hero__overlay" />
         <div className="container">
           <div className="home-hero__content">
-            <h1 className="home-hero__title">Welcome to Cramer</h1>
+            <h1 className="home-hero__title">Chào mừng đến với Cramer</h1>
             <p className="home-hero__subtitle">
-              Your place to practice and improve your English skills for the IELTS exam.
+              Nơi luyện tập và cải thiện kỹ năng tiếng Anh của bạn cho kỳ thi IELTS.
             </p>
             <div className="home-hero__actions">
               <button type="button" className="btn btn-primary">
-                Browse Courses
+                Xem khóa học
               </button>
               <button type="button" className="btn btn-secondary">
-                Get Started
+                Bắt đầu ngay
               </button>
             </div>
           </div>
 
           <div className="home-search">
             <div className="search-box">
-              <h2 className="search-box__title">Find a Test</h2>
+              <h2 className="search-box__title">Tìm bài kiểm tra</h2>
               <form className="search-form" onSubmit={handleSearch}>
                 <div className="form-group">
                   <input
                     type="text"
-                    placeholder="Search for a test..."
+                    placeholder="Tìm kiếm bài kiểm tra..."
                     className="form-control"
                   />
                 </div>
@@ -62,13 +62,13 @@ export default function Home() {
                     <option>Cambridge 17</option>
                   </select>
                   <select className="form-control" defaultValue="">
-                    <option value="" disabled hidden>Skill</option>
-                    <option>Speaking</option>
-                    <option>Reading</option>
+                    <option value="" disabled hidden>Kỹ năng</option>
+                    <option>Nói</option>
+                    <option>Đọc</option>
                   </select>
                 </div>
                 <button type="submit" className="btn-submit">
-                  Search
+                  Tìm kiếm
                 </button>
               </form>
             </div>
@@ -79,16 +79,16 @@ export default function Home() {
       {/* Features Section */}
       <section className="home-features">
         <div className="container">
-          <h2 className="home-features__title">What you'll get</h2>
+          <h2 className="home-features__title">Bạn sẽ nhận được gì?</h2>
           <div className="features-grid">
-            <Feature icon={<FaBookOpen />} title="Personalized practice">
-              Tailored exercises to fit your learning style and pace.
+            <Feature icon={<FaBookOpen />} title="Luyện tập cá nhân hóa">
+              Các bài tập được thiết kế riêng để phù hợp với phong cách và tốc độ học của bạn.
             </Feature>
-            <Feature icon={<FaStopwatch />} title="Real exam simulations">
-              Experience the pressure and timing of the actual IELTS test.
+            <Feature icon={<FaStopwatch />} title="Mô phỏng kỳ thi thật">
+              Trải nghiệm áp lực và thời gian của kỳ thi IELTS thực tế.
             </Feature>
-            <Feature icon={<FaStar />} title="Expert feedback">
-              Receive detailed feedback from certified English instructors.
+            <Feature icon={<FaStar />} title="Nhận xét từ chuyên gia">
+              Nhận phản hồi chi tiết từ các giảng viên tiếng Anh có chứng chỉ.
             </Feature>
           </div>
         </div>

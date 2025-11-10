@@ -2,9 +2,29 @@
 import { FiEdit3 } from 'react-icons/fi';
 import { dashboardApi } from '../api/backendApi';
 import { useAuth } from '../contexts/AuthContext';
+import { motion } from 'framer-motion';
 import GoalModal from '../components/GoalModal'; // Import the modal
 import heroFallback from '../pictures/cambridge-ielts-17.avif';
 import '../css/Dashboard.css';
+
+// Animation variants for staggering children
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1
+        }
+    }
+};
+
+const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+        y: 0,
+        opacity: 1
+    }
+};
 
 export default function Dashboard() {
   const { profile, profileLoading, user } = useAuth();
@@ -221,61 +241,66 @@ export default function Dashboard() {
           </div>
 
           {/* Glass pill */}
-          <div className="goals-pill">
+          <motion.div 
+            className="goals-pill"
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+          >
             {(!overallTarget && skillTargets.length === 0) && formattedSkills.length === 0 ? (
               <div className="goals-pill-empty">
                 Chưa có mục tiêu hay dữ liệu kỹ năng để hiển thị.
               </div>
             ) : (
               <>
-                <div className="goals-group">
-                  <div className="goal-meta-row">
-                    <div className="goal-meta-card">
+                <motion.div className="goals-group" variants={containerVariants}>
+                  <motion.div className="goal-meta-row" variants={containerVariants}>
+                    <motion.div className="goal-meta-card" variants={itemVariants}>
                       <p className="goal-meta-card__label">Kì thi sắp tới</p>
                       <p className="goal-meta-card__value">{targetExamName}</p>
-                    </div>
-                    <div className="goal-meta-card">
+                    </motion.div>
+                    <motion.div className="goal-meta-card" variants={itemVariants}>
                       <p className="goal-meta-card__label">Ngày thi</p>
                       <p className="goal-meta-card__value">{examDateDisplay}</p>
-                    </div>
-                    <div className="goal-meta-card goal-meta-card--overall">
+                    </motion.div>
+                    <motion.div className="goal-meta-card goal-meta-card--overall" variants={itemVariants}>
                       <p className="goal-meta-card__label">Điểm kỹ năng</p>
                       <p className="goal-meta-card__value goal-meta-card__value--badge">
                         {overallTarget?.value ?? '--'}
                       </p>
                       <span className="goal-meta-card__hint">Band tổng kỳ vọng</span>
-                    </div>
-                  </div>
+                    </motion.div>
+                  </motion.div>
 
                   {skillTargets.length > 0 ? (
-                    <div className="goal-targets-grid">
+                    <motion.div className="goal-targets-grid" variants={containerVariants}>
                       {skillTargets.map((target) => (
-                        <div key={target.id} className="goal-card">
+                        <motion.div key={target.id} className="goal-card" variants={itemVariants}>
                           <div className="goal-card__badge">{target.shortLabel || target.label}</div>
                           <div className="goal-card__value">{target.value}</div>
-                        </div>
+                        </motion.div>
                       ))}
-                    </div>
+                    </motion.div>
                   ) : (
-                    <div className="goal-empty goal-empty--inline">
+                    <motion.div className="goal-empty goal-empty--inline" variants={itemVariants}>
                       Chưa có điểm mục tiêu. Nhấn biểu tượng cây bút để thiết lập.
-                    </div>
+                    </motion.div>
                   )}
-                </div>
+                </motion.div>
 
                 {formattedSkills.length > 0 && (
-                  <div className="goal-skills-group">
+                  <motion.div className="goal-skills-group" variants={containerVariants}>
                     {formattedSkills.map((skill) => (
-                      <div key={skill.label} className="goal-skill">
+                      <motion.div key={skill.label} className="goal-skill" variants={itemVariants}>
                         <div className="goal-skill__name">{skill.label}</div>
                         <div className="goal-skill__score">{skill.score}</div>
-                      </div>
+                      </motion.div>
                     ))}
-                  </div>
+                  </motion.div>
                 )}
               </>
             )}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -300,29 +325,25 @@ export default function Dashboard() {
                 return (
                   <article
                     key={`${course.examSource}-${course.testNumber}-${course.skill}`}
-                    className="course-card"
+                    className="dash-course-card"
                   >
-                  <div
-                    className="course-card__thumb"
-                    style={{ backgroundImage: `url(${heroFallback})` }}
-                    aria-hidden="true"
-                  />
-                  <div className="course-card__body">
-                    <div>
-                      <div className="course-card__series">{formatCourseSeries(course)}</div>
-                      <div className="course-card__meta">
-                        <div><strong>Kỹ năng:</strong> {formatSkillName(course.skill)}</div>
-                        <div><strong>Tổng số câu:</strong> {course.totalQuestions || '—'}</div>
-                        <div><strong>Đã làm:</strong> {course.answersAttempted}</div>
-                        <div><strong>Đúng:</strong> {course.correctAnswers}</div>
-                        <div><strong>Lần làm gần nhất:</strong> {formatDate(course.lastAttempt)}</div>
+                    <div className="dash-course-card__image-container">
+                      <img src={heroFallback} alt={formatCourseSeries(course)} className="dash-course-card__image" />
+                    </div>
+                    <div className="dash-course-card__content">
+                      <h3 className="dash-course-card__title">{formatCourseSeries(course)}</h3>
+                      <div className="dash-course-card__meta">
+                        <p><strong>Kỹ năng:</strong> {formatSkillName(course.skill)}</p>
+                        <p><strong>Đã làm:</strong> {course.answersAttempted}</p>
+                        <p><strong>Tổng số câu:</strong> {course.totalQuestions || '—'}</p>
+                        <p><strong>Đúng:</strong> {course.correctAnswers}</p>
+                        <p><strong>Lần làm gần nhất:</strong> {formatDate(course.lastAttempt)}</p>
+                      </div>
+                      <div className="dash-course-card__footer">
+                        <span className="dash-course-card__progress-text">{completion}%</span>
+                        <span className="dash-course-card__status-badge">{course.status}</span>
                       </div>
                     </div>
-                    <div className="course-card__footer">
-                      <div className="course-card__score">{completion}%</div>
-                      <div className="course-card__status">{course.status}</div>
-                    </div>
-                  </div>
                   </article>
                 );
               })}

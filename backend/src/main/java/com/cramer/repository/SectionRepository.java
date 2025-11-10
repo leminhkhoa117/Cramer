@@ -87,4 +87,10 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
      */
     boolean existsByExamSourceAndTestNumberAndSkillAndPartNumber(
             String examSource, Integer testNumber, String skill, Integer partNumber);
+
+    @Query("SELECT DISTINCT s.examSource FROM Section s ORDER BY s.examSource ASC")
+    List<String> findDistinctExamSources();
+
+    @Query("SELECT DISTINCT s.testNumber FROM Section s WHERE s.examSource = :examSource ORDER BY s.testNumber ASC")
+    List<Integer> findDistinctTestNumbersByExamSource(@Param("examSource") String examSource);
 }

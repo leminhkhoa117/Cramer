@@ -76,6 +76,14 @@ export const authApi = {
 };
 
 // ============================================
+// COURSE APIs
+// ============================================
+export const courseApi = {
+  getAll: () => apiClient.get('/courses'),
+  getTestsByCourse: (courseName) => apiClient.get(`/courses/${courseName}/tests`),
+};
+
+// ============================================
 // PROFILE APIs
 // ============================================
 export const profileApi = {
@@ -92,26 +100,9 @@ export const profileApi = {
 // ============================================
 // SECTION APIs
 // ============================================
-
-/**
- * Fetches a full section including its questions.
- * @param {number|string} id The ID of the section.
- * @returns {Promise<object>} The full section data.
- */
-export const getFullSection = async (id) => {
-  try {
-    const response = await apiClient.get(`/sections/${id}/full`);
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to fetch full section for id ${id}:`, error);
-    throw error;
-  }
-};
-
 export const sectionApi = {
   getAll: () => apiClient.get('/sections'),
   getById: (id) => apiClient.get(`/sections/${id}`),
-  getFullById: getFullSection, // Add the new function here
   getByExam: (examSource) => apiClient.get(`/sections/exam/${examSource}`),
   getByExamAndTest: (examSource, testNumber) => 
     apiClient.get(`/sections/exam/${examSource}/test/${testNumber}`),
@@ -125,6 +116,45 @@ export const sectionApi = {
   getCount: () => apiClient.get('/sections/count'),
   getCountByExam: (examSource) => apiClient.get(`/sections/count/exam/${examSource}`),
 };
+
+// ============================================
+// TEST APIs
+// ============================================
+export const testApi = {
+  /**
+   * Fetches the full data for a test, including all passages and questions.
+   * @param {string} source The exam source (e.g., "cam17")
+   * @param {number} testNum The test number (e.g., 1)
+   * @param {string} skill The skill (e.g., "reading")
+   * @returns {Promise<object>} The full test data.
+   */
+  getFullTest: async (source, testNum, skill) => {
+    try {
+      const response = await apiClient.get('/tests/data', {
+        params: { source, test: testNum, skill },
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to fetch full test for ${source} T${testNum} ${skill}:`, error);
+      throw error;
+    }
+  },
+};
+
+// ============================================
+// TEST ATTEMPT APIs
+// ============================================
+export const testAttemptApi = {
+  startAttempt: (source, testNum, skill) => {
+    return apiClient.post('/test-attempts/start', null, {
+      params: { source, test: testNum, skill },
+    });
+  },
+  submitAttempt: (attemptId, answers) => {
+    return apiClient.post(`/test-attempts/${attemptId}/submit`, { answers });
+  },
+};
+
 
 // ============================================
 // QUESTION APIs

@@ -2,7 +2,6 @@ package com.cramer.util;
 
 import com.cramer.dto.*;
 import com.cramer.entity.*;
-import com.cramer.service.UserAnswerService;
 
 /**
  * Utility class for mapping between Entity and DTO objects.
@@ -104,12 +103,11 @@ public class EntityMapper {
         if (userAnswer == null) return null;
         return new UserAnswerDTO(
                 userAnswer.getId(),
-                userAnswer.getUserId(),
-                userAnswer.getQuestionId(),
-                userAnswer.getUserAnswer(),
+                userAnswer.getAttempt() != null ? userAnswer.getAttempt().getUserId() : null,
+                userAnswer.getQuestion() != null ? userAnswer.getQuestion().getId() : null,
+                userAnswer.getAnswerContent(),
                 userAnswer.getSubmittedAt(),
-                userAnswer.getIsCorrect(),
-                userAnswer.getCreatedAt()
+                userAnswer.getCorrect()
         );
     }
 
@@ -120,22 +118,11 @@ public class EntityMapper {
         if (dto == null) return null;
         UserAnswer userAnswer = new UserAnswer();
         userAnswer.setId(dto.getId());
-        userAnswer.setUserId(dto.getUserId());
-        userAnswer.setQuestionId(dto.getQuestionId());
-        userAnswer.setUserAnswer(dto.getUserAnswer());
+        // Note: We do not map attempt and question here as they should be set by the service
+        userAnswer.setAnswerContent(dto.getAnswerContent());
         userAnswer.setSubmittedAt(dto.getSubmittedAt());
-        userAnswer.setIsCorrect(dto.getIsCorrect());
-        userAnswer.setCreatedAt(dto.getCreatedAt());
+        userAnswer.setCorrect(dto.isCorrect());
         return userAnswer;
-    }
-
-    public static UserStatsDTO toDTO(UserAnswerService.UserStats stats) {
-        return new UserStatsDTO(
-            stats.getTotalAnswers(),
-            stats.getCorrectAnswers(),
-            stats.getIncorrectAnswers(),
-            stats.getAccuracy()
-        );
     }
 
     // Mappings for Target

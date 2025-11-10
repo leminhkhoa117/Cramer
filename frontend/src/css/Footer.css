@@ -61,15 +61,16 @@
 }
 
 .footer-nav__link {
-  color: #d1d5db;
-  font-weight: 500;
-  transition: color 0.3s ease;
-  text-decoration: none; /* Ensure no underline */
+  color: var(--footer-text-secondary);
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
 }
 
 .footer-nav__link:hover {
-  color: #ffffff;
+  color: var(--footer-text-primary);
+  transform: translateY(-2px);
 }
+
 
 .footer-socials {
   display: flex;

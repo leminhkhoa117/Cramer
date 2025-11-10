@@ -1,14 +1,20 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AnimatePresence } from 'framer-motion';
+
 import Header from './components/Header';
 import Footer from './components/Footer';
+import PageWrapper from './components/PageWrapper';
+
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import About from './pages/About';
 import TestPage from './pages/TestPage';
 import Courses from './pages/Courses';
+import CourseDetailPage from './pages/CourseDetailPage';
+import TestLayout from './components/TestLayout';
 
 // This component waits for the initial auth loading to complete
 function AuthInitializer({ children }) {
@@ -56,47 +62,61 @@ function AuthInitializer({ children }) {
 // Protected Route component remains the same, but now it runs *after* initial loading
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
-  // No need to check for `loading` here anymore, as AuthInitializer handles it.
   return user ? children : <Navigate to="/login" />;
 }
 
 // This component contains the actual app layout and routes
 function AppContent() {
+  const location = useLocation();
+  const isTestPage = location.pathname.startsWith('/test/');
+
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
+      {!isTestPage && <Header />}
       <main className="flex-grow">
-        <Routes future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/about" element={<About />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/test/:sectionId"
-            element={
-              <ProtectedRoute>
-                <TestPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/courses"
-            element={
-              <ProtectedRoute>
-                <Courses />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
+            <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
+            <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <PageWrapper><Dashboard /></PageWrapper>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/test/:source/:testNum/:skill"
+              element={
+                <ProtectedRoute>
+                  <TestLayout>
+                    <TestPage />
+                  </TestLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/courses"
+              element={
+                <ProtectedRoute>
+                  <PageWrapper><Courses /></PageWrapper>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/courses/:courseName"
+              element={
+                <ProtectedRoute>
+                  <PageWrapper><CourseDetailPage /></PageWrapper>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </AnimatePresence>
       </main>
-      <Footer />
+      {!isTestPage && <Footer />}
     </div>
   );
 }

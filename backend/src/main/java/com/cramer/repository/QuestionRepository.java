@@ -92,4 +92,14 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
      */
     @Query("SELECT DISTINCT q.questionType FROM Question q ORDER BY q.questionType")
     List<String> findAllDistinctQuestionTypes();
+
+    /**
+     * Count total questions for a given test attempt's properties.
+     *
+     * @param examSource the source of the exam (e.g., "cam18")
+     * @param testNumber the test number (e.g., "1")
+     * @param skill the skill (e.g., "reading")
+     * @return number of questions matching the criteria
+     */
+    int countBySection_ExamSourceAndSection_TestNumberAndSection_Skill(String examSource, Integer testNumber, String skill);
 }

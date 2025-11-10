@@ -84,6 +84,7 @@
   background-color: #6d28d9;
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(31, 38, 135, 0.3);
+  filter: brightness(1.1);
 }
 
 .home-hero .btn-primary:hover {

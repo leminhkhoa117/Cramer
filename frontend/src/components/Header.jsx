@@ -3,11 +3,12 @@ import { Navbar, Nav, Container, Button, Dropdown } from 'react-bootstrap';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { FaUserCircle } from 'react-icons/fa';
+import '../css/Header.css';
 
 export default function Header() {
   const navigate = useNavigate();
   const { user, profile, profileLoading, signOut } = useAuth();
-
+  
   const handleLogout = async () => {
     await signOut();
     navigate('/');
@@ -31,9 +32,9 @@ export default function Header() {
         <Navbar.Toggle aria-controls="basic-navbar-nav" style={{ borderColor: 'rgba(255,255,255,0.5)' }} />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto">
-            <Nav.Link as={NavLink} end to="/" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }}>Home</Nav.Link>
-            <Nav.Link as={NavLink} to="/courses" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }}>Courses</Nav.Link>
-            <Nav.Link as={NavLink} to="/about" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }}>About</Nav.Link>
+            <Nav.Link as={NavLink} end to="/" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }} className="header-nav-link">Trang chủ</Nav.Link>
+            <Nav.Link as={NavLink} to="/courses" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }} className="header-nav-link">Khóa học</Nav.Link>
+            <Nav.Link as={NavLink} to="/about" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }} className="header-nav-link">Về chúng tôi</Nav.Link>
             
             {user ? (
               <Dropdown align="end">
@@ -56,14 +57,14 @@ export default function Header() {
 
                 <Dropdown.Menu>
                   <Dropdown.Item onClick={() => navigate('/dashboard')}>
-                    Dashboard
+                    Bảng điều khiển
                   </Dropdown.Item>
                   <Dropdown.Item onClick={() => navigate('/profile')}>
-                    Profile
+                    Hồ sơ
                   </Dropdown.Item>
                   <Dropdown.Divider />
                   <Dropdown.Item onClick={handleLogout}>
-                    Logout
+                    Đăng xuất
                   </Dropdown.Item>
                 </Dropdown.Menu>
               </Dropdown>
@@ -77,7 +78,7 @@ export default function Header() {
                   marginRight: 0
                 }}
               >
-                Login
+                Đăng nhập
               </Button>
             )}
           </Nav>

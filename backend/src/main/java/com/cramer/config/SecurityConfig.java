@@ -32,11 +32,12 @@ public class SecurityConfig {
 
             // 3. Set up authorization rules
             .authorizeHttpRequests(authorize -> authorize
-                // Allow public access to the email check endpoint
-                .requestMatchers("/api/auth/check-email").permitAll()
+                // Allow public access to auth and API docs
+                .requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                 // All other API requests must be authenticated
-                .requestMatchers("/api/**").authenticated() 
-                .anyRequest().permitAll() // Allow other requests (e.g., to Swagger UI)
+                .requestMatchers("/api/**").authenticated()
+                // Any other request that doesn't start with /api can be permitted
+                .anyRequest().permitAll()
             )
             
             // 4. Add our custom JWT filter

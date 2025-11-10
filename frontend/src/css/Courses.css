@@ -87,8 +87,8 @@
   max-width: 1200px;
   margin: 0 auto;
   padding-top: 3rem; /* Add padding here instead */
-  padding-left: 2rem; /* Add back horizontal padding for content */
-  padding-right: 2rem; /* Add back horizontal padding for content */
+  padding-left: 1.5rem; /* Add back horizontal padding for content */
+  padding-right: 1.5rem; /* Add back horizontal padding for content */
 }
 
 /* Redesigned Search & Filter */
@@ -222,7 +222,7 @@
 }
 
 .new-course-card:hover {
-  transform: translateY(-6px);
+  transform: translateY(-6px) scale(1.02);
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
 }
 
@@ -298,6 +298,7 @@
   background: rgba(255, 255, 255, 0.8);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
+  filter: brightness(1.05);
 }
 
 /* View All Button */
@@ -355,4 +356,38 @@
   .new-course-card__footer {
     justify-content: center;
   }
+}
+
+/* Header for the course list, similar to dashboard */
+.courses-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Overriding title margin for the new header layout */
+.courses-header .new-courses-title {
+  margin-bottom: 0;
+  font-size: clamp(1.5rem, 3vw, 1.8rem); /* Align with dashboard title size */
+}
+
+/* Filter button style from Dashboard */
+.btn-filter {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.6rem 1.5rem;
+  background: #fff;
+  color: #333;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-filter:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  filter: brightness(1.1);
 }

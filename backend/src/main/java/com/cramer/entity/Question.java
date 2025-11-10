@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
 
 /**
  * Entity representing individual questions within a section.
@@ -37,6 +40,10 @@ public class Question {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "correct_answer", columnDefinition = "jsonb", nullable = false)
     private JsonNode correctAnswer; // Stores correct answer(s) as JSON array
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "section_id", insertable = false, updatable = false)
+    private Section section;
 
     // Constructors
     public Question() {
@@ -107,6 +114,14 @@ public class Question {
 
     public void setCorrectAnswer(JsonNode correctAnswer) {
         this.correctAnswer = correctAnswer;
+    }
+
+    public Section getSection() {
+        return section;
+    }
+
+    public void setSection(Section section) {
+        this.section = section;
     }
 
     @Override

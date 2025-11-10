@@ -1,0 +1,21 @@
+/* Frontend/src/css/Header.css */
+
+.header-nav-link {
+    transition: transform 0.2s ease-in-out;
+}
+
+.header-nav-link:hover {
+    transform: translateY(-2px);
+}
+
+/* Styling for the dropdown items in the header */
+.dropdown-item {
+    transition: all 0.2s ease-in-out;
+}
+
+.dropdown-item:hover {
+    background-color: #f0eaff; /* A light lavender color */
+    color: #7c3aed;
+    transform: translateX(4px);
+    border-radius: 4px;
+}

@@ -1,51 +1,40 @@
 package com.cramer.entity;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
-import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
-/**
- * Entity representing user's answers to questions.
- * Tracks user progress and performance.
- */
 @Entity
-@Table(name = "user_answers", schema = "public")
+@Table(name = "user_answers")
 public class UserAnswer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private UUID userId; // Foreign key to auth.users.id
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "attempt_id", nullable = false)
+    private TestAttempt attempt;
 
-    @Column(name = "question_id", nullable = false)
-    private Long questionId; // Foreign key to questions table
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "question_id", nullable = false)
+    private Question question;
 
-    @Column(name = "user_answer", nullable = false, columnDefinition = "TEXT")
-    private String userAnswer; // The answer provided by user
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "answer_content", columnDefinition = "jsonb", nullable = false)
+    private JsonNode answerContent;
+
+    @Column(name = "is_correct")
+    private Boolean isCorrect;
 
     @Column(name = "submitted_at", nullable = false)
     private OffsetDateTime submittedAt;
 
-    @Column(name = "is_correct")
-    private Boolean isCorrect; // Whether the answer is correct
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
-
     // Constructors
     public UserAnswer() {
-    }
-
-    public UserAnswer(UUID userId, Long questionId, String userAnswer) {
-        this.userId = userId;
-        this.questionId = questionId;
-        this.userAnswer = userAnswer;
         this.submittedAt = OffsetDateTime.now();
     }
 
@@ -58,28 +47,36 @@ public class UserAnswer {
         this.id = id;
     }
 
-    public UUID getUserId() {
-        return userId;
+    public TestAttempt getAttempt() {
+        return attempt;
     }
 
-    public void setUserId(UUID userId) {
-        this.userId = userId;
+    public void setAttempt(TestAttempt attempt) {
+        this.attempt = attempt;
     }
 
-    public Long getQuestionId() {
-        return questionId;
+    public Question getQuestion() {
+        return question;
     }
 
-    public void setQuestionId(Long questionId) {
-        this.questionId = questionId;
+    public void setQuestion(Question question) {
+        this.question = question;
     }
 
-    public String getUserAnswer() {
-        return userAnswer;
+    public JsonNode getAnswerContent() {
+        return answerContent;
     }
 
-    public void setUserAnswer(String userAnswer) {
-        this.userAnswer = userAnswer;
+    public void setAnswerContent(JsonNode answerContent) {
+        this.answerContent = answerContent;
+    }
+
+    public Boolean getCorrect() {
+        return isCorrect;
+    }
+
+    public void setCorrect(Boolean correct) {
+        isCorrect = correct;
     }
 
     public OffsetDateTime getSubmittedAt() {
@@ -88,33 +85,5 @@ public class UserAnswer {
 
     public void setSubmittedAt(OffsetDateTime submittedAt) {
         this.submittedAt = submittedAt;
-    }
-
-    public Boolean getIsCorrect() {
-        return isCorrect;
-    }
-
-    public void setIsCorrect(Boolean isCorrect) {
-        this.isCorrect = isCorrect;
-    }
-
-    public OffsetDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    @Override
-    public String toString() {
-        return "UserAnswer{" +
-                "id=" + id +
-                ", userId=" + userId +
-                ", questionId=" + questionId +
-                ", userAnswer='" + userAnswer + '\'' +
-                ", isCorrect=" + isCorrect +
-                ", submittedAt=" + submittedAt +
-                '}';
     }
 }

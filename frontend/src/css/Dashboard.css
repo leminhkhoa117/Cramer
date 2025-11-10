@@ -1,4 +1,4 @@
-﻿/* Dashboard Styles */
+/* Dashboard Styles */
 :root {
   --dash-primary: #8c52ff;
   --dash-cyan: #27afdb;
@@ -17,7 +17,7 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1.25rem;
+  padding: 0 1.5rem;
 }
 
 /* Hero Section */
@@ -156,32 +156,18 @@
   display: contents;
 }
 
-
-
 .goal-empty {
-
   color: #fff;
-
   background: rgba(255, 255, 255, 0.12);
-
   border-radius: 16px;
-
   padding: 0.75rem 1rem;
-
   max-width: 280px;
-
   text-align: center;
-
   font-weight: 500;
-
   /* Add flex properties for vertical centering */
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
 }
 
 .goal-empty--inline {
@@ -189,8 +175,6 @@
   min-height: 100px;
   border: 1px rgba(255, 255, 255, 0.3);
 }
-
-
 
 .goal-card {
   min-height: 102px;
@@ -220,53 +204,28 @@
   text-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
 }
 
-
-
 .goal-divider {
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   padding: 0 1rem;
-
   margin-left: 2rem; /* Pushed from the left, closer to skills */
-
 }
-
-
 
 .goal-divider span {
-
   width: 80px; /* Narrower box */
-
   height: 90px;
-
   background: rgba(255, 255, 255, 0.85);
-
   color: #000;
-
   border-radius: 20px;
-
   font-weight: 700;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   text-align: center;
-
   font-size: 0.9rem;
-
   line-height: 1.2;
-
 }
-
-
 
 .goal-skills-group {
   flex: 0.9;
@@ -315,886 +274,269 @@
   text-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
 }
 
-
-
 /* New style for the unified empty state */
-
 .goals-pill-empty {
-
   width: 100%;
-
   padding: 2rem;
-
   text-align: center;
-
   font-size: 1.1rem;
-
   font-weight: 600;
-
   color: #fff;
-
   background: rgba(255, 255, 255, 0.1);
-
   border-radius: 16px;
-
 }
-
-
 
 /* Courses Section */
-
 .dash-courses {
-
   padding: 2rem 0 3rem;
-
   margin-top: 0; /* Reduced top margin */
-
   position: relative;
-
   z-index: 5;
-
 }
-
-
 
 .dash-courses__header {
-
   display: flex;
-
   align-items: center;
-
   justify-content: space-between;
-
   gap: 1rem;
-
   margin-bottom: 1rem; /* Reduced bottom margin */
-
 }
-
-
 
 .dash-courses__header h2 {
-
   margin: 0;
-
   font-size: clamp(1.5rem, 3vw, 1.8rem);
-
   font-weight: 700;
-
   color: var(--dash-text);
-
 }
 
-
-
 .btn-filter {
-
   border: 0;
-
   border-radius: 999px;
-
   padding: 0.6rem 1.5rem;
-
   background: #fff;
-
   color: #333;
-
   font-weight: 600;
-
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-
   cursor: pointer;
-
   transition: all 0.2s ease;
-
 }
 
 .btn-filter:hover {
-
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-
   transform: translateY(-2px);
-
+  filter: brightness(1.1);
 }
-
-
 
 .course-grid {
-
   display: grid;
-
-  grid-template-columns: repeat(2, 1fr);
-
+  grid-template-columns: 1fr; /* Changed to single column */
   gap: 1.75rem;
-
 }
-
-
-
-.course-card {
-
-  display: flex;
-
-  gap: 1.5rem;
-
-  padding: 1.5rem;
-
-  border-radius: 22px;
-
-  background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
-
-  color: var(--dash-text);
-
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-
-  transition: all 0.3s ease;
-
-  overflow: hidden;
-
-}
-
-.course-card:hover {
-
-  transform: translateY(-5px);
-
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-
-}
-
-
-
-.course-card__thumb {
-
-  width: 140px;
-
-  flex-shrink: 0;
-
-  border-radius: 16px;
-
-  background-color: #333;
-
-  background-size: cover;
-
-  background-position: center;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  color: white;
-
-  font-weight: bold;
-
-  text-align: center;
-
-}
-
-
-
-.course-card__body {
-
-  flex: 1;
-
-  min-width: 0;
-
-  display: flex;
-
-  flex-direction: column;
-
-}
-
-
-
-.course-card__series {
-
-  font-weight: 700;
-
-  letter-spacing: 0.05em;
-
-  font-size: 0.8rem;
-
-  text-transform: uppercase;
-
-  color: #555;
-
-  margin-bottom: 0.75rem;
-
-}
-
-
-
-.course-card__meta {
-
-  font-size: 0.9rem;
-
-  line-height: 1.5;
-
-  color: #444;
-
-  flex-grow: 1;
-
-}
-
-.course-card__meta div {
-
-  margin-bottom: 0.25rem;
-
-}
-
-
-
-.course-card__footer {
-
-  display: flex;
-
-  align-items: flex-end;
-
-  justify-content: space-between;
-
-  gap: 1rem;
-
-  margin-top: 1rem;
-
-}
-
-
-
-.course-card__score {
-
-  font-size: 1.8rem;
-
-  font-weight: 800;
-
-  color: var(--dash-text);
-
-  line-height: 1;
-
-}
-
-
-
-.course-card__status {
-
-  font-weight: 700;
-
-  background: rgba(255, 255, 255, 0.5);
-
-  border: 1px solid rgba(255, 255, 255, 0.7);
-
-  padding: 0.4rem 0.8rem;
-
-  border-radius: 12px;
-
-  font-size: 1rem;
-
-  line-height: 1;
-
-}
-
-
 
 .course-empty {
-
   padding: 2rem;
-
   text-align: center;
-
   border-radius: 20px;
-
   background: rgba(255, 255, 255, 0.7);
-
   color: var(--dash-dark);
-
   font-weight: 600;
-
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-
 }
 
-
-
-.goal-divider {
-
+/* New Course Card Style for Dashboard (adapted from Courses.css) */
+.dash-course-card {
   display: flex;
-
+  gap: 1.5rem;
   align-items: center;
-
-  justify-content: center;
-
-  padding: 0 1rem;
-
-  margin-left: 2rem; /* Pushed from the left, closer to skills */
-
-}
-
-
-
-.goal-divider span {
-
-  width: 80px; /* Narrower box */
-
-  height: 90px;
-
-  background: rgba(255, 255, 255, 0.85);
-
-  color: #000;
-
+  padding: 1.2rem;
+  background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
   border-radius: 20px;
-
-  font-weight: 700;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  text-align: center;
-
-  font-size: 0.9rem;
-
-  line-height: 1.2;
-
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+  color: var(--dash-text);
 }
 
-
-
-.goal-skills-group {
-
-  display: flex;
-
-  flex: 1;
-
-  justify-content: space-around;
-
-  gap: 1rem;
-
+.dash-course-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
 }
 
-
-
-.goal-skills-group .goal-empty {
-
-  flex: 1;
-
-  background: rgba(255, 255, 255, 0.08);
-
-}
-
-
-
-.goal-skill {
-
-  text-align: center;
-
-}
-
-
-
-.goal-skill__name {
-
-  border: 1px solid rgba(255, 255, 255, 0.5);
-
-  color: #fff;
-
+.dash-course-card__image-container {
+  width: 140px;
+  height: 160px;
+  flex-shrink: 0;
   border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
 
-  padding: 0.4rem 0.8rem;
+.dash-course-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
-  font-weight: 600;
+.dash-course-card__content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 0.5rem;
+}
 
-  font-size: 0.9rem;
-
+.dash-course-card__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--dash-text);
   margin-bottom: 0.5rem;
-
 }
 
-
-
-.goal-skill__score {
-
-  color: #fff;
-
-  font-weight: 700;
-
-  font-size: clamp(2rem, 4vw, 2.8rem);
-
-  line-height: 1;
-
-}
-
-
-
-/* New style for the unified empty state */
-
-.goals-pill-empty {
-
-  width: 100%;
-
-  padding: 2rem;
-
-  text-align: center;
-
-  font-size: 1.1rem;
-
-  font-weight: 600;
-
-  color: #fff;
-
-  background: rgba(255, 255, 255, 0.1);
-
-  border-radius: 16px;
-
-}
-
-
-
-/* Courses Section */
-
-.dash-courses {
-
-  padding: 2rem 0 3rem;
-
-  margin-top: 0; /* Reduced top margin */
-
-  position: relative;
-
-  z-index: 5;
-
-}
-
-
-
-.dash-courses__header {
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  gap: 1rem;
-
-  margin-bottom: 1rem; /* Reduced bottom margin */
-
-}
-
-
-
-.dash-courses__header h2 {
-
-  margin: 0;
-
-  font-size: clamp(1.5rem, 3vw, 1.8rem);
-
-  font-weight: 700;
-
-  color: var(--dash-text);
-
-}
-
-
-
-.btn-filter {
-
-  border: 0;
-
-  border-radius: 999px;
-
-  padding: 0.6rem 1.5rem;
-
-  background: #fff;
-
-  color: #333;
-
-  font-weight: 600;
-
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-
-  cursor: pointer;
-
-  transition: all 0.2s ease;
-
-}
-
-.btn-filter:hover {
-
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-
-  transform: translateY(-2px);
-
-}
-
-
-
-.course-grid {
-
-  display: grid;
-
-  grid-template-columns: repeat(2, 1fr);
-
-  gap: 1.75rem;
-
-}
-
-
-
-.course-card {
-
-  display: flex;
-
-  gap: 1.5rem;
-
-  padding: 1.5rem;
-
-  border-radius: 22px;
-
-  background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
-
-  color: var(--dash-text);
-
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-
-  transition: all 0.3s ease;
-
-  overflow: hidden;
-
-}
-
-.course-card:hover {
-
-  transform: translateY(-5px);
-
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-
-}
-
-
-
-.course-card__thumb {
-
-  width: 140px;
-
-  flex-shrink: 0;
-
-  border-radius: 16px;
-
-  background-color: #333;
-
-  background-size: cover;
-
-  background-position: center;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  color: white;
-
-  font-weight: bold;
-
-  text-align: center;
-
-}
-
-
-
-.course-card__body {
-
-  flex: 1;
-
-  min-width: 0;
-
-  display: flex;
-
-  flex-direction: column;
-
-}
-
-
-
-.course-card__series {
-
-  font-weight: 700;
-
-  letter-spacing: 0.05em;
-
-  font-size: 0.8rem;
-
-  text-transform: uppercase;
-
-  color: #555;
-
-  margin-bottom: 0.75rem;
-
-}
-
-
-
-.course-card__meta {
-
+.dash-course-card__meta {
   font-size: 0.9rem;
-
-  line-height: 1.5;
-
   color: #444;
-
-  flex-grow: 1;
-
+  line-height: 1.6;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem 1rem;
 }
 
-.course-card__meta div {
-
-  margin-bottom: 0.25rem;
-
+.dash-course-card__meta p {
+  margin: 0;
 }
 
-
-
-.course-card__footer {
-
-  display: flex;
-
-  align-items: flex-end;
-
-  justify-content: space-between;
-
-  gap: 1rem;
-
-  margin-top: 1rem;
-
-}
-
-
-
-.course-card__score {
-
-  font-size: 1.8rem;
-
-  font-weight: 800;
-
-  color: var(--dash-text);
-
-  line-height: 1;
-
-}
-
-
-
-.course-card__status {
-
-  font-weight: 700;
-
-  background: rgba(255, 255, 255, 0.5);
-
-  border: 1px solid rgba(255, 255, 255, 0.7);
-
-  padding: 0.4rem 0.8rem;
-
-  border-radius: 12px;
-
-  font-size: 1rem;
-
-  line-height: 1;
-
-}
-
-
-
-.course-empty {
-
-  padding: 2rem;
-
-  text-align: center;
-
-  border-radius: 20px;
-
-  background: rgba(255, 255, 255, 0.7);
-
-  color: var(--dash-dark);
-
+.dash-course-card__meta p strong {
   font-weight: 600;
-
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-
+  color: var(--dash-text);
 }
 
+.dash-course-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.dash-course-card__progress-text {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--dash-text);
+}
+
+.dash-course-card__status-badge {
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  line-height: 1;
+}
 
 
 .dash-loading,
-
 .dash-error,
-
 .dash-empty-state {
-
   margin: 4rem auto;
-
   max-width: 480px;
-
   padding: 2rem;
-
   border-radius: 16px;
-
   text-align: center;
-
   font-weight: 600;
-
   color: var(--dash-dark);
-
   background: rgba(255, 255, 255, 0.8);
-
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-
 }
-
-
 
 .dash-error {
-
   color: #b42318;
-
   background: rgba(255, 235, 230, 0.95);
-
 }
-
-
 
 /* Responsive */
-
 @media (max-width: 992px) {
-
   .goals-pill {
-
     flex-direction: column;
-
     padding: 1.5rem;
-
   }
-
   .goals-group {
-
     display: flex;
-
     flex-direction: column;
-
     gap: 1rem;
-
   }
-
   .goal-meta-row {
-
     display: flex;
-
     flex-wrap: wrap;
-
     gap: 0.75rem;
-
   }
-
   .goal-meta-card {
-
     flex: 1 1 calc(50% - 0.5rem);
-
   }
-
   .goal-meta-card--overall {
-
     flex-basis: 100%;
-
   }
-
   .goal-targets-grid {
-
     display: grid;
-
     grid-template-columns: repeat(2, minmax(120px, 1fr));
-
   }
-
   .goal-skills-group {
-
     width: 100%;
-
     padding-left: 0;
-
     border-left: 0;
-
     flex-wrap: wrap;
-
   }
-
   .goal-skill {
-
     flex: 1 1 calc(50% - 0.75rem);
-
   }
-
+  /* This is already 1fr, but we confirm it here */
   .course-grid {
-
     grid-template-columns: 1fr;
-
   }
-
 }
 
-
-
 @media (max-width: 640px) {
-
   .dash-hero { min-height: auto; padding-bottom: 2rem; }
-
   .goals-pill { padding: 1rem; }
-
   .goal-meta-row {
-
     display: flex;
-
     flex-direction: column;
-
     gap: 0.75rem;
-
   }
-
   .goal-meta-card,
-
   .goal-meta-card--overall {
-
     flex-basis: 100%;
-
   }
-
   .goal-skills-group {
-
     flex-wrap: wrap;
-
     gap: 0.75rem;
-
     border-left: 0;
-
     padding-left: 0;
-
   }
-
   .goal-skill {
-
     flex-basis: 100%;
-
   }
-
   .goal-targets-grid {
-
     display: grid;
-
     grid-template-columns: 1fr;
-
+  }
+  
+  .dash-course-card {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
   }
 
-  .course-card { flex-direction: column; }
+  .dash-course-card__image-container {
+    width: 100%;
+    height: 150px;
+    margin-bottom: 1rem;
+  }
 
-  .course-card__thumb { width: 100%; height: 150px; }
-
+  .dash-course-card__content {
+    align-items: center;
+  }
+  
+  .dash-course-card__footer {
+    flex-direction: column;
+    gap: 1rem;
+  }
 }
