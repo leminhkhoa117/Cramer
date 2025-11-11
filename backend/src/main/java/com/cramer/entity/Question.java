@@ -45,6 +45,9 @@ public class Question {
     @JoinColumn(name = "section_id", insertable = false, updatable = false)
     private Section section;
 
+    @Column(name = "explanation")
+    private String explanation;
+
     // Constructors
     public Question() {
     }
@@ -122,6 +125,14 @@ public class Question {
 
     public void setSection(Section section) {
         this.section = section;
+    }
+
+    public String getExplanation() {
+        return explanation;
+    }
+
+    public void setExplanation(String explanation) {
+        this.explanation = explanation;
     }
 
     @Override

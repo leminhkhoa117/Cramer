@@ -1,0 +1,118 @@
+.reviewed-question-card {
+    background-color: var(--review-card-bg);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-left-width: 5px;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.reviewed-question-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+}
+
+.reviewed-question-card.correct {
+    border-left-color: var(--correct-color);
+}
+
+.reviewed-question-card.incorrect {
+    border-left-color: var(--incorrect-color);
+}
+
+.reviewed-question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.question-number {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--review-text-primary);
+}
+
+.status-icon {
+    font-size: 1.2rem;
+}
+
+.reviewed-question-card.correct .status-icon {
+    color: var(--correct-color);
+}
+
+.reviewed-question-card.incorrect .status-icon {
+    color: var(--incorrect-color);
+}
+
+.question-text {
+    font-size: 1rem;
+    color: var(--review-text-primary);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+}
+
+.answers-comparison {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.answer-item {
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.answer-item.your-answer {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.reviewed-question-card.incorrect .answer-item.your-answer {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.answer-item.correct-answer {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.answer-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--review-text-primary);
+}
+
+.answer-text {
+    font-weight: 500;
+}
+
+.answer-empty {
+    font-style: italic;
+    color: var(--review-text-secondary);
+}
+
+.explanation-section {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.explanation-section h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--review-text-primary);
+}
+
+.explanation-section p {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--review-text-secondary);
+}

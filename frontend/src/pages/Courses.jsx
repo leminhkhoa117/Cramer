@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { courseApi } from '../api/backendApi';
+import FilterModal from '../components/FilterModal';
 import './../css/Courses.css';
 import heroFallback from '../pictures/cambridge-ielts-17.avif';
 import { FaSearch } from 'react-icons/fa';
@@ -18,6 +19,8 @@ export default function Courses() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+    const [activeFilters, setActiveFilters] = useState({});
 
     useEffect(() => {
         const fetchCourses = async () => {
@@ -36,9 +39,31 @@ export default function Courses() {
         fetchCourses();
     }, []);
 
-    const filteredCourses = courses.filter(courseName =>
-        formatCourseName(courseName).toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const availableFilters = useMemo(() => {
+        const examSources = courses.map(name => ({ value: name, label: formatCourseName(name) }));
+        return {
+            source: { label: 'Bộ đề', options: examSources },
+        };
+    }, [courses]);
+
+    const filteredCourses = useMemo(() => {
+        let filtered = [...courses];
+
+        // Apply search term
+        if (searchTerm) {
+            filtered = filtered.filter(courseName =>
+                formatCourseName(courseName).toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        // Apply active filters
+        if (activeFilters.source && activeFilters.source.length > 0) {
+            filtered = filtered.filter(courseName => activeFilters.source.includes(courseName));
+        }
+
+        return filtered;
+    }, [courses, searchTerm, activeFilters]);
+
 
     return (
         <div className="new-courses-page">
@@ -55,15 +80,18 @@ export default function Courses() {
                 </div>
             </div>
             <div className="new-courses-container">
-                <div className="courses-search-container">
-                    <FaSearch className="courses-search-icon" />
-                    <input
-                        type="text"
-                        placeholder="Tìm kiếm theo tên bộ đề..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="courses-search-input"
-                    />
+                <div className="courses-controls">
+                    <div className="courses-search-container">
+                        <FaSearch className="courses-search-icon" />
+                        <input
+                            type="text"
+                            placeholder="Tìm kiếm theo tên bộ đề..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="courses-search-input"
+                        />
+                    </div>
+                    <button type="button" className="btn-filter" onClick={() => setIsFilterModalOpen(true)}>Lọc</button>
                 </div>
 
                 <div className="courses-header">
@@ -104,6 +132,14 @@ export default function Courses() {
                     </>
                 )}
             </div>
+
+            <FilterModal
+                isOpen={isFilterModalOpen}
+                onClose={() => setIsFilterModalOpen(false)}
+                onApply={setActiveFilters}
+                availableFilters={availableFilters}
+                currentFilters={activeFilters}
+            />
         </div>
     );
 }

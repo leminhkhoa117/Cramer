@@ -1,11 +1,27 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { FiEdit3 } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 import { dashboardApi } from '../api/backendApi';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
-import GoalModal from '../components/GoalModal'; // Import the modal
+import GoalModal from '../components/GoalModal';
+import FilterModal from '../components/FilterModal';
 import heroFallback from '../pictures/cambridge-ielts-17.avif';
 import '../css/Dashboard.css';
+import '../css/FilterModal.css';
+
+// Helper functions moved to the top level
+const formatCourseSeries = (course) => `Cambridge ${course.examSource.substring(3)} - Test ${course.testNumber}`;
+
+const formatSkillName = (skill) => {
+  if (!skill) return '';
+  return skill.charAt(0).toUpperCase() + skill.slice(1);
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'Chưa có';
+  return new Date(dateString).toLocaleDateString('vi-VN');
+};
 
 // Animation variants for staggering children
 const containerVariants = {
@@ -32,6 +48,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState({});
   
   // Track the last profile ID we fetched for to avoid unnecessary refetches
   const [lastFetchedProfileId, setLastFetchedProfileId] = useState(null);
@@ -142,8 +160,30 @@ export default function Dashboard() {
     });
   }, [summary?.target?.examDate]);
 
-  const skills = summary?.skillSummary ?? [];
   const courses = summary?.courseProgress ?? [];
+  const skills = summary?.skillSummary ?? [];
+
+  const availableFilters = useMemo(() => {
+    const skills = [...new Set(courses.map(c => c.skill))].map(s => ({ value: s, label: formatSkillName(s) }));
+    const statuses = [...new Set(courses.map(c => c.status))].map(s => ({ value: s, label: s }));
+    
+    return {
+      skill: { label: 'Kỹ năng', options: skills },
+      status: { label: 'Trạng thái', options: statuses },
+    };
+  }, [courses]);
+
+  const filteredCourses = useMemo(() => {
+    if (Object.keys(activeFilters).length === 0) {
+      return courses;
+    }
+    return courses.filter(course => {
+      return Object.entries(activeFilters).every(([group, values]) => {
+        if (!values || values.length === 0) return true;
+        return values.includes(course[group]);
+      });
+    });
+  }, [courses, activeFilters]);
 
   const heroData = useMemo(() => {
     const username = summary?.profile?.username || profile?.username || 'bạn';
@@ -171,35 +211,6 @@ export default function Dashboard() {
       score: `${Math.round(skill.accuracy)}%`,
     }));
   }, [skills]);
-
-  const formatCourseSeries = (course) => {
-    if (!course) return '';
-    const source = course.examSource ? course.examSource.toUpperCase().replace('CAM', 'CAMBRIDGE ') : 'IELTS';
-    const test = course.testNumber ? `TEST ${course.testNumber}` : '';
-    return `${source} ${test}`.trim();
-  };
-
-  const formatSkillName = (skill) => {
-    if (!skill) return '-';
-    const mapping = {
-      reading: 'Đọc',
-      listening: 'Nghe',
-      writing: 'Viết',
-      speaking: 'Nói',
-    };
-    return mapping[skill.toLowerCase()] || skill;
-  };
-
-  const formatDate = (value) => {
-    if (!value) return 'Chưa có';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return 'Chưa có';
-    return date.toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  };
 
   if (!user && !profileLoading) {
     return (
@@ -273,7 +284,7 @@ export default function Dashboard() {
                   </motion.div>
 
                   {skillTargets.length > 0 ? (
-                    <motion.div className="goal-targets-grid" variants={containerVariants}>
+                    <motion.div className="goal-targets-grid mobile-margin-top" variants={containerVariants}>
                       {skillTargets.map((target) => (
                         <motion.div key={target.id} className="goal-card" variants={itemVariants}>
                           <div className="goal-card__badge">{target.shortLabel || target.label}</div>
@@ -288,16 +299,6 @@ export default function Dashboard() {
                   )}
                 </motion.div>
 
-                {formattedSkills.length > 0 && (
-                  <motion.div className="goal-skills-group" variants={containerVariants}>
-                    {formattedSkills.map((skill) => (
-                      <motion.div key={skill.label} className="goal-skill" variants={itemVariants}>
-                        <div className="goal-skill__name">{skill.label}</div>
-                        <div className="goal-skill__score">{skill.score}</div>
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                )}
               </>
             )}
           </motion.div>
@@ -305,18 +306,18 @@ export default function Dashboard() {
       </section>
 
       {/* Courses */}
-      <section className="dash-courses">
+      <section className="dash-courses mobile-margin-top">
         <div className="container">
           <div className="dash-courses__header">
             <h2>Khoá học của tôi</h2>
-            <button type="button" className="btn-filter">Lọc</button>
+            <button type="button" className="btn-filter" onClick={() => setIsFilterModalOpen(true)}>Lọc</button>
           </div>
 
-          {courses.length === 0 ? (
-            <div className="course-empty">Bạn chưa tham gia khoá học nào.</div>
+          {filteredCourses.length === 0 ? (
+            <div className="course-empty">Không tìm thấy khoá học nào khớp với bộ lọc.</div>
           ) : (
             <div className="course-grid">
-              {courses.map((course) => {
+              {filteredCourses.map((course) => {
                 const completion = Math.min(
                   100,
                   Math.max(0, Math.round((course.completionRate ?? 0) * 100))
@@ -340,8 +341,21 @@ export default function Dashboard() {
                         <p><strong>Lần làm gần nhất:</strong> {formatDate(course.lastAttempt)}</p>
                       </div>
                       <div className="dash-course-card__footer">
-                        <span className="dash-course-card__progress-text">{completion}%</span>
-                        <span className="dash-course-card__status-badge">{course.status}</span>
+                        <div className="dash-course-card__score-status">
+                          {course.bandScore != null ? (
+                            <span className="dash-course-card__progress-text">
+                              Band {course.bandScore.toFixed(1)}
+                            </span>
+                          ) : (
+                            <span className="dash-course-card__progress-text">{completion}%</span>
+                          )}
+                          <span className="dash-course-card__status-badge">{course.status}</span>
+                        </div>
+                        {course.status === 'COMPLETED' && (
+                          <Link to={`/test/review/${course.attemptId}`} className="btn btn-review">
+                            Xem lại
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </article>
@@ -362,6 +376,14 @@ export default function Dashboard() {
           setLastFetchedProfileId(null);
           fetchDashboardData();
         }}
+      />
+
+      <FilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        onApply={setActiveFilters}
+        availableFilters={availableFilters}
+        currentFilters={activeFilters}
       />
     </div>
   );

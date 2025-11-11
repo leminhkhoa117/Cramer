@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar, Nav, Container, Button, Dropdown } from 'react-bootstrap';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,24 @@ import '../css/Header.css';
 export default function Header() {
   const navigate = useNavigate();
   const { user, profile, profileLoading, signOut } = useAuth();
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+
+    // Cleanup function to remove the event listener
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
   
   const handleLogout = async () => {
     await signOut();
@@ -20,11 +38,7 @@ export default function Header() {
     : profile?.username || user?.email?.split('@')[0] || 'User';
 
   return (
-    <Navbar expand="lg" className="w-100" style={{
-      background: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #8b5cf6 100%)',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-      padding: '1rem 0'
-    }}>
+    <Navbar sticky="top" expand="lg" className={`w-100 ${isScrolled ? 'scrolled' : ''}`}>
       <Container fluid style={{ paddingLeft: '2rem', paddingRight: '2rem' }}>
         <Navbar.Brand as={Link} to="/" className="font-bold text-2xl" style={{ marginLeft: 0, display: 'flex', alignItems: 'center' }}>
           <img 

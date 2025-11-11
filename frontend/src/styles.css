@@ -22,14 +22,13 @@ body {
 }
 
 #root {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
   min-height: 100vh;
 }
 
-main {
-  flex: 1;
-}
+/* No special style needed for main anymore */
+
 
 /* General Styles */
 h1, h2, h3, h4, h5, h6 {
@@ -114,7 +113,7 @@ a:hover {
 
 /* Navbar customization */
 .navbar {
-  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #8b5cf6 100%) !important;
+  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #8b5cf6 100%);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 

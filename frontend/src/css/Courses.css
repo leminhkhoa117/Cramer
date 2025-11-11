@@ -91,13 +91,19 @@
   padding-right: 1.5rem; /* Add back horizontal padding for content */
 }
 
-/* Redesigned Search & Filter */
-.courses-search-container {
-  position: relative;
-  width: 100%;
-  margin-bottom: 1rem;
+.courses-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 1rem;
 }
 
+/* Redesigned Search & Filter */
+.courses-search-container {
+    position: relative;
+    flex-grow: 1;
+}
 .courses-search-icon {
   position: absolute;
   left: 1.5rem;

@@ -2,10 +2,13 @@ package com.cramer.service;
 
 import com.cramer.dto.AnswerSubmissionDTO;
 import com.cramer.dto.TestResultDTO;
+import com.cramer.dto.TestReviewDTO;
+import com.cramer.dto.QuestionReviewDTO;
 import com.cramer.entity.Question;
 import com.cramer.entity.TestAttempt;
 import com.cramer.entity.UserAnswer;
 import com.cramer.repository.QuestionRepository;
+import com.cramer.util.IeltsScoreConverter;
 import com.cramer.repository.TestAttemptRepository;
 import com.cramer.repository.UserAnswerRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -19,10 +22,12 @@ import com.cramer.exception.ResourceNotFoundException;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class TestAttemptService {
@@ -205,5 +210,65 @@ public class TestAttemptService {
         }
 
         return false;
+    }
+
+    @Transactional(readOnly = true)
+    public TestReviewDTO getTestReview(Long attemptId, UUID userId) {
+        // 1. Fetch attempt and verify ownership
+        TestAttempt testAttempt = testAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + attemptId));
+
+        if (!testAttempt.getUserId().equals(userId)) {
+            throw new AccessDeniedException("User does not have permission to review this test attempt.");
+        }
+
+        // 2. Fetch all user answers for this attempt
+        List<UserAnswer> userAnswers = userAnswerRepository.findByAttemptId(attemptId);
+        Map<Long, UserAnswer> answersByQuestionId = userAnswers.stream()
+                .collect(Collectors.toMap(answer -> answer.getQuestion().getId(), answer -> answer));
+
+        // 3. Fetch all questions for the entire test
+        List<Question> allTestQuestions = questionRepository.findBySection_ExamSourceAndSection_TestNumberAndSection_Skill(
+            testAttempt.getExamSource(),
+            Integer.valueOf(testAttempt.getTestNumber()),
+            testAttempt.getSkill()
+        );
+
+        // 4. Build the DTO
+        TestReviewDTO reviewDTO = new TestReviewDTO();
+        reviewDTO.setAttemptId(testAttempt.getId());
+        reviewDTO.setExamSource(testAttempt.getExamSource());
+        reviewDTO.setTestNumber(testAttempt.getTestNumber());
+        reviewDTO.setSkill(testAttempt.getSkill());
+        reviewDTO.setScore(testAttempt.getScore());
+        reviewDTO.setTotalQuestions(allTestQuestions.size());
+        reviewDTO.setStartedAt(testAttempt.getStartedAt());
+        reviewDTO.setCompletedAt(testAttempt.getCompletedAt());
+
+        // Calculate and set band score
+        if ("COMPLETED".equals(testAttempt.getStatus()) && ("reading".equalsIgnoreCase(testAttempt.getSkill()) || "listening".equalsIgnoreCase(testAttempt.getSkill()))) {
+            reviewDTO.setBandScore(IeltsScoreConverter.convertToBand(testAttempt.getScore()));
+        }
+
+        List<QuestionReviewDTO> questionReviews = allTestQuestions.stream()
+            .sorted(Comparator.comparing(Question::getQuestionNumber))
+            .map(question -> {
+                UserAnswer userAnswer = answersByQuestionId.get(question.getId());
+                return new QuestionReviewDTO(
+                    question.getQuestionNumber(),
+                    question.getQuestionUid(),
+                    question.getQuestionType(),
+                    question.getQuestionContent(),
+                    userAnswer != null ? userAnswer.getAnswerContent() : null,
+                    question.getCorrectAnswer(),
+                    userAnswer != null ? userAnswer.getCorrect() : null,
+                    question.getExplanation()
+                );
+            })
+            .collect(Collectors.toList());
+
+        reviewDTO.setQuestions(questionReviews);
+
+        return reviewDTO;
     }
 }

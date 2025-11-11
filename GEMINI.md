@@ -52,12 +52,12 @@ cd frontend
 npm install
 npm run dev
 ```
-The frontend will be available at `http://localhost:5173`.
+The frontend will be available at `http://localhost:3000`.
 
 **Backend:**
 ```bash
 cd backend
-./mvnw spring-boot:run
+./run-app.ps1
 ```
 The backend will be available at `http://localhost:8080`.
 

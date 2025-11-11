@@ -102,4 +102,14 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
      * @return number of questions matching the criteria
      */
     int countBySection_ExamSourceAndSection_TestNumberAndSection_Skill(String examSource, Integer testNumber, String skill);
+
+    /**
+     * Find all questions for a given test attempt's properties.
+     *
+     * @param examSource the source of the exam (e.g., "cam18")
+     * @param testNumber the test number (e.g., 1)
+     * @param skill the skill (e.g., "reading")
+     * @return A list of all questions for that test.
+     */
+    List<Question> findBySection_ExamSourceAndSection_TestNumberAndSection_Skill(String examSource, Integer testNumber, String skill);
 }

@@ -7,6 +7,7 @@ import java.time.OffsetDateTime;
  */
 public class CourseProgressDTO {
 
+    private Long attemptId;
     private String examSource;
     private Integer testNumber;
     private String skill;
@@ -16,13 +17,15 @@ public class CourseProgressDTO {
     private OffsetDateTime lastAttempt;
     private double completionRate; // 0-1
     private String status;
+    private Double bandScore;
 
     public CourseProgressDTO() {
     }
 
-    public CourseProgressDTO(String examSource, Integer testNumber, String skill,
+    public CourseProgressDTO(Long attemptId, String examSource, Integer testNumber, String skill,
             int totalQuestions, int answersAttempted, int correctAnswers,
-            OffsetDateTime lastAttempt, double completionRate, String status) {
+            OffsetDateTime lastAttempt, double completionRate, String status, Double bandScore) {
+        this.attemptId = attemptId;
         this.examSource = examSource;
         this.testNumber = testNumber;
         this.skill = skill;
@@ -32,11 +35,21 @@ public class CourseProgressDTO {
         this.lastAttempt = lastAttempt;
         this.completionRate = completionRate;
         this.status = status;
+        this.bandScore = bandScore;
+    }
+
+    public Long getAttemptId() {
+        return attemptId;
+    }
+
+    public void setAttemptId(Long attemptId) {
+        this.attemptId = attemptId;
     }
 
     public String getExamSource() {
         return examSource;
     }
+
 
     public void setExamSource(String examSource) {
         this.examSource = examSource;
@@ -104,5 +117,13 @@ public class CourseProgressDTO {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Double getBandScore() {
+        return bandScore;
+    }
+
+    public void setBandScore(Double bandScore) {
+        this.bandScore = bandScore;
     }
 }

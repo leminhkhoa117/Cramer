@@ -1,0 +1,139 @@
+:root {
+    --review-bg: transparent; /* Page background is now handled by the wrapper */
+    --review-card-bg: rgba(255, 255, 255, 0.65);
+    --review-text-primary: #130b38;
+    --review-text-secondary: #4a4e69;
+    --correct-color: #28a745;
+    --incorrect-color: #dc3545;
+    --primary-purple: #8c52ff;
+}
+
+.review-page {
+    /* The main page container, now simpler */
+    padding: 2rem 1.5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.review-header {
+    position: sticky;
+    top: 72px; /* 60px for main header + 12px gap */
+    z-index: 90;
+    
+    /* Centered Pill Layout */
+    max-width: 1100px;
+    margin: 0 auto 2rem auto;
+
+    /* Glassmorphism */
+    background: rgba(102, 97, 241, 0.8);
+    backdrop-filter: blur(10px);
+    color: white;
+    
+    padding: 1rem 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    border-radius: 24px; /* All corners rounded */
+}
+
+.review-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+.review-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+    color: white;
+}
+
+.review-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.summary-item {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 1rem;
+    text-align: center;
+    color: white;
+}
+
+.summary-label {
+    display: block;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0.5rem;
+}
+
+.summary-value {
+    display: block;
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.review-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    padding-top: 1.5rem;
+}
+
+.review-actions .btn {
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.review-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.review-actions .btn-primary {
+    background-color: var(--primary-purple);
+    color: white;
+}
+
+.review-actions .btn-secondary {
+    background-color: #e9ecef;
+    color: var(--review-text-primary);
+}
+
+.review-main {
+    /* No special styling needed now */
+}
+
+.review-section-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--review-text-primary);
+    margin-bottom: 1.5rem;
+    padding-left: 1rem;
+    border-left: 4px solid var(--primary-purple);
+}
+
+.review-questions-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.review-loading, .review-error {
+    text-align: center;
+    padding: 4rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+}

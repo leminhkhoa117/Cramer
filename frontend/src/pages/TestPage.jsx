@@ -7,6 +7,7 @@ import TestFooter from '../components/TestFooter';
 import HighlightableText from '../components/HighlightableText';
 import { motion } from 'framer-motion';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import ConfirmationModal from '../components/ConfirmationModal'; // Import the modal
 import '../css/TestPage.css';
 import '../css/TestHeader.css';
 import '../css/TestFooter.css';
@@ -68,6 +69,7 @@ const TestPage = () => {
     const [timeLeft, setTimeLeft] = useState(3600); // 60 minutes in seconds
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -132,15 +134,19 @@ const TestPage = () => {
         }, 100);
     };
 
-    const handleSubmit = async () => {
-        if (!window.confirm('Are you sure you want to submit your answers? This action cannot be undone.')) {
-            return;
-        }
+    // This function will now just open the confirmation modal
+    const handleSubmit = () => {
+        setIsConfirmModalOpen(true);
+    };
+
+    // This function contains the actual submission logic
+    const handleConfirmSubmit = async () => {
+        setIsConfirmModalOpen(false); // Close the modal
         try {
             setLoading(true);
             const result = await testAttemptApi.submitAttempt(attempt.id, answers);
-            alert(`Test submitted! Your score: ${result.data.score}/${result.data.totalQuestions}`);
-            navigate('/dashboard');
+            // Navigate to the new review page on success
+            navigate(`/test/review/${result.data.attemptId}`);
         } catch (err) {
             setError('Failed to submit test. Please try again.');
             console.error(err);
@@ -318,6 +324,15 @@ const TestPage = () => {
                 onPartSelect={setCurrentPartIndex}
                 currentPartIndex={currentPartIndex}
             />
+
+            <ConfirmationModal
+                isOpen={isConfirmModalOpen}
+                onClose={() => setIsConfirmModalOpen(false)}
+                onConfirm={handleConfirmSubmit}
+                title="Xác nhận nộp bài"
+            >
+                <p>Bạn có chắc chắn muốn nộp bài không? Hành động này không thể hoàn tác.</p>
+            </ConfirmationModal>
         </div>
     );
 };

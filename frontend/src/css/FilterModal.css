@@ -1,0 +1,125 @@
+.filter-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(18, 10, 53, 0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.filter-modal-content {
+    background: #ffffff;
+    color: #120a35;
+    border-radius: 24px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.filter-modal-title {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 1.5rem;
+    color: #120a35;
+}
+
+.filter-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.filter-group {
+    /* No special styles needed, just a container */
+}
+
+.filter-group-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #4a4e69;
+}
+
+.filter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.filter-option {
+    display: flex;
+    align-items: center;
+}
+
+.filter-option input[type="checkbox"] {
+    display: none; /* Hide the default checkbox */
+}
+
+.filter-option label {
+    display: inline-block;
+    padding: 0.6rem 1.2rem;
+    border-radius: 12px;
+    background-color: #f0f2f5;
+    color: #4a4e69;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    border: 2px solid transparent;
+}
+
+.filter-option input[type="checkbox"]:checked + label {
+    background-color: #e9d5ff;
+    color: #8c52ff;
+    font-weight: 600;
+    border-color: #8c52ff;
+}
+
+.filter-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.filter-modal-footer .btn {
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.filter-modal-footer .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.filter-modal-footer .btn-primary {
+    background-color: #8c52ff;
+    color: white;
+}
+
+.filter-modal-footer .btn-primary:hover {
+    background-color: #7a45e0;
+}
+
+.filter-modal-footer .btn-secondary {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.filter-modal-footer .btn-secondary:hover {
+    background-color: #e6e6e6;
+}

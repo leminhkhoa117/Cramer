@@ -8,6 +8,7 @@ import com.cramer.entity.UserAnswer;
 import com.cramer.exception.ResourceNotFoundException;
 import com.cramer.repository.*;
 import com.cramer.util.EntityMapper;
+import com.cramer.util.IeltsScoreConverter;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -93,7 +94,13 @@ public class DashboardService {
                     int score = attempt.getScore() != null ? attempt.getScore() : 0;
                     double completionRate = totalQuestions > 0 ? (double) score / totalQuestions : 0.0;
 
+                    Double bandScore = null;
+                    if ("COMPLETED".equals(attempt.getStatus()) && ("reading".equalsIgnoreCase(attempt.getSkill()) || "listening".equalsIgnoreCase(attempt.getSkill()))) {
+                        bandScore = IeltsScoreConverter.convertToBand(score);
+                    }
+
                     return new CourseProgressDTO(
+                            attempt.getId(),
                             attempt.getExamSource(),
                             Integer.valueOf(attempt.getTestNumber()),
                             attempt.getSkill(),
@@ -102,7 +109,8 @@ public class DashboardService {
                             score, // correct answers
                             attempt.getCompletedAt(),
                             completionRate,
-                            attempt.getStatus()
+                            attempt.getStatus(),
+                            bandScore
                     );
                 })
                 .sorted(Comparator.comparing(CourseProgressDTO::getLastAttempt, Comparator.nullsLast(Comparator.reverseOrder())))

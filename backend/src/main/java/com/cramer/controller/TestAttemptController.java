@@ -2,6 +2,7 @@ package com.cramer.controller;
 
 import com.cramer.dto.AnswerSubmissionDTO;
 import com.cramer.dto.TestResultDTO;
+import com.cramer.dto.TestReviewDTO;
 import com.cramer.entity.TestAttempt;
 import com.cramer.service.TestAttemptService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -78,5 +79,22 @@ public class TestAttemptController {
             logger.error("❌ Error submitting test attempt: attemptId={}, error={}", id, e.getMessage(), e);
             throw e;
         }
+    }
+
+    @GetMapping("/{id}/review")
+    public ResponseEntity<TestReviewDTO> getTestReview(@PathVariable Long id, Authentication authentication) {
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptController.class);
+        logger.info("📥 GET /api/test-attempts/{}/review - Received request", id);
+
+        if (authentication == null || authentication.getName() == null) {
+            logger.error("❌ No authentication provided for review");
+            throw new IllegalArgumentException("Authentication required");
+        }
+
+        UUID userId = UUID.fromString(authentication.getName());
+        TestReviewDTO reviewDTO = testAttemptService.getTestReview(id, userId);
+        
+        logger.info("✅ Successfully fetched test review: attemptId={}", id);
+        return ResponseEntity.ok(reviewDTO);
     }
 }

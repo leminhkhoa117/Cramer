@@ -15,6 +15,7 @@ import TestPage from './pages/TestPage';
 import Courses from './pages/Courses';
 import CourseDetailPage from './pages/CourseDetailPage';
 import TestLayout from './components/TestLayout';
+import TestReviewPage from './pages/TestReviewPage';
 
 // This component waits for the initial auth loading to complete
 function AuthInitializer({ children }) {
@@ -68,12 +69,13 @@ function ProtectedRoute({ children }) {
 // This component contains the actual app layout and routes
 function AppContent() {
   const location = useLocation();
-  const isTestPage = location.pathname.startsWith('/test/');
+  // Only hide header/footer on the actual test-taking page, not on the review page.
+  const isTestPage = /^\/test\/\w+\/\d+\/\w+$/.test(location.pathname);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <>
       {!isTestPage && <Header />}
-      <main className="flex-grow">
+      <main>
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
@@ -113,11 +115,21 @@ function AppContent() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/test/review/:attemptId"
+              element={
+                <ProtectedRoute>
+                  <PageWrapper>
+                    <TestReviewPage />
+                  </PageWrapper>
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </AnimatePresence>
       </main>
       {!isTestPage && <Footer />}
-    </div>
+    </>
   );
 }
 

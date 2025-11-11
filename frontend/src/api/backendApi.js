@@ -153,6 +153,9 @@ export const testAttemptApi = {
   submitAttempt: (attemptId, answers) => {
     return apiClient.post(`/test-attempts/${attemptId}/submit`, { answers });
   },
+  getTestReview: (attemptId) => {
+    return apiClient.get(`/test-attempts/${attemptId}/review`);
+  },
 };
 
 

@@ -416,6 +416,32 @@
   margin-top: 1rem;
 }
 
+.dash-course-card__score-status {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-review {
+  border: none;
+  border-radius: 12px;
+  padding: 0.6rem 1.2rem;
+  background: #8c52ff;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.btn-review:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
 .dash-course-card__progress-text {
   font-size: 1.5rem;
   font-weight: 800;
@@ -477,6 +503,7 @@
   .goal-targets-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(120px, 1fr));
+    gap: 0.75rem;
   }
   .goal-skills-group {
     width: 100%;
@@ -490,6 +517,9 @@
   /* This is already 1fr, but we confirm it here */
   .course-grid {
     grid-template-columns: 1fr;
+  }
+  .mobile-margin-top {
+    margin-top: 1.5rem;
   }
 }
 
@@ -517,6 +547,7 @@
   .goal-targets-grid {
     display: grid;
     grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
   
   .dash-course-card {
