@@ -52,12 +52,12 @@ cd frontend
 npm install
 npm run dev
 ```
-The frontend will be available at `http://localhost:3000`.
+The frontend will be available at `http://localhost:5173`.
 
 **Backend:**
 ```bash
 cd backend
-./run-app.ps1
+./mvnw spring-boot:run
 ```
 The backend will be available at `http://localhost:8080`.
 
@@ -76,6 +76,24 @@ The backend will be available at `http://localhost:8080`.
 - **API:** The backend provides a REST API. Refer to the Swagger documentation at `http://localhost:8080/swagger-ui.html` for details on the available endpoints.
 
 ## Project Status & Recent Changes
+
+**Date:** 2025-11-11
+
+**Status:** STABLE & FUNCTIONAL
+
+**Summary of Changes:**
+
+*   **Feature Integration (Test Review):** Finalized and committed a complete Test Review feature that was previously uncommitted. This included the `TestReviewPage.jsx`, `ReviewedQuestion.jsx` component, and corresponding backend DTOs (`TestReviewDTO`, `QuestionReviewDTO`).
+
+*   **New Feature (Sticky Header):** Implemented a sticky header with a glassmorphic blur effect on scroll. This required extensive debugging of CSS layout models and was ultimately solved by using the idiomatic `sticky="top"` prop from the `react-bootstrap` library.
+
+*   **Bug Fixes (Dashboard & Test):**
+    *   Resolved two critical `ReferenceError` crashes on the Dashboard page, making it functional again.
+    *   Fixed a bug where the test duration on the review page was always incorrect. This was a two-part fix:
+        1.  Moved the duration calculation from the frontend to the backend.
+        2.  Corrected the "retake" logic to reset the attempt's start time, ensuring accurate duration for subsequent attempts.
+
+*   **UI Refinement:** Overhauled the `GoalModal` component and its CSS to align with the application's modern, glassmorphic design, improving UI consistency.
 
 **Date:** 2025-11-08
 
