@@ -83,6 +83,16 @@ The backend will be available at `http://localhost:8080`.
 
 **Summary of Changes:**
 
+*   **Documentation (Design System):** Created and refined a comprehensive UI/UX design system guideline, now located at `docs/frontend/UI_GUIDELINES.md`.
+*   **Standardization:** The new guideline formalizes the project's visual language. It establishes a desktop-first responsive strategy and standardizes the color palette, typography, component states (hover, focus, disabled), a new shadow system, and a z-index scale for consistent layering.
+*   **Version Control:** Committed the new documentation to the `main` branch.
+
+**Date:** 2025-11-11
+
+**Status:** STABLE & FUNCTIONAL
+
+**Summary of Changes:**
+
 *   **Feature Integration (Test Review):** Finalized and committed a complete Test Review feature that was previously uncommitted. This included the `TestReviewPage.jsx`, `ReviewedQuestion.jsx` component, and corresponding backend DTOs (`TestReviewDTO`, `QuestionReviewDTO`).
 
 *   **New Feature (Sticky Header):** Implemented a sticky header with a glassmorphic blur effect on scroll. This required extensive debugging of CSS layout models and was ultimately solved by using the idiomatic `sticky="top"` prop from the `react-bootstrap` library.
