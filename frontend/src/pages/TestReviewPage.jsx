@@ -45,24 +45,20 @@ const TestReviewPage = () => {
         const score = reviewData.score;
         const band = score != null ? IeltsScoreConverter.convertToBand(score) : null;
 
-        const { completedAt, startedAt } = reviewData;
-        const date = completedAt ? new Date(completedAt) : new Date();
+        const date = reviewData.completedAt ? new Date(reviewData.completedAt) : new Date();
         const formattedDate = date.toLocaleDateString('vi-VN', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
         });
 
-        if (!completedAt || !startedAt) {
-            return { bandScore: band, duration: 'N/A', completionDate: formattedDate };
+        let formattedDuration = 'N/A';
+        if (reviewData.duration != null) {
+            const totalSeconds = reviewData.duration;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            formattedDuration = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
-
-        const timeDiffSeconds = Math.round((new Date(completedAt) - new Date(startedAt)) / 1000);
-        const actualDuration = Math.min(timeDiffSeconds, 3600);
-        
-        const minutes = Math.floor(actualDuration / 60);
-        const seconds = actualDuration % 60;
-        const formattedDuration = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         
         return { bandScore: band, duration: formattedDuration, completionDate: formattedDate };
     }, [reviewData]);

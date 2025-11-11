@@ -13,6 +13,7 @@ public class TestReviewDTO {
     private OffsetDateTime startedAt;
     private OffsetDateTime completedAt;
     private Double bandScore;
+    private Long duration; // Duration in seconds
     private List<QuestionReviewDTO> questions;
 
     // Constructors
@@ -22,6 +23,7 @@ public class TestReviewDTO {
     public Long getAttemptId() {
         return attemptId;
     }
+
 
     public void setAttemptId(Long attemptId) {
         this.attemptId = attemptId;
@@ -89,6 +91,14 @@ public class TestReviewDTO {
 
     public void setBandScore(Double bandScore) {
         this.bandScore = bandScore;
+    }
+
+    public Long getDuration() {
+        return duration;
+    }
+
+    public void setDuration(Long duration) {
+        this.duration = duration;
     }
 
     public List<QuestionReviewDTO> getQuestions() {

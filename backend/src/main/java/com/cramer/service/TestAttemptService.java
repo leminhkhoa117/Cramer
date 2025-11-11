@@ -69,12 +69,25 @@ public class TestAttemptService {
                 throw new IllegalArgumentException("Skill cannot be null or empty");
             }
             
-            Optional<TestAttempt> existingAttempt = testAttemptRepository
+            Optional<TestAttempt> existingAttemptOpt = testAttemptRepository
                     .findByUserIdAndExamSourceAndTestNumberAndSkill(userId, source, testNum, skill);
 
-            if (existingAttempt.isPresent()) {
-                logger.info("✅ Found existing attempt with id={}", existingAttempt.get().getId());
-                return existingAttempt.get();
+            if (existingAttemptOpt.isPresent()) {
+                TestAttempt existingAttempt = existingAttemptOpt.get();
+                logger.info("✅ Found existing attempt with id={}", existingAttempt.getId());
+
+                // If the test was completed, this is a retake. Reset the attempt.
+                if ("COMPLETED".equals(existingAttempt.getStatus())) {
+                    logger.info("🔄 Attempt was completed. Resetting for retake.");
+                    existingAttempt.setStatus("IN_PROGRESS");
+                    existingAttempt.setStartedAt(OffsetDateTime.now()); // Reset start time
+                    existingAttempt.setCompletedAt(null);
+                    existingAttempt.setScore(null);
+                    userAnswerRepository.deleteByAttemptId(existingAttempt.getId()); // Clear old answers
+                    return testAttemptRepository.save(existingAttempt);
+                }
+                
+                return existingAttempt;
             } else {
                 logger.info("📝 Creating new test attempt");
                 TestAttempt newAttempt = new TestAttempt();
@@ -82,6 +95,7 @@ public class TestAttemptService {
                 newAttempt.setExamSource(source);
                 newAttempt.setTestNumber(testNum);
                 newAttempt.setSkill(skill);
+                // The @CreatedDate annotation will set the startedAt timestamp automatically
                 TestAttempt saved = testAttemptRepository.save(newAttempt);
                 logger.info("✅ Created new attempt with id={}", saved.getId());
                 return saved;
@@ -244,6 +258,12 @@ public class TestAttemptService {
         reviewDTO.setTotalQuestions(allTestQuestions.size());
         reviewDTO.setStartedAt(testAttempt.getStartedAt());
         reviewDTO.setCompletedAt(testAttempt.getCompletedAt());
+
+        // Calculate and set duration
+        if (testAttempt.getStartedAt() != null && testAttempt.getCompletedAt() != null) {
+            long durationInSeconds = java.time.Duration.between(testAttempt.getStartedAt(), testAttempt.getCompletedAt()).getSeconds();
+            reviewDTO.setDuration(durationInSeconds);
+        }
 
         // Calculate and set band score
         if ("COMPLETED".equals(testAttempt.getStatus()) && ("reading".equalsIgnoreCase(testAttempt.getSkill()) || "listening".equalsIgnoreCase(testAttempt.getSkill()))) {
