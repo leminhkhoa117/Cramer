@@ -13,12 +13,15 @@ public class QuestionDTO {
     private String questionType;
     private JsonNode questionContent;
     private JsonNode correctAnswer;
+    private String wordLimit;
+    private String imageUrl;
 
     public QuestionDTO() {
     }
 
     public QuestionDTO(Long id, Long sectionId, Integer questionNumber, String questionUid,
-                      String questionType, JsonNode questionContent, JsonNode correctAnswer) {
+                      String questionType, JsonNode questionContent, JsonNode correctAnswer,
+                      String wordLimit, String imageUrl) {
         this.id = id;
         this.sectionId = sectionId;
         this.questionNumber = questionNumber;
@@ -26,6 +29,8 @@ public class QuestionDTO {
         this.questionType = questionType;
         this.questionContent = questionContent;
         this.correctAnswer = correctAnswer;
+        this.wordLimit = wordLimit;
+        this.imageUrl = imageUrl;
     }
 
     // Getters and Setters
@@ -83,5 +88,21 @@ public class QuestionDTO {
 
     public void setCorrectAnswer(JsonNode correctAnswer) {
         this.correctAnswer = correctAnswer;
+    }
+
+    public String getWordLimit() {
+        return wordLimit;
+    }
+
+    public void setWordLimit(String wordLimit) {
+        this.wordLimit = wordLimit;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

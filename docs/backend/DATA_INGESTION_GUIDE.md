@@ -42,6 +42,8 @@ This table stores every individual question for all sections.
 | `question_content` | `jsonb`       | The specific text and options for the question. The structure varies by `question_type`. See Section 4. |
 | `correct_answer`   | `jsonb`       | The correct answer(s) for the question. The structure varies by `question_type`. See Section 4.         |
 | `explanation`      | `text`        | Optional explanation for the answer (nullable, currently unused).                                        |
+| `word_limit`       | `varchar`     | Optional constraint on answer length, e.g., "NO MORE THAN TWO WORDS".                                    |
+| `image_url`        | `varchar`     | Optional URL for an image associated with the question (e.g., for diagram questions).                    |
 
 **Important Notes:** 
 - The `question_uid` field provides a human-readable unique identifier (e.g., `cam17-t1-r-q1` for Cambridge 17, Test 1, Reading, Question 1).
@@ -59,9 +61,15 @@ The `question_type` column **must** be one of the following string values:
 - `TRUE_FALSE_NOT_GIVEN`
 - `YES_NO_NOT_GIVEN`
 - `MATCHING_INFORMATION`
+- `MATCHING_HEADINGS`
+- `MATCHING_FEATURES`
+- `MATCHING_SENTENCE_ENDINGS`
 - `MULTIPLE_CHOICE`
 - `MULTIPLE_CHOICE_MULTIPLE_ANSWERS`
 - `SUMMARY_COMPLETION_OPTIONS`
+- `DIAGRAM_LABEL_COMPLETION`
+- `TABLE_COMPLETION`
+- `FLOW_CHART_COMPLETION`
 
 ---
 
@@ -69,7 +77,7 @@ The `question_type` column **must** be one of the following string values:
 
 This section details the required `jsonb` format for `question_content` and `correct_answer` for each `QuestionType`.
 
-### `FILL_IN_BLANK` and `SUMMARY_COMPLETION`
+### `FILL_IN_BLANK`
 - **Description:** User types a word/phrase from the passage into a text box.
 - **`question_content`**:
   ```json
@@ -80,6 +88,20 @@ This section details the required `jsonb` format for `question_content` and `cor
 - **`correct_answer`**: An array of acceptable string answers. Case-insensitive matching is performed by the backend.
   ```json
   ["population"]
+  ```
+
+### `SUMMARY_COMPLETION`
+- **Description:** User completes a summary by typing words/phrases from the passage into text boxes.
+- **Important Data Structure:** For `SUMMARY_COMPLETION` questions, the overall summary text is typically fragmented across multiple individual question entries in the database. Each question entry should contain a portion of the summary text, usually with a single blank (`____`). The frontend will combine these fragments to display a continuous summary.
+- **`question_content`**:
+  ```json
+  {
+    "text": "The database that Ogilvie and her team has compiled sheds light on the lives of a range of individuals, as well as those of their 19 ____ over a 300-year period."
+  }
+  ```
+- **`correct_answer`**: An array containing the single correct word/phrase.
+  ```json
+  ["descendants"]
   ```
 
 ### `TRUE_FALSE_NOT_GIVEN` and `YES_NO_NOT_GIVEN`
@@ -147,18 +169,68 @@ This section details the required `jsonb` format for `question_content` and `cor
   ["A"]
   ```
 
+### `MATCHING_HEADINGS`, `MATCHING_FEATURES`, `MATCHING_SENTENCE_ENDINGS`
+- **Description:** These types handle matching a question item (e.g., a paragraph, a statement, a sentence start) to an option from a shared list (e.g., a list of headings, researcher names, or sentence endings).
+- **Special Note:** For a group of these questions, the `options` array should be identical for every question in the group. The `text` field will contain the specific item for that question (e.g., "Paragraph A", "The theory that...", "The experiment showed that...").
+- **`question_content`**:
+  ```json
+  {
+    "text": "The question text, e.g., 'Paragraph C'",
+    "options": [
+      { "letter": "i", "text": "Heading text one" },
+      { "letter": "ii", "text": "Heading text two" },
+      { "letter": "iii", "text": "Heading text three" }
+    ]
+  }
+  ```
+- **`correct_answer`**: An array containing the single correct letter/roman numeral.
+  ```json
+  ["ii"]
+  ```
+
 ### `SUMMARY_COMPLETION_OPTIONS`
-- **Description:** User completes a blank in a summary by choosing a letter corresponding to a phrase from a separate list. The renderer replaces the `____` with a dropdown.
-- **`question_content`**: The `text` contains the summary with a blank. The `options` contain the list of choices the user selects from.
+- **Description:** User completes a blank in a summary by choosing a letter corresponding to a phrase from a separate list of options. The renderer replaces the `____` with a dropdown.
+- **`question_content`**: The `text` contains the summary with a blank. The `options` array contains objects, each with a `letter` and the full `text` of the choice.
   ```json
   {
     "text": "The railway was initially a 27 ____ success.",
-    "options": ["A", "B", "C", "D", "E", "F", "G", "H"]
+    "options": [
+      { "letter": "A", "text": "commercial" },
+      { "letter": "B", "text": "financial" },
+      { "letter": "C", "text": "popular" }
+    ]
   }
   ```
 - **`correct_answer`**: An array containing the single correct letter.
   ```json
   ["A"]
+  ```
+
+### `TABLE_COMPLETION` and `FLOW_CHART_COMPLETION`
+- **Description:** User fills in blanks within a table or flow-chart.
+- **`question_content`**: The `text` field contains the entire visual structure as an HTML string (e.g., using `<table>`). Blanks are marked with `____`. Each blank corresponds to a separate question entry in the database.
+  ```json
+  {
+    "text": "<table><tr><td>Year</td><td>Event</td></tr><tr><td>1800</td><td>____</td></tr></table>"
+  }
+  ```
+- **`correct_answer`**: An array containing the string for the blank.
+  ```json
+  ["Population growth"]
+  ```
+
+### `DIAGRAM_LABEL_COMPLETION`
+- **Description:** User labels parts of a diagram based on an image.
+- **Special Note:** The `image_url` field on the question record **must** be populated with the URL of the diagram image.
+- **`question_content`**: The `text` field simply contains the label for the question, which corresponds to a number on the diagram.
+  ```json
+  {
+    "text": "1. ____"
+  }
+  ```
+- **`correct_answer`**: An array containing the string for the label.
+  ```json
+  ["Engine"]
   ```
 
 ---
@@ -304,10 +376,15 @@ VALUES (
 - **MULTIPLE_CHOICE** options automatically have letters bolded (A., B., C., etc.)
 - Instructions are rendered with proper formatting (bold, emphasis)
 
+### `SUMMARY_COMPLETION` Rendering
+- For `SUMMARY_COMPLETION` questions, the frontend combines the `text` from all questions within a group to form a continuous summary paragraph.
+- Each individual question's text (containing a single blank) is rendered inline, with an input field replacing the `____` placeholder. This creates a cohesive summary where users can fill in multiple blanks sequentially.
+
 ### Performance Considerations
 - Backend uses `prepareThreshold=0` to avoid PostgreSQL prepared statement cache conflicts
 - Frontend deduplicates questions by ID using `Map` data structure
 - HikariCP connection pool: max 10, min idle 5 connections
+
 
 ---
 

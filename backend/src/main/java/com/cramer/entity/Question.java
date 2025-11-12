@@ -48,6 +48,12 @@ public class Question {
     @Column(name = "explanation")
     private String explanation;
 
+    @Column(name = "word_limit")
+    private String wordLimit;
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
     // Constructors
     public Question() {
     }
@@ -133,6 +139,22 @@ public class Question {
 
     public void setExplanation(String explanation) {
         this.explanation = explanation;
+    }
+
+    public String getWordLimit() {
+        return wordLimit;
+    }
+
+    public void setWordLimit(String wordLimit) {
+        this.wordLimit = wordLimit;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     @Override

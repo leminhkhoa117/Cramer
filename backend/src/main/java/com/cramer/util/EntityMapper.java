@@ -76,7 +76,9 @@ public class EntityMapper {
                 question.getQuestionUid(),
                 question.getQuestionType(),
                 question.getQuestionContent(),
-                question.getCorrectAnswer()
+                question.getCorrectAnswer(),
+                question.getWordLimit(),
+                question.getImageUrl()
         );
     }
 
@@ -93,6 +95,8 @@ public class EntityMapper {
         question.setQuestionType(dto.getQuestionType());
         question.setQuestionContent(dto.getQuestionContent());
         question.setCorrectAnswer(dto.getCorrectAnswer());
+        question.setWordLimit(dto.getWordLimit());
+        question.setImageUrl(dto.getImageUrl());
         return question;
     }
 

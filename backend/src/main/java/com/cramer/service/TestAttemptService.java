@@ -70,7 +70,7 @@ public class TestAttemptService {
             }
             
             Optional<TestAttempt> existingAttemptOpt = testAttemptRepository
-                    .findByUserIdAndExamSourceAndTestNumberAndSkill(userId, source, testNum, skill);
+                    .findAndLockByUserIdAndExamSourceAndTestNumberAndSkill(userId, source, testNum, skill);
 
             if (existingAttemptOpt.isPresent()) {
                 TestAttempt existingAttempt = existingAttemptOpt.get();

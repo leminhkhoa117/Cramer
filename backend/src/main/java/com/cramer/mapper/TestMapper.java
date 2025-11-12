@@ -22,7 +22,9 @@ public class TestMapper {
                 question.getQuestionUid(),
                 question.getQuestionType(),
                 question.getQuestionContent(),
-                includeAnswer ? question.getCorrectAnswer() : null // Strip out correct answer
+                includeAnswer ? question.getCorrectAnswer() : null, // Strip out correct answer
+                question.getWordLimit(),
+                question.getImageUrl()
         );
     }
 
