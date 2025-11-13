@@ -1,5 +1,5 @@
 -- This file contains the complete and accurate SQL data for Cambridge IELTS 17, Test 3.
--- It is generated directly from the source PDF, without synthesis or concatenation.
+-- It follows the corrected structure for contextual summary and note completion questions.
 
 -- =================================================================
 -- == CAMBRIDGE 17, TEST 3, READING PASSAGE 1
@@ -8,6 +8,10 @@ DO $$
 DECLARE
     section_1_id bigint;
 BEGIN
+    -- First, delete existing data for Cam17, Test 3, Reading
+    DELETE FROM public.questions WHERE section_id IN (SELECT id FROM public.sections WHERE exam_source = 'cam17' AND test_number = '3' AND skill = 'reading');
+    DELETE FROM public.sections WHERE exam_source = 'cam17' AND test_number = '3' AND skill = 'reading';
+
     -- Insert Passage 1 and capture its ID
     INSERT INTO public.sections (exam_source, test_number, skill, part_number, passage_text)
     VALUES (
@@ -41,11 +45,14 @@ There have been numerous expeditions and searches for the thylacine over the yea
     -- Insert Questions for Passage 1
     INSERT INTO public.questions (section_id, question_number, question_uid, question_type, question_content, correct_answer, word_limit)
     VALUES
-        (section_1_id, 1, 'cam17-t3-r-q1', 'FILL_IN_BLANK', '{"text": "ate an entirely 1 ____ diet"}', '["carnivorous"]', 'ONE WORD ONLY'),
-        (section_1_id, 2, 'cam17-t3-r-q2', 'FILL_IN_BLANK', '{"text": "probably depended mainly on 2 ____ when hunting"}', '["scent"]', 'ONE WORD ONLY'),
-        (section_1_id, 3, 'cam17-t3-r-q3', 'FILL_IN_BLANK', '{"text": "young spent first months of life inside its mother''s 3 ____"}', '["pouch"]', 'ONE WORD ONLY'),
-        (section_1_id, 4, 'cam17-t3-r-q4', 'FILL_IN_BLANK', '{"text": "last evidence in mainland Australia is a 3,100-year-old 4 ____"}', '["fossil"]', 'ONE WORD ONLY'),
-        (section_1_id, 5, 'cam17-t3-r-q5', 'FILL_IN_BLANK', '{"text": "reduction in 5 ____ and available sources of food were partly responsible for decline in Tasmania"}', '["habitat"]', 'ONE WORD ONLY'),
+        -- Note Completion (Questions 1-5)
+        (section_1_id, 1, 'cam17-t3-r-q1', 'SUMMARY_COMPLETION', '{"text": "<strong>The thylacine</strong><br/><br/><strong>Appearance and behaviour</strong><br/>- looked rather like a dog<br/>- had a series of stripes along its body and tail<br/>- ate an entirely <strong>1</strong> ____ diet"}', '["carnivorous"]', 'ONE WORD ONLY'),
+        (section_1_id, 2, 'cam17-t3-r-q2', 'SUMMARY_COMPLETION', '{"text": "- probably depended mainly on <strong>2</strong> ____ when hunting"}', '["scent"]', 'ONE WORD ONLY'),
+        (section_1_id, 3, 'cam17-t3-r-q3', 'SUMMARY_COMPLETION', '{"text": "- young spent first months of life inside its mother''s <strong>3</strong> ____"}', '["pouch"]', 'ONE WORD ONLY'),
+        (section_1_id, 4, 'cam17-t3-r-q4', 'SUMMARY_COMPLETION', '{"text": "<br/><strong>Decline and extinction</strong><br/>- last evidence in mainland Australia is a 3,100-year-old <strong>4</strong> ____"}', '["fossil"]', 'ONE WORD ONLY'),
+        (section_1_id, 5, 'cam17-t3-r-q5', 'SUMMARY_COMPLETION', '{"text": "- probably went extinct in mainland Australia due to animals known as dingoes<br/>- reduction in <strong>5</strong> ____ and available sources of food were partly responsible for decline in Tasmania"}', '["habitat"]', 'ONE WORD ONLY'),
+
+        -- TRUE_FALSE_NOT_GIVEN (Questions 6-13)
         (section_1_id, 6, 'cam17-t3-r-q6', 'TRUE_FALSE_NOT_GIVEN', '{"text": "Significant numbers of thylacines were killed by humans from the 1830s onwards."}', '["TRUE"]', NULL),
         (section_1_id, 7, 'cam17-t3-r-q7', 'TRUE_FALSE_NOT_GIVEN', '{"text": "Several thylacines were born in zoos during the late 1800s."}', '["FALSE"]', NULL),
         (section_1_id, 8, 'cam17-t3-r-q8', 'TRUE_FALSE_NOT_GIVEN', '{"text": "John Gould''s prediction about the thylacine surprised some biologists."}', '["NOT GIVEN"]', NULL),
@@ -63,6 +70,7 @@ DO $$
 DECLARE
     section_2_id bigint;
 BEGIN
+    -- Insert Passage 2 and capture its ID
     INSERT INTO public.sections (exam_source, test_number, skill, part_number, passage_text)
     VALUES (
         'cam17',
@@ -92,6 +100,7 @@ BEGIN
     -- Insert Questions for Passage 2
     INSERT INTO public.questions (section_id, question_number, question_uid, question_type, question_content, correct_answer, word_limit)
     VALUES
+        -- MATCHING_INFORMATION (Questions 14-20)
         (section_2_id, 14, 'cam17-t3-r-q14', 'MATCHING_INFORMATION', '{"text": "examples of a range of potential environmental advantages of oil palm tree cultivation", "options": ["A", "B", "C", "D", "E", "F", "G", "H"]}', '["F"]', NULL),
         (section_2_id, 15, 'cam17-t3-r-q15', 'MATCHING_INFORMATION', '{"text": "description of an organisation which controls the environmental impact of palm oil production", "options": ["A", "B", "C", "D", "E", "F", "G", "H"]}', '["G"]', NULL),
         (section_2_id, 16, 'cam17-t3-r-q16', 'MATCHING_INFORMATION', '{"text": "examples of the widespread global use of palm oil", "options": ["A", "B", "C", "D", "E", "F", "G", "H"]}', '["A"]', NULL),
@@ -99,12 +108,16 @@ BEGIN
         (section_2_id, 18, 'cam17-t3-r-q18', 'MATCHING_INFORMATION', '{"text": "figures illustrating the rapid expansion of the palm oil industry", "options": ["A", "B", "C", "D", "E", "F", "G", "H"]}', '["B"]', NULL),
         (section_2_id, 19, 'cam17-t3-r-q19', 'MATCHING_INFORMATION', '{"text": "an economic justification for not opposing the palm oil industry", "options": ["A", "B", "C", "D", "E", "F", "G", "H"]}', '["E"]', NULL),
         (section_2_id, 20, 'cam17-t3-r-q20', 'MATCHING_INFORMATION', '{"text": "examples of creatures badly affected by the establishment of oil palm plantations", "options": ["A", "B", "C", "D", "E", "F", "G", "H"]}', '["C"]', NULL),
+        
+        -- MULTIPLE_CHOICE_MULTIPLE_ANSWERS (Questions 21-22)
         (section_2_id, 21, 'cam17-t3-r-q21', 'MULTIPLE_CHOICE_MULTIPLE_ANSWERS', '{"text": "Which TWO statements are made about the Roundtable on Sustainable Palm Oil (RSPO)?", "options": ["A Its membership has grown steadily over the course of the last decade.", "B It demands that certified producers be open and honest about their practices.", "C It took several years to establish its set of criteria for sustainable palm oil certification.", "D Its regulations regarding sustainability are stricter than those governing other industries.", "E It was formed at the request of environmentalists concerned about the loss of virgin forests."]}', '["B", "C"]', NULL),
         (section_2_id, 22, 'cam17-t3-r-q22', 'MULTIPLE_CHOICE_MULTIPLE_ANSWERS', '{"text": "Which TWO statements are made about the Roundtable on Sustainable Palm Oil (RSPO)?", "options": ["A Its membership has grown steadily over the course of the last decade.", "B It demands that certified producers be open and honest about their practices.", "C It took several years to establish its set of criteria for sustainable palm oil certification.", "D Its regulations regarding sustainability are stricter than those governing other industries.", "E It was formed at the request of environmentalists concerned about the loss of virgin forests."]}', '["B", "C"]', NULL),
-        (section_2_id, 23, 'cam17-t3-r-q23', 'FILL_IN_BLANK', '{"text": "One advantage of palm oil for manufacturers is that it stays ____ when not refrigerated."}', '["solid"]', 'NO MORE THAN TWO WORDS'),
-        (section_2_id, 24, 'cam17-t3-r-q24', 'FILL_IN_BLANK', '{"text": "The ____ is the best known of the animals suffering habitat loss as a result of the spread of oil palm plantations."}', '["Sumatran orangutan"]', 'NO MORE THAN TWO WORDS'),
-        (section_2_id, 25, 'cam17-t3-r-q25', 'FILL_IN_BLANK', '{"text": "As one of its criteria for the certification of sustainable palm oil, the RSPO insists that growers check ____ on a routine basis."}', '["carbon stocks"]', 'NO MORE THAN TWO WORDS'),
-        (section_2_id, 26, 'cam17-t3-r-q26', 'FILL_IN_BLANK', '{"text": "Ellwood and his researchers are looking into whether the bird''s nest fern could restore ____ in areas where oil palm trees are grown."}', '["biodiversity"]', 'NO MORE THAN TWO WORDS');
+
+        -- FILL_IN_BLANK (Questions 23-26)
+        (section_2_id, 23, 'cam17-t3-r-q23', 'FILL_IN_BLANK', '{"text": "One advantage of palm oil for manufacturers is that it stays <strong>23</strong> ____ even when not refrigerated."}', '["solid"]', 'NO MORE THAN TWO WORDS'),
+        (section_2_id, 24, 'cam17-t3-r-q24', 'FILL_IN_BLANK', '{"text": "The <strong>24</strong> ____ is the best known of the animals suffering habitat loss as a result of the spread of oil palm plantations."}', '["Sumatran orangutan"]', 'NO MORE THAN TWO WORDS'),
+        (section_2_id, 25, 'cam17-t3-r-q25', 'FILL_IN_BLANK', '{"text": "As one of its criteria for the certification of sustainable palm oil, the RSPO insists that growers check <strong>25</strong> ____ on a routine basis."}', '["carbon stocks"]', 'NO MORE THAN TWO WORDS'),
+        (section_2_id, 26, 'cam17-t3-r-q26', 'FILL_IN_BLANK', '{"text": "Ellwood and his researchers are looking into whether the bird''s nest fern could restore <strong>26</strong> ____ in areas where oil palm trees are grown."}', '["biodiversity"]', 'NO MORE THAN TWO WORDS');
 END $$;
 
 -- =================================================================
@@ -114,6 +127,7 @@ DO $$
 DECLARE
     section_3_id bigint;
 BEGIN
+    -- Insert Passage 3 and capture its ID
     INSERT INTO public.sections (exam_source, test_number, skill, part_number, passage_text)
     VALUES (
         'cam17',
@@ -150,18 +164,23 @@ In the final chapter (chapter 10), Barr discusses another of his empirical paper
     -- Insert Questions for Passage 3
     INSERT INTO public.questions (section_id, question_number, question_uid, question_type, question_content, correct_answer, word_limit)
     VALUES
-        (section_3_id, 27, 'cam17-t3-r-q27', 'MULTIPLE_CHOICE', '{"text": "What point does Shester make about Barr''s book in the first paragraph?", "options": ["A It gives a highly original explanation for urban development.", "B Elements of Barr''s research papers are incorporated throughout the book.", "C Other books that are available on the subject have taken a different approach.", "D It covers a range of factors that affected the development of New York."]}', '["B"]', NULL),
+        -- MULTIPLE_CHOICE (Questions 27-31)
+        (section_3_id, 27, 'cam17-t3-r-q27', 'MULTIPLE_CHOICE', '{"text": "What point does Shester make about Barr''s book in the first paragraph?", "options": ["A It gives a highly original explanation for urban development.", "B Elements of Barr''s research papers are incorporated throughout the book.", "C Other books that are available on the subject have taken a different approach.", "D It covers a range of factors that affected the development of New York."]}', '["D"]', NULL),
         (section_3_id, 28, 'cam17-t3-r-q28', 'MULTIPLE_CHOICE', '{"text": "How does Shester respond to the information in the book about tenements?", "options": ["A She describes the reasons for Barr''s interest.", "B She indicates a potential problem with Barr''s analysis.", "C She compares Barr''s conclusion with that of other writers.", "D She provides details about the sources Barr used for his research."]}', '["B"]', NULL),
         (section_3_id, 29, 'cam17-t3-r-q29', 'MULTIPLE_CHOICE', '{"text": "What does Shester say about chapter six of the book?", "options": ["A It contains conflicting data.", "B It focuses too much on possible trends.", "C It is too specialised for most readers.", "D It draws on research that is out of date."]}', '["C"]', NULL),
         (section_3_id, 30, 'cam17-t3-r-q30', 'MULTIPLE_CHOICE', '{"text": "What does Shester suggest about the chapters focusing on the 1920s building boom?", "options": ["A The information should have been organised differently.", "B More facts are needed about the way construction was financed.", "C The explanation that is given for the building boom is unlikely.", "D Some parts will have limited appeal to certain people."]}', '["D"]', NULL),
-        (section_3_id, 31, 'cam17-t3-r-q31', 'MULTIPLE_CHOICE', '{"text": "What impresses Shester the most about the chapter on land values?", "options": ["A the broad time period that is covered", "B the interesting questions that Barr asks", "C the nature of the research into the topic", "D the recommendations Barr makes for the future"]}', '["A"]', NULL),
+        (section_3_id, 31, 'cam17-t3-r-q31', 'MULTIPLE_CHOICE', '{"text": "What impresses Shester the most about the chapter on land values?", "options": ["A the broad time period that is covered", "B the interesting questions that Barr asks", "C the nature of the research into the topic", "D the recommendations Barr makes for the future"]}', '["C"]', NULL),
+
+        -- YES_NO_NOT_GIVEN (Questions 32-35)
         (section_3_id, 32, 'cam17-t3-r-q32', 'YES_NO_NOT_GIVEN', '{"text": "The description in the first chapter of how New York probably looked from the air in the early 1600s lacks interest."}', '["NO"]', NULL),
         (section_3_id, 33, 'cam17-t3-r-q33', 'YES_NO_NOT_GIVEN', '{"text": "Chapters two and three prepare the reader well for material yet to come."}', '["YES"]', NULL),
         (section_3_id, 34, 'cam17-t3-r-q34', 'YES_NO_NOT_GIVEN', '{"text": "The biggest problem for many nineteenth-century New York immigrant neighbourhoods was a lack of amenities."}', '["NOT GIVEN"]', NULL),
-        (section_3_id, 35, 'cam17-t3-r-q35', 'YES_NO_NOT_GIVEN', '{"text": "In the nineteenth century, New York''s immigrant neighbourhoods tended to concentrate around the harbour."}', '["YES"]', NULL),
-        (section_3_id, 36, 'cam17-t3-r-q36', 'SUMMARY_COMPLETION_OPTIONS', '{"text": "In chapter seven, Barr indicates how the lack of bedrock close to the surface does not explain why skyscrapers are absent from 36 ____. He points out that although the cost of foundations increases when bedrock is deep below the surface, this cannot be regarded as 37 ____, especially when compared to 38 ____.", "options": [{"letter": "A", "text": "development plans"}, {"letter": "B", "text": "deep excavations"}, {"letter": "C", "text": "great distance"}, {"letter": "D", "text": "excessive expense"}, {"letter": "E", "text": "impossible tasks"}, {"letter": "F", "text": "associated risks"}, {"letter": "G", "text": "water level"}, {"letter": "H", "text": "specific areas"}, {"letter": "I", "text": "total expenditure"}, {"letter": "J", "text": "construction guidelines"}]}', '["H"]', NULL),
-        (section_3_id, 37, 'cam17-t3-r-q37', 'SUMMARY_COMPLETION_OPTIONS', '{"text": "In chapter seven, Barr indicates how the lack of bedrock close to the surface does not explain why skyscrapers are absent from 36 ____. He points out that although the cost of foundations increases when bedrock is deep below the surface, this cannot be regarded as 37 ____, especially when compared to 38 ____.", "options": [{"letter": "A", "text": "development plans"}, {"letter": "B", "text": "deep excavations"}, {"letter": "C", "text": "great distance"}, {"letter": "D", "text": "excessive expense"}, {"letter": "E", "text": "impossible tasks"}, {"letter": "F", "text": "associated risks"}, {"letter": "G", "text": "water level"}, {"letter": "H", "text": "specific areas"}, {"letter": "I", "text": "total expenditure"}, {"letter": "J", "text": "construction guidelines"}]}', '["D"]', NULL),
-        (section_3_id, 38, 'cam17-t3-r-q38', 'SUMMARY_COMPLETION_OPTIONS', '{"text": "In chapter seven, Barr indicates how the lack of bedrock close to the surface does not explain why skyscrapers are absent from 36 ____. He points out that although the cost of foundations increases when bedrock is deep below the surface, this cannot be regarded as 37 ____, especially when compared to 38 ____.", "options": [{"letter": "A", "text": "development plans"}, {"letter": "B", "text": "deep excavations"}, {"letter": "C", "text": "great distance"}, {"letter": "D", "text": "excessive expense"}, {"letter": "E", "text": "impossible tasks"}, {"letter": "F", "text": "associated risks"}, {"letter": "G", "text": "water level"}, {"letter": "H", "text": "specific areas"}, {"letter": "I", "text": "total expenditure"}, {"letter": "J", "text": "construction guidelines"}]}', '["I"]', NULL),
-        (section_3_id, 39, 'cam17-t3-r-q39', 'SUMMARY_COMPLETION_OPTIONS', '{"text": "A particularly enjoyable part of the chapter was Barr''s account of how foundations are built. He describes not only how 39 ____ are made possible by the use of caissons, but he also discusses their 40 ____.", "options": [{"letter": "A", "text": "development plans"}, {"letter": "B", "text": "deep excavations"}, {"letter": "C", "text": "great distance"}, {"letter": "D", "text": "excessive expense"}, {"letter": "E", "text": "impossible tasks"}, {"letter": "F", "text": "associated risks"}, {"letter": "G", "text": "water level"}, {"letter": "H", "text": "specific areas"}, {"letter": "I", "text": "total expenditure"}, {"letter": "J", "text": "construction guidelines"}]}', '["B"]', NULL),
-        (section_3_id, 40, 'cam17-t3-r-q40', 'SUMMARY_COMPLETION_OPTIONS', '{"text": "A particularly enjoyable part of the chapter was Barr''s account of how foundations are built. He describes not only how 39 ____ are made possible by the use of caissons, but he also discusses their 40 ____.", "options": [{"letter": "A", "text": "development plans"}, {"letter": "B", "text": "deep excavations"}, {"letter": "C", "text": "great distance"}, {"letter": "D", "text": "excessive expense"}, {"letter": "E", "text": "impossible tasks"}, {"letter": "F", "text": "associated risks"}, {"letter": "G", "text": "water level"}, {"letter": "H", "text": "specific areas"}, {"letter": "I", "text": "total expenditure"}, {"letter": "J", "text": "construction guidelines"}]}', '["F"]', NULL);
+        (section_3_id, 35, 'cam17-t3-r-q35', 'YES_NO_NOT_GIVEN', '{"text": "In the nineteenth century, New York''s immigrant neighbourhoods tended to concentrate around the harbour."}', '["NO"]', NULL),
+
+        -- SUMMARY_COMPLETION_OPTIONS (Questions 36-40)
+        (section_3_id, 36, 'cam17-t3-r-q36', 'SUMMARY_COMPLETION_OPTIONS', '{"text": "<strong>The bedrock myth</strong><br/><br/>In chapter seven, Barr indicates how the lack of bedrock close to the surface does not explain why skyscrapers are absent from <strong>36</strong> ____.", "options": [{"letter": "A", "text": "development plans"}, {"letter": "B", "text": "deep excavations"}, {"letter": "C", "text": "great distance"}, {"letter": "D", "text": "excessive expense"}, {"letter": "E", "text": "impossible tasks"}, {"letter": "F", "text": "associated risks"}, {"letter": "G", "text": "water level"}, {"letter": "H", "text": "specific areas"}, {"letter": "I", "text": "total expenditure"}, {"letter": "J", "text": "construction guidelines"}]}', '["H"]', NULL),
+        (section_3_id, 37, 'cam17-t3-r-q37', 'SUMMARY_COMPLETION_OPTIONS', '{"text": "He points out that although the cost of foundations increases when bedrock is deep below the surface, this cannot be regarded as <strong>37</strong> ____, ", "options": [{"letter": "A", "text": "development plans"}, {"letter": "B", "text": "deep excavations"}, {"letter": "C", "text": "great distance"}, {"letter": "D", "text": "excessive expense"}, {"letter": "E", "text": "impossible tasks"}, {"letter": "F", "text": "associated risks"}, {"letter": "G", "text": "water level"}, {"letter": "H", "text": "specific areas"}, {"letter": "I", "text": "total expenditure"}, {"letter": "J", "text": "construction guidelines"}]}', '["D"]', NULL),
+        (section_3_id, 38, 'cam17-t3-r-q38', 'SUMMARY_COMPLETION_OPTIONS', '{"text": "especially when compared to <strong>38</strong> ____.", "options": [{"letter": "A", "text": "development plans"}, {"letter": "B", "text": "deep excavations"}, {"letter": "C", "text": "great distance"}, {"letter": "D", "text": "excessive expense"}, {"letter": "E", "text": "impossible tasks"}, {"letter": "F", "text": "associated risks"}, {"letter": "G", "text": "water level"}, {"letter": "H", "text": "specific areas"}, {"letter": "I", "text": "total expenditure"}, {"letter": "J", "text": "construction guidelines"}]}', '["I"]', NULL),
+        (section_3_id, 39, 'cam17-t3-r-q39', 'SUMMARY_COMPLETION_OPTIONS', '{"text": "A particularly enjoyable part of the chapter was Barr''s account of how foundations are built. He describes not only how <strong>39</strong> ____ are made possible by the use of caissons, ", "options": [{"letter": "A", "text": "development plans"}, {"letter": "B", "text": "deep excavations"}, {"letter": "C", "text": "great distance"}, {"letter": "D", "text": "excessive expense"}, {"letter": "E", "text": "impossible tasks"}, {"letter": "F", "text": "associated risks"}, {"letter": "G", "text": "water level"}, {"letter": "H", "text": "specific areas"}, {"letter": "I", "text": "total expenditure"}, {"letter": "J", "text": "construction guidelines"}]}', '["B"]', NULL),
+        (section_3_id, 40, 'cam17-t3-r-q40', 'SUMMARY_COMPLETION_OPTIONS', '{"text": "but he also discusses their <strong>40</strong> ____.", "options": [{"letter": "A", "text": "development plans"}, {"letter": "B", "text": "deep excavations"}, {"letter": "C", "text": "great distance"}, {"letter": "D", "text": "excessive expense"}, {"letter": "E", "text": "impossible tasks"}, {"letter": "F", "text": "associated risks"}, {"letter": "G", "text": "water level"}, {"letter": "H", "text": "specific areas"}, {"letter": "I", "text": "total expenditure"}, {"letter": "J", "text": "construction guidelines"}]}', '["F"]', NULL);
 END $$;
