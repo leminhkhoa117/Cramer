@@ -11,12 +11,13 @@ public class SectionDTO {
     private Integer partNumber;
     private String displayContentUrl;
     private String passageText;
+    private String audioUrl;
 
     public SectionDTO() {
     }
 
     public SectionDTO(Long id, String examSource, Integer testNumber, String skill, 
-                     Integer partNumber, String displayContentUrl, String passageText) {
+                     Integer partNumber, String displayContentUrl, String passageText, String audioUrl) {
         this.id = id;
         this.examSource = examSource;
         this.testNumber = testNumber;
@@ -24,6 +25,7 @@ public class SectionDTO {
         this.partNumber = partNumber;
         this.displayContentUrl = displayContentUrl;
         this.passageText = passageText;
+        this.audioUrl = audioUrl;
     }
 
     // Getters and Setters
@@ -81,5 +83,13 @@ public class SectionDTO {
 
     public void setPassageText(String passageText) {
         this.passageText = passageText;
+    }
+
+    public String getAudioUrl() {
+        return audioUrl;
+    }
+
+    public void setAudioUrl(String audioUrl) {
+        this.audioUrl = audioUrl;
     }
 }

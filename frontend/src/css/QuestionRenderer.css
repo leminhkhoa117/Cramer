@@ -1,0 +1,41 @@
+.mcq-options label,
+.tfn-options label {
+    display: block;
+    margin: 8px 0;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+
+.mcq-options label:hover,
+.tfn-options label:hover {
+    background-color: #f3f4f6;
+}
+
+.mcq-options input[type="radio"],
+.tfn-options input[type="radio"] {
+    margin-right: 10px;
+}
+
+.fill-in-blank-input,
+.fill-in-blank-select,
+.matching-select {
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 0.95rem;
+    margin: 0 4px;
+}
+
+.fill-in-blank-input:focus,
+.fill-in-blank-select:focus,
+.matching-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.question-text-interactive {
+    line-height: 2;
+}

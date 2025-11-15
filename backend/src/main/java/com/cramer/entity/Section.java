@@ -33,6 +33,9 @@ public class Section {
     @Column(name = "passage_text", columnDefinition = "TEXT")
     private String passageText; // Full text content for Reading passages
 
+    @Column(name = "audio_url")
+    private String audioUrl; // URL for listening audio files
+
     // Constructors
     public Section() {
     }
@@ -99,6 +102,14 @@ public class Section {
 
     public void setPassageText(String passageText) {
         this.passageText = passageText;
+    }
+
+    public String getAudioUrl() {
+        return audioUrl;
+    }
+
+    public void setAudioUrl(String audioUrl) {
+        this.audioUrl = audioUrl;
     }
 
     @Override

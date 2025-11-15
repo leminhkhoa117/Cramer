@@ -22,7 +22,8 @@ public class FullSectionDTO extends SectionDTO {
             sectionDTO.getSkill(),
             sectionDTO.getPartNumber(),
             sectionDTO.getDisplayContentUrl(),
-            sectionDTO.getPassageText()
+            sectionDTO.getPassageText(),
+            sectionDTO.getAudioUrl()
         );
         this.questions = questions;
     }

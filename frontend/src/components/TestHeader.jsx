@@ -37,7 +37,9 @@ export default function TestHeader({ testName, timeLeft, onSubmit }) {
                 <h1 className="test-header-title">{testName}</h1>
             </div>
             <div className="test-header-center">
-                <span className="test-timer">{formatTime(timeLeft)}</span>
+                {timeLeft != null && (
+                    <span className="test-timer">{formatTime(timeLeft)}</span>
+                )}
             </div>
             <div className="test-header-right">
                 <button onClick={toggleFullscreen} className="test-header-btn fullscreen-btn">

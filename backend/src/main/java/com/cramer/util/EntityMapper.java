@@ -44,7 +44,8 @@ public class EntityMapper {
                 section.getSkill(),
                 section.getPartNumber(),
                 section.getDisplayContentUrl(),
-                section.getPassageText()
+                section.getPassageText(),
+                section.getAudioUrl()
         );
     }
 

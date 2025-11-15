@@ -1,215 +1,160 @@
-/* Overall page structure - Full viewport layout */
+/* Existing styles in TestPage.css */
 .test-page-wrapper {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    width: 100%;
-    padding-top: 60px; /* Account for fixed header */
-    padding-bottom: 100px; /* Account for fixed footer */
     overflow: hidden;
-    box-sizing: border-box;
 }
 
-/* Main content container - Takes remaining space */
 .test-page-container {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-    width: 100%;
-    height: 100%;
+    flex-grow: 1;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
 }
 
-/* Individual panel containers */
-.passage-container {
-    height: 100%;
-    overflow-y: auto;
-    background-color: #ffffff;
-    padding: 24px;
-}
-
+.passage-container,
 .questions-column {
     height: 100%;
     overflow-y: auto;
-    background-color: #ffffff;
+    padding: 20px;
+    background-color: var(--color-background-secondary);
 }
 
-.questions-container {
-    padding: 24px;
-}
-
-
-.passage-title, .questions-container h2 {
-    margin-top: 0;
-    border-bottom: 2px solid #e0e0e0;
-    padding-bottom: 10px;
-    margin-bottom: 10px;
-    font-size: 1.5em;
-    color: #333;
+.passage-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--color-text-primary);
 }
 
 .passage-instructions {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 24px;
     font-style: italic;
-    color: #555;
-    margin-bottom: 20px;
 }
 
-.passage-content, .passage-content * {
-    line-height: 1.7;
-    font-family: 'Be Vietnam Pro', sans-serif;
-    font-size: 1.1em;
-}
-
-.question-group {
-    margin-bottom: 30px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 20px;
-}
-
-.group-instructions {
-    background-color: #f9f9f9;
-    border-left: 4px solid #7c3aed;
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 4px;
-}
-
-.group-instructions p {
-    margin: 0;
-}
-
-.question-block {
-    margin-bottom: 20px;
-    padding-left: 10px;
-}
-
-.question-block p {
-    margin: 0 0 10px 0;
-}
-
-.fill-in-blank-input {
-    border: none;
-    border-bottom: 1px solid #333;
-    margin: 0 5px;
-    padding: 2px 5px;
-    width: 150px;
-    text-align: center;
-    font-size: 1em;
-    background-color: #f0eaff;
-    border-radius: 2px;
-}
-
-.fill-in-blank-input:focus {
-    outline: none;
-    background-color: #e6d4ff;
-}
-
-.tfn-options, .mcq-options {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.tfn-options label, .mcq-options label {
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px;
-    border-radius: 6px;
-    transition: all 0.2s ease-in-out;
-}
-
-.tfn-options label:hover, .mcq-options label:hover {
-    background-color: #f0eaff;
-    transform: scale(1.02);
-}
-
-.error-message, .loading-screen {
-
-    text-align: center;
-
-    padding: 40px;
-
-    font-size: 1.2em;
-
-}
-
-
-
-.highlighted-text {
-
-
-
-    background-color: #fff3a3; /* A pleasant yellow */
-
-
-
-    cursor: pointer;
-
-
-
-}
-
-
-
-
-
-
-/* Resize handle - Thin vertical bar */
 .resize-handle {
-    width: 15px;
-    height: 100%;
-    background-color: #e5e7eb;
-    cursor: col-resize;
-    transition: background-color 0.15s ease;
-    flex-shrink: 0;
+    background-color: var(--color-background-primary);
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
-    z-index: 10;
+    width: 15px !important;
+    border-left: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
 }
 
-.resize-handle:hover {
-    background-color: #d1d5db;
-}
-
-.resize-handle:active {
-    background-color: #9ca3af;
-}
-
-/* Resize handle icon - Square button with ⟷ icon */
 .resize-handle-icon {
-    width: 40px;
-    height: 40px;
-    background-color: #ffffff;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
+    transform: rotate(90deg);
+}
+
+.loading-screen,
+.error-message {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-    transition: all 0.15s ease;
+    height: 100vh;
+    font-size: 1.2rem;
 }
 
-.resize-handle:hover .resize-handle-icon {
-    border-color: #9ca3af;
-    background-color: #f9fafb;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+/* --- New Styles for Listening Test --- */
+
+
+
+.listening-controls-container {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding: 10px 20px; /* Re-added padding */
+
+    background-color: var(--color-background-primary); /* Re-added background */
+
+    border-bottom: 1px solid var(--color-border);
+
+    gap: 20px;
+
 }
 
-.resize-handle:active .resize-handle-icon {
-    background-color: #f3f4f6;
-    transform: scale(0.95);
+
+
+.review-banner {
+
+    background-color: var(--color-accent);
+
+    color: white;
+
+    text-align: center;
+
+    padding: 12px;
+
+    font-size: 1.1rem;
+
+    font-weight: 500;
+
+    position: fixed;
+
+    top: 120px; /* Below header (60px) + audio controls (approx 60px) */
+
+    left: 0;
+
+    width: 100%;
+
+    z-index: 999;
+
 }
 
-.resize-handle-icon svg {
-    transition: stroke 0.15s ease;
+
+
+.listening-visual-content {
+
+    width: 100%;
+
+    max-width: 800px;
+
+    height: auto;
+
+    display: block;
+
+    margin: 0 auto;
+
+    border-radius: 8px;
+
 }
 
-.resize-handle:hover .resize-handle-icon svg path {
-    stroke: #374151;
+
+
+.listening-visual-placeholder {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    height: 100%;
+
+    min-height: 300px;
+
+    background-color: var(--color-background-tertiary);
+
+    border-radius: 8px;
+
+    color: var(--color-text-secondary);
+
+    font-style: italic;
+
+}
+
+
+
+.test-page-wrapper.listening-test-active {
+
+    padding-top: 60px; /* Height of header (60px) + listening controls (approx 60px) */
+
 }
 
 

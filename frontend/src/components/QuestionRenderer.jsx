@@ -1,4 +1,5 @@
 import React from 'react';
+import '../css/QuestionRenderer.css';
 
 const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, groupOptions, wrapperTag = 'div' }) => {
     const { id, questionType, questionContent, questionNumber } = question;

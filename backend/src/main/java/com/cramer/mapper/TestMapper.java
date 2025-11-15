@@ -39,7 +39,8 @@ public class TestMapper {
                 section.getSkill(),
                 section.getPartNumber(),
                 section.getDisplayContentUrl(),
-                section.getPassageText()
+                section.getPassageText(),
+                section.getAudioUrl()
         );
     }
 
