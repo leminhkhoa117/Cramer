@@ -44,7 +44,7 @@ Local people may have a further reason to be grateful to their bats. While the a
 
 Rocha points out that the relationship is complicated. When food is scarce, bats become a crucial source of protein for local people. Even the children will hunt them. And as well as roosting in trees, the bats sometimes roost in buildings, but are not welcomed there because they make them unclean. At the same time, however, they are associated with sacred caves and the ancestors, so they can be viewed as beings between worlds, which makes them very significant in the culture of the people. And one potential problem is that while these bats are benefiting from farming, at the same time deforestation is reducing the places where they can roost, which could have long-term effects on their numbers. Rocha says, ‘With the right help, we hope that farmers can promote this mutually beneficial relationship by installing bat houses.''
 
-Rocha and his colleagues believe that maximising bat populations can help to boost crop yields and promote sustainable livelihoods. The team is now calling for further research to quantify this contribution. ''I''m very optimistic,'' says Rocha. ‘If we give nature a hand, we can speed up the process of regeneration.''
+Rocha and his colleagues believe that maximising bat populations can help to boost crop yields and promote sustainable livelihoods. The team is now calling for further research to quantify this contribution. ''I''m very optimistic,'' says Rocha. ''If we give nature a hand, we can speed up the process of regeneration.'''
     )
     RETURNING id INTO section_1_id;
 
@@ -61,12 +61,12 @@ Rocha and his colleagues believe that maximising bat populations can help to boo
 
         -- TABLE_COMPLETION (Questions 7-13)
         (section_1_id, 7, 'cam17-t4-r-q7', 'TABLE_COMPLETION', '{"text": "<table class=\"question-table\"><thead><tr><th></th><th>The study carried out by Rocha''s team</th></tr></thead><tbody><tr><td><strong>Aim</strong></td><td>- to investigate the feeding habits of bats in farmland near the Ranomafana National Park</td></tr><tr><td><strong>Method</strong></td><td>- ultrasonic recording to identify favourite feeding spots<br/>- DNA analysis of bat <strong>7</strong> ____</td></tr><tr><td rowspan=\"3\"><strong>Findings</strong></td><td>- the bats<br/>  - were most active in rice fields located on hills<br/>  - ate pests of rice, <strong>8</strong> ____, sugarcane, nuts and fruit<br/>  - prevent the spread of disease by eating <strong>9</strong> ____ and blackflies</td></tr><tr><td>- local attitudes to bats are mixed:<br/>  - they provide food rich in <strong>10</strong> ____<br/>  - the buildings where they roost become <strong>11</strong> ____<br/>  - they play an important role in local <strong>12</strong> ____</td></tr><tr></tr><tr><td><strong>Recommendation</strong></td><td>- farmers should provide special <strong>13</strong> ____ to support the bat population</td></tr></tbody></table>"}', '["droppings"]', 'ONE WORD ONLY'),
-        (section_1_id, 8, 'cam17-t4-r-q8', 'TABLE_COMPLETION', '{}', '["coffee"]', 'ONE WORD ONLY'),
-        (section_1_id, 9, 'cam17-t4-r-q9', 'TABLE_COMPLETION', '{}', '["mosquitoes"]', 'ONE WORD ONLY'),
-        (section_1_id, 10, 'cam17-t4-r-q10', 'TABLE_COMPLETION', '{}', '["protein"]', 'ONE WORD ONLY'),
-        (section_1_id, 11, 'cam17-t4-r-q11', 'TABLE_COMPLETION', '{}', '["unclean"]', 'ONE WORD ONLY'),
-        (section_1_id, 12, 'cam17-t4-r-q12', 'TABLE_COMPLETION', '{}', '["culture"]', 'ONE WORD ONLY'),
-        (section_1_id, 13, 'cam17-t4-r-q13', 'TABLE_COMPLETION', '{}', '["houses"]', 'ONE WORD ONLY');
+        (section_1_id, 8, 'cam17-t4-r-q8', 'TABLE_COMPLETION', '{"text": ""}', '["coffee"]', 'ONE WORD ONLY'),
+        (section_1_id, 9, 'cam17-t4-r-q9', 'TABLE_COMPLETION', '{"text": ""}', '["mosquitoes"]', 'ONE WORD ONLY'),
+        (section_1_id, 10, 'cam17-t4-r-q10', 'TABLE_COMPLETION', '{"text": ""}', '["protein"]', 'ONE WORD ONLY'),
+        (section_1_id, 11, 'cam17-t4-r-q11', 'TABLE_COMPLETION', '{"text": ""}', '["unclean"]', 'ONE WORD ONLY'),
+        (section_1_id, 12, 'cam17-t4-r-q12', 'TABLE_COMPLETION', '{"text": ""}', '["culture"]', 'ONE WORD ONLY'),
+        (section_1_id, 13, 'cam17-t4-r-q13', 'TABLE_COMPLETION', '{"text": ""}', '["houses"]', 'ONE WORD ONLY');
 END $$;
 
 -- =================================================================
@@ -96,6 +96,8 @@ BEGIN
 <strong>E</strong> The data-gathering phase of the project has been completed and now, according to Ogilvie, it is time ''to ask the big questions''. One way to look at whether education causes economic growth is to ''hold wealth constant''. This involves following the lives of different people with the same level of wealth over a period of time. If wealth is constant, it is possible to discover whether education was, for example, linked to the cultivation of new crops, or to the adoption of industrial innovations like sewing machines. The team will also ask what aspect of education helped people engage more with productive and innovative activities. Was it, for instance, literacy, numeracy, book ownership, years of schooling? Was there a threshold level – a tipping point – that needed to be reached to affect economic performance?
 
 <strong>F</strong> Ogilvie hopes to start finding answers to these questions over the next few years. One thing is already clear, she says: the relationship between education and economic growth is far from straightforward. ‘German-speaking central Europe is an excellent laboratory for testing theories of economic growth,'' she explains. Between 1600 and 1900, literacy rates and book ownership were high and yet the region remained poor. It was also the case that local guilds and merchant associations were extremely powerful and legislated against anything that undermined their monopolies. In villages throughout the region, guilds blocked labour migration and resisted changes that might reduce their influence. ''Early findings suggest that the potential benefits of education for the economy can be held back by other barriers, and this has implications for today,'' says Ogilvie. ''Huge amounts are spent improving education in developing countries, but this spending can fail to deliver economic growth if restrictions block people – especially women and the poor – from using their education in economically productive ways. If economic institutions are poorly set up, for instance, education can''t lead to growth.'' 
+
+* guild: an association of artisans or merchants which oversees the practice of their craft or trade in a particular area' 
     )
     RETURNING id INTO section_2_id;
 

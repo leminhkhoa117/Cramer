@@ -4,7 +4,7 @@
 
 This project is a full-stack web application called **Cramer**, designed as an English practice platform delivering IELTS-style tests.
 
-- **Frontend:** The frontend is a modern web application built with **React (Vite)** and styled with **Tailwind CSS**. It uses the **Supabase client** for authentication.
+- **Frontend:** The frontend is a modern web application built with **React (Vite)** and styled with **Tailwind CSS** and **React Bootstrap**. It uses the **Supabase client** for authentication.
 
 - **Backend:** The backend is a **Spring Boot** application written in **Java 21**. It provides a REST API for the frontend and connects to a **PostgreSQL** database. **Maven** is used for dependency management and building the project.
 
@@ -76,6 +76,18 @@ The backend will be available at `http://localhost:8080`.
 - **API:** The backend provides a REST API. Refer to the Swagger documentation at `http://localhost:8080/swagger-ui.html` for details on the available endpoints.
 
 ## Project Status & Recent Changes
+
+**Date:** 2025-11-15
+
+**Status:** STABLE & FUNCTIONAL
+
+**Summary of Changes:**
+
+*   **Project Review & Documentation:** Conducted a full codebase review to synchronize documentation with the current project state.
+*   **Core Functionality:** Confirmed the primary user workflow is feature-complete, including user authentication, course browsing, test-taking (`TestPage.jsx`), and result analysis (`TestReviewPage.jsx`).
+*   **Design System:** Acknowledged the formalization of a new design system, documented in `docs/frontend/UI_GUIDELINES.md`, which establishes a "glassmorphism" aesthetic, a standardized color palette, and responsive component strategies.
+*   **Tech Stack Update:** Updated the project overview to reflect the use of **React (Vite)** with **Tailwind CSS** and **React Bootstrap** on the frontend, and a **Java 21** / **Spring Boot 3.3.0** backend.
+*   **Documentation Note:** Recommended merging `DEVELOPMENT_NOTES.md` and renaming `GEMINI.md` to a more descriptive title like `PROJECT_DIARY.md` to avoid confusion and centralize project history.
 
 **Date:** 2025-11-11
 
