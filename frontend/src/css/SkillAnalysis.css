@@ -1,0 +1,39 @@
+/* frontend/src/css/SkillAnalysis.css */
+
+.skill-analysis-container {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+    margin-top: 1rem;
+  }
+  
+  .skill-analysis-container h4 {
+    font-size: 1.25rem;
+    color: var(--dash-text);
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+  
+  /* Re-using the chart-placeholder style from ProgressChart.css, 
+     but it's good to have it here in case of future modifications. */
+  .chart-placeholder {
+    padding: 3rem 2rem;
+    text-align: center;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+    margin-top: 1rem;
+  }
+  
+  .chart-placeholder h4 {
+    font-size: 1.5rem;
+    color: var(--dash-text);
+    margin-bottom: 0.5rem;
+  }
+  
+  .chart-placeholder p {
+    font-size: 1rem;
+    color: #666;
+  }
+  

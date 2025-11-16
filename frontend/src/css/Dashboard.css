@@ -424,20 +424,21 @@
 
 .btn-review {
   border: none;
-  border-radius: 12px;
-  padding: 0.6rem 1.2rem;
-  background: #8c52ff;
+  border-radius: 999px; /* Changed from 12px */
+  padding: 0.75rem 2rem; /* Changed from 0.6rem 1.2rem */
+  background: var(--dash-primary); /* Using variable for consistency */
   color: white;
   font-weight: 600;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 5px 15px rgba(31, 38, 135, 0.2); /* More pronounced shadow */
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease-in-out; /* Changed from ease */
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 1rem; /* Changed from 0.9rem */
 }
 
 .btn-review:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  background-color: #6d28d9; /* Darker purple on hover, similar to Home */
+  box-shadow: 0 8px 20px rgba(31, 38, 135, 0.3); /* More pronounced shadow on hover */
   transform: translateY(-2px);
   filter: brightness(1.1);
 }
@@ -456,6 +457,30 @@
   border-radius: 12px;
   font-size: 0.9rem;
   line-height: 1;
+}
+
+/* New, more specific button style */
+.btn-action-dashboard {
+  display: inline-block;
+  border: none;
+  border-radius: 999px;
+  padding: 0.75rem 2rem;
+  background: var(--dash-primary);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 5px 15px rgba(31, 38, 135, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.btn-action-dashboard:hover {
+  background-color: #6d28d9;
+  box-shadow: 0 8px 20px rgba(31, 38, 135, 0.3);
+  transform: translateY(-2px);
+  filter: brightness(1.1);
 }
 
 
@@ -524,50 +549,245 @@
 }
 
 @media (max-width: 640px) {
+
   .dash-hero { min-height: auto; padding-bottom: 2rem; }
+
   .goals-pill { padding: 1rem; }
+
   .goal-meta-row {
+
     display: flex;
+
     flex-direction: column;
+
     gap: 0.75rem;
+
   }
+
   .goal-meta-card,
+
   .goal-meta-card--overall {
+
     flex-basis: 100%;
+
   }
+
   .goal-skills-group {
+
     flex-wrap: wrap;
+
     gap: 0.75rem;
+
     border-left: 0;
+
     padding-left: 0;
+
   }
+
   .goal-skill {
+
     flex-basis: 100%;
+
   }
+
   .goal-targets-grid {
+
     display: grid;
+
     grid-template-columns: 1fr;
+
     gap: 0.75rem;
+
   }
+
   
+
   .dash-course-card {
+
     flex-direction: column;
+
     align-items: stretch;
+
     text-align: center;
+
   }
+
+
 
   .dash-course-card__image-container {
+
     width: 100%;
+
     height: 150px;
+
     margin-bottom: 1rem;
+
   }
 
+
+
   .dash-course-card__content {
+
     align-items: center;
+
   }
+
   
+
   .dash-course-card__footer {
+
     flex-direction: column;
+
     gap: 1rem;
+
   }
+
+}
+
+
+
+/* === Tab Navigation === */
+
+.dash-nav {
+
+  display: flex;
+
+  gap: 0.5rem;
+
+  background-color: #fff;
+
+  padding: 0.5rem;
+
+  border-radius: 16px;
+
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+
+  margin-top: -2rem; /* Kéo lên trên phần hero */
+
+  position: relative;
+
+  z-index: 10;
+
+}
+
+
+
+.dash-nav-btn {
+
+  flex: 1;
+
+  padding: 0.85rem 1rem;
+
+  border: none;
+
+  border-radius: 12px;
+
+  background-color: transparent;
+
+  color: #555;
+
+  font-weight: 600;
+
+  font-size: 0.95rem;
+
+  cursor: pointer;
+
+  transition: all 0.25s ease;
+
+  text-align: center;
+
+}
+
+
+
+.dash-nav-btn:hover {
+
+  background-color: #f0e9ff;
+
+  color: var(--dash-primary);
+
+}
+
+
+
+.dash-nav-btn.active {
+
+  background-color: var(--dash-primary);
+
+  color: #fff;
+
+  box-shadow: 0 4px 15px rgba(140, 82, 255, 0.3);
+
+}
+
+
+
+/* === Main Content Area === */
+
+.dash-main-content {
+
+  padding-top: 2rem;
+
+}
+
+
+
+/* === Placeholder Content === */
+
+.placeholder-content {
+
+  padding: 3rem 2rem;
+
+  text-align: center;
+
+  background: #fff;
+
+  border-radius: 20px;
+
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+
+  margin-top: 1rem;
+
+}
+
+
+
+.placeholder-content h2 {
+
+  font-size: 1.5rem;
+
+  color: var(--dash-text);
+
+  margin-bottom: 0.5rem;
+
+}
+
+
+
+.placeholder-content p {
+
+  font-size: 1rem;
+
+  color: #666;
+
+}
+
+
+
+/* === Responsive Adjustments === */
+
+@media (max-width: 768px) {
+
+  .dash-nav {
+
+    flex-direction: column;
+
+  }
+
+  .dash-nav-btn {
+
+    font-size: 1rem;
+
+  }
+
 }

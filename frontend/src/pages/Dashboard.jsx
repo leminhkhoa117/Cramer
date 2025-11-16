@@ -9,6 +9,10 @@ import FilterModal from '../components/FilterModal';
 import heroFallback from '../pictures/cambridge-ielts-17.avif';
 import '../css/Dashboard.css';
 import '../css/FilterModal.css';
+import ProgressChart from '../components/ProgressChart';
+import SkillAnalysis from '../components/SkillAnalysis';
+import '../css/ProgressChart.css';
+import '../css/SkillAnalysis.css';
 
 // Helper functions moved to the top level
 const formatCourseSeries = (course) => `Cambridge ${course.examSource.substring(3)} - Test ${course.testNumber}`;
@@ -50,6 +54,7 @@ export default function Dashboard() {
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState({});
+  const [activeView, setActiveView] = useState('courses');
   
   // Track the last profile ID we fetched for to avoid unnecessary refetches
   const [lastFetchedProfileId, setLastFetchedProfileId] = useState(null);
@@ -305,66 +310,111 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Courses */}
-      <section className="dash-courses mobile-margin-top">
-        <div className="container">
-          <div className="dash-courses__header">
-            <h2>Khoá học của tôi</h2>
-            <button type="button" className="btn-filter" onClick={() => setIsFilterModalOpen(true)}>Lọc</button>
-          </div>
+      <div className="container">
+        <nav className="dash-nav">
+          <button
+            type="button"
+            className={`dash-nav-btn ${activeView === 'courses' ? 'active' : ''}`}
+            onClick={() => setActiveView('courses')}
+          >
+            Lịch sử làm bài
+          </button>
+          <button
+            type="button"
+            className={`dash-nav-btn ${activeView === 'progress' ? 'active' : ''}`}
+            onClick={() => setActiveView('progress')}
+          >
+            Biểu đồ tiến độ
+          </button>
+          <button
+            type="button"
+            className={`dash-nav-btn ${activeView === 'analysis' ? 'active' : ''}`}
+            onClick={() => setActiveView('analysis')}
+          >
+            Phân tích Kỹ năng
+          </button>
+        </nav>
+      </div>
 
-          {filteredCourses.length === 0 ? (
-            <div className="course-empty">Không tìm thấy khoá học nào khớp với bộ lọc.</div>
-          ) : (
-            <div className="course-grid">
-              {filteredCourses.map((course) => {
-                const completion = Math.min(
-                  100,
-                  Math.max(0, Math.round((course.completionRate ?? 0) * 100))
-                );
+      <main className="dash-main-content">
+        {activeView === 'courses' && (
+          <section className="dash-courses">
+            <div className="container">
+              <div className="dash-courses__header">
+                <h2>Khoá học của tôi</h2>
+                <button type="button" className="btn-filter" onClick={() => setIsFilterModalOpen(true)}>Lọc</button>
+              </div>
 
-                return (
-                  <article
-                    key={`${course.examSource}-${course.testNumber}-${course.skill}`}
-                    className="dash-course-card"
-                  >
-                    <div className="dash-course-card__image-container">
-                      <img src={heroFallback} alt={formatCourseSeries(course)} className="dash-course-card__image" />
-                    </div>
-                    <div className="dash-course-card__content">
-                      <h3 className="dash-course-card__title">{formatCourseSeries(course)}</h3>
-                      <div className="dash-course-card__meta">
-                        <p><strong>Kỹ năng:</strong> {formatSkillName(course.skill)}</p>
-                        <p><strong>Đã làm:</strong> {course.answersAttempted}</p>
-                        <p><strong>Tổng số câu:</strong> {course.totalQuestions || '—'}</p>
-                        <p><strong>Đúng:</strong> {course.correctAnswers}</p>
-                        <p><strong>Lần làm gần nhất:</strong> {formatDate(course.lastAttempt)}</p>
-                      </div>
-                      <div className="dash-course-card__footer">
-                        <div className="dash-course-card__score-status">
-                          {course.bandScore != null ? (
-                            <span className="dash-course-card__progress-text">
-                              Band {course.bandScore.toFixed(1)}
-                            </span>
-                          ) : (
-                            <span className="dash-course-card__progress-text">{completion}%</span>
-                          )}
-                          <span className="dash-course-card__status-badge">{course.status}</span>
+              {filteredCourses.length === 0 ? (
+                <div className="course-empty">Không tìm thấy khoá học nào khớp với bộ lọc.</div>
+              ) : (
+                <div className="course-grid">
+                  {filteredCourses.map((course) => {
+                    const completion = Math.min(
+                      100,
+                      Math.max(0, Math.round((course.completionRate ?? 0) * 100))
+                    );
+
+                    return (
+                      <article
+                        key={`${course.examSource}-${course.testNumber}-${course.skill}`}
+                        className="dash-course-card"
+                      >
+                        <div className="dash-course-card__image-container">
+                          <img src={heroFallback} alt={formatCourseSeries(course)} className="dash-course-card__image" />
                         </div>
-                        {course.status === 'COMPLETED' && (
-                          <Link to={`/test/review/${course.attemptId}`} className="btn btn-review">
-                            Xem lại
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
+                        <div className="dash-course-card__content">
+                          <h3 className="dash-course-card__title">{formatCourseSeries(course)}</h3>
+                          <div className="dash-course-card__meta">
+                            <p><strong>Kỹ năng:</strong> {formatSkillName(course.skill)}</p>
+                            <p><strong>Đã làm:</strong> {course.answersAttempted}</p>
+                            <p><strong>Tổng số câu:</strong> {course.totalQuestions || '—'}</p>
+                            <p><strong>Đúng:</strong> {course.correctAnswers}</p>
+                            <p><strong>Lần làm gần nhất:</strong> {formatDate(course.lastAttempt)}</p>
+                          </div>
+                          <div className="dash-course-card__footer">
+                            <div className="dash-course-card__score-status">
+                              {course.bandScore != null ? (
+                                <span className="dash-course-card__progress-text">
+                                  Band {course.bandScore.toFixed(1)}
+                                </span>
+                              ) : (
+                                <span className="dash-course-card__progress-text">{completion}%</span>
+                              )}
+                              <span className="dash-course-card__status-badge">{course.status}</span>
+                            </div>
+                                                                                                    {course.status === 'COMPLETED' && (
+                                                                                                      <Link to={`/test/${course.examSource}/${course.testNumber}/${course.skill}`} className="btn-action-dashboard">
+                                                                                                        Làm bài lại
+                                                                                                      </Link>
+                                                                                                    )}
+                                                                                                    {course.status === 'IN_PROGRESS' && (
+                                                                                                      <Link to={`/test/${course.examSource}/${course.testNumber}/${course.skill}`} className="btn-action-dashboard">
+                                                                                                        Tiếp tục làm
+                                                                                                      </Link>
+                                                                                                    )}
+                                                                                                  </div>                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </section>
+          </section>
+        )}
+
+        {activeView === 'progress' && (
+          <div className="container">
+            <ProgressChart data={courses} />
+          </div>
+        )}
+
+        {activeView === 'analysis' && (
+          <div className="container">
+            <SkillAnalysis courseData={courses} targets={skillTargets} />
+          </div>
+        )}
+      </main>
 
       <GoalModal
         isOpen={isGoalModalOpen}

@@ -1,0 +1,57 @@
+/* frontend/src/css/ProgressChart.css */
+
+.progress-chart-container {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+  margin-top: 1rem;
+}
+
+.progress-chart-container h4 {
+  font-size: 1.25rem;
+  color: var(--dash-text);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.progress-chart-tooltip {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  padding: 0.75rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.progress-chart-tooltip .tooltip-label {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: var(--dash-primary);
+}
+
+.progress-chart-tooltip .tooltip-intro,
+.progress-chart-tooltip .tooltip-skill {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.chart-placeholder {
+  padding: 3rem 2rem;
+  text-align: center;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+  margin-top: 1rem;
+}
+
+.chart-placeholder h4 {
+  font-size: 1.5rem;
+  color: var(--dash-text);
+  margin-bottom: 0.5rem;
+}
+
+.chart-placeholder p {
+  font-size: 1rem;
+  color: #666;
+}
