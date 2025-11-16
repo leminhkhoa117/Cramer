@@ -12,7 +12,7 @@ export default function Footer() {
           <div className="footer-brand">
             <Link to="/" className="footer-brand__logo">
               <img 
-                src="/pictures/Icon_Black - Edited.png" 
+                src="/pictures/logo/Icon.png" 
                 alt="Cramer Logo" 
                 style={{ height: '40px', objectFit: 'contain' }}
               />

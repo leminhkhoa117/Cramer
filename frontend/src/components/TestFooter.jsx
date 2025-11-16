@@ -27,7 +27,7 @@ export default function TestFooter({ testData, answers, onQuestionSelect, onPart
                             <QuestionButton
                                 key={q.id}
                                 question={q}
-                                isAnswered={answers[q.id] && answers[q.id].value}
+                                isAnswered={!!answers[q.id]}
                                 onSelect={onQuestionSelect}
                             />
                         ))}

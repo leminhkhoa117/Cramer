@@ -12,6 +12,8 @@ import com.cramer.util.IeltsScoreConverter;
 import com.cramer.repository.TestAttemptRepository;
 import com.cramer.repository.UserAnswerRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +37,7 @@ public class TestAttemptService {
     private final TestAttemptRepository testAttemptRepository;
     private final UserAnswerRepository userAnswerRepository;
     private final QuestionRepository questionRepository;
+    private final ObjectMapper objectMapper;
     
     @PersistenceContext
     private EntityManager entityManager;
@@ -42,10 +45,12 @@ public class TestAttemptService {
     @Autowired
     public TestAttemptService(TestAttemptRepository testAttemptRepository,
                               UserAnswerRepository userAnswerRepository,
-                              QuestionRepository questionRepository) {
+                              QuestionRepository questionRepository,
+                              ObjectMapper objectMapper) {
         this.testAttemptRepository = testAttemptRepository;
         this.userAnswerRepository = userAnswerRepository;
         this.questionRepository = questionRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -111,7 +116,7 @@ public class TestAttemptService {
     }
 
     @Transactional
-    public TestResultDTO submitAttempt(Long testAttemptId, Map<Long, JsonNode> answers, UUID userId) {
+    public TestResultDTO submitAttempt(Long testAttemptId, Map<Long, String> answers, UUID userId) {
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
         logger.info("📝 Submitting test attempt: attemptId={}, userId={}, answersCount={}", 
                     testAttemptId, userId, answers != null ? answers.size() : 0);
@@ -135,34 +140,40 @@ public class TestAttemptService {
         int correctCount = 0;
 
         long startGrading = System.currentTimeMillis();
-        for (Map.Entry<Long, JsonNode> entry : answers.entrySet()) {
-            Long questionId = entry.getKey();
-            JsonNode answerValue = entry.getValue();
+        if (answers != null) {
+            for (Map.Entry<Long, String> entry : answers.entrySet()) {
+                Long questionId = entry.getKey();
+                String answerText = entry.getValue();
 
-            if (answerValue == null || answerValue.get("value") == null || answerValue.get("value").asText().isEmpty()) {
-                continue; // Skip unanswered questions
-            }
-            
-            Question question = questionRepository.findById(questionId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Question not found with id: " + questionId));
+                if (answerText == null || answerText.trim().isEmpty()) {
+                    continue; // Skip unanswered questions
+                }
+                
+                Question question = questionRepository.findById(questionId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Question not found with id: " + questionId));
 
-            boolean isCorrect = compareAnswers(answerValue, question.getCorrectAnswer());
+                // Adapt the String answer to a JsonNode to maintain compatibility with downstream logic
+                ObjectNode answerNode = objectMapper.createObjectNode();
+                answerNode.put("value", answerText);
 
-            UserAnswer userAnswer = new UserAnswer();
-            userAnswer.setUserId(userId);
-            userAnswer.setAttempt(testAttempt);
-            userAnswer.setQuestion(question);
-            userAnswer.setAnswerContent(answerValue);
-            userAnswer.setUserAnswer(answerValue.get("value").asText()); // Set the text value
-            userAnswer.setCorrect(isCorrect);
-            userAnswers.add(userAnswer);
+                boolean isCorrect = compareAnswers(answerNode, question.getCorrectAnswer());
 
-            if (isCorrect) {
-                correctCount++;
+                UserAnswer userAnswer = new UserAnswer();
+                userAnswer.setUserId(userId);
+                userAnswer.setAttempt(testAttempt);
+                userAnswer.setQuestion(question);
+                userAnswer.setAnswerContent(answerNode);
+                userAnswer.setUserAnswer(answerText); // Set the plain text value
+                userAnswer.setCorrect(isCorrect);
+                userAnswers.add(userAnswer);
+
+                if (isCorrect) {
+                    correctCount++;
+                }
             }
         }
         long gradingTime = System.currentTimeMillis() - startGrading;
-        logger.info("✅ Graded {} answers in {}ms", answers.size(), gradingTime);
+        logger.info("✅ Graded {} answers in {}ms", answers != null ? answers.size() : 0, gradingTime);
 
         long startSave = System.currentTimeMillis();
         userAnswerRepository.saveAll(userAnswers);
@@ -192,32 +203,31 @@ public class TestAttemptService {
     }
 
     private boolean compareAnswers(JsonNode userAnswer, JsonNode correctAnswer) {
-        if (userAnswer == null || userAnswer.get("value") == null || correctAnswer == null) {
+        if (userAnswer == null || userAnswer.get("value") == null || userAnswer.get("value").isNull() || correctAnswer == null) {
             return false;
         }
 
-        // The user's answer, e.g., "innovation" or "NOT_GIVEN"
-        // Normalize: replace underscore with space, trim, lowercase
         String userText = userAnswer.get("value").asText()
                 .replace("_", " ")
                 .trim()
                 .toLowerCase();
 
-        // The correct answers are stored in your DB as a simple array of strings, e.g., ["innovation"] or ["NOT GIVEN"]
-        // So, the `correctAnswer` JsonNode is the array itself.
-        if (!correctAnswer.isArray()) {
-            // If the DB stores it as {"answers": [...]}, then use:
-            // JsonNode correctAnswersArray = correctAnswer.get("answers");
-            // if (correctAnswersArray == null || !correctAnswersArray.isArray()) return false;
-            return false;
-        }
-
-        for (JsonNode correctNode : correctAnswer) {
-            String correctText = correctNode.asText()
+        // Handle cases where the correct answer is a JSON array (e.g., ["answer1", "answer2"])
+        if (correctAnswer.isArray()) {
+            for (JsonNode correctNode : correctAnswer) {
+                String correctText = correctNode.asText()
+                        .replace("_", " ")
+                        .trim()
+                        .toLowerCase();
+                if (correctText.equals(userText)) {
+                    return true;
+                }
+            }
+        } else { // Handle cases where the correct answer is a single JSON string (e.g., "answer")
+            String correctText = correctAnswer.asText()
                     .replace("_", " ")
                     .trim()
                     .toLowerCase();
-            
             if (correctText.equals(userText)) {
                 return true;
             }

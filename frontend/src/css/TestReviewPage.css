@@ -42,11 +42,23 @@
     cursor: pointer;
 }
 
+.review-header-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
 .review-title {
     font-size: 1.2rem;
     font-weight: 600;
     margin: 0;
     color: white;
+}
+
+.review-test-name {
+    margin: 0;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .review-summary-grid {

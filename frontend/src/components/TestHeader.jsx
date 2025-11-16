@@ -8,18 +8,16 @@ const formatTime = (seconds) => {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 };
 
-export default function TestHeader({ testName, timeLeft, onSubmit }) {
+export default function TestHeader({ testName, timeLeft, onSubmit, onExit }) {
     const [isFullscreen, setIsFullscreen] = useState(false);
 
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen();
             setIsFullscreen(true);
-        } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-                setIsFullscreen(false);
-            }
+        } else if (document.exitFullscreen) {
+            document.exitFullscreen();
+            setIsFullscreen(false);
         }
     };
 
@@ -42,6 +40,11 @@ export default function TestHeader({ testName, timeLeft, onSubmit }) {
                 )}
             </div>
             <div className="test-header-right">
+                {onExit && (
+                    <button onClick={onExit} className="test-header-btn exit-btn">
+                        Thoát
+                    </button>
+                )}
                 <button onClick={toggleFullscreen} className="test-header-btn fullscreen-btn">
                     {isFullscreen ? <FiMinimize /> : <FiMaximize />}
                 </button>

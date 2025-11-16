@@ -1,0 +1,48 @@
+/* frontend/src/css/HighlightPopup.css */
+.highlight-popup {
+    position: absolute;
+    background-color: #333;
+    border-radius: 8px;
+    padding: 5px;
+    display: flex;
+    gap: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000; /* Ensure it's above other content */
+}
+
+.highlight-button {
+    background-color: #555;
+    border: none;
+    border-radius: 4px;
+    padding: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+    transition: background-color 0.2s ease;
+}
+
+.highlight-button:hover {
+    background-color: #777;
+}
+
+.color-button {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 2px solid transparent;
+}
+
+.color-button:hover {
+    border-color: white;
+}
+
+.clear-button {
+    background-color: #dc3545; /* Red for delete */
+}
+
+.clear-button:hover {
+    background-color: #c82333;
+}

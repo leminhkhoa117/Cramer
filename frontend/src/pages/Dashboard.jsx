@@ -383,17 +383,44 @@ export default function Dashboard() {
                               )}
                               <span className="dash-course-card__status-badge">{course.status}</span>
                             </div>
-                                                                                                    {course.status === 'COMPLETED' && (
-                                                                                                      <Link to={`/test/${course.examSource}/${course.testNumber}/${course.skill}`} className="btn-action-dashboard">
-                                                                                                        Làm bài lại
-                                                                                                      </Link>
-                                                                                                    )}
-                                                                                                    {course.status === 'IN_PROGRESS' && (
-                                                                                                      <Link to={`/test/${course.examSource}/${course.testNumber}/${course.skill}`} className="btn-action-dashboard">
-                                                                                                        Tiếp tục làm
-                                                                                                      </Link>
-                                                                                                    )}
-                                                                                                  </div>                        </div>
+                            <div className="dash-course-card__actions">
+                              {course.status === 'COMPLETED' && (
+                                <>
+                                  {course.attemptId && (
+                                    <Link
+                                      to={`/test/review/${course.attemptId}`}
+                                      className="btn-action-dashboard"
+                                    >
+                                      Xem lại
+                                    </Link>
+                                  )}
+                                  <Link
+                                    to={`/test/${course.examSource}/${course.testNumber}/${course.skill}`}
+                                    className="btn-action-dashboard"
+                                  >
+                                    Làm bài lại
+                                  </Link>
+                                </>
+                              )}
+                              {course.status === 'IN_PROGRESS' && (
+                                <Link
+                                  to={`/test/${course.examSource}/${course.testNumber}/${course.skill}`}
+                                  className="btn-action-dashboard"
+                                >
+                                  Tiếp tục làm
+                                </Link>
+                              )}
+                              {course.status !== 'COMPLETED' && course.status !== 'IN_PROGRESS' && (
+                                <Link
+                                  to={`/test/${course.examSource}/${course.testNumber}/${course.skill}`}
+                                  className="btn-action-dashboard"
+                                >
+                                  Bắt đầu
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </article>
                     );
                   })}

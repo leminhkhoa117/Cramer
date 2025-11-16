@@ -56,10 +56,10 @@ public class DashboardService {
         List<UserAnswer> allAnswers = userAnswerRepository.findByAttempt_UserId(userId);
 
         // 2. Aggregate data
-        List<CourseProgressDTO> courseProgress = aggregateCourseProgress(attempts);
+        List<CourseProgressDTO> courseProgress = aggregateCourseProgress(attempts, allAnswers);
         List<SkillSummaryDTO> skillSummaries = aggregateSkillSummaries(allAnswers);
         UserStatsDTO stats = calculateUserStats(allAnswers);
-        List<RecentActivityDTO> recentActivities = getRecentActivities(userId);
+        List<RecentActivityDTO> recentActivities = getRecentActivities(allAnswers);
 
         // 3. Build final DTO
         DashboardSummaryDTO dto = new DashboardSummaryDTO();
@@ -74,29 +74,35 @@ public class DashboardService {
         return dto;
     }
 
-    private List<CourseProgressDTO> aggregateCourseProgress(List<TestAttempt> attempts) {
+    private List<CourseProgressDTO> aggregateCourseProgress(List<TestAttempt> attempts, List<UserAnswer> allAnswers) {
         if (attempts == null || attempts.isEmpty()) {
             return List.of();
         }
 
+        Map<Long, List<UserAnswer>> answersByAttemptId = allAnswers == null ?
+                Collections.emptyMap() :
+                allAnswers.stream().collect(Collectors.groupingBy(a -> a.getAttempt().getId()));
+        Map<TestKey, Integer> totalQuestionsCache = new HashMap<>();
+
         return attempts.stream()
                 .map(attempt -> {
-                    // For each attempt, find the total number of questions
-                    List<Section> sections = sectionRepository.findSectionsForTest(
-                            attempt.getExamSource(),
-                            Integer.valueOf(attempt.getTestNumber()),
-                            attempt.getSkill()
-                    );
-                    int totalQuestions = sections.stream()
-                            .mapToInt(s -> (int) questionRepository.countBySectionId(s.getId()))
-                            .sum();
+                    int totalQuestions = resolveTotalQuestions(attempt, totalQuestionsCache);
 
-                    int score = attempt.getScore() != null ? attempt.getScore() : 0;
-                    double completionRate = totalQuestions > 0 ? (double) score / totalQuestions : 0.0;
+                    List<UserAnswer> attemptAnswers = answersByAttemptId.getOrDefault(
+                            attempt.getId(),
+                            Collections.emptyList()
+                    );
+
+                    int answersAttempted = attemptAnswers.size();
+                    int correctAnswers = (int) attemptAnswers.stream()
+                            .filter(a -> a.getCorrect() != null && a.getCorrect())
+                            .count();
+
+                    double completionRate = totalQuestions > 0 ? (double) answersAttempted / totalQuestions : 0.0;
 
                     Double bandScore = null;
                     if ("COMPLETED".equals(attempt.getStatus()) && ("reading".equalsIgnoreCase(attempt.getSkill()) || "listening".equalsIgnoreCase(attempt.getSkill()))) {
-                        bandScore = IeltsScoreConverter.convertToBand(score);
+                        bandScore = IeltsScoreConverter.convertToBand(correctAnswers);
                     }
 
                     return new CourseProgressDTO(
@@ -105,8 +111,8 @@ public class DashboardService {
                             Integer.valueOf(attempt.getTestNumber()),
                             attempt.getSkill(),
                             totalQuestions,
-                            score, // answers attempted is the score in a completed test
-                            score, // correct answers
+                            answersAttempted,
+                            correctAnswers,
                             attempt.getCompletedAt(),
                             completionRate,
                             attempt.getStatus(),
@@ -163,16 +169,22 @@ public class DashboardService {
     }
 
     private UserStatsDTO calculateUserStats(List<UserAnswer> answers) {
-        long testsCompleted = answers.stream().map(a -> a.getAttempt().getId()).distinct().count();
-        long questionsAnswered = answers.size();
-        long correctAnswers = answers.stream().filter(a -> a.getCorrect() != null && a.getCorrect()).count();
+        List<UserAnswer> safeAnswers = answers == null ? List.of() : answers;
+        long testsCompleted = safeAnswers.stream().map(a -> a.getAttempt().getId()).distinct().count();
+        long questionsAnswered = safeAnswers.size();
+        long correctAnswers = safeAnswers.stream().filter(a -> a.getCorrect() != null && a.getCorrect()).count();
         double accuracy = questionsAnswered > 0 ? (double) correctAnswers * 100.0 / questionsAnswered : 0.0;
         return new UserStatsDTO(testsCompleted, questionsAnswered, correctAnswers, accuracy);
     }
 
-    public List<RecentActivityDTO> getRecentActivities(UUID userId) {
-        List<UserAnswer> recentAnswers = userAnswerRepository.findByAttempt_UserId(userId);
-        return recentAnswers.stream()
+    public List<RecentActivityDTO> getRecentActivities(List<UserAnswer> answers) {
+        if (answers == null || answers.isEmpty()) {
+            return List.of();
+        }
+        return answers.stream()
+                .filter(answer -> answer.getSubmittedAt() != null)
+                .sorted(Comparator.comparing(UserAnswer::getSubmittedAt, Comparator.reverseOrder()))
+                .limit(10)
                 .map(answer -> new RecentActivityDTO(
                         answer.getQuestion().getId(),
                         answer.getSubmittedAt(),
@@ -192,5 +204,40 @@ public class DashboardService {
         if (targetDto.getWriting() != null) goals.add(new DashboardGoalDTO("Writing", String.valueOf(targetDto.getWriting()), examDate));
         if (targetDto.getSpeaking() != null) goals.add(new DashboardGoalDTO("Speaking", String.valueOf(targetDto.getSpeaking()), examDate));
         return goals;
+    }
+
+    private int resolveTotalQuestions(TestAttempt attempt, Map<TestKey, Integer> cache) {
+        Integer parsedTestNumber = parseTestNumber(attempt.getTestNumber());
+        if (parsedTestNumber == null) {
+            return 0;
+        }
+
+        TestKey key = new TestKey(
+                attempt.getExamSource(),
+                parsedTestNumber,
+                attempt.getSkill()
+        );
+
+        return cache.computeIfAbsent(key, k ->
+                questionRepository.countBySection_ExamSourceAndSection_TestNumberAndSection_Skill(
+                        k.examSource(),
+                        k.testNumber(),
+                        k.skill()
+                )
+        );
+    }
+
+    private Integer parseTestNumber(String rawTestNumber) {
+        if (rawTestNumber == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(rawTestNumber);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private record TestKey(String examSource, Integer testNumber, String skill) {
     }
 }

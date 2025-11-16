@@ -422,6 +422,13 @@
   gap: 1rem;
 }
 
+.dash-course-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
 .btn-review {
   border: none;
   border-radius: 999px; /* Changed from 12px */

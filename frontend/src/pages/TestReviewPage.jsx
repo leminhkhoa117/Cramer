@@ -55,12 +55,28 @@ const TestReviewPage = () => {
         let formattedDuration = 'N/A';
         if (reviewData.duration != null) {
             const totalSeconds = reviewData.duration;
-            const minutes = Math.floor(totalSeconds / 60);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
             const seconds = totalSeconds % 60;
-            formattedDuration = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            if (hours > 0) {
+                formattedDuration = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            } else {
+                formattedDuration = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
         }
         
         return { bandScore: band, duration: formattedDuration, completionDate: formattedDate };
+    }, [reviewData]);
+
+    const testDisplayName = useMemo(() => {
+        if (!reviewData) {
+            return '';
+        }
+        const examLabel = reviewData.examSource ? reviewData.examSource.toUpperCase() : '';
+        const testLabel = reviewData.testNumber ? `Test ${reviewData.testNumber}` : '';
+        const skillLabel = reviewData.skill ? reviewData.skill.charAt(0).toUpperCase() + reviewData.skill.slice(1) : '';
+        return [examLabel, testLabel, skillLabel].filter(Boolean).join(' · ');
     }, [reviewData]);
 
     if (loading) {
@@ -84,7 +100,10 @@ const TestReviewPage = () => {
                     className="review-header-top"
                     onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
                 >
-                    <h1 className="review-title">Kết quả bài làm</h1>
+                    <div className="review-header-heading">
+                        <h1 className="review-title">Kết quả bài làm</h1>
+                        {testDisplayName && <p className="review-test-name">{testDisplayName}</p>}
+                    </div>
                     <motion.div
                         animate={{ rotate: isSummaryExpanded ? 0 : -180 }}
                         transition={{ duration: 0.3 }}

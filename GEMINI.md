@@ -46,7 +46,7 @@ docker-compose up --build
 
 **Running Frontend and Backend Separately:**
 
-**Frontend:**
+**Frontend (dev):**
 ```bash
 cd frontend
 npm install
@@ -54,12 +54,18 @@ npm run dev
 ```
 The frontend will be available at `http://localhost:3000`.
 
-**Backend:**
+**Backend (Windows dev, recommended):**
+```bash
+cd backend
+./run-app.ps1
+```
+This uses the local `.env` and Spring Boot jar; the backend will be available at `http://localhost:8080`.
+
+**Backend (alternative, Maven wrapper):**
 ```bash
 cd backend
 ./mvnw spring-boot:run
 ```
-The backend will be available at `http://localhost:8080`.
 
 ## Development Conventions
 
@@ -76,6 +82,22 @@ The backend will be available at `http://localhost:8080`.
 - **API:** The backend provides a REST API. Refer to the Swagger documentation at `http://localhost:8080/swagger-ui.html` for details on the available endpoints.
 
 ## Project Status & Recent Changes
+
+**Date:** 2025-11-16
+
+**Status:** PARTIALLY BLOCKED - Listening Test Not Fully Functional
+
+**Summary of Changes:**
+
+*   **Fixed `ReferenceError: handleAudioEnded is not defined`:** Resolved an error preventing audio playback in Listening tests.
+*   **Fixed "clumped text" in left panel:** Addressed a rendering issue where text in the left panel appeared without proper line breaks.
+*   **Fixed `ReferenceError: Cannot access 'processedHtml' before initialization`:** Corrected a critical rendering error in `HighlightableHtmlContent.jsx`.
+*   **Highlighting Pipeline Overhaul:** Reimplemented `HighlightableHtmlContent.jsx` to use a DOM-based text walker so selection offsets are mapped correctly to rendered HTML; highlights now apply visibly with the chosen color/decoration.
+*   **Highlight Logging Cleanup:** Simplified `HighlightContext.jsx#getHighlightsForContent` to remove noisy `"Getting Highlights for Content"` logs that made it look like an infinite re-render loop.
+*   **Fixed `ReferenceError: setIsAutoplay is not defined`:** Resolved an error preventing the autoplay toggle from functioning in Listening tests.
+*   **Dashboard Progress Fix:** Updated `DashboardService.aggregateCourseProgress` so `answersAttempted` counts submitted answers (from `UserAnswer`) instead of using the raw score; the Dashboard now shows a non-zero "Đã làm" after submitting a test.
+*   **Listening Test Status:** Still reported as not working; highlight and dashboard issues are addressed, but the root cause of the remaining Listening problems is pending further investigation.
+*   **Split-Panel Verification:** Re-tested the passage/question split layout and confirmed that dragging the resize handle completely left does not remove the passage column; no additional code change was required.
 
 **Date:** 2025-11-15
 
@@ -115,7 +137,7 @@ The backend will be available at `http://localhost:8080`.
         1.  Moved the duration calculation from the frontend to the backend.
         2.  Corrected the "retake" logic to reset the attempt's start time, ensuring accurate duration for subsequent attempts.
 
-*   **UI Refinement:** Overhauled the `GoalModal` component and its CSS to align with the application's modern, glassmorphic design, improving UI consistency.
+*   **UI Refinement:** Overhauled the `GoalModal` component and its CSS to align with the application's modern, glassmorphism design, improving UI consistency.
 
 **Date:** 2025-11-08
 

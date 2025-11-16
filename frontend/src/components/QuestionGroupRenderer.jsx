@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import QuestionRenderer from './QuestionRenderer';
+import HighlightableHtmlContent from './HighlightableHtmlContent'; // Import the new component
 import '../css/QuestionGroup.css';
 
 const itemVariants = {
@@ -35,20 +36,67 @@ const renderHtmlWithQuestions = (html, questions, onAnswerChange, answers) => {
     });
 };
 
+// Map for dynamically generating Reading instructions
+const readingInstructionsMap = {
+    'SUMMARY_COMPLETION': (group) => {
+        const wordLimit = group.questions[0]?.wordLimit;
+        return `Complete the notes below.<br/>Write <strong>${wordLimit || 'ONE WORD ONLY'}</strong> for each answer.`;
+    },
+    'FILL_IN_BLANK': (group) => {
+        const wordLimit = group.questions[0]?.wordLimit;
+        return `Complete the sentences below.<br/>Choose <strong>${wordLimit || 'ONE WORD ONLY'}</strong> from the passage for each answer.`;
+    },
+    'TABLE_COMPLETION': (group) => {
+        const wordLimit = group.questions[0]?.wordLimit;
+        return `Complete the table below.<br/>Choose <strong>${wordLimit || 'ONE WORD ONLY'}</strong> from the passage for each answer.`;
+    },
+    'TRUE_FALSE_NOT_GIVEN': (group) => `Do the following statements agree with the information given in Reading Passage ${group.partNumber}?<br/>In boxes ${group.startNum}–${group.questions[group.questions.length - 1].questionNumber} on your answer sheet, write<br/><strong>TRUE</strong> &nbsp;&nbsp;&nbsp;&nbsp; if the statement agrees with the information<br/><strong>FALSE</strong> &nbsp;&nbsp;&nbsp; if the statement contradicts the information<br/><strong>NOT GIVEN</strong> if there is no information on this`,
+    'YES_NO_NOT_GIVEN': (group) => `Do the following statements agree with the claims of the writer in Reading Passage ${group.partNumber}?<br/>In boxes ${group.startNum}–${group.questions[group.questions.length - 1].questionNumber} on your answer sheet, write<br/><strong>YES</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if the statement agrees with the claims of the writer<br/><strong>NO</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if the statement contradicts the claims of the writer<br/><strong>NOT GIVEN</strong> if it is impossible to say what the writer thinks about this`,
+    'MATCHING_INFORMATION': (group) => {
+        const optionsCount = group.questions[0]?.questionContent?.options?.length || 0;
+        const lastOptionLetter = optionsCount > 0 ? String.fromCharCode(64 + optionsCount) : 'G'; // Default to G if no options
+        return `Reading Passage ${group.partNumber} has ${optionsCount || 'several'} sections, <strong>A–${lastOptionLetter}</strong>. Which section contains the following information?<br/>Write the correct letter, <strong>A–${lastOptionLetter}</strong>, in boxes ${group.startNum}–${group.questions[group.questions.length - 1].questionNumber} on your answer sheet.<br/><strong>NB</strong> You may use any letter more than once.`;
+    },
+    'MULTIPLE_CHOICE': (group) => `Choose the correct letter, <strong>A, B, C or D</strong>.<br/>Write the correct letter in boxes ${group.startNum}–${group.questions[group.questions.length - 1].questionNumber} on your answer sheet.`,
+    'MULTIPLE_CHOICE_MULTIPLE_ANSWERS': (group) => `Choose <strong>TWO</strong> letters, <strong>A–E</strong>.<br/>Write the correct letters in boxes ${group.startNum} and ${group.questions[group.questions.length - 1].questionNumber} on your answer sheet.`,
+    'SUMMARY_COMPLETION_OPTIONS': (group) => `Complete the summary using the list of phrases, <strong>A–J</strong>, below.<br/>Write the correct letter, <strong>A–J</strong>, in boxes ${group.startNum}–${group.questions[group.questions.length - 1].questionNumber} on your answer sheet.`,
+    // Add other types as needed
+};
 
-const QuestionGroupRenderer = ({ group, onAnswerChange, answers }) => {
+
+const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
 
     const renderGroupInstructions = () => {
-        // New data-driven instructions
+        // New data-driven instructions for Listening
         if (group.content?.title || group.content?.instructions_text) {
             return (
                 <>
                     {group.content.title && <p><strong>{group.content.title}</strong></p>}
-                    {group.content.instructions_text && <p dangerouslySetInnerHTML={{ __html: group.content.instructions_text }} />}
+                    {group.content.instructions_text && 
+                        <HighlightableHtmlContent 
+                            htmlString={group.content.instructions_text} 
+                            contentId={`group-instruction-${group.id}-listening`} 
+                        />
+                    }
                 </>
             );
         }
-        // Fallback for old Reading Test structure
+
+        // Dynamic instructions for Reading tests
+        if (skill === 'reading' && readingInstructionsMap[group.type]) {
+            const instructionText = readingInstructionsMap[group.type](group);
+            return (
+                <>
+                    <p><strong>Questions {group.startNum}-{group.questions[group.questions.length - 1].questionNumber}</strong></p>
+                    <HighlightableHtmlContent 
+                        htmlString={instructionText} 
+                        contentId={`group-instruction-${group.id}-reading`} 
+                    />
+                </>
+            );
+        }
+        
+        // Fallback for old Reading Test structure or if no specific instruction is found
         return <p><strong>Questions {group.startNum}-{group.questions[group.questions.length - 1].questionNumber}</strong></p>;
     };
 
@@ -137,7 +185,11 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers }) => {
 
                     return (
                         <>
-                            <div className="table-completion-container" dangerouslySetInnerHTML={{ __html: tableHtml }} />
+                            <HighlightableHtmlContent 
+                                htmlString={tableHtml} 
+                                contentId={`table-completion-${group.id}`} 
+                                className="table-completion-container" 
+                            />
                             <div className="summary-completion-inputs">
                                 {group.questions.map(q => (
                                     <div id={`q-block-${q.id}`} key={q.id}>
