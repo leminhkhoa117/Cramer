@@ -1,23 +1,24 @@
 /* Existing styles in TestPage.css */
 .test-page-wrapper {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: auto auto 1fr auto; /* Header, Listening Controls, Main Content, Footer */
     height: 100vh;
     overflow: hidden;
 }
 
 .test-page-container {
     flex-grow: 1;
-    border-top: 1px solid var(--color-border);
-    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    overflow: hidden;
+    background-color: #f0f2f5; /* A light neutral background */
 }
 
-.passage-container,
-.questions-column {
-    height: 100%;
+.passage-container {
+    background-color: #ffffff;
+    padding: 1.5rem 2rem;
     overflow-y: auto;
-    padding: 20px;
-    background-color: var(--color-background-secondary);
+    height: 100%;
+    border-right: 1px solid #d1d5db;
 }
 
 .passage-title {
@@ -35,26 +36,68 @@
 }
 
 .resize-handle {
-    background-color: var(--color-background-primary);
+    background-color: #f3f4f6; /* Light gray to be visible */
     display: flex;
     align-items: center;
     justify-content: center;
     width: 15px !important;
-    border-left: 1px solid var(--color-border);
-    border-right: 1px solid var(--color-border);
+    border-left: 1px solid #e5e7eb; /* Slightly darker gray border */
+    border-right: 1px solid #e5e7eb;
 }
+
+.resize-handle.hidden {
+    display: none;
+}
+
+.resize-handle-icon-container {
+    width: 28px;
+    height: 28px;
+    background-color: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.questions-column {
+    height: 100%;
+    overflow-y: auto;
+    padding: 1.5rem 2rem;
+}
+
+.questions-container {
+    min-height: 100%;
+}
+
 
 .resize-handle-icon {
-    transform: rotate(90deg);
+    text-align: center;
+    width: 40px;
+    color: #4b5563;
+    font-size: 25px;
+    font-weight: normal;
 }
 
-.loading-screen,
+.loading-screen {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(240, 242, 245, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    z-index: 2000; /* Ensure it's on top of everything */
+}
+
 .error-message {
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100vh;
     font-size: 1.2rem;
+    color: #b42318;
 }
 
 /* --- New Styles for Listening Test --- */
@@ -151,12 +194,14 @@
 
 
 
-.test-page-wrapper.listening-test-active {
 
-    padding-top: 60px; /* Height of header (60px) + listening controls (approx 60px) */
 
+.audio-players-wrapper {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    width: 100%;
 }
-
 
 
 

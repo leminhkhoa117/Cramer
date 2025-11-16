@@ -1,6 +1,9 @@
 package com.cramer.entity;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Type;
 
 /**
  * Entity representing exam sections (e.g., Reading passages, Listening parts).
@@ -29,6 +32,10 @@ public class Section {
 
     @Column(name = "display_content_url")
     private String displayContentUrl; // Optional URL to image/PDF
+
+    @Type(JsonType.class)
+    @Column(name = "section_layout", columnDefinition = "jsonb")
+    private JsonNode sectionLayout; // New field for flexible block-based layouts
 
     @Column(name = "passage_text", columnDefinition = "TEXT")
     private String passageText; // Full text content for Reading passages
@@ -94,6 +101,14 @@ public class Section {
 
     public void setDisplayContentUrl(String displayContentUrl) {
         this.displayContentUrl = displayContentUrl;
+    }
+
+    public JsonNode getSectionLayout() {
+        return sectionLayout;
+    }
+
+    public void setSectionLayout(JsonNode sectionLayout) {
+        this.sectionLayout = sectionLayout;
     }
 
     public String getPassageText() {

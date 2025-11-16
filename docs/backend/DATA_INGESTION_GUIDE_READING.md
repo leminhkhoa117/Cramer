@@ -12,9 +12,9 @@ This document provides a comprehensive guide for an AI agent to parse an IELTS R
 - **JDBC URL Format:** `jdbc:postgresql://db.xxx.supabase.co:6543/postgres?sslmode=require&prepareThreshold=0`
 - **Important:** The `prepareThreshold=0` parameter is required to prevent prepared statement cache conflicts with HikariCP connection pooling
 
-## 2. Core Database Schema
+## 2. Core Database Schema (Legacy Model for Reading)
 
-The test data is primarily stored in two tables: `sections` and `questions`.
+Reading tests use a "legacy" data model that is simpler than the one used for Listening tests. It does **not** use the `section_layout` column. Each question is more self-contained.
 
 ### `sections` Table
 This table stores the reading passage for each part of a test.
@@ -90,27 +90,31 @@ This section details the required `jsonb` format for `question_content` and `cor
   ["population"]
   ```
 
-### `SUMMARY_COMPLETION`
-- **Description:** User completes a summary by typing words/phrases from the passage into text boxes.
-- **Important Data Structure & Frontend Logic:**
-  - For a group of `SUMMARY_COMPLETION` questions, the frontend renders each question's `text` content sequentially as an inline element.
-  - **Rule 1:** Each question entry **must** contain its own `text` and exactly **one** `____` placeholder to ensure its input box is rendered.
-  - **Rule 2:** To provide contextual titles or headings, include them in the `text` field of the first question in the group.
-  - **CRITICAL:** To maintain the inline flow and prevent layout breaks, **do not use block-level HTML tags** (like `<p>`, `<h4>`, or `<ul>`). Use inline tags such as `<strong>` for emphasis and `<br />` for line breaks.
-- **`question_content` Example (Group of 2 questions):**
+### `SUMMARY_COMPLETION`, `TABLE_COMPLETION`, and `FLOW_CHART_COMPLETION`
+- **Description:** These types involve filling in blanks within a larger block of text, a table, or a chart. They now share a common, robust rendering logic.
+- **Frontend Rendering Logic (CRITICAL):**
+  1.  The frontend identifies a group of consecutive questions with one of these types.
+  2.  It takes the `text` content **only from the first question** in the group. This content (which can be a `<table>`, a summary title, etc.) is rendered **once** at the top of the group.
+  3.  **Crucially, any `____` placeholders within this initial text ARE displayed**, allowing the user to see where the blanks are in the context of the table or summary.
+  4.  The frontend then loops through **all** questions in the group (including the first one) and renders a simple, numbered list of text input boxes below the main content block. The `text` fields of subsequent questions (`q2`, `q3`, etc.) are ignored.
+- **Data Authoring Rules:**
+  - **First Question:** The `text` field must contain the full HTML `<table>`, summary title, or other contextual block.
+  - **Subsequent Questions:** The `text` field for all other questions in the group should be an empty string (`""`).
+- **`question_content` Example (for a `TABLE_COMPLETION` group):**
   ```json
-  // Question 18
+  // For the FIRST question in the group (e.g., Q7)
   {
-    "text": "<strong>Roman amphitheatres</strong><br/><br/>The Roman stadiums of Europe have proved very versatile. The amphitheatre of Arles, for example, was converted first into a <strong>18</strong> ____, then into a residential area..."
+    "text": "<table class=\"question-table\">...<td>- DNA analysis of bat <strong>7</strong> ____</td>...</table>"
   }
-  // Question 19
+  // For subsequent questions in the group (e.g., Q8, Q9)
   {
-    "text": "...and finally into an arena where spectators could watch <strong>19</strong> ____."
+    "text": ""
   }
   ```
-- **`correct_answer`**: An array containing the single correct word/phrase.
+- **`correct_answer`**: An array containing the string for that question's blank.
   ```json
-  ["fortress"]
+  // For Q7
+  ["droppings"]
   ```
 
 ### `TRUE_FALSE_NOT_GIVEN` and `YES_NO_NOT_GIVEN`
@@ -229,27 +233,6 @@ This section details the required `jsonb` format for `question_content` and `cor
   ["H"]
   ```
 
-### `TABLE_COMPLETION` and `FLOW_CHART_COMPLETION`
-- **Description:** User fills in blanks within a table or flow-chart.
-- **Frontend Rendering Logic:** This type has a unique rendering behavior.
-  1.  The HTML structure (e.g., the `<table>...</table>`) is taken **only** from the `text` field of the **first question** in the group and rendered once. Any `____` placeholders in this HTML are for author reference only and are **not** replaced with inputs.
-  2.  The frontend then loops through **all** questions in the group and renders a numbered list of text input boxes, ignoring the `text` field of subsequent questions.
-- **`question_content`**:
-  ```json
-  // For the FIRST question in the group
-  {
-    "text": "<table><tr><td>Year</td><td>Event</td></tr><tr><td>1800</td><td><strong>1.</strong></td></tr></table>"
-  }
-  // For subsequent questions in the group
-  {
-    "text": "" // This field is ignored
-  }
-  ```
-- **`correct_answer`**: An array containing the string for the blank.
-  ```json
-  ["Population growth"]
-  ```
-
 ### `DIAGRAM_LABEL_COMPLETION`
 - **Description:** User labels parts of a diagram based on an image.
 - **Special Note:** The `image_url` field on the question record **must** be populated with the URL of the diagram image.
@@ -351,23 +334,12 @@ END $$;
 
 This section highlights critical data authoring rules that are required for the frontend to render correctly.
 
-### 1. Incorrect Text Fragmentation in Summaries
-- **Problem:** An input box or dropdown is missing for a question in a summary group.
-- **Cause:** A question's `question_content.text` field is either empty or does not contain a `____` placeholder. This often happens when multiple blanks from a single sentence are incorrectly grouped into one question's text.
-- **Solution:** Every question in the group **must** have its own `text` field with exactly one `____` placeholder. If one sentence in the source material contains multiple blanks, you must split the sentence itself across multiple question entries.
-  - **Example:** If the source is "...regarded as **37** ____, especially when compared to **38** ____.", the data should be:
-    - Question 37 `text`: `"...regarded as <strong>37</strong> ____, "`
-    - Question 38 `text`: `"especially when compared to <strong>38</strong> ____."`
+### 1. Incorrect Data Structure for Completion Groups
+- **Problem:** A `SUMMARY_COMPLETION` or `TABLE_COMPLETION` group does not render correctly; either the main content block is missing or input boxes are duplicated.
+- **Cause:** The data authoring rule for these types was not followed.
+- **Solution:** For any `SUMMARY_COMPLETION`, `TABLE_COMPLETION`, or `FLOW_CHART_COMPLETION` group, only the **first question** should contain the main text/HTML block in its `question_content.text`. All subsequent questions in that group **must** have `{"text": ""}`. The frontend relies on this structure to render the main block once and then create the list of numbered inputs.
 
 ### 2. Missing `options` Array in Grouped Questions
-- **Problem:** The application crashes with a `TypeError: can't access property "map", options is undefined` when viewing a `SUMMARY_COMPLETION_OPTIONS` question.
-- **Cause:** The `question_content.options` array is missing from one or more questions in the group.
-- **Solution:** For any grouped question type that uses a shared list of options (`SUMMARY_COMPLETION_OPTIONS`, `MATCHING_HEADINGS`, etc.), the **entire `options` array must be repeated** in the `question_content` for every single question within that group.
-
-### 3. Invalid HTML in Inline Summaries (`SUMMARY_COMPLETION`)
-- **Problem:** The layout of a summary appears broken, with text and input boxes on incorrect newlines.
-- **Cause:** Using block-level HTML tags (e.g., `<p>`, `<h1>`, `<ul>`) inside the `text` field of a `SUMMARY_COMPLETION` question. The frontend renderer wraps this content in a `<span>`, and nesting block elements inside an inline element is invalid HTML that browsers render unpredictably.
-- **Solution:** Use only inline HTML tags like `<strong>` for emphasis and `<br />` for manual line breaks to format context and headings.
 
 ---
 
@@ -390,10 +362,6 @@ This section highlights critical data authoring rules that are required for the 
 - **MATCHING_INFORMATION** automatically appends: "**NB** You may use any letter more than once."
 - **MULTIPLE_CHOICE** options automatically have letters bolded (A., B., C., etc.)
 - Instructions are rendered with proper formatting (bold, emphasis)
-
-### `SUMMARY_COMPLETION` Rendering
-- For `SUMMARY_COMPLETION` questions, the frontend combines the `text` from all questions within a group to form a continuous summary paragraph.
-- Each individual question's text (containing a single blank) is rendered inline, with an input field replacing the `____` placeholder. This creates a cohesive summary where users can fill in multiple blanks sequentially.
 
 ### Performance Considerations
 - Backend uses `prepareThreshold=0` to avoid PostgreSQL prepared statement cache conflicts

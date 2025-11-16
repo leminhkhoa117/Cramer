@@ -1,5 +1,7 @@
 package com.cramer.dto;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 /**
  * DTO for Section entity responses.
  */
@@ -10,20 +12,22 @@ public class SectionDTO {
     private String skill;
     private Integer partNumber;
     private String displayContentUrl;
+    private JsonNode sectionLayout; // New field for Listening layouts
     private String passageText;
     private String audioUrl;
 
     public SectionDTO() {
     }
 
-    public SectionDTO(Long id, String examSource, Integer testNumber, String skill, 
-                     Integer partNumber, String displayContentUrl, String passageText, String audioUrl) {
+    public SectionDTO(Long id, String examSource, Integer testNumber, String skill,
+                     Integer partNumber, String displayContentUrl, JsonNode sectionLayout, String passageText, String audioUrl) {
         this.id = id;
         this.examSource = examSource;
         this.testNumber = testNumber;
         this.skill = skill;
         this.partNumber = partNumber;
         this.displayContentUrl = displayContentUrl;
+        this.sectionLayout = sectionLayout;
         this.passageText = passageText;
         this.audioUrl = audioUrl;
     }
@@ -75,6 +79,14 @@ public class SectionDTO {
 
     public void setDisplayContentUrl(String displayContentUrl) {
         this.displayContentUrl = displayContentUrl;
+    }
+
+    public JsonNode getSectionLayout() {
+        return sectionLayout;
+    }
+
+    public void setSectionLayout(JsonNode sectionLayout) {
+        this.sectionLayout = sectionLayout;
     }
 
     public String getPassageText() {

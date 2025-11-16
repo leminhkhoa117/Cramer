@@ -22,6 +22,7 @@ public class FullSectionDTO extends SectionDTO {
             sectionDTO.getSkill(),
             sectionDTO.getPartNumber(),
             sectionDTO.getDisplayContentUrl(),
+            sectionDTO.getSectionLayout(), // Pass the new field
             sectionDTO.getPassageText(),
             sectionDTO.getAudioUrl()
         );

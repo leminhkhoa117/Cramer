@@ -8,7 +8,7 @@ const formatTime = (timeInSeconds) => {
     return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
 };
 
-const AudioPlayer = forwardRef(({ audioUrl, onPlay, onPause, onEnded }, ref) => {
+const AudioPlayer = forwardRef(({ audioUrl, onPlay, onPause, onEnded, index }, ref) => {
     const audioRef = useRef(null);
     const timelineRef = useRef(null);
     
@@ -56,7 +56,7 @@ const AudioPlayer = forwardRef(({ audioUrl, onPlay, onPause, onEnded }, ref) => 
         const handleEnded = () => {
             setIsEnded(true);
             setIsPlaying(false);
-            onEnded && onEnded();
+            onEnded && onEnded(index); // Pass index back onEnded
         };
         const handleTimeUpdate = () => setCurrentTime(audioElement.currentTime);
         const handleLoadedMetadata = () => setDuration(audioElement.duration);
@@ -74,7 +74,7 @@ const AudioPlayer = forwardRef(({ audioUrl, onPlay, onPause, onEnded }, ref) => 
             audioElement.removeEventListener('timeupdate', handleTimeUpdate);
             audioElement.removeEventListener('loadedmetadata', handleLoadedMetadata);
         };
-    }, [onPlay, onPause, onEnded]);
+    }, [onPlay, onPause, onEnded, index]);
 
     const handlePlayPauseClick = () => {
         if (isPlaying) {
@@ -102,7 +102,16 @@ const AudioPlayer = forwardRef(({ audioUrl, onPlay, onPause, onEnded }, ref) => 
             </audio>
             <div className="audio-controls">
                 <button onClick={handlePlayPauseClick} className="play-pause-btn">
-                    {isPlaying ? '❚❚' : '►'}
+                    {isPlaying ? (
+                        <svg width="12" height="16" viewBox="0 0 12 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="4" height="16" rx="1" fill="white"/>
+                            <rect x="8" width="4" height="16" rx="1" fill="white"/>
+                        </svg>
+                    ) : (
+                        <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ transform: 'translateX(1px)' }}>
+                            <path d="M1.5 0.866025C0.833333 0.481125 0 0.943151 0 1.73205V14.2679C0 15.0569 0.833334 15.5189 1.5 15.134L12.75 8.86603C13.4167 8.48113 13.4167 7.51888 12.75 7.13397L1.5 0.866025Z" fill="white"/>
+                        </svg>
+                    )}
                 </button>
                 <span className="time-display current-time">{formatTime(currentTime)}</span>
                 <div className="timeline-wrapper" ref={timelineRef} onClick={handleTimelineClick}>

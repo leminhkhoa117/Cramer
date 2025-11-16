@@ -25,6 +25,7 @@
     border-radius: 6px;
     padding: 1rem;
     margin-top: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .matching-options-box h4 {
@@ -60,4 +61,49 @@
 .table-completion-container th {
     background-color: #f3f4f6;
     font-weight: 600;
+}
+
+/* New styles for Note Completion layout */
+.note-completion-wrapper {
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.note-completion-wrapper h3 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.note-completion-wrapper h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.note-section {
+    margin-bottom: 1.5rem;
+}
+
+.note-section:last-child {
+    margin-bottom: 0;
+}
+
+.note-section ul {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.note-section li {
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
 }

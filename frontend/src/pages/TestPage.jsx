@@ -2,33 +2,52 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom';
 import { testApi, testAttemptApi } from '../api/backendApi';
 import TestHeader from '../components/TestHeader';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import HighlightableText from '../components/HighlightableText';
 import TestFooter from '../components/TestFooter';
 import { motion } from 'framer-motion';
 import QuestionGroupRenderer from '../components/QuestionGroupRenderer';
 import ConfirmationModal from '../components/ConfirmationModal';
+import StartTestModal from '../components/StartTestModal';
 import AudioPlayer from '../components/AudioPlayer';
 import ToggleSwitch from '../components/ToggleSwitch';
+import TestLayout from '../components/TestLayout';
 import '../css/TestPage.css';
 import '../css/TestHeader.css';
 import '../css/TestFooter.css';
 import '../css/QuestionGroup.css';
 import '../css/ToggleSwitch.css';
-
-const SILENT_REVIEW_SECONDS = 120;
-const FINAL_REVIEW_SECONDS = 120;
+import '../css/StartTestModal.css';
 
 const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
-const groupQuestions = (questions) => {
-    if (!questions || questions.length === 0) return [];
-    const uniqueQuestions = Array.from(new Map(questions.map(q => [q.id, q])).values());
+const groupQuestionsFromLayout = (part) => {
+    if (!part || !part.questions || part.questions.length === 0) return [];
+
+    const questionsMap = new Map(part.questions.map(q => [q.questionNumber, q]));
+
+    // New logic for Listening tests with sectionLayout
+    if (part.sectionLayout && part.sectionLayout.blocks) {
+        return part.sectionLayout.blocks.map(block => {
+            const blockQuestions = block.question_numbers
+                .map(num => questionsMap.get(num))
+                .filter(Boolean); // Filter out any undefined questions
+
+            return {
+                ...block, // Spread all properties from the block (block_type, content, etc.)
+                questions: blockQuestions,
+                startNum: blockQuestions[0]?.questionNumber,
+            };
+        });
+    }
+
+    // Fallback logic for Reading tests or old data structure
+    const uniqueQuestions = Array.from(new Map(part.questions.map(q => [q.id, q])).values());
     const groups = [];
     if (uniqueQuestions.length === 0) return groups;
+
     let currentGroup = { type: uniqueQuestions[0].questionType, questions: [uniqueQuestions[0]], startNum: uniqueQuestions[0].questionNumber };
     for (let i = 1; i < uniqueQuestions.length; i++) {
         const q = uniqueQuestions[i];
@@ -46,33 +65,33 @@ const groupQuestions = (questions) => {
 const TestPage = () => {
     const { source, testNum, skill } = useParams();
     const navigate = useNavigate();
-    const audioPlayerRef = useRef(null);
-    const silentTimerRef = useRef(null);
-
+    
+    // --- Core State ---
+    const [testStatus, setTestStatus] = useState('pending'); // pending, running, submitted
     const [testData, setTestData] = useState([]);
     const [attempt, setAttempt] = useState(null);
     const [answers, setAnswers] = useState({});
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
-    // --- State Management ---
-    const isListeningTest = skill === 'listening';
+    // --- UI State ---
     const [displayPartIndex, setDisplayPartIndex] = useState(0);
-    const [audioPartIndex, setAudioPartIndex] = useState(0);
-    const [isAutoplay, setIsAutoplay] = useState(true);
-    const [playTrigger, setPlayTrigger] = useState(0); // New trigger for playing audio
     
+    // --- Reading Test State ---
     const [readingTimeLeft, setReadingTimeLeft] = useState(3600); 
     
-    const [testPhase, setTestPhase] = useState('PLAYING'); // PLAYING, FINAL_REVIEW
-    const [finalReviewTime, setFinalReviewTime] = useState(FINAL_REVIEW_SECONDS);
+    // --- Listening Test State ---
+    const audioPlayerRefs = useRef([]);
+    const [isAutoplay, setIsAutoplay] = useState(true);
+    const [activeAudioIndex, setActiveAudioIndex] = useState(-1); // -1: none, 0-3: part 1-4
+
+    const isListeningTest = skill === 'listening';
 
     // --- Submission Logic ---
     const handleFinalSubmit = useCallback(async () => {
         if (!attempt) return;
         setIsConfirmModalOpen(false);
-        if (silentTimerRef.current) clearTimeout(silentTimerRef.current);
         try {
             setLoading(true);
             const result = await testAttemptApi.submitAttempt(attempt.id, answers);
@@ -84,11 +103,9 @@ const TestPage = () => {
         }
     }, [attempt, answers, navigate]);
 
-    // --- Timers & Test Flow ---
-
-    // Timer for Reading tests
+    // --- Timer for Reading Test ---
     useEffect(() => {
-        if (isListeningTest) return;
+        if (testStatus !== 'running' || isListeningTest) return;
         const timer = setInterval(() => {
             setReadingTimeLeft(prevTime => {
                 if (prevTime <= 1) {
@@ -100,26 +117,12 @@ const TestPage = () => {
             });
         }, 1000);
         return () => clearInterval(timer);
-    }, [isListeningTest, handleFinalSubmit]);
-
-    // Timer for FINAL review in Listening tests
-    useEffect(() => {
-        if (!isListeningTest || testPhase !== 'FINAL_REVIEW') return;
-        const timer = setInterval(() => {
-            setFinalReviewTime(prevTime => {
-                if (prevTime <= 1) {
-                    clearInterval(timer);
-                    handleFinalSubmit();
-                    return 0;
-                }
-                return prevTime - 1;
-            });
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [isListeningTest, testPhase, handleFinalSubmit]);
+    }, [testStatus, isListeningTest, handleFinalSubmit]);
 
     // --- Data Fetching ---
     useEffect(() => {
+        if (testStatus !== 'running') return;
+
         const fetchAndStartTest = async () => {
             try {
                 setLoading(true);
@@ -129,67 +132,70 @@ const TestPage = () => {
                 ]);
                 setTestData(data);
                 setAttempt(attemptData.data);
+                if (isListeningTest && data.length > 0) {
+                    audioPlayerRefs.current = data.map((_, i) => audioPlayerRefs.current[i] ?? React.createRef());
+                }
                 setError(null);
+                if (isListeningTest && isAutoplay) {
+                    setActiveAudioIndex(0); // Trigger first audio
+                }
             } catch (err) {
                 setError('Failed to load test data. Please try again later.');
             } finally {
                 setLoading(false);
-                if (skill === 'listening' && isAutoplay) {
-                    // Initial play trigger
-                    setPlayTrigger(v => v + 1);
-                }
             }
         };
         fetchAndStartTest();
-        return () => {
-            if (silentTimerRef.current) clearTimeout(silentTimerRef.current);
-        };
-    }, [source, testNum, skill, isAutoplay]);
+    }, [testStatus, source, testNum, skill, isAutoplay, isListeningTest]);
 
     // --- Audio Logic ---
-
-    // New dedicated effect for playing audio when triggered
     useEffect(() => {
-        if (playTrigger > 0 && audioPlayerRef.current) {
-            audioPlayerRef.current.play();
+        if (testStatus !== 'running' || !isListeningTest || activeAudioIndex === -1) return;
+        
+        const player = audioPlayerRefs.current[activeAudioIndex];
+        if (player) {
+            player.play();
         }
-    }, [playTrigger]);
+    }, [activeAudioIndex, testStatus, isListeningTest]);
 
-    const handleAudioEnded = useCallback(() => {
-        if (audioPartIndex < testData.length - 1) {
-            // 1. Immediately load the next track
-            setAudioPartIndex(prev => prev + 1);
-            
-            // 2. Wait for the silent period
-            silentTimerRef.current = setTimeout(() => {
-                // 3. After waiting, trigger the play effect
-                if (isAutoplay) {
-                    setPlayTrigger(v => v + 1);
-                }
-            }, SILENT_REVIEW_SECONDS * 1000);
-        } else {
-            setTestPhase('FINAL_REVIEW');
+    const handleAudioEnded = useCallback((endedIndex) => {
+        if (isAutoplay && endedIndex < testData.length - 1) {
+            setActiveAudioIndex(endedIndex + 1);
         }
-    }, [audioPartIndex, testData.length, isAutoplay]);
-
+    }, [isAutoplay, testData.length]);
 
     // --- Memoized Data ---
     const allQuestions = useMemo(() => testData.flatMap(part => part.questions), [testData]);
-    
-    const displayedPart = useMemo(() => {
-        if (!testData || testData.length === 0) return null;
-        return testData[displayPartIndex];
-    }, [testData, displayPartIndex]);
+    const displayedPart = useMemo(() => testData[displayPartIndex] || null, [testData, displayPartIndex]);
+    const questionGroups = useMemo(() => displayedPart ? groupQuestionsFromLayout(displayedPart) : [], [displayedPart]);
 
-    const audioPart = useMemo(() => {
-        if (!testData || testData.length === 0) return null;
-        return testData[audioPartIndex];
-    }, [testData, audioPartIndex]);
+    // --- Dynamic Layout Logic ---
+    const showLeftPanel = useMemo(() => {
+        if (!isListeningTest) return true; // Always show for Reading
+        if (displayedPart?.displayContentUrl) return true; // Show for listening if URL exists
+        return false; // Default for listening is hidden
+    }, [isListeningTest, displayedPart]);
 
-    const questionGroups = useMemo(() => {
-        if (!displayedPart) return [];
-        return groupQuestions(displayedPart.questions);
-    }, [displayedPart]);
+    const leftPanelContent = useMemo(() => {
+        if (isListeningTest) {
+            if (displayedPart?.displayContentUrl) {
+                return <img src={displayedPart.displayContentUrl} alt="Test visual aid" className="listening-visual-content" />;
+            }
+            // The panel is collapsed, so this won't be visible, but it's good practice to have a fallback.
+            return null; 
+        }
+        // Reading test logic
+        if (displayedPart) {
+            return (
+                <>
+                    <h2 className="passage-title">{`Reading Passage ${displayedPart.partNumber}`}</h2>
+                    <p className="passage-instructions">You should spend about 20 minutes on Questions {displayedPart.questions[0].questionNumber}–{displayedPart.questions[displayedPart.questions.length - 1].questionNumber}, which are based on Reading Passage {displayedPart.partNumber} below.</p>
+                    <HighlightableText text={displayedPart.passageText} />
+                </>
+            );
+        }
+        return null;
+    }, [isListeningTest, displayedPart]);
 
     // --- Handlers ---
     const handleAnswerChange = (questionId, answerValue) => {
@@ -209,93 +215,72 @@ const TestPage = () => {
         }, 100);
     };
 
+    // --- Render Logic ---
+    if (testStatus === 'pending') {
+        return (
+            <StartTestModal
+                isOpen={true}
+                onConfirm={() => setTestStatus('running')}
+                onClose={() => navigate('/courses')}
+                skill={skill}
+            />
+        );
+    }
+
     if (loading && !attempt) return <div className="loading-screen">Loading test...</div>;
     if (error) return <div className="error-message">{error}</div>;
-    if (!displayedPart || !audioPart) return <div className="loading-screen">No test data found.</div>;
+    if (!displayedPart) return <div className="loading-screen">No test data found.</div>;
 
     return (
         <div className={`test-page-wrapper ${isListeningTest ? 'listening-test-active' : ''}`}>
             <TestHeader 
                 testName={`IELTS ${skill.charAt(0).toUpperCase() + skill.slice(1)} Test - ${source.toUpperCase()} Test ${testNum}`}
-                timeLeft={isListeningTest ? (testPhase === 'FINAL_REVIEW' ? finalReviewTime : null) : readingTimeLeft}
+                timeLeft={isListeningTest ? null : readingTimeLeft}
                 onSubmit={() => setIsConfirmModalOpen(true)}
             />
 
             {isListeningTest && (
-                <>
-                    {testPhase === 'FINAL_REVIEW' && (
-                        <div className="review-banner">
-                            <p>Thời gian xem lại bắt đầu!</p>
-                        </div>
-                    )}
-                    <div className="listening-controls-container">
-                        <AudioPlayer
-                            ref={audioPlayerRef}
-                            audioUrl={audioPart.audioUrl}
-                            onEnded={handleAudioEnded}
-                        />
-                        <ToggleSwitch
-                            id="autoplay-toggle"
-                            checked={isAutoplay}
-                            onChange={setIsAutoplay}
-                            label="Tự động phát"
-                        />
+                <div className="listening-controls-container">
+                    <div className="audio-players-wrapper">
+                        {testData.map((part, index) => (
+                            <AudioPlayer
+                                key={part.id}
+                                ref={el => audioPlayerRefs.current[index] = el}
+                                index={index}
+                                audioUrl={part.audioUrl}
+                                onEnded={handleAudioEnded}
+                            />
+                        ))}
                     </div>
-                </>
+                    <ToggleSwitch
+                        id="autoplay-toggle"
+                        checked={isAutoplay}
+                        onChange={setIsAutoplay}
+                        label="Tự động phát"
+                    />
+                </div>
             )}
 
-            <PanelGroup direction="horizontal" className="test-page-container">
-                <Panel defaultSize={50} minSize={30}>
-                    <div className="passage-container">
-                        {isListeningTest ? (
-                            <>
-                                {displayedPart.displayContentUrl ? (
-                                    <img src={displayedPart.displayContentUrl} alt={`Visual for Part ${displayedPart.partNumber}`} className="listening-visual-content" />
-                                ) : (
-                                    <div className="listening-visual-placeholder">
-                                        <p>Không có nội dung hình ảnh cho phần này.</p>
-                                    </div>
-                                )}
-                            </>
-                        ) : (
-                            <>
-                                <h2 className="passage-title">{`Reading Passage ${displayedPart.partNumber}`}</h2>
-                                <p className="passage-instructions">You should spend about 20 minutes on Questions {displayedPart.questions[0].questionNumber}–{displayedPart.questions[displayedPart.questions.length - 1].questionNumber}, which are based on Reading Passage {displayedPart.partNumber} below.</p>
-                                <HighlightableText text={displayedPart.passageText} />
-                            </>
-                        )}
-                    </div>
-                </Panel>
-                <PanelResizeHandle className="resize-handle">
-                    <div className="resize-handle-icon">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M6 10L2 10M2 10L4 8M2 10L4 12M14 10L18 10M18 10L16 8M18 10L16 12" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </div>
-                </PanelResizeHandle>
-                <Panel defaultSize={50} minSize={30}>
-                    <div className="questions-column">
-                        <motion.div
-                            className="questions-container"
-                            key={displayPartIndex}
-                            variants={containerVariants}
-                            initial="hidden"
-                            animate="visible"
-                        >
-                            <h2>Questions {displayedPart.questions[0]?.questionNumber} - {displayedPart.questions[displayedPart.questions.length - 1]?.questionNumber}</h2>
-                            {questionGroups.map((group, index) => (
-                                <QuestionGroupRenderer 
-                                    key={index}
-                                    group={group}
-                                    currentPart={displayedPart}
-                                    onAnswerChange={handleAnswerChange}
-                                    answers={answers}
-                                />
-                            ))}
-                        </motion.div>
-                    </div>
-                </Panel>
-            </PanelGroup>
+            <TestLayout showLeftPanel={showLeftPanel} leftPanelContent={leftPanelContent}>
+                <div className="questions-column">
+                    <motion.div
+                        className="questions-container"
+                        key={displayPartIndex}
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        {questionGroups.map((group, index) => (
+                            <QuestionGroupRenderer 
+                                key={index}
+                                group={group}
+                                onAnswerChange={handleAnswerChange}
+                                answers={answers}
+                            />
+                        ))}
+                    </motion.div>
+                </div>
+            </TestLayout>
             <TestFooter
                 testData={testData}
                 answers={answers}
@@ -306,7 +291,7 @@ const TestPage = () => {
 
             <ConfirmationModal
                 isOpen={isConfirmModalOpen}
-                onClose={() => setIsConfirmModalModalOpen(false)}
+                onClose={() => setIsConfirmModalOpen(false)}
                 onConfirm={handleFinalSubmit}
                 title="Xác nhận nộp bài"
             >

@@ -1,5 +1,5 @@
 .audio-player-container {
-    background-color: #f8f9fa;
+    background-color: #ffffff;
     border-radius: 8px;
     padding: 10px 15px;
     border: 1px solid #dee2e6;
@@ -19,7 +19,7 @@
 }
 
 .play-pause-btn {
-    background-color: var(--color-primary);
+    background-color: #5b21b6; /* Hardcoded dark purple */
     color: white;
     border: none;
     border-radius: 50%;
@@ -31,19 +31,21 @@
     justify-content: center;
     align-items: center;
     flex-shrink: 0;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
 }
 
 .play-pause-btn:hover {
-    background-color: var(--color-primary-dark);
+    transform: scale(1.1);
+    filter: brightness(1.2);
 }
 
 .time-display {
     font-family: 'Courier New', Courier, monospace;
     font-size: 0.9rem;
-    color: #495057;
+    color: #374151;
     min-width: 50px;
     text-align: center;
+    font-weight: 600;
 }
 
 .timeline-wrapper {
@@ -57,16 +59,16 @@
 
 .timeline-background {
     background-color: #e9ecef;
-    height: 6px;
+    height: 8px;
     width: 100%;
     position: absolute;
-    border-radius: 3px;
+    border-radius: 4px;
 }
 
 .timeline-progress {
-    background-color: var(--color-primary);
-    height: 6px;
+    background-color: #5b21b6; /* Hardcoded dark purple */
+    height: 8px;
     position: absolute;
-    border-radius: 3px;
+    border-radius: 4px;
     z-index: 1;
 }

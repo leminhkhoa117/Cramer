@@ -8,212 +8,152 @@ const itemVariants = {
     visible: { y: 0, opacity: 1 }
 };
 
-const QuestionGroupRenderer = ({ group, currentPart, onAnswerChange, answers }) => {
+// Helper to parse HTML and inject question components
+const renderHtmlWithQuestions = (html, questions, onAnswerChange, answers) => {
+    const questionMap = new Map(questions.map(q => [q.questionNumber, q]));
+    const parts = html.split(/({{\d+}})/g);
+
+    return parts.map((part, index) => {
+        const match = part.match(/{{\s*(\d+)\s*}}/);
+        if (match) {
+            const qNum = parseInt(match[1], 10);
+            const question = questionMap.get(qNum);
+            if (question) {
+                return (
+                    <QuestionRenderer
+                        key={question.id}
+                        question={question}
+                        onAnswerChange={onAnswerChange}
+                        userAnswer={answers[question.id]}
+                        typeOverride="FILL_IN_BLANK_INPUT_ONLY"
+                    />
+                );
+            }
+        }
+        // Use dangerouslySetInnerHTML for non-placeholder parts
+        return <span key={index} dangerouslySetInnerHTML={{ __html: part }} />;
+    });
+};
+
+
+const QuestionGroupRenderer = ({ group, onAnswerChange, answers }) => {
 
     const renderGroupInstructions = () => {
-        const start = group.startNum;
-        const end = group.questions[group.questions.length - 1].questionNumber;
-        const range = start === end ? `Question ${start}` : `Questions ${start}-${end}`;
-        const firstQuestion = group.questions[0];
-
-        switch (group.type) {
-            case 'FILL_IN_BLANK':
-                return (
-                    <>
-                        <p><strong>{range}</strong></p>
-                        <p>Complete the notes below.</p>
-                        <p>Choose <strong>{firstQuestion?.wordLimit?.toUpperCase() || 'ONE WORD ONLY'}</strong> from the passage for each answer.</p>
-                    </>
-                );
-            case 'TRUE_FALSE_NOT_GIVEN':
-                return (
-                    <>
-                        <p><strong>{range}</strong></p>
-                        <p>Do the following statements agree with the information given in Reading Passage {currentPart.partNumber}?</p>
-                        <p><strong>TRUE</strong> if the statement agrees with the information</p>
-                        <p><strong>FALSE</strong> if the statement contradicts the information</p>
-                        <p><strong>NOT GIVEN</strong> if there is no information on this</p>
-                    </>
-                );
-            case 'MATCHING_INFORMATION':
-                const options = firstQuestion?.questionContent?.options || [];
-                const rangeText = options.length > 0 ? `${options[0]}-${options[options.length - 1]}` : '';
-                 return (
-                    <>
-                        <p><strong>{range}</strong></p>
-                        <p>Reading Passage {currentPart.partNumber} has {options.length} paragraphs, <strong>{rangeText}</strong>.</p>
-                        <p>Which paragraph contains the following information?</p>
-                        <p>Write the correct letter, <strong>{rangeText}</strong>, in boxes {start}-{end} on your answer sheet.</p>
-                        <p><strong><em>NB</em></strong> You may use any letter more than once.</p>
-                    </>
-                );
-            case 'MATCHING_HEADINGS':
-                const headingOptions = firstQuestion?.questionContent?.options || [];
-                return (
-                    <>
-                        <p><strong>{range}</strong></p>
-                        <p>Choose the correct heading for each paragraph from the list of headings below.</p>
-                        <div className="options-list matching-options-box">
-                            <h4>List of Headings</h4>
-                            {headingOptions.map(opt => <p key={opt.letter}><strong>{opt.letter}</strong> {opt.text}</p>)}
-                        </div>
-                    </>
-                );
-            case 'MATCHING_FEATURES':
-                const featureOptions = firstQuestion?.questionContent?.options || [];
-                return (
-                    <>
-                        <p><strong>{range}</strong></p>
-                        <p>Match each statement with the correct feature.</p>
-                        <div className="options-list matching-options-box">
-                            <h4>List of Features</h4>
-                            {featureOptions.map(opt => <p key={opt.letter}><strong>{opt.letter}</strong> {opt.text}</p>)}
-                        </div>
-                    </>
-                );
-            case 'MATCHING_SENTENCE_ENDINGS':
-                const sentenceOptions = firstQuestion?.questionContent?.options || [];
-                return (
-                    <>
-                        <p><strong>{range}</strong></p>
-                        <p>Complete each sentence with the correct ending.</p>
-                        <div className="options-list matching-options-box">
-                            {sentenceOptions.map(opt => <p key={opt.letter}><strong>{opt.letter}</strong> {opt.text}</p>)}
-                        </div>
-                    </>
-                );
-            case 'YES_NO_NOT_GIVEN':
-                 return (
-                    <>
-                        <p><strong>{range}</strong></p>
-                        <p>Do the following statements agree with the claims of the writer in Reading Passage {currentPart.partNumber}?</p>
-                        <p><strong>YES</strong> if the statement agrees with the claims of the writer</p>
-                        <p><strong>NO</strong> if the statement contradicts the claims of the writer</p>
-                        <p><strong>NOT GIVEN</strong> if it is impossible to say what the writer thinks about this</p>
-                    </>
-                );
-            case 'SUMMARY_COMPLETION':
-                return (
-                     <>
-                        <p><strong>{range}</strong></p>
-                        <p>Complete the summary below.</p>
-                        <p>Choose <strong>{firstQuestion?.wordLimit?.toUpperCase() || 'ONE WORD ONLY'}</strong> from the passage for each answer.</p>
-                    </>
-                );
-            case 'SUMMARY_COMPLETION_OPTIONS':
-                return (
-                    <>
-                        <p><strong>{range}</strong></p>
-                        <p>Complete the summary using the list of phrases below.</p>
-                    </>
-                );
-            case 'MULTIPLE_CHOICE':
-                 return (
-                     <>
-                        <p><strong>{range}</strong></p>
-                        <p>Choose the correct letter, <strong>A, B, C or D</strong>.</p>
-                    </>
-                );
-            case 'MULTIPLE_CHOICE_MULTIPLE_ANSWERS':
-                const mcmaOptions = firstQuestion?.questionContent?.options || [];
-                const mcmaRangeText = mcmaOptions.length > 0 ? `${mcmaOptions[0].charAt(0)}-${mcmaOptions[mcmaOptions.length - 1].charAt(0)}` : '';
-                return (
-                    <>
-                        <p><strong>{range}</strong></p>
-                        <p>Choose <strong>TWO</strong> letters, <strong>{mcmaRangeText}</strong>.</p>
-                    </>
-                );
-            case 'DIAGRAM_LABEL_COMPLETION':
-                return (
-                    <>
-                        <p><strong>{range}</strong></p>
-                        <p>Label the diagram below.</p>
-                        <p>Choose <strong>{firstQuestion?.wordLimit?.toUpperCase() || 'ONE WORD ONLY'}</strong> from the passage for each answer.</p>
-                    </>
-                );
-            case 'TABLE_COMPLETION':
-                return (
-                    <>
-                        <p><strong>{range}</strong></p>
-                        <p>Complete the table below.</p>
-                        <p>Choose <strong>{firstQuestion?.wordLimit?.toUpperCase() || 'ONE WORD ONLY'}</strong> from the passage for each answer.</p>
-                    </>
-                );
-            default:
-                return <p><strong>{range}</strong></p>;
+        // New data-driven instructions
+        if (group.content?.title || group.content?.instructions_text) {
+            return (
+                <>
+                    {group.content.title && <p><strong>{group.content.title}</strong></p>}
+                    {group.content.instructions_text && <p dangerouslySetInnerHTML={{ __html: group.content.instructions_text }} />}
+                </>
+            );
         }
+        // Fallback for old Reading Test structure
+        return <p><strong>Questions {group.startNum}-{group.questions[group.questions.length - 1].questionNumber}</strong></p>;
     };
 
     const renderGroupBody = () => {
-        const firstQuestion = group.questions[0];
+        let lastSectionTitle = null;
 
-        switch (group.type) {
-            case 'DIAGRAM_LABEL_COMPLETION':
+        // Switch based on the new block_type for Listening
+        switch (group.block_type) {
+            case 'NOTE_COMPLETION':
+                return (
+                    <div className="note-completion-wrapper">
+                        {group.content.main_title && <h3>{group.content.main_title}</h3>}
+                        {group.questions.map(q => {
+                            const showSectionTitle = q.questionContent.section_title && q.questionContent.section_title !== lastSectionTitle;
+                            if (showSectionTitle) {
+                                lastSectionTitle = q.questionContent.section_title;
+                            }
+                            return (
+                                <React.Fragment key={q.id}>
+                                    {showSectionTitle && <h4 className="note-section-title">{lastSectionTitle}</h4>}
+                                    <div id={`q-block-${q.id}`}>
+                                        <QuestionRenderer 
+                                            question={q} 
+                                            onAnswerChange={onAnswerChange} 
+                                            userAnswer={answers[q.id]} 
+                                        />
+                                    </div>
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
+                );
+
+            case 'PLAN_MAP_DIAGRAM_LABELING':
                 return (
                     <>
-                        {firstQuestion.imageUrl && <img src={firstQuestion.imageUrl} alt="Diagram for questions" className="question-diagram" />}
+                        {group.content.image_url && <img src={group.content.image_url} alt="Diagram for questions" className="question-diagram" />}
+                        <div className="options-list matching-options-box">
+                            {group.content.options.map(opt => <p key={opt.letter || opt}><strong>{opt.letter || opt}</strong> {opt.text || ''}</p>)}
+                        </div>
                         {group.questions.map(q => (
                             <div id={`q-block-${q.id}`} key={q.id}>
-                                <QuestionRenderer question={q} onAnswerChange={onAnswerChange} userAnswer={answers[q.id]} />
+                                <QuestionRenderer 
+                                    question={q} 
+                                    onAnswerChange={onAnswerChange} 
+                                    userAnswer={answers[q.id]} 
+                                    groupOptions={group.content.options}
+                                />
                             </div>
                         ))}
                     </>
                 );
             
-            case 'SUMMARY_COMPLETION':
+            case 'MATCHING_FEATURES':
                 return (
-                    <div className="summary-text-container">
+                    <>
+                        <div className="options-list matching-options-box">
+                            <h4>{group.content.options_title || 'Options'}</h4>
+                            {group.content.options.map(opt => <p key={opt.letter}><strong>{opt.letter}</strong> {opt.text}</p>)}
+                        </div>
                         {group.questions.map(q => (
-                            <QuestionRenderer
-                                key={q.id}
-                                question={q}
-                                onAnswerChange={onAnswerChange}
-                                userAnswer={answers[q.id]}
-                                wrapperTag="span" // Render as inline element
-                            />
+                            <div id={`q-block-${q.id}`} key={q.id}>
+                                <QuestionRenderer 
+                                    question={q} 
+                                    onAnswerChange={onAnswerChange} 
+                                    userAnswer={answers[q.id]} 
+                                    groupOptions={group.content.options}
+                                />
+                            </div>
                         ))}
-                    </div>
+                    </>
                 );
 
-            case 'TABLE_COMPLETION':
-            case 'FLOW_CHART_COMPLETION':
-                const firstQ = group.questions[0];
-                if (!firstQ?.questionContent?.text) return null;
-
-                return (
-                    <div>
-                        <div className="table-completion-container" dangerouslySetInnerHTML={{ __html: firstQ.questionContent.text }} />
-                        <div className="table-completion-inputs">
-                            {group.questions.map(q => (
-                                <div id={`q-block-${q.id}`} key={q.id} className="table-input-row">
-                                    <span className="question-number">{q.questionNumber}.</span>
-                                    <QuestionRenderer 
-                                        question={q} 
-                                        onAnswerChange={onAnswerChange} 
-                                        userAnswer={answers[q.id]} 
-                                        typeOverride="FILL_IN_BLANK_INPUT_ONLY" 
-                                    />
-                                </div>
-                            ))}
-                        </div>
+            case 'INSTRUCTIONS_ONLY':
+                return group.questions.map(q => (
+                    <div id={`q-block-${q.id}`} key={q.id}>
+                        <QuestionRenderer question={q} onAnswerChange={onAnswerChange} userAnswer={answers[q.id]} />
                     </div>
-                );
+                ));
+
+            // IMPORTANT: Fallback for backward compatibility with Reading tests
             default:
-                const matchingTypes = ['MATCHING_INFORMATION', 'MATCHING_HEADINGS', 'MATCHING_FEATURES', 'MATCHING_SENTENCE_ENDINGS'];
-                if (matchingTypes.includes(group.type)) {
-                    const groupOptions = group.questions[0]?.questionContent?.options || [];
-                    return group.questions.map(q => (
-                        <div id={`q-block-${q.id}`} key={q.id}>
-                            <QuestionRenderer 
-                                question={q} 
-                                onAnswerChange={onAnswerChange} 
-                                userAnswer={answers[q.id]} 
-                                groupOptions={groupOptions}
-                            />
-                        </div>
-                    ));
+                // Special handling for legacy Reading TABLE_COMPLETION
+                if (group.questions[0]?.questionType === 'TABLE_COMPLETION') {
+                    const tableHtml = group.questions[0].questionContent.text;
+
+                    return (
+                        <>
+                            <div className="table-completion-container" dangerouslySetInnerHTML={{ __html: tableHtml }} />
+                            <div className="summary-completion-inputs">
+                                {group.questions.map(q => (
+                                    <div id={`q-block-${q.id}`} key={q.id}>
+                                        <QuestionRenderer 
+                                            question={q} 
+                                            onAnswerChange={onAnswerChange} 
+                                            userAnswer={answers[q.id]} 
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    );
                 }
 
+                // Default rendering for all other legacy question groups
                 return group.questions.map(q => (
                     <div id={`q-block-${q.id}`} key={q.id}>
                         <QuestionRenderer question={q} onAnswerChange={onAnswerChange} userAnswer={answers[q.id]} />

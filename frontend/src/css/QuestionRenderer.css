@@ -1,3 +1,7 @@
+.question-block {
+    margin-bottom: 1.5rem;
+}
+
 .mcq-options label,
 .tfn-options label {
     display: block;
@@ -14,6 +18,7 @@
 }
 
 .mcq-options input[type="radio"],
+.mcq-options input[type="checkbox"],
 .tfn-options input[type="radio"] {
     margin-right: 10px;
 }
