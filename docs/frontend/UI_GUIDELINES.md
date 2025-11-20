@@ -55,7 +55,9 @@ The official font family is **Be Vietnam Pro**, imported from Google Fonts.
 
 We use a consistent spacing scale based on a `4px` grid to maintain rhythm and alignment.
 
--   **Container Padding:** `1.5rem` (24px) on left and right.
+-   **Max Width:** `1280px` for main containers.
+-   **Container Padding:** `2rem` (32px) on left and right.
+-   **Box Sizing:** `border-box` is used for containers to ensure padding is included in the total width.
 -   **Component Padding:** `1.25rem` (20px) to `1.5rem` (24px) inside cards and modals.
 -   **Gaps between Elements:** `1rem` (16px) for small elements, `1.5rem` (24px) for larger components.
 -   **Gaps between Sections:** `3rem` (48px) to `6rem` (96px) for vertical spacing between large page sections.

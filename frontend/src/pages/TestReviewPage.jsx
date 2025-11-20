@@ -6,6 +6,7 @@ import { IeltsScoreConverter } from '../utils/IeltsScoreConverter';
 import { FiChevronDown } from 'react-icons/fi';
 import { AnimatePresence, motion } from 'framer-motion';
 import '../css/TestReviewPage.css';
+import FullPageLoader from '../components/FullPageLoader';
 
 const TestReviewPage = () => {
     const { attemptId } = useParams();
@@ -22,8 +23,8 @@ const TestReviewPage = () => {
                 const response = await testAttemptApi.getTestReview(attemptId);
                 setReviewData(response.data);
             } catch (err) {
-                console.error("Failed to fetch test review data:", err);
-                setError("Không thể tải dữ liệu xem lại bài làm. Vui lòng thử lại sau.");
+                console.error('Failed to fetch test review data:', err);
+                setError('Không thể tải dữ liệu xem lại bài làm. Vui lòng thử lại sau.');
             } finally {
                 setLoading(false);
             }
@@ -58,14 +59,14 @@ const TestReviewPage = () => {
             const hours = Math.floor(totalSeconds / 3600);
             const minutes = Math.floor((totalSeconds % 3600) / 60);
             const seconds = totalSeconds % 60;
-            
+
             if (hours > 0) {
                 formattedDuration = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             } else {
                 formattedDuration = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             }
         }
-        
+
         return { bandScore: band, duration: formattedDuration, completionDate: formattedDate };
     }, [reviewData]);
 
@@ -79,24 +80,32 @@ const TestReviewPage = () => {
         return [examLabel, testLabel, skillLabel].filter(Boolean).join(' · ');
     }, [reviewData]);
 
-    if (loading) {
-        return <div className="review-loading">Đang tải...</div>;
-    }
-
     if (error) {
         return <div className="review-error">{error}</div>;
     }
 
-    if (!reviewData) {
+    if (!loading && !reviewData) {
         return <div className="review-error">Không có dữ liệu.</div>;
     }
 
-    const { score, totalQuestions, questions } = reviewData;
+    const { score, totalQuestions, questions } = reviewData || {};
 
     return (
-        <div className="review-page">
+        <>
+            <AnimatePresence>
+                {loading && (
+                    <FullPageLoader
+                        key="loader"
+                        message="Đang tải kết quả bài làm..."
+                        subMessage="Vui lòng chờ trong giây lát, chúng tôi đang tổng hợp chi tiết bài làm của bạn."
+                    />
+                )}
+            </AnimatePresence>
+
+            {reviewData && (
+                <div className="review-page">
             <header className="review-header">
-                <div 
+                <div
                     className="review-header-top"
                     onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
                 >
@@ -112,51 +121,62 @@ const TestReviewPage = () => {
                     </motion.div>
                 </div>
                 <AnimatePresence>
-                {isSummaryExpanded && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        style={{ overflow: 'hidden' }}
-                        transition={{ duration: 0.3 }}
-                    >
-                        <div className="review-summary-grid">
-                            <div className="summary-item">
-                                <span className="summary-label">Số câu đúng</span>
-                                <span className="summary-value">{score}/{totalQuestions}</span>
+                    {isSummaryExpanded && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            style={{ overflow: 'hidden' }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <div className="review-summary-grid">
+                                <div className="summary-item">
+                                    <span className="summary-label">Số câu đúng</span>
+                                    <span className="summary-value">
+                                        {score}/{totalQuestions}
+                                    </span>
+                                </div>
+                                <div className="summary-item">
+                                    <span className="summary-label">Điểm Band</span>
+                                    <span className="summary-value">
+                                        {bandScore ? bandScore.toFixed(1) : 'N/A'}
+                                    </span>
+                                </div>
+                                <div className="summary-item">
+                                    <span className="summary-label">Thời gian làm</span>
+                                    <span className="summary-value">{duration}</span>
+                                </div>
+                                <div className="summary-item">
+                                    <span className="summary-label">Ngày làm</span>
+                                    <span className="summary-value">{completionDate}</span>
+                                </div>
                             </div>
-                            <div className="summary-item">
-                                <span className="summary-label">Điểm Band</span>
-                                <span className="summary-value">{bandScore ? bandScore.toFixed(1) : 'N/A'}</span>
+                            <div className="review-actions">
+                                <button onClick={handleRetake} className="btn btn-primary">
+                                    Làm bài lại
+                                </button>
+                                <Link to="/dashboard" className="btn btn-secondary">
+                                    Về Bảng điều khiển
+                                </Link>
                             </div>
-                            <div className="summary-item">
-                                <span className="summary-label">Thời gian làm</span>
-                                <span className="summary-value">{duration}</span>
-                            </div>
-                            <div className="summary-item">
-                                <span className="summary-label">Ngày làm</span>
-                                <span className="summary-value">{completionDate}</span>
-                            </div>
-                        </div>
-                        <div className="review-actions">
-                            <button onClick={handleRetake} className="btn btn-primary">Làm bài lại</button>
-                            <Link to="/dashboard" className="btn btn-secondary">Về Bảng điều khiển</Link>
-                        </div>
-                    </motion.div>
-                )}
+                        </motion.div>
+                    )}
                 </AnimatePresence>
             </header>
 
             <main className="review-main">
                 <h2 className="review-section-title">Đáp án & Giải thích</h2>
                 <div className="review-questions-list">
-                    {questions.map(q => (
+                    {questions.map((q) => (
                         <ReviewedQuestion key={q.questionUid} questionReview={q} />
                     ))}
                 </div>
             </main>
         </div>
+            )}
+        </>
     );
 };
 
 export default TestReviewPage;
+

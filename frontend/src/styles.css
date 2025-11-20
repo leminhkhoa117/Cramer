@@ -14,11 +14,54 @@
   }
 }
 
+:root {
+  /* Colors */
+  --primary-accent: #7c3aed;
+  --primary-accent-hover: #6d28d9;
+  --primary-gradient: linear-gradient(135deg, #7c3aed, #6366f1);
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  --text-light: #ffffff;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+
+  /* Liquid Glass */
+  --liquid-glass-bg: rgba(255, 255, 255, 0.1);
+  --liquid-glass-border: rgba(255, 255, 255, 0.2);
+  --liquid-glass-highlight: rgba(255, 255, 255, 0.3);
+  --liquid-glass-highlight: rgba(255, 255, 255, 0.3);
+  --liquid-glass-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  /* Global Shared Colors */
+  --primary-color: #7c3aed;
+  --primary-rgb: 124, 58, 237;
+}
+
 body {
   margin: 0;
   padding: 0;
   background: #ffffff;
-  color: #1f2937;
+  /* Fallback */
+  background-image:
+    radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+    radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* Liquid Glass Utility */
+.glass-liquid {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 #root {
@@ -31,7 +74,12 @@ body {
 
 
 /* General Styles */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-weight: 600;
   color: #1f2937;
 }
@@ -145,8 +193,9 @@ a:hover {
 
 /* Responsive - Hero Section */
 @media (max-width: 991px) {
+
   /* Reduce margin on mobile for Find a Test box since it's already inline */
-  main > div:first-child .col-lg-6:last-child {
+  main>div:first-child .col-lg-6:last-child {
     margin-top: 2rem !important;
     padding-left: 2rem !important;
     padding-right: 2rem !important;
@@ -162,9 +211,10 @@ a:hover {
 }
 
 .about-page .container {
-  max-width: 1140px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 2rem;
+  box-sizing: border-box;
 }
 
 .text-center {
@@ -224,7 +274,7 @@ a:hover {
 .about-hero__title {
   font-size: 3rem;
   font-weight: 800;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   margin-bottom: 1rem;
 }
 
@@ -233,7 +283,8 @@ a:hover {
   line-height: 1.7;
   max-width: 700px;
   margin: 0 auto;
-  color: white; /* Explicitly set color to white */
+  color: white;
+  /* Explicitly set color to white */
   opacity: 0.95;
 }
 
@@ -257,19 +308,20 @@ a:hover {
   display: flex;
   flex-direction: column;
   text-align: center;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .founder-card:hover {
   transform: translateY(-10px);
-  box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
 }
 
 .founder-card__image-wrapper {
   height: 300px;
   background: linear-gradient(135deg, #7c3aed, #6366f1);
-  overflow: hidden; /* Add this to contain the zooming image */
+  overflow: hidden;
+  /* Add this to contain the zooming image */
 }
 
 .founder-card__image {
@@ -277,11 +329,13 @@ a:hover {
   height: 100%;
   object-fit: cover;
   opacity: 0.8;
-  transition: transform 0.4s ease; /* Add transition for zoom effect */
+  transition: transform 0.4s ease;
+  /* Add transition for zoom effect */
 }
 
 .founder-card:hover .founder-card__image {
-  transform: scale(1.1); /* Zoom effect on hover */
+  transform: scale(1.1);
+  /* Zoom effect on hover */
 }
 
 .founder-card__content {
@@ -349,11 +403,13 @@ a:hover {
   color: #7c3aed;
   margin-bottom: 1.5rem;
   display: inline-block;
-  transition: transform 0.3s ease; /* Add transition for hover effect */
+  transition: transform 0.3s ease;
+  /* Add transition for hover effect */
 }
 
 .value-card:hover .value-card__icon {
-  transform: rotate(15deg) scale(1.1); /* Rotate and scale effect on hover */
+  transform: rotate(15deg) scale(1.1);
+  /* Rotate and scale effect on hover */
 }
 
 .value-card__title {
@@ -409,22 +465,33 @@ a:hover {
   .founders-grid {
     grid-template-columns: 1fr;
   }
+
   .values-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 768px) {
-  .section-title { font-size: 2rem; }
-  .about-hero__title { font-size: 2.5rem; }
-  .about-hero__subtitle { font-size: 1.1rem; }
+  .section-title {
+    font-size: 2rem;
+  }
+
+  .about-hero__title {
+    font-size: 2.5rem;
+  }
+
+  .about-hero__subtitle {
+    font-size: 1.1rem;
+  }
 }
 
 /* Global Highlight Styles */
 .highlighted-text {
-    padding: 1px 0;
-    border-radius: 2px;
-    /* Default styles, can be overridden by inline styles */
-    background-color: transparent; /* Ensure no default background unless specified */
-    text-decoration: none; /* Ensure no default text-decoration unless specified */
+  padding: 1px 0;
+  border-radius: 2px;
+  /* Default styles, can be overridden by inline styles */
+  background-color: transparent;
+  /* Ensure no default background unless specified */
+  text-decoration: none;
+  /* Ensure no default text-decoration unless specified */
 }

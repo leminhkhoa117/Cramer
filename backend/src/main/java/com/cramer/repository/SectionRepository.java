@@ -91,6 +91,9 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
     @Query("SELECT DISTINCT s.examSource FROM Section s ORDER BY s.examSource ASC")
     List<String> findDistinctExamSources();
 
+    @Query("SELECT DISTINCT s.examSource FROM Section s WHERE (:search IS NULL OR LOWER(s.examSource) LIKE LOWER(CONCAT('%', :search, '%'))) ORDER BY s.examSource ASC")
+    org.springframework.data.domain.Page<String> findDistinctExamSources(org.springframework.data.domain.Pageable pageable, @Param("search") String search);
+
     @Query("SELECT DISTINCT s.testNumber FROM Section s WHERE s.examSource = :examSource ORDER BY s.testNumber ASC")
     List<Integer> findDistinctTestNumbersByExamSource(@Param("examSource") String examSource);
 }

@@ -390,3 +390,65 @@ This section highlights critical data authoring rules that are required for the 
 **Problem:** Unwanted scrollbars or content not filling viewport
 **Root Cause:** CSS conflicts between fixed positioning and flexbox layout
 **Solution:** Use proper viewport height calculations accounting for fixed header/footer
+
+---
+
+## 10. AI Agent Checklist: Reading Test Ingestion
+
+Use this as a step-by-step list when generating SQL for a new IELTS Reading test.
+
+1. **Identify the test context**
+   - Confirm `exam_source` (e.g., `"cam17"`, `"cam18"`).
+   - Confirm `test_number` (e.g., `"1"`, `"2"`).
+   - Confirm `skill = 'reading'` and `part_number` (1, 2, or 3).
+
+2. **Prepare cleanup SQL (idempotency)**
+   - Add a `DELETE` clause that removes existing Reading rows for the same `exam_source` and `test_number` before inserting:
+     - Delete from `public.questions` where `section_id` belongs to the targeted sections.
+     - Then delete from `public.sections` for the same `exam_source`, `test_number`, and `skill = 'reading'`.
+
+3. **Generate `sections` INSERTs**
+   - For each Reading passage (Part 1–3), insert one row into `public.sections` with:
+     - `exam_source`, `test_number`, `skill = 'reading'`, `part_number`.
+     - `display_content_url` if you need an external asset (usually `NULL`).
+     - `passage_text` containing the full HTML passage (title in `<strong>`, paragraphs separated by blank lines, paragraph labels `<strong>A</strong>`, `<strong>B</strong>`, etc. where applicable).
+   - Use `RETURNING id INTO section_X_id` in a `DO $$` block so you can reference the generated `section_id` for questions.
+
+4. **Generate `question_uid` values**
+   - For Reading, always use the pattern:  
+     `'{exam_source}-t{test_number}-r-q{question_number}'`  
+     Example: `cam17`, test `"1"`, question 14 → `"cam17-t1-r-q14"`.
+   - `question_number` should be the Cambridge number shown in the paper (1–40), not a per-section index.
+
+5. **Choose the correct `question_type`**
+   - Ensure each question uses one of the supported types from this guide:  
+     `FILL_IN_BLANK`, `SUMMARY_COMPLETION`, `SUMMARY_COMPLETION_OPTIONS`,  
+     `TRUE_FALSE_NOT_GIVEN`, `YES_NO_NOT_GIVEN`, `MATCHING_INFORMATION`,  
+     `MATCHING_HEADINGS`, `MATCHING_FEATURES`, `MATCHING_SENTENCE_ENDINGS`,  
+     `MULTIPLE_CHOICE`, `MULTIPLE_CHOICE_MULTIPLE_ANSWERS`, `DIAGRAM_LABEL_COMPLETION`.
+   - Match the Cambridge question format to the corresponding type as described in Section 3.
+
+6. **Construct valid `question_content` JSON**
+   - Always produce valid JSON, then wrap it in single quotes and cast to `jsonb` in SQL where needed.
+   - Respect the structure rules from Section 4:
+     - Use exactly **one** `____` placeholder for completion questions (`FILL_IN_BLANK`, `SUMMARY_COMPLETION`, `SUMMARY_COMPLETION_OPTIONS`).
+     - For matching-style questions, ensure the `options` array is identical for all questions in the same group when required (e.g., `SUMMARY_COMPLETION_OPTIONS`, `MATCHING_HEADINGS`, `MATCHING_FEATURES`, `MATCHING_SENTENCE_ENDINGS`).
+     - Use only inline HTML tags (`<strong>`, `<br/>`) inside `text` values.
+   - Do **not** embed instructions in `question_content`; instructions are handled at the block/group level in the frontend.
+
+7. **Populate `correct_answer` consistently**
+   - Always use a JSON array, even for single answers (e.g., `["population"]`, `["TRUE"]`, `["B"]`).
+   - For multi-answer formats (e.g., `MULTIPLE_CHOICE_MULTIPLE_ANSWERS`), include all correct letters in the array in any order.
+   - For `SUMMARY_COMPLETION_OPTIONS` and other letter-based matching types, store the letter (e.g., `["H"]`), not the full text.
+
+8. **Set optional fields appropriately**
+   - `word_limit`: Set for completion questions when the instructions state a limit (e.g., `"ONE WORD ONLY"`, `"NO MORE THAN TWO WORDS"`). Leave `NULL` for other types.
+   - `image_url`: Set only when a diagram or image is required to answer the question.
+   - `explanation`: Currently unused in production; you may leave it `NULL`.
+
+9. **Validate before running**
+   - Check that:
+     - `question_number` values cover the intended Cambridge range without gaps or duplicates.
+     - Every question’s `section_id` references the correct section variable in your `DO $$` block.
+     - All JSON snippets are valid (use a JSON validator if needed).
+   - Only then generate the final SQL script for execution in Supabase.

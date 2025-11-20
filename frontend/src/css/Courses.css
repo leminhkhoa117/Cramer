@@ -2,19 +2,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --course-bg: #f4f7fc;
-  --course-text-primary: #130b38;
-  --course-text-secondary: #5a4d83;
-  --course-card-bg: #F0EEFF; /* Light lavender background */
-  --course-card-border: #E2DCFF;
-  --course-card-shadow: rgba(140, 82, 255, 0.08);
-  --course-accent: #7C3AED; /* Vibrant purple for buttons and active states */
+  --course-bg: #f8fafc; /* Match Dashboard */
+  --course-text-primary: #1f2937;
+  --course-text-secondary: #4b5563;
+  --course-card-bg: #ffffff;
+  --course-accent: #7C3AED;
+  --course-primary: #7c3aed;
+  --course-cyan: #27afdb;
 }
 
 /* Main Banner Styles - Aligned with Home Page */
 .courses-main-banner {
   position: relative;
-  padding: 5rem 0; /* Increased padding for more height */
+  padding: 6rem 0; /* Increased padding */
   background-size: cover;
   background-position: center;
   color: white;
@@ -25,38 +25,40 @@
 .courses-main-banner__overlay {
   position: absolute;
   inset: 0;
-  /* Darkened gradient from home page for better text contrast */
-  background: linear-gradient(135deg, rgba(86, 38, 163, 0.9) 0%, rgba(69, 72, 168, 0.9) 50%, rgba(97, 64, 172, 0.9) 100%);
+  /* Match Dashboard Hero Overlay */
+  background: linear-gradient(180deg, rgba(18, 10, 53, 0.7) 0%, rgba(18, 10, 53, 0.4) 50%, rgba(18, 10, 53, 0.8) 100%);
+  backdrop-filter: blur(2px);
   z-index: 1;
 }
 
 .courses-main-banner .container {
   position: relative;
   z-index: 2;
-  max-width: 800px; /* Constrain text width */
+  max-width: 1000px;
   margin: 0 auto;
 }
 
 .courses-main-banner__title {
-  font-size: 3.5rem; /* Match home hero */
-  font-weight: 700;
+  font-size: 3.5rem;
+  font-weight: 800;
   margin: 0 0 1rem;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  letter-spacing: -0.02em;
 }
 
 .courses-main-banner__description {
-  font-size: 1.25rem; /* Match home hero */
+  font-size: 1.25rem;
   font-weight: 500;
   margin: 0 auto 2rem;
-  max-width: 600px;
-  opacity: 1; /* Increased for better visibility */
-  color: #FFFFFF; /* Changed to pure white for better contrast */
+  max-width: 700px;
+  opacity: 0.95;
+  color: rgba(255, 255, 255, 0.94);
   line-height: 1.6;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .courses-main-banner__button {
-  background-color: #7c3aed; /* Match home hero primary button */
+  background-color: #7c3aed;
+  /* Match home hero primary button */
   color: white;
   border: 2px solid transparent;
   padding: 0.75rem 2rem;
@@ -80,61 +82,69 @@
   color: var(--course-text-primary);
   min-height: 100vh;
   /* Remove horizontal padding to allow banner to be full width */
-  padding: 0 0 3rem; 
+  padding: 0 0 3rem;
 }
 
 .new-courses-container {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 1280px; /* Match Dashboard */
   margin: 0 auto;
-  padding-top: 3rem; /* Add padding here instead */
-  padding-left: 1.5rem; /* Add back horizontal padding for content */
-  padding-right: 1.5rem; /* Add back horizontal padding for content */
+  padding: 2rem 2rem; /* Match Dashboard padding */
+  box-sizing: border-box;
 }
 
 .courses-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    gap: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+  /* Add glass background for controls bar */
+  background: rgba(255, 255, 255, 0.8); /* Increased opacity for better separation */
+  backdrop-filter: blur(16px); /* Increased blur */
+  padding: 1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08); /* Slightly stronger shadow */
 }
 
 /* Redesigned Search & Filter */
 .courses-search-container {
-    position: relative;
-    flex-grow: 1;
+  position: relative;
+  flex-grow: 1;
 }
+
 .courses-search-icon {
   position: absolute;
-  left: 1.5rem;
+  left: 1rem; /* Adjusted left position */
   top: 50%;
   transform: translateY(-50%);
   color: var(--course-text-secondary);
-  font-size: 1.2rem;
+  font-size: 1.1rem;
 }
 
 .courses-search-input {
   width: 100%;
-  padding: 1.1rem 1.5rem 1.1rem 4rem;
-  border-radius: 16px;
-  border: 1px solid #e8eaf0;
-  background-color: #fff;
+  padding: 0.8rem 1.5rem 0.8rem 3rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0; /* Solid border for better definition */
+  background-color: #ffffff; /* Solid white background for high contrast */
   font-family: 'Be Vietnam Pro', sans-serif;
   font-size: 1rem;
   color: var(--course-text-primary);
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s ease;
 }
 
 .courses-search-input::placeholder {
-  color: var(--course-text-secondary);
-  opacity: 0.8;
+  color: #94a3b8; /* Slate-400 */
+  opacity: 1;
 }
 
 .courses-search-input:focus {
   outline: none;
   border-color: var(--course-accent);
-  box-shadow: 0 5px 25px rgba(124, 58, 237, 0.15);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
 .skill-filters {
@@ -202,109 +212,159 @@
 
 .new-courses-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
 }
 
-@media (min-width: 1024px) {
-  .new-courses-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Redesigned Card */
+/* Redesigned Card - Matching Dashboard Style */
 .new-course-card {
   display: flex;
-  gap: 1.5rem;
-  align-items: center;
-  padding: 1.2rem;
-  background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
-  border-radius: 20px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  cursor: pointer;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   color: var(--course-text-primary);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  height: 100%;
+  position: relative;
+  isolation: isolate;
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+}
+
+.new-course-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(
+      600px circle at var(--mouse-x) var(--mouse-y), 
+      rgba(255, 255, 255, 0.15), 
+      transparent 40%
+    ),
+    linear-gradient(135deg, var(--course-primary) 0%, var(--course-cyan) 100%);
+  opacity: 0;
+  z-index: 0;
+  transition: opacity 0.4s ease;
+}
+
+.new-course-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .new-course-card:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(124, 58, 237, 0.25);
+  border-color: transparent;
+}
+
+.new-course-card:hover::before {
+  opacity: 1;
 }
 
 .new-course-card__image-container {
-  width: 140px;
-  height: 160px;
+  width: 100%;
+  height: 180px;
   flex-shrink: 0;
-  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  position: relative;
+  border-radius: 0; /* Reset border radius */
+  box-shadow: none; /* Reset shadow */
+  margin-bottom: 0; /* Reset margin */
 }
 
 .new-course-card__image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.new-course-card:hover .new-course-card__image {
+  transform: scale(1.05);
 }
 
 .new-course-card__content {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  gap: 0.5rem;
+  gap: 1rem;
+  padding: 1.5rem;
+  align-items: flex-start; /* Reset alignment */
 }
 
 .new-course-card__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  width: 100%;
 }
 
 .new-course-card__title {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--course-text-primary);
+  margin-bottom: 0.25rem;
+  line-height: 1.4;
+  transition: color 0.3s ease;
+}
+
+.new-course-card:hover .new-course-card__title {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .new-course-card__meta {
-  font-size: 0.9rem;
-  color: #444;
-  line-height: 1.6;
+  font-size: 0.85rem;
+  color: #64748b;
+  transition: color 0.3s ease;
+  width: 100%;
+}
+
+.new-course-card:hover .new-course-card__meta {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.new-course-card:hover .new-course-card__meta p {
+  color: rgba(255, 255, 255, 0.95); /* Explicitly color the p tag on hover */
 }
 
 .new-course-card__meta p {
   margin: 0;
-}
-
-.new-course-card__meta p strong {
-  font-weight: 600;
-  color: var(--course-text-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  transition: color 0.3s ease;
 }
 
 .new-course-card__footer {
+  margin-top: auto; /* Push to bottom */
+  width: 100%;
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin-top: 1rem;
+  justify-content: flex-start; /* Align left */
 }
 
 .new-course-card__details-button {
-  background: rgba(255, 255, 255, 0.5);
-  color: var(--course-text-primary);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 12px;
-  padding: 0.7rem 1.5rem;
+  background: rgba(124, 58, 237, 0.1);
+  color: var(--course-primary);
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1.2rem;
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
 }
 
-.new-course-card__details-button:hover {
-  background: rgba(255, 255, 255, 0.8);
+.new-course-card:hover .new-course-card__details-button {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-  filter: brightness(1.05);
+  backdrop-filter: blur(4px);
 }
 
 /* View All Button */
@@ -376,24 +436,29 @@
 /* Overriding title margin for the new header layout */
 .courses-header .new-courses-title {
   margin-bottom: 0;
-  font-size: clamp(1.5rem, 3vw, 1.8rem); /* Align with dashboard title size */
+  font-size: clamp(1.5rem, 3vw, 1.8rem);
+  /* Align with dashboard title size */
 }
 
 /* Filter button style from Dashboard */
 .btn-filter {
-  border: 0;
+  border: none;
   border-radius: 999px;
-  padding: 0.6rem 1.5rem;
-  background: #fff;
-  color: #333;
+  padding: 0.7rem 1.8rem; /* Slightly larger padding */
+  background: var(--course-primary); /* Solid purple background */
+  color: white; /* White text */
   font-weight: 600;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3); /* Purple shadow */
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .btn-filter:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  background: #6d28d9; /* Darker purple on hover */
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
   transform: translateY(-2px);
-  filter: brightness(1.1);
+  color: white;
 }

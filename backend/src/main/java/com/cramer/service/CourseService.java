@@ -16,8 +16,17 @@ public class CourseService {
         this.sectionRepository = sectionRepository;
     }
 
-    public List<String> getCourses() {
-        return sectionRepository.findDistinctExamSources();
+    public com.cramer.dto.PageDTO<String> getCourses(int page, int size, String search) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<String> coursePage = sectionRepository.findDistinctExamSources(pageable, search);
+        
+        return new com.cramer.dto.PageDTO<>(
+            coursePage.getContent(),
+            coursePage.getNumber(),
+            coursePage.getSize(),
+            coursePage.getTotalElements(),
+            coursePage.getTotalPages()
+        );
     }
 
     public List<Integer> getTestsForCourse(String courseName) {

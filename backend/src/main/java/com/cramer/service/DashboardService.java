@@ -40,7 +40,7 @@ public class DashboardService {
         this.sectionRepository = sectionRepository;
     }
 
-    public DashboardSummaryDTO buildDashboardSummary(UUID userId) {
+    public DashboardSummaryDTO buildDashboardSummary(UUID userId, int page, int size, String search) {
         Objects.requireNonNull(userId, "userId must not be null");
 
         // 1. Fetch primary entities
@@ -56,7 +56,7 @@ public class DashboardService {
         List<UserAnswer> allAnswers = userAnswerRepository.findByAttempt_UserId(userId);
 
         // 2. Aggregate data
-        List<CourseProgressDTO> courseProgress = aggregateCourseProgress(attempts, allAnswers);
+        PageDTO<CourseProgressDTO> courseProgress = aggregateCourseProgress(attempts, allAnswers, page, size, search);
         List<SkillSummaryDTO> skillSummaries = aggregateSkillSummaries(allAnswers);
         UserStatsDTO stats = calculateUserStats(allAnswers);
         List<RecentActivityDTO> recentActivities = getRecentActivities(allAnswers);
@@ -74,17 +74,42 @@ public class DashboardService {
         return dto;
     }
 
-    private List<CourseProgressDTO> aggregateCourseProgress(List<TestAttempt> attempts, List<UserAnswer> allAnswers) {
+    private PageDTO<CourseProgressDTO> aggregateCourseProgress(List<TestAttempt> attempts, List<UserAnswer> allAnswers, int page, int size, String search) {
         if (attempts == null || attempts.isEmpty()) {
-            return List.of();
+            return new PageDTO<>(List.of(), page, size, 0, 0);
         }
+
+        // Filter attempts based on search term if present
+        List<TestAttempt> filteredAttempts = attempts;
+        if (search != null && !search.trim().isEmpty()) {
+            String lowerSearch = search.toLowerCase().trim();
+            filteredAttempts = attempts.stream()
+                    .filter(a -> (a.getExamSource() != null && a.getExamSource().toLowerCase().contains(lowerSearch)) ||
+                                 (a.getSkill() != null && a.getSkill().toLowerCase().contains(lowerSearch)))
+                    .collect(Collectors.toList());
+        }
+
+        // Sort by last attempt (most recent first)
+        filteredAttempts.sort(Comparator.comparing(TestAttempt::getCompletedAt, Comparator.nullsLast(Comparator.reverseOrder())));
+
+        // Pagination logic
+        int totalElements = filteredAttempts.size();
+        int totalPages = (int) Math.ceil((double) totalElements / size);
+        int start = page * size;
+        int end = Math.min(start + size, totalElements);
+
+        if (start >= totalElements) {
+             return new PageDTO<>(List.of(), page, size, totalElements, totalPages);
+        }
+
+        List<TestAttempt> paginatedAttempts = filteredAttempts.subList(start, end);
 
         Map<Long, List<UserAnswer>> answersByAttemptId = allAnswers == null ?
                 Collections.emptyMap() :
                 allAnswers.stream().collect(Collectors.groupingBy(a -> a.getAttempt().getId()));
         Map<TestKey, Integer> totalQuestionsCache = new HashMap<>();
 
-        return attempts.stream()
+        List<CourseProgressDTO> content = paginatedAttempts.stream()
                 .map(attempt -> {
                     int totalQuestions = resolveTotalQuestions(attempt, totalQuestionsCache);
 
@@ -92,35 +117,33 @@ public class DashboardService {
                             attempt.getId(),
                             Collections.emptyList()
                     );
-
+                    
                     int answersAttempted = attemptAnswers.size();
-                    int correctAnswers = (int) attemptAnswers.stream()
-                            .filter(a -> a.getCorrect() != null && a.getCorrect())
+                    long correctCount = attemptAnswers.stream()
+                            .filter(a -> Boolean.TRUE.equals(a.getCorrect()))
                             .count();
-
+                    
+                    double score = IeltsScoreConverter.convertToBand((int)correctCount);
                     double completionRate = totalQuestions > 0 ? (double) answersAttempted / totalQuestions : 0.0;
-
-                    Double bandScore = null;
-                    if ("COMPLETED".equals(attempt.getStatus()) && ("reading".equalsIgnoreCase(attempt.getSkill()) || "listening".equalsIgnoreCase(attempt.getSkill()))) {
-                        bandScore = IeltsScoreConverter.convertToBand(correctAnswers);
-                    }
+                    String status = "COMPLETED"; 
 
                     return new CourseProgressDTO(
                             attempt.getId(),
                             attempt.getExamSource(),
-                            Integer.valueOf(attempt.getTestNumber()),
+                            parseTestNumber(attempt.getTestNumber()),
                             attempt.getSkill(),
                             totalQuestions,
                             answersAttempted,
-                            correctAnswers,
+                            (int) correctCount,
                             attempt.getCompletedAt(),
                             completionRate,
-                            attempt.getStatus(),
-                            bandScore
+                            status,
+                            score
                     );
                 })
-                .sorted(Comparator.comparing(CourseProgressDTO::getLastAttempt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .collect(Collectors.toList());
+
+        return new PageDTO<>(content, page, size, totalElements, totalPages);
     }
 
     private List<SkillSummaryDTO> aggregateSkillSummaries(List<UserAnswer> answers) {

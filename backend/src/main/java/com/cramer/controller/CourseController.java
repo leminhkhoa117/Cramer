@@ -24,9 +24,12 @@ public class CourseController {
     }
 
     @GetMapping
-    public ResponseEntity<List<String>> getAllCourses() {
-        List<String> courses = courseService.getCourses();
-        return ResponseEntity.ok(courses);
+    public ResponseEntity<com.cramer.dto.PageDTO<String>> getAllCourses(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "6") int size,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(courseService.getCourses(page, size, search));
     }
 
     @GetMapping("/{courseName}/tests")

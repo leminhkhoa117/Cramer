@@ -57,13 +57,13 @@ apiClient.interceptors.response.use(
       status: error.response?.status,
       data: error.response?.data
     });
-    
+
     if (error.response?.status === 401) {
       // Token expired or invalid, redirect to login
       console.error('🔒 Unauthorized. Please log in again.');
       // You can dispatch a logout action here
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -79,7 +79,7 @@ export const authApi = {
 // COURSE APIs
 // ============================================
 export const courseApi = {
-  getAll: () => apiClient.get('/courses'),
+  getAll: (page = 0, size = 6, search = '') => apiClient.get('/courses', { params: { page, size, search } }),
   getTestsByCourse: (courseName) => apiClient.get(`/courses/${courseName}/tests`),
 };
 
@@ -104,11 +104,11 @@ export const sectionApi = {
   getAll: () => apiClient.get('/sections'),
   getById: (id) => apiClient.get(`/sections/${id}`),
   getByExam: (examSource) => apiClient.get(`/sections/exam/${examSource}`),
-  getByExamAndTest: (examSource, testNumber) => 
+  getByExamAndTest: (examSource, testNumber) =>
     apiClient.get(`/sections/exam/${examSource}/test/${testNumber}`),
   getBySkill: (skill) => apiClient.get(`/sections/skill/${skill}`),
   getSpecific: (params) => apiClient.get('/sections/specific', { params }),
-  getSectionsForTest: (examSource, testNumber, skill) => 
+  getSectionsForTest: (examSource, testNumber, skill) =>
     apiClient.get(`/sections/exam/${examSource}/test/${testNumber}/skill/${skill}`),
   create: (section) => apiClient.post('/sections', section),
   update: (id, section) => apiClient.put(`/sections/${id}`, section),
@@ -168,7 +168,7 @@ export const questionApi = {
   getBySection: (sectionId) => apiClient.get(`/questions/section/${sectionId}`),
   getByUid: (questionUid) => apiClient.get(`/questions/uid/${questionUid}`),
   getByType: (questionType) => apiClient.get(`/questions/type/${questionType}`),
-  getBySectionAndType: (sectionId, questionType) => 
+  getBySectionAndType: (sectionId, questionType) =>
     apiClient.get(`/questions/section/${sectionId}/type/${questionType}`),
   getTypes: () => apiClient.get('/questions/types'),
   create: (question) => apiClient.post('/questions', question),
@@ -186,11 +186,11 @@ export const userAnswerApi = {
   getById: (id) => apiClient.get(`/user-answers/${id}`),
   getByUser: (userId) => apiClient.get(`/user-answers/user/${userId}`),
   getByQuestion: (questionId) => apiClient.get(`/user-answers/question/${questionId}`),
-  getByUserAndQuestion: (userId, questionId) => 
+  getByUserAndQuestion: (userId, questionId) =>
     apiClient.get(`/user-answers/user/${userId}/question/${questionId}`),
   getCorrectAnswers: (userId) => apiClient.get(`/user-answers/user/${userId}/correct`),
   getIncorrectAnswers: (userId) => apiClient.get(`/user-answers/user/${userId}/incorrect`),
-  getRecentAnswers: (userId, limit = 10) => 
+  getRecentAnswers: (userId, limit = 10) =>
     apiClient.get(`/user-answers/user/${userId}/recent`, { params: { limit } }),
   getUserStats: (userId) => apiClient.get(`/user-answers/user/${userId}/stats`),
   getUserAccuracy: (userId) => apiClient.get(`/user-answers/user/${userId}/accuracy`),
@@ -204,7 +204,7 @@ export const userAnswerApi = {
 // DASHBOARD APIs
 // ============================================
 export const dashboardApi = {
-  getSummary: (userId) => apiClient.get(`/dashboard/summary/${userId}`),
+  getSummary: (userId, page = 0, size = 3, search = '') => apiClient.get(`/dashboard/summary/${userId}`, { params: { page, size, search } }),
 };
 
 // ============================================

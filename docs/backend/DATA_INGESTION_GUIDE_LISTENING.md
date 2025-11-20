@@ -261,3 +261,74 @@ END $$;
     - **Plain Text Fields:** `main_title`, `title`, `section_title`. Do not use HTML here.
     - **HTML Fields:** `instructions_text` (in the section block) and `text` (in a question's content). Use these fields for any formatted content, including line breaks (`<br/>`) and bolding (`<b>`).
 - **`____` Placeholder:** For `FILL_IN_BLANK` questions, ensure the `text` in `question_content` contains exactly one `____` (four underscores) where the input box should appear.
+
+---
+
+## 7. AI Agent Checklist: Listening Test Ingestion
+
+Use this when generating SQL for a new IELTS Listening test.
+
+1. **Identify the test context**
+   - Confirm `exam_source` (e.g., `"cam17"`, `"cam18"`).
+   - Confirm `test_number` (e.g., `"1"`, `"2"`).
+   - Confirm `skill = 'listening'` and `part_number` (1–4).
+
+2. **Prepare cleanup SQL (idempotency)**
+   - Add a `DELETE` clause that removes existing Listening rows for the same `exam_source` and `test_number` before inserting:
+     - Delete from `public.questions` where `section_id` belongs to sections with that `exam_source`, `test_number`, and `skill = 'listening'`.
+     - Then delete those `public.sections` rows.
+
+3. **Generate `sections` INSERTs (one per part)**
+   - For each part (1–4), insert one row into `public.sections` with:
+     - `exam_source`, `test_number`, `skill = 'listening'`, `part_number`.
+     - `audio_url` pointing to the Supabase or CDN URL for that part’s audio.
+     - `passage_text` containing the full transcript (for review only).
+     - `section_layout` as a JSON object with a `blocks` array describing all question groups in that part.
+   - Cast `section_layout` to `jsonb` in SQL (e.g., `' {...}'::jsonb`).
+   - Capture each inserted ID using `RETURNING id INTO section_X_id`.
+
+4. **Define `section_layout.blocks` correctly**
+   - Choose a `block_type` for each visual group exactly as defined in this guide:
+     - `INSTRUCTIONS_ONLY`, `NOTE_COMPLETION`, `MATCHING_FEATURES`, etc.
+   - For each block:
+     - Set `content.title` (plain text) and `content.main_title` as needed.
+     - Put any formatted instructions (bold, line breaks) into `content.instructions_text` (HTML allowed).
+     - Set `question_numbers` to the exact list of Cambridge question numbers that belong to this block (e.g., `[1,2,3,4,5,6,7,8,9,10]`).
+
+5. **Generate Listening `question_uid` values**
+   - Always use the pattern:  
+     `'{exam_source}-t{test_number}-l-q{question_number}'`  
+     Example: `cam17`, test `"1"`, question 21 → `"cam17-t1-l-q21"`.
+   - `question_number` is the global 1–40 number across all four Listening parts.
+
+6. **Choose the correct `question_type`**
+   - Map each Cambridge question format to one of:
+     - `FILL_IN_BLANK`
+     - `MULTIPLE_CHOICE`
+     - `MULTIPLE_CHOICE_MULTIPLE_ANSWERS`
+     - `MATCHING` (for any dropdown-style matching questions)
+   - Ensure the `question_type` is compatible with the containing `block_type` and the JSON structures given in this guide.
+
+7. **Construct valid `question_content` JSON**
+   - For every question:
+     - Include the prompt in the `text` field; use HTML (`<br/>`, `<b>`/`<strong>`) only inside `text`.
+     - For `NOTE_COMPLETION` style blocks, use `section_title` (plain text) only when the heading changes (e.g., `"Beach"`, `"Nature reserve"`).
+     - For `FILL_IN_BLANK`, ensure exactly one `____` placeholder in `text`.
+     - For `MATCHING` / `MULTIPLE_CHOICE` / `MULTIPLE_CHOICE_MULTIPLE_ANSWERS`, follow the option structures shown in the examples (`options` array of strings, or shared options in `section_layout` for `MATCHING_FEATURES` blocks).
+   - Always produce valid JSON (double quotes around keys and string values) before embedding it in SQL.
+
+8. **Populate `correct_answer` consistently**
+   - Always use a JSON array, even for single answers (e.g., `["A"]`, `["litter"]`).
+   - For `MULTIPLE_CHOICE_MULTIPLE_ANSWERS`, include all correct letters in the array.
+   - For `MATCHING`, store the selected letter or label as a one-element array (e.g., `["E"]`). The frontend uses `section_layout` to display the full text.
+
+9. **Set optional fields correctly**
+   - `word_limit`: For `FILL_IN_BLANK`, use strings like `"ONE WORD AND/OR A NUMBER"` when specified in the question paper; otherwise leave `NULL`.
+   - `explanation`: Currently unused; leave `NULL` unless you have a clear use case.
+
+10. **Validate consistency before running**
+   - Check that:
+     - All question numbers 1–40 are present exactly once across parts 1–4.
+     - Each `question_number` appears in exactly one block’s `question_numbers` array.
+     - All JSON (`section_layout` and `question_content`) is valid.
+   - Only then finalize and run the SQL in Supabase.

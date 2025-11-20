@@ -1,239 +1,318 @@
 /* Dashboard Styles */
 :root {
-  --dash-primary: #8c52ff;
+  --dash-primary: #7c3aed;
+  --dash-primary-hover: #6d28d9;
   --dash-cyan: #27afdb;
   --dash-dark: #120a35;
-  --dash-text: #130b38;
+  --dash-text: #1f2937;
   --dash-white: rgba(255, 255, 255, 0.94);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
 }
 
 .dash {
-  background: #f4f7fc;
+  background: #f8fafc;
   color: var(--dash-text);
   font-family: 'Be Vietnam Pro', sans-serif;
+  min-height: 100vh;
 }
 
 .dash .container {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1280px;
+  /* Increased max-width for better spacing */
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 2rem;
+  box-sizing: border-box;
 }
 
 /* Hero Section */
 .dash-hero {
   position: relative;
-  min-height: 420px;
+  min-height: 480px;
+  /* Increased height */
   background-size: cover;
   background-position: center;
-  padding-bottom: 4rem; /* Space for the goals pill to overlap */
+  padding-bottom: 4rem;
+  /* Reduced from 6rem */
+  display: flex;
+  align-items: center;
 }
 
 .dash-hero__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(18, 10, 53, 0.6) 0%, rgba(18, 10, 53, 0.3) 40%, rgba(18, 10, 53, 0.1) 100%);
+  background: linear-gradient(180deg, rgba(18, 10, 53, 0.7) 0%, rgba(18, 10, 53, 0.4) 50%, rgba(18, 10, 53, 0.8) 100%);
+  backdrop-filter: blur(2px);
 }
 
 .dash-hero .container {
   position: relative;
   z-index: 2;
-  padding-top: 3.5rem;
+  padding-top: 4rem;
 }
 
 .dash-hero__title {
-  margin: 0 0 0.75rem;
+  margin: 0 0 1rem;
   color: #fff;
-  font-size: clamp(2rem, 4vw, 3rem);
-  font-weight: 700;
-  text-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  /* Larger title */
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: fadeInUp 0.8s ease-out;
 }
 
 .dash-hero__subtitle {
   color: var(--dash-white);
-  font-size: clamp(1.5rem, 3vw, 1.8rem); /* Unified font size */
+  font-size: clamp(1.5rem, 3vw, 1.75rem);
+  /* Increased size */
   font-weight: 700;
-  margin: 0 0 1rem; /* Reduced bottom margin */
+  /* Increased weight */
+  margin: 0;
+  opacity: 1;
+  /* Full opacity */
+  letter-spacing: -0.01em;
 }
 
 .dash-hero__subtitle-row {
   display: flex;
-  align-items: baseline; /* Better for text and icon alignment */
-  gap: 0.75rem;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  /* Reduced margin */
+  animation: fadeInUp 0.8s ease-out 0.2s backwards;
 }
 
 .goal-edit-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px; /* Reduced size */
-  height: 36px; /* Reduced size */
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  background: rgba(255, 255, 255, 0.15);
+  width: 36px;
+  /* Slightly smaller */
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  font-size: 18px; /* Added to control icon size */
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .goal-edit-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.6);
 }
 
 /* Goals Pill Section */
 .goals-pill {
-  border-radius: 32px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 25px 50px rgba(15, 23, 42, 0.28);
-  padding: 1.25rem 1.5rem;
-  display: flex;
-  align-items: stretch;
-  justify-content: space-between;
+  border-radius: 40px;
+  /* Significantly more rounded */
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+  padding: 1.25rem;
+  /* Tighter padding */
+  display: grid;
+  grid-template-columns: 1.1fr auto 1.3fr;
   gap: 1.25rem;
+  margin-top: 0.5rem;
+  /* Reduced margin */
+  align-items: stretch;
+  animation: fadeInUp 0.8s ease-out 0.4s backwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .goals-group {
-  flex: 1.2;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 1rem;
-  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.goal-meta-row,
-.goal-targets-grid {
-  display: contents;
+.goal-meta-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 0.75rem;
+  height: 100%;
 }
 
 .goal-meta-card {
-  flex: 1;
   padding: 0.75rem 1rem;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  /* Compact padding */
+  border-radius: 24px;
+  /* Very rounded inner cards */
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   color: #fff;
-  box-shadow: 0 12px 30px rgba(10, 14, 28, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(12px);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Specific positioning for the left group */
+.goal-meta-card:nth-child(1) {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.goal-meta-card:nth-child(2) {
+  grid-column: 1;
+  grid-row: 2;
 }
 
 .goal-meta-card--overall {
-  flex: 0.8;
-  background: rgba(255, 255, 255, 0.12);
+  grid-column: 2;
+  grid-row: 1 / -1;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.5) 0%, rgba(124, 58, 237, 0.2) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  align-items: center;
+  text-align: center;
+}
+
+.goal-meta-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .goal-meta-card__label {
-  margin: 0 0 0.35rem;
-  font-size: 0.8rem;
+  margin: 0 0 0.25rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
 }
 
 .goal-meta-card__value {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .goal-meta-card__value--badge {
-  font-size: clamp(2.1rem, 3.5vw, 2.6rem);
+  font-size: 2.25rem;
+  /* Compact badge */
   font-weight: 800;
   line-height: 1;
-}
-
-.goal-meta-card__hint {
-  display: inline-block;
-  margin-top: 0.4rem;
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.75);
+  margin-top: 0.25rem;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .goal-targets-grid {
-  display: contents;
-}
-
-.goal-empty {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  padding: 0.75rem 1rem;
-  max-width: 280px;
-  text-align: center;
-  font-weight: 500;
-  /* Add flex properties for vertical centering */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.goal-empty--inline {
-  width: 100%;
-  min-height: 100px;
-  border: 1px rgba(255, 255, 255, 0.3);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
 }
 
 .goal-card {
-  min-height: 102px;
-  border-radius: 28px;
-  padding: 0.8rem 1rem 1rem;
+  padding: 0.75rem;
+  border-radius: 24px;
+  /* Very rounded inner cards */
   text-align: center;
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0.08) 100%);
-  border: 1px rgba(255, 255, 255, 0.4);
-  box-shadow: 0 18px 35px rgba(12, 18, 32, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
+  transition: all 0.3s ease;
+  min-height: 80px;
+  /* Reduced height */
+}
+
+.goal-card:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .goal-card__badge {
-  font-size: 0.78rem;
-  letter-spacing: 0.18em;
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
 }
 
 .goal-card__value {
-  font-size: clamp(1.9rem, 3.2vw, 2.4rem);
+  font-size: 1.25rem;
   font-weight: 800;
   color: #fff;
-  text-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
 }
 
 .goal-divider {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 1rem;
-  margin-left: 2rem; /* Pushed from the left, closer to skills */
+  width: 1px;
+  /* Gradient with a precise gap in the middle to hide the line behind the text */
+  background: linear-gradient(to bottom,
+      transparent 0%,
+      rgba(255, 255, 255, 0.3) 10%,
+      rgba(255, 255, 255, 0.3) calc(50% - 24px),
+      transparent calc(50% - 24px),
+      transparent calc(50% + 24px),
+      rgba(255, 255, 255, 0.3) calc(50% + 24px),
+      rgba(255, 255, 255, 0.3) 90%,
+      transparent 100%);
+  margin: 0 0.5rem;
+  position: relative;
 }
 
 .goal-divider span {
-  width: 80px; /* Narrower box */
-  height: 90px;
-  background: rgba(255, 255, 255, 0.85);
-  color: #000;
-  border-radius: 20px;
-  font-weight: 700;
+  position: absolute;
+  padding: 0.35rem 0.75rem;
+  /* Capsule shape */
+  background: #fff;
+  /* Solid white background */
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--dash-primary);
+  /* Primary color text */
+  border-radius: 99px;
+  /* Fully rounded capsule */
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  font-size: 0.9rem;
-  line-height: 1.2;
+  font-size: 0.6rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
 .goal-skills-group {
-  flex: 0.9;
-  display: flex;
-  justify-content: space-between;
-  gap: 1.5rem;
-  padding-left: 2rem;
-  border-left: 1px solid rgba(255, 255, 255, 0.25);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 0.75rem;
+  height: 100%;
 }
 
 .goal-skills-group .goal-empty {
@@ -251,27 +330,40 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  transition: background 0.3s ease;
+}
+
+.goal-skill:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .goal-skill__name {
-  border: 1px rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   color: var(--dash-white);
   border-radius: 999px;
-  padding: 0.4rem 1.25rem;
+  padding: 0.5rem 1.25rem;
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  background: rgba(255, 255, 255, 0.04);
+  letter-spacing: 0.1em;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
 }
 
 .goal-skill__score {
   color: #fff;
   font-weight: 800;
-  font-size: clamp(2.6rem, 5vw, 3.8rem);
-  line-height: 1.1;
-  text-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
+  line-height: 1;
+  text-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(180deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* New style for the unified empty state */
@@ -288,206 +380,352 @@
 
 /* Courses Section */
 .dash-courses {
-  padding: 2rem 0 3rem;
-  margin-top: 0; /* Reduced top margin */
-  position: relative;
-  z-index: 5;
+  padding: 2rem 0;
+  letter-spacing: -0.02em;
 }
 
 .dash-courses__header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 1rem; /* Reduced bottom margin */
 }
 
-.dash-courses__header h2 {
-  margin: 0;
-  font-size: clamp(1.5rem, 3vw, 1.8rem);
-  font-weight: 700;
+.dash-courses__controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex: 1;
+  justify-content: flex-end;
+  max-width: 600px;
+}
+
+.dash-search-container {
+  position: relative;
+  flex-grow: 1;
+  max-width: 400px;
+}
+
+.dash-search-input {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 0.95rem;
   color: var(--dash-text);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s ease;
+}
+
+.dash-search-input:focus {
+  outline: none;
+  border-color: var(--dash-primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
 .btn-filter {
-  border: 0;
-  border-radius: 999px;
-  padding: 0.6rem 1.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
   background: #fff;
-  color: #333;
+  color: var(--dash-text);
   font-weight: 600;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  font-size: 0.95rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .btn-filter:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
   transform: translateY(-2px);
-  filter: brightness(1.1);
+  border-color: var(--dash-primary);
+  color: var(--dash-primary);
 }
 
 .course-grid {
   display: grid;
-  grid-template-columns: 1fr; /* Changed to single column */
-  gap: 1.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  /* Responsive grid */
+  gap: 2rem;
 }
 
 .course-empty {
-  padding: 2rem;
+  grid-column: 1 / -1;
+  padding: 4rem 2rem;
   text-align: center;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.7);
-  color: var(--dash-dark);
-  font-weight: 600;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  border-radius: 24px;
+  background: #fff;
+  color: var(--dash-text);
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px dashed rgba(0, 0, 0, 0.1);
 }
 
 /* New Course Card Style for Dashboard (adapted from Courses.css) */
 .dash-course-card {
   display: flex;
-  gap: 1.5rem;
-  align-items: center;
-  padding: 1.2rem;
-  background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
-  border-radius: 20px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  flex-direction: column;
+  /* Stack vertically for better card layout */
+  gap: 0;
+  padding: 0;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   color: var(--dash-text);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  height: 100%;
+  position: relative;
+  isolation: isolate;
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+}
+
+.dash-course-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* Composite background: 
+     1. A bright white glow following the cursor (radial)
+     2. A rich base gradient from Primary to Cyan (linear) 
+  */
+  background:
+    radial-gradient(600px circle at var(--mouse-x) var(--mouse-y),
+      rgba(255, 255, 255, 0.15),
+      transparent 40%),
+    linear-gradient(135deg, var(--dash-primary) 0%, var(--dash-cyan) 100%);
+  opacity: 0;
+  z-index: 0;
+  transition: opacity 0.4s ease;
+}
+
+.dash-course-card>* {
+  position: relative;
+  z-index: 1;
 }
 
 .dash-course-card:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(124, 58, 237, 0.25);
+  border-color: transparent;
+}
+
+.dash-course-card:hover::before {
+  opacity: 1;
 }
 
 .dash-course-card__image-container {
-  width: 140px;
-  height: 160px;
+  width: 100%;
+  height: 180px;
   flex-shrink: 0;
-  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
 .dash-course-card__image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.dash-course-card:hover .dash-course-card__image {
+  transform: scale(1.05);
 }
 
 .dash-course-card__content {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  gap: 0.5rem;
+  gap: 1rem;
+  padding: 1.5rem;
 }
 
 .dash-course-card__title {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--dash-text);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+  line-height: 1.4;
+  transition: color 0.3s ease;
+}
+
+.dash-course-card:hover .dash-course-card__title {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .dash-course-card__meta {
-  font-size: 0.9rem;
-  color: #444;
-  line-height: 1.6;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 0.5rem 1rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  transition: color 0.3s ease;
+}
+
+.dash-course-card:hover .dash-course-card__meta {
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .dash-course-card__meta p {
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .dash-course-card__meta p strong {
   font-weight: 600;
   color: var(--dash-text);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+  transition: color 0.3s ease, opacity 0.3s ease;
+}
+
+.dash-course-card:hover .dash-course-card__meta p strong {
+  color: rgba(255, 255, 255, 0.9);
+  opacity: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.dash-course-card__meta p span {
+  color: var(--dash-text);
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.dash-course-card:hover .dash-course-card__meta p span {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .dash-course-card__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 1rem;
+  margin-top: auto;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  gap: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.dash-course-card:hover .dash-course-card__footer {
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .dash-course-card__score-status {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dash-course-card__progress-text {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--dash-text);
+  line-height: 1;
+  transition: color 0.3s ease;
+}
+
+.dash-course-card:hover .dash-course-card__progress-text {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.dash-course-card__status-badge {
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.3s ease;
+}
+
+.dash-course-card:hover .dash-course-card__status-badge {
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .dash-course-card__actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: flex-end;
-}
-
-.btn-review {
-  border: none;
-  border-radius: 999px; /* Changed from 12px */
-  padding: 0.75rem 2rem; /* Changed from 0.6rem 1.2rem */
-  background: var(--dash-primary); /* Using variable for consistency */
-  color: white;
-  font-weight: 600;
-  box-shadow: 0 5px 15px rgba(31, 38, 135, 0.2); /* More pronounced shadow */
-  cursor: pointer;
-  transition: all 0.2s ease-in-out; /* Changed from ease */
-  text-decoration: none;
-  font-size: 1rem; /* Changed from 0.9rem */
-}
-
-.btn-review:hover {
-  background-color: #6d28d9; /* Darker purple on hover, similar to Home */
-  box-shadow: 0 8px 20px rgba(31, 38, 135, 0.3); /* More pronounced shadow on hover */
-  transform: translateY(-2px);
-  filter: brightness(1.1);
-}
-
-.dash-course-card__progress-text {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--dash-text);
-}
-
-.dash-course-card__status-badge {
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  padding: 0.5rem 1rem;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  line-height: 1;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 100px;
 }
 
 /* New, more specific button style */
 .btn-action-dashboard {
-  display: inline-block;
   border: none;
-  border-radius: 999px;
-  padding: 0.75rem 2rem;
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
   background: var(--dash-primary);
   color: white;
   font-weight: 600;
-  box-shadow: 0 5px 15px rgba(31, 38, 135, 0.2);
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
-  font-size: 1rem;
   text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .btn-action-dashboard:hover {
-  background-color: #6d28d9;
-  box-shadow: 0 8px 20px rgba(31, 38, 135, 0.3);
+  background: var(--dash-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
+}
+
+.dash-course-card:hover .btn-action-dashboard {
+  background: #fff;
+  color: var(--dash-primary);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.dash-course-card:hover .btn-action-dashboard:hover {
+  background: #f8fafc;
   transform: translateY(-2px);
-  filter: brightness(1.1);
+}
+
+.btn-action-dashboard--outline {
+  background: transparent;
+  color: var(--dash-primary);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  box-shadow: none;
+}
+
+.btn-action-dashboard--outline:hover {
+  background: rgba(124, 58, 237, 0.05);
+  border-color: var(--dash-primary);
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+
+.dash-course-card:hover .btn-action-dashboard--outline {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: none;
+}
+
+.dash-course-card:hover .btn-action-dashboard--outline:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #fff;
 }
 
 
@@ -496,235 +734,202 @@
 .dash-empty-state {
   margin: 4rem auto;
   max-width: 480px;
-  padding: 2rem;
-  border-radius: 16px;
+  padding: 3rem 2rem;
+  border-radius: 24px;
   text-align: center;
   font-weight: 600;
-  color: var(--dash-dark);
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  color: var(--dash-text);
+  background: #fff;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .dash-error {
   color: #b42318;
-  background: rgba(255, 235, 230, 0.95);
+  background: #fef2f2;
+  border-color: #fecaca;
 }
 
 /* Responsive */
 @media (max-width: 992px) {
   .goals-pill {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    /* Stack vertically */
+    gap: 1.5rem;
     padding: 1.5rem;
   }
+
   .goals-group {
     display: flex;
     flex-direction: column;
     gap: 1rem;
   }
+
   .goal-meta-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-  .goal-meta-card {
-    flex: 1 1 calc(50% - 0.5rem);
-  }
-  .goal-meta-card--overall {
-    flex-basis: 100%;
-  }
-  .goal-targets-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+    /* Let rows size automatically */
     gap: 0.75rem;
   }
-  .goal-skills-group {
+
+  /* Reset specific positioning for mobile */
+  .goal-meta-card:nth-child(1),
+  .goal-meta-card:nth-child(2),
+  .goal-meta-card--overall {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  /* Make overall card span full width on tablet/mobile */
+  .goal-meta-card--overall {
+    grid-column: 1 / -1;
+    order: -1;
+    /* Optional: Move overall to top if desired, or keep as is */
+  }
+
+  .goal-divider {
     width: 100%;
-    padding-left: 0;
-    border-left: 0;
-    flex-wrap: wrap;
+    height: 1px;
+    /* Horizontal gradient with a gap for the text pill */
+    background: linear-gradient(to right,
+        transparent 0%,
+        rgba(255, 255, 255, 0.3) 10%,
+        rgba(255, 255, 255, 0.3) calc(50% - 40px),
+        transparent calc(50% - 40px),
+        transparent calc(50% + 40px),
+        rgba(255, 255, 255, 0.3) calc(50% + 40px),
+        rgba(255, 255, 255, 0.3) 90%,
+        transparent 100%);
+    margin: 1.5rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
   }
-  .goal-skill {
-    flex: 1 1 calc(50% - 0.75rem);
+
+  .goal-divider span {
+    position: absolute;
+    width: auto;
+    height: auto;
+    padding: 0.35rem 1rem;
+    border-radius: 99px;
+    font-size: 0.65rem;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
   }
-  /* This is already 1fr, but we confirm it here */
+
+  .goal-skills-group {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: auto;
+    gap: 0.75rem;
+  }
+
   .course-grid {
     grid-template-columns: 1fr;
   }
+
   .mobile-margin-top {
     margin-top: 1.5rem;
   }
 }
 
 @media (max-width: 640px) {
-
-  .dash-hero { min-height: auto; padding-bottom: 2rem; }
-
-  .goals-pill { padding: 1rem; }
-
-  .goal-meta-row {
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 0.75rem;
-
+  .dash-hero {
+    min-height: auto;
+    padding-bottom: 2rem;
   }
 
-  .goal-meta-card,
+  .goals-pill {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .goal-meta-row {
+    grid-template-columns: 1fr;
+    /* Single column on small mobile */
+  }
 
   .goal-meta-card--overall {
-
-    flex-basis: 100%;
-
+    grid-column: 1;
   }
 
   .goal-skills-group {
-
-    flex-wrap: wrap;
-
-    gap: 0.75rem;
-
-    border-left: 0;
-
-    padding-left: 0;
-
+    grid-template-columns: 1fr 1fr;
+    /* Keep 2 columns for skills even on mobile, usually fits */
   }
-
-  .goal-skill {
-
-    flex-basis: 100%;
-
-  }
-
-  .goal-targets-grid {
-
-    display: grid;
-
-    grid-template-columns: 1fr;
-
-    gap: 0.75rem;
-
-  }
-
-  
 
   .dash-course-card {
-
     flex-direction: column;
-
     align-items: stretch;
-
     text-align: center;
-
   }
-
-
 
   .dash-course-card__image-container {
-
     width: 100%;
-
     height: 150px;
-
     margin-bottom: 1rem;
-
   }
-
-
 
   .dash-course-card__content {
-
     align-items: center;
-
   }
-
-  
 
   .dash-course-card__footer {
-
     flex-direction: column;
-
     gap: 1rem;
-
   }
 
+  .dash-course-card__meta {
+    grid-template-columns: 1fr;
+    /* Stack meta info */
+    text-align: left;
+    width: 100%;
+  }
 }
 
 
 
 /* === Tab Navigation === */
-
 .dash-nav {
-
   display: flex;
-
-  gap: 0.5rem;
-
-  background-color: #fff;
-
-  padding: 0.5rem;
-
-  border-radius: 16px;
-
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-
-  margin-top: -2rem; /* Kéo lên trên phần hero */
-
+  justify-content: center;
+  gap: 1rem;
+  margin-top: -2rem;
+  /* Overlap hero slightly */
+  margin-bottom: 1.5rem;
+  /* Reduced margin */
   position: relative;
-
   z-index: 10;
-
 }
-
-
 
 .dash-nav-btn {
-
-  flex: 1;
-
-  padding: 0.85rem 1rem;
-
   border: none;
-
-  border-radius: 12px;
-
-  background-color: transparent;
-
-  color: #555;
-
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  padding: 1rem 2rem;
+  border-radius: 16px;
+  color: var(--dash-text);
   font-weight: 600;
-
-  font-size: 0.95rem;
-
+  font-size: 1rem;
   cursor: pointer;
-
-  transition: all 0.25s ease;
-
-  text-align: center;
-
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
-
-
 
 .dash-nav-btn:hover {
-
-  background-color: #f0e9ff;
-
-  color: var(--dash-primary);
-
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
-
-
 .dash-nav-btn.active {
-
-  background-color: var(--dash-primary);
-
+  background: var(--dash-primary);
   color: #fff;
-
-  box-shadow: 0 4px 15px rgba(140, 82, 255, 0.3);
-
+  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.3);
+  border-color: transparent;
 }
 
 
@@ -797,4 +1002,35 @@
 
   }
 
+}
+
+/* Make "Khoá học của tôi" header consistent with hero subtitle */
+.dash-courses__header h2 {
+  font-weight: 700;
+  font-size: clamp(1.5rem, 3vw, 1.75rem);
+  margin: 0;
+}
+
+/* Container for the course list to position the loading overlay correctly */
+.course-list-container {
+  position: relative;
+  min-height: 300px;
+  /* Give it a minimum height so the loader is visible */
+}
+
+/* Loading overlay for the course grid */
+.course-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+  /* Ensure it's above the course cards */
+  border-radius: 24px;
+  font-weight: 600;
+  color: var(--dash-text);
+  font-size: 1.1rem;
 }

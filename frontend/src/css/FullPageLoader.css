@@ -1,0 +1,83 @@
+.fullpage-loader-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: all; /* Block clicks on background */
+}
+
+.fullpage-loader-backdrop > * {
+  pointer-events: auto;
+}
+
+/* Updated padding to reduce spacing */
+.fullpage-loader-card {
+  background: rgba(18, 10, 53, 0.85);
+  border-radius: 1.5rem;
+  padding: 1.5rem 2rem;
+  max-width: 480px;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.65);
+  text-align: center;
+  color: #ffffff;
+  font-family: 'Be Vietnam Pro', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.fullpage-loader-card > * {
+  margin: 0 !important;
+}
+
+.fullpage-loader-gif-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  line-height: 0;
+}
+
+.fullpage-loader-gif {
+  width: 280px;
+  height: 280px;
+  object-fit: contain;
+  display: block;
+  align-self: center;
+}
+
+.fullpage-loader-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.fullpage-loader-text {
+  font-size: 1rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.92);
+  margin-bottom: 0.5rem;
+}
+
+.fullpage-loader-subtext {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+@media (max-width: 640px) {
+  .fullpage-loader-card {
+    padding: 2rem 1.75rem;
+  }
+
+  .fullpage-loader-title {
+    font-size: 1.25rem;
+  }
+}
+

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { testApi, testAttemptApi } from '../api/backendApi';
 import StartTestModal from '../components/StartTestModal'; // Re-import StartTestModal
 import { HighlightProvider } from '../contexts/HighlightContext';
 import TestPageContent from '../components/TestPageContent'; // Import the new component
+import FullPageLoader from '../components/FullPageLoader';
 
 import '../css/TestPage.css';
 
@@ -19,6 +21,7 @@ const TestPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // --- UI State ---
     const [displayPartIndex, setDisplayPartIndex] = useState(0);
@@ -28,21 +31,37 @@ const TestPage = () => {
     
     // --- Listening Test State ---
     const audioPlayerRefs = useRef([]);
+    const isSubmittingRef = useRef(false);
     const [isAutoplay, setIsAutoplay] = useState(true);
     const [activeAudioIndex, setActiveAudioIndex] = useState(-1); // -1: none, 0-3: part 1-4
 
     // --- Submission Logic ---
     const handleFinalSubmit = useCallback(async () => {
-        if (!attempt) return;
+        if (!attempt || isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
         setIsConfirmModalOpen(false);
         try {
-            setLoading(true);
-            const result = await testAttemptApi.submitAttempt(attempt.id, answers);
+            setIsSubmitting(true);
+            // Normalize answers so that backend always receives string values (Map<Long, String>).
+            // Some question types (e.g., MULTIPLE_CHOICE_MULTIPLE_ANSWERS) store answers as arrays.
+            const normalizedAnswers = Object.entries(answers || {}).reduce((acc, [questionId, value]) => {
+                if (Array.isArray(value)) {
+                    // For now, send the first selected option as the answer string for this question.
+                    // Backend compares a single string value against the list of correct options.
+                    acc[questionId] = value[0] || '';
+                } else {
+                    acc[questionId] = value;
+                }
+                return acc;
+            }, {});
+
+            const result = await testAttemptApi.submitAttempt(attempt.id, normalizedAnswers);
             navigate(`/test/review/${result.data.attemptId}`);
         } catch (err) {
             setError('Failed to submit test. Please try again.');
         } finally {
-            setLoading(false);
+            setIsSubmitting(false);
+            isSubmittingRef.current = false;
         }
     }, [attempt, answers, navigate]);
 
@@ -115,13 +134,33 @@ const TestPage = () => {
         );
     }
 
-    if (loading && !attempt) return <div className="loading-screen">Loading test...</div>;
     if (error) return <div className="error-message">{error}</div>;
-    if (testData.length === 0) return <div className="loading-screen">No test data found.</div>; // Changed from !displayedPart
+    if (!loading && !attempt && testData.length === 0) return <div className="loading-screen">No test data found.</div>; // Changed from !displayedPart
 
     return (
-        <HighlightProvider>
-            <TestPageContent
+        <>
+            <AnimatePresence>
+                {(loading && !attempt) && (
+                    <FullPageLoader
+                        key="loader"
+                        message="Đang tải đề thi và khởi tạo bài làm..."
+                        subMessage="Vui lòng chờ trong giây lát, hệ thống đang chuẩn bị bài test cho bạn."
+                    />
+                )}
+            </AnimatePresence>
+
+            {(testData.length > 0 || attempt) && (
+                <HighlightProvider>
+                    <AnimatePresence>
+                        {isSubmitting && (
+                            <FullPageLoader
+                                key="submitting-loader"
+                                message="Đang nộp bài và chấm điểm..."
+                                subMessage="Vui lòng không đóng trang trong khi hệ thống xử lý bài làm của bạn."
+                            />
+                        )}
+                    </AnimatePresence>
+                    <TestPageContent
                 testStatus={testStatus}
                 setTestStatus={setTestStatus}
                 testData={testData}
@@ -129,6 +168,7 @@ const TestPage = () => {
                 answers={answers}
                 setAnswers={setAnswers}
                 loading={loading}
+                isSubmitting={isSubmitting}
                 error={error}
                 isConfirmModalOpen={isConfirmModalOpen}
                 setIsConfirmModalOpen={setIsConfirmModalOpen}
@@ -145,7 +185,9 @@ const TestPage = () => {
                 navigate={navigate}
                 handleFinalSubmit={handleFinalSubmit}
             />
-        </HighlightProvider>
+                </HighlightProvider>
+            )}
+        </>
     );
 };
 

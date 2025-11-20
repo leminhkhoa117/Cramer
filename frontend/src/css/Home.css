@@ -1,11 +1,10 @@
 /* E:\IT and Computer Knowledges\Cramer\frontend\src\css\Home.css */
 
 .home-page .container {
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  box-sizing: border-box;
 }
 
 /* Hero Section */
@@ -13,7 +12,8 @@
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
-  padding: 3rem 0; /* Reduced padding */
+  padding: 3rem 0;
+  /* Reduced padding */
   position: relative;
 }
 
@@ -51,10 +51,12 @@
 .home-hero__subtitle {
   font-size: 1.25rem;
   line-height: 1.6;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* Even stronger shadow for max contrast */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  /* Even stronger shadow for max contrast */
   margin-bottom: 2rem;
   max-width: 500px;
-  color: white; /* Override global 'p' tag style */
+  color: white;
+  /* Override global 'p' tag style */
 }
 
 .home-hero__actions {
@@ -89,7 +91,7 @@
 
 .home-hero .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
 .home-hero .btn-secondary {
@@ -115,7 +117,8 @@
   background: linear-gradient(140deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-radius: 24px; /* Increased */
+  border-radius: 24px;
+  /* Increased */
   padding: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
@@ -124,7 +127,8 @@
 .search-box__title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: white; /* Changed */
+  color: white;
+  /* Changed */
   text-align: center;
   margin-bottom: 1.5rem;
 }
@@ -136,11 +140,14 @@
 .search-form .form-control {
   width: 100%;
   padding: 0.85rem 1rem;
-  border-radius: 12px; /* Increased */
+  border-radius: 12px;
+  /* Increased */
   border: 1px solid rgba(255, 255, 255, 0.3);
-  background-color: rgba(0, 0, 0, 0.2); /* Changed */
+  background-color: rgba(0, 0, 0, 0.2);
+  /* Changed */
   font-size: 0.95rem;
-  color: white; /* Changed */
+  color: white;
+  /* Changed */
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -150,7 +157,8 @@
 
 .search-form .form-control:focus {
   outline: none;
-  border-color: #a78bfa; /* Lighter purple for focus */
+  border-color: #a78bfa;
+  /* Lighter purple for focus */
   box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.25);
 }
 
@@ -173,11 +181,14 @@
 .search-form .btn-submit {
   width: 100%;
   padding: 0.85rem;
-  border-radius: 12px; /* Increased */
+  border-radius: 12px;
+  /* Increased */
   border: none;
   background: white;
-  color: #7c3aed; /* Changed */
-  font-weight: 700; /* Bolder */
+  color: #7c3aed;
+  /* Changed */
+  font-weight: 700;
+  /* Bolder */
   font-size: 1rem;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -229,7 +240,7 @@
   padding: 2.5rem;
   text-align: center;
   transition: all 0.4s ease;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
   position: relative;
   overflow: hidden;
   color: white;
@@ -237,16 +248,18 @@
 
 .feature-card:hover {
   transform: translateY(-12px) scale(1.03);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 }
 
 /* Individual card gradients */
 .features-grid .feature-card:nth-child(1) {
   background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
 }
+
 .features-grid .feature-card:nth-child(2) {
   background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
 }
+
 .features-grid .feature-card:nth-child(3) {
   background: linear-gradient(135deg, #fb923c 0%, #f59e0b 100%);
 }
@@ -304,6 +317,7 @@
   .home-hero__title {
     font-size: 2.8rem;
   }
+
   .search-form__row {
     flex-direction: column;
   }

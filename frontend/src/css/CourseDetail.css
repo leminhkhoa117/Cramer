@@ -1,67 +1,260 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --detail-bg: #f8fafc;
+    --detail-text: #1f2937;
+    --detail-primary: #7c3aed;
+    --detail-accent: #27afdb;
+    --glass-card-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.6);
+}
+
 .course-detail-page {
-    padding: 2rem 0;
-    background-color: #f9fafb;
+    min-height: 100vh;
+    background-color: var(--detail-bg);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    padding-bottom: 4rem;
+}
+
+/* Banner Section */
+.course-detail-banner {
+    position: relative;
+    padding: 5rem 0 6rem;
+    background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 50%, #7c3aed 100%);
+    color: white;
+    margin-bottom: -3rem; /* Overlap effect */
+    overflow: hidden;
+}
+
+.course-detail-banner__overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(39, 175, 219, 0.2) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+/* Shared Container for Alignment */
+.course-container {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.course-detail-banner .course-container {
+    z-index: 2;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    transition: color 0.2s ease;
+    font-size: 0.95rem;
+}
+
+.back-link:hover {
+    color: white;
 }
 
 .course-detail-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 2rem;
-    text-align: center;
-    color: #374151;
+    font-size: 3rem;
+    font-weight: 800;
+    margin: 0 0 1rem;
+    letter-spacing: -0.02em;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
+.course-detail-subtitle {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.9);
+    max-width: 600px;
+    line-height: 1.6;
+}
+
+/* Content Container */
+.course-content-container {
+    z-index: 10;
+}
+
+/* Grid Layout */
 .tests-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    width: 100%; /* Ensure grid doesn't overflow container */
+}
+
+@media (min-width: 768px) {
+    .tests-grid {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns as requested */
+    }
+}
+
+/* Test Card */
+.test-card {
+    background: var(--glass-card-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
     gap: 1.5rem;
 }
 
-.test-card {
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    padding: 1.5rem;
-    transition: all 0.2s ease-in-out;
+.test-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(124, 58, 237, 0.15);
+    background: white;
+    border-color: white;
 }
 
-.test-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+.test-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .test-card-title {
     font-size: 1.5rem;
-    font-weight: 600;
-    margin-top: 0;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 0.75rem;
+    font-weight: 700;
+    color: var(--detail-text);
+    margin: 0;
 }
 
+.test-card-badge {
+    background: rgba(124, 58, 237, 0.1);
+    color: var(--detail-primary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Skills List */
 .test-card-skills {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 1280px) {
+    .test-card-skills {
+        grid-template-columns: 1fr 1fr; /* 2x2 skills on large screens */
+    }
 }
 
 .test-card-skill-link {
-    display: block;
+    display: flex;
+    align-items: center;
     padding: 0.75rem 1rem;
-    background-color: #f3f4f6;
-    border-radius: 6px;
+    background: #f8fafc;
+    border: 1px solid transparent;
+    border-radius: 12px;
     text-decoration: none;
-    color: #4b5563;
-    font-weight: 500;
+    color: var(--detail-text);
     transition: all 0.2s ease;
 }
 
 .test-card-skill-link:hover {
-    background-color: #7c3aed;
-    color: #fff;
+    background: white;
+    border-color: var(--detail-primary);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
+    transform: translateX(4px);
+}
+
+.skill-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    margin-right: 1rem;
+    font-size: 1rem;
+}
+
+/* Icon Colors */
+.text-blue-500 { color: #3b82f6; background: #eff6ff; }
+.text-red-500 { color: #ef4444; background: #fef2f2; }
+.text-yellow-500 { color: #f59e0b; background: #fffbeb; }
+.text-green-500 { color: #10b981; background: #ecfdf5; }
+
+.skill-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.skill-name {
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.2;
+}
+
+.skill-meta {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+    margin-top: 0.2rem;
+}
+
+.skill-action {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--detail-primary);
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.test-card-skill-link:hover .skill-action {
+    opacity: 1;
+    transform: translateX(0);
 }
 
 .course-detail-error {
-    color: #ef4444;
     text-align: center;
+    color: #ef4444;
+    font-weight: 600;
+    padding: 2rem;
+    background: #fef2f2;
+    border-radius: 12px;
+}
+
+.no-tests-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem;
+    color: #64748b;
+    font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .course-detail-title {
+        font-size: 2rem;
+    }
+    
+    .course-detail-banner {
+        padding: 4rem 0 5rem;
+    }
+    
+    .tests-grid {
+        grid-template-columns: 1fr;
+    }
 }

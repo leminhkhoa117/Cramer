@@ -10,7 +10,7 @@ public class DashboardSummaryDTO {
     private List<RecentActivityDTO> recentAttempts;
     private List<SectionDTO> enrolledSections;
     private List<SkillSummaryDTO> skillSummary;
-    private List<CourseProgressDTO> courseProgress;
+    private PageDTO<CourseProgressDTO> courseProgress;
     private List<DashboardGoalDTO> goals;
 
     public ProfileDTO getProfile() {
@@ -59,14 +59,11 @@ public class DashboardSummaryDTO {
         this.skillSummary = skillSummary;
     }
 
-    public List<CourseProgressDTO> getCourseProgress() {
-        if (courseProgress == null) {
-            courseProgress = new ArrayList<>();
-        }
+    public PageDTO<CourseProgressDTO> getCourseProgress() {
         return courseProgress;
     }
 
-    public void setCourseProgress(List<CourseProgressDTO> courseProgress) {
+    public void setCourseProgress(PageDTO<CourseProgressDTO> courseProgress) {
         this.courseProgress = courseProgress;
     }
 
