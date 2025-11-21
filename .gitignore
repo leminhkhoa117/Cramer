@@ -47,4 +47,3 @@ coverage/
 
 .gemini/
 gha-creds-*.json
-frontend/pictures/
