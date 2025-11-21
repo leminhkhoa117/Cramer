@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import GoalModal from '../components/GoalModal';
 import FilterModal from '../components/FilterModal';
-import heroFallback from '../pictures/cambridge-ielts-17.avif';
+
 import '../css/Dashboard.css';
 import '../css/FilterModal.css';
 import ProgressChart from '../components/ProgressChart';
@@ -213,7 +213,6 @@ export default function Dashboard() {
     return {
       welcomeMessage: `Chào mừng, ${username}!`,
       tagline: 'Mục tiêu của tôi', // Keep it consistent
-      backgroundImage: heroFallback,
     };
   }, [profile?.username, summary?.profile?.username]);
 
@@ -267,7 +266,7 @@ export default function Dashboard() {
       {summary && (
         <div className="dash">
           {/* Hero */}
-          <section className="dash-hero" style={{ backgroundImage: `url(${heroData.backgroundImage})` }}>
+          <section className="dash-hero">
             <div className="dash-hero__overlay" aria-hidden="true" />
             <div className="container">
               <h1 className="dash-hero__title">{heroData.welcomeMessage}</h1>
@@ -424,7 +423,7 @@ export default function Dashboard() {
                                 }}
                               >
                                 <div className="dash-course-card__image-container">
-                                  <img src={heroFallback} alt={formatCourseSeries(course)} className="dash-course-card__image" />
+                                  <div className="dash-course-card__image-placeholder" />
                                 </div>
                                 <div className="dash-course-card__content">
                                   <h3 className="dash-course-card__title">{formatCourseSeries(course)}</h3>

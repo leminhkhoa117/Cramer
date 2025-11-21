@@ -4,7 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import { courseApi } from '../api/backendApi';
 import FilterModal from '../components/FilterModal';
 import './../css/Courses.css';
-import heroFallback from '../pictures/cambridge-ielts-17.avif';
+
 import { FaSearch } from 'react-icons/fa';
 import FullPageLoader from '../components/FullPageLoader';
 import Pagination from '../components/Pagination';
@@ -156,7 +156,7 @@ export default function Courses() {
                                         onMouseMove={handleMouseMove}
                                     >
                                         <div className="new-course-card__image-container">
-                                            <img src={heroFallback} alt={formatCourseName(courseName)} className="new-course-card__image" />
+                                            <div className="new-course-card__image-placeholder" />
                                         </div>
                                         <div className="new-course-card__content">
                                             <div className="new-course-card__header">
