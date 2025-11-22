@@ -18,13 +18,15 @@ public class CourseProgressDTO {
     private double completionRate; // 0-1
     private String status;
     private Double bandScore;
+    private java.util.List<AttemptHistoryDTO> history;
 
     public CourseProgressDTO() {
     }
 
     public CourseProgressDTO(Long attemptId, String examSource, Integer testNumber, String skill,
             int totalQuestions, int answersAttempted, int correctAnswers,
-            OffsetDateTime lastAttempt, double completionRate, String status, Double bandScore) {
+            OffsetDateTime lastAttempt, double completionRate, String status, Double bandScore,
+            java.util.List<AttemptHistoryDTO> history) {
         this.attemptId = attemptId;
         this.examSource = examSource;
         this.testNumber = testNumber;
@@ -36,6 +38,7 @@ public class CourseProgressDTO {
         this.completionRate = completionRate;
         this.status = status;
         this.bandScore = bandScore;
+        this.history = history;
     }
 
     public Long getAttemptId() {
@@ -125,5 +128,13 @@ public class CourseProgressDTO {
 
     public void setBandScore(Double bandScore) {
         this.bandScore = bandScore;
+    }
+
+    public java.util.List<AttemptHistoryDTO> getHistory() {
+        return history;
+    }
+
+    public void setHistory(java.util.List<AttemptHistoryDTO> history) {
+        this.history = history;
     }
 }

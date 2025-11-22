@@ -15,6 +15,7 @@ import '../css/ProgressChart.css';
 import '../css/SkillAnalysis.css';
 import FullPageLoader from '../components/FullPageLoader';
 import Pagination from '../components/Pagination';
+import AttemptHistoryDropdown from '../components/AttemptHistoryDropdown';
 
 // Helper functions moved to the top level
 const formatCourseSeries = (course) => `Cambridge ${course.examSource.substring(3)} - Test ${course.testNumber}`;
@@ -266,7 +267,7 @@ export default function Dashboard() {
       {summary && (
         <div className="dash">
           {/* Hero */}
-          <section className="dash-hero">
+          <section className="dash-hero" style={{ backgroundImage: 'url("https://thumbs.dreamstime.com/b/diverse-group-adult-students-having-conversations-english-speaking-club-diverse-group-people-talking-to-each-other-251584879.jpg")' }}>
             <div className="dash-hero__overlay" aria-hidden="true" />
             <div className="container">
               <h1 className="dash-hero__title">{heroData.welcomeMessage}</h1>
@@ -499,6 +500,14 @@ export default function Dashboard() {
                                       )}
                                     </div>
                                   </div>
+
+                                  <AttemptHistoryDropdown
+                                    history={course.history}
+                                    examSource={course.examSource}
+                                    testNumber={course.testNumber}
+                                    skill={course.skill}
+                                    onAttemptDeleted={fetchDashboardData}
+                                  />
                                 </div>
                               </article>
                             );

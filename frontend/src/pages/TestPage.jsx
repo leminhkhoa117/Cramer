@@ -1,39 +1,146 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { testApi, testAttemptApi } from '../api/backendApi';
-import StartTestModal from '../components/StartTestModal'; // Re-import StartTestModal
 import { HighlightProvider } from '../contexts/HighlightContext';
-import TestPageContent from '../components/TestPageContent'; // Import the new component
+import TestPageContent from '../components/TestPageContent';
 import FullPageLoader from '../components/FullPageLoader';
+import ResumeConfirmationModal from '../components/ResumeConfirmationModal';
 
 import '../css/TestPage.css';
+
+const INITIAL_READING_TIME = 3600;
 
 const TestPage = () => {
     const { source, testNum, skill } = useParams();
     const navigate = useNavigate();
-    
+
     // --- Core State ---
-    const [testStatus, setTestStatus] = useState('pending'); // pending, running, submitted
+    const [testStatus, setTestStatus] = useState('running'); // No longer need 'pending' state here
     const [testData, setTestData] = useState([]);
     const [attempt, setAttempt] = useState(null);
     const [answers, setAnswers] = useState({});
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // --- Resume Modal State ---
+    const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
+    const [inProgressAttempt, setInProgressAttempt] = useState(null);
+    const [isStartingNew, setIsStartingNew] = useState(false);
+
     // --- UI State ---
     const [displayPartIndex, setDisplayPartIndex] = useState(0);
-    
-    // --- Reading Test State ---
-    const [readingTimeLeft, setReadingTimeLeft] = useState(3600); 
-    
-    // --- Listening Test State ---
+
+    // --- Test-Specific State ---
+    const [readingTimeLeft, setReadingTimeLeft] = useState(INITIAL_READING_TIME);
     const audioPlayerRefs = useRef([]);
-    const isSubmittingRef = useRef(false);
     const [isAutoplay, setIsAutoplay] = useState(true);
-    const [activeAudioIndex, setActiveAudioIndex] = useState(-1); // -1: none, 0-3: part 1-4
+    const [activeAudioIndex, setActiveAudioIndex] = useState(-1);
+
+    const isSubmittingRef = useRef(false);
+
+    // --- Data Loading and Setup ---
+    const setupTestState = useCallback(async (attemptData, fullTestData) => {
+        setAttempt(attemptData);
+        setTestData(fullTestData);
+
+        // Load answers if resuming an in-progress attempt
+        if (attemptData.status === 'IN_PROGRESS' && attemptData.id) {
+            try {
+                const answersRes = await testAttemptApi.getAttemptAnswers(attemptData.id);
+                const loadedAnswers = answersRes.data.reduce((acc, answer) => {
+                    // Assuming userAnswer is the plain text answer
+                    acc[answer.questionId] = answer.userAnswer;
+                    return acc;
+                }, {});
+                setAnswers(loadedAnswers);
+            } catch (error) {
+                console.error("Failed to load previous answers:", error);
+                // Continue without answers, or show an error to the user
+            }
+        } else {
+            setAnswers({}); // Clear answers for new or completed attempts
+        }
+
+        if (attemptData.timeLeft !== null && attemptData.timeLeft < INITIAL_READING_TIME) {
+            setReadingTimeLeft(attemptData.timeLeft);
+        }
+        if (skill === 'listening' && attemptData.currentPart !== null && attemptData.currentPart > 0) {
+            setDisplayPartIndex(attemptData.currentPart);
+            setActiveAudioIndex(attemptData.currentPart);
+        } else if (skill === 'listening' && isAutoplay) {
+            setActiveAudioIndex(0);
+        }
+
+        setLoading(false);
+        setIsResumeModalOpen(false);
+    }, [skill, isAutoplay]);
+
+    useEffect(() => {
+        const fetchAndStartTest = async () => {
+            try {
+                setLoading(true);
+                const attemptRes = await testAttemptApi.startAttempt(source, testNum, skill);
+                const attemptData = attemptRes.data;
+
+                const isDirty = (attemptData.timeLeft !== null && attemptData.timeLeft < INITIAL_READING_TIME) || 
+                                (attemptData.currentPart !== null && attemptData.currentPart > 0) ||
+                                (attemptData.status === 'IN_PROGRESS' && attemptData.id && (await testAttemptApi.getAttemptAnswers(attemptData.id)).data.length > 0); // Check if answers exist
+
+                if (attemptData.status === 'IN_PROGRESS' && isDirty) {
+                    setInProgressAttempt(attemptData);
+                    setIsResumeModalOpen(true);
+                } else {
+                    const fullTestData = await testApi.getFullTest(source, testNum, skill);
+                    setupTestState(attemptData, fullTestData);
+                }
+            } catch (err) {
+                setError('Failed to load test data. Please try again later.');
+                setLoading(false);
+            }
+        };
+        fetchAndStartTest();
+    }, [source, testNum, skill, setupTestState]);
+
+
+    // --- Modal Handlers ---
+    const handleResume = async () => {
+        try {
+            setLoading(true);
+            const fullTestData = await testApi.getFullTest(source, testNum, skill);
+            await setupTestState(inProgressAttempt, fullTestData); // Use await here
+        } catch (err) {
+            setError('Failed to load test data for resuming.');
+            setLoading(false);
+        }
+    };
+
+    const handleStartNew = async () => {
+        try {
+            setIsStartingNew(true);
+            await testAttemptApi.cancelAttempt(inProgressAttempt.id);
+            
+            // Refetch a brand new attempt
+            const newAttemptRes = await testAttemptApi.startAttempt(source, testNum, skill);
+            const fullTestData = await testApi.getFullTest(source, testNum, skill);
+            
+            // Reset answers and other states for the new test
+            setAnswers({});
+            setReadingTimeLeft(INITIAL_READING_TIME);
+            setDisplayPartIndex(0);
+            setActiveAudioIndex(-1);
+
+            await setupTestState(newAttemptRes.data, fullTestData); // Use await here
+        } catch (err) {
+            setError('Failed to start a new test. Please try again.');
+            setLoading(false);
+        } finally {
+            setIsStartingNew(false);
+            setIsResumeModalOpen(false);
+        }
+    };
 
     // --- Submission Logic ---
     const handleFinalSubmit = useCallback(async () => {
@@ -42,16 +149,8 @@ const TestPage = () => {
         setIsConfirmModalOpen(false);
         try {
             setIsSubmitting(true);
-            // Normalize answers so that backend always receives string values (Map<Long, String>).
-            // Some question types (e.g., MULTIPLE_CHOICE_MULTIPLE_ANSWERS) store answers as arrays.
             const normalizedAnswers = Object.entries(answers || {}).reduce((acc, [questionId, value]) => {
-                if (Array.isArray(value)) {
-                    // For now, send the first selected option as the answer string for this question.
-                    // Backend compares a single string value against the list of correct options.
-                    acc[questionId] = value[0] || '';
-                } else {
-                    acc[questionId] = value;
-                }
+                acc[questionId] = Array.isArray(value) ? (value[0] || '') : value;
                 return acc;
             }, {});
 
@@ -67,7 +166,7 @@ const TestPage = () => {
 
     // --- Timer for Reading Test ---
     useEffect(() => {
-        if (testStatus !== 'running' || skill === 'listening') return; // Use skill directly
+        if (testStatus !== 'running' || skill !== 'reading' || loading) return;
         const timer = setInterval(() => {
             setReadingTimeLeft(prevTime => {
                 if (prevTime <= 1) {
@@ -79,112 +178,76 @@ const TestPage = () => {
             });
         }, 1000);
         return () => clearInterval(timer);
-    }, [testStatus, skill, handleFinalSubmit]); // Update dependencies
-
-    // --- Data Fetching ---
-    useEffect(() => {
-        if (testStatus !== 'running') return;
-
-        const fetchAndStartTest = async () => {
-            try {
-                setLoading(true);
-                const [data, attemptData] = await Promise.all([
-                    testApi.getFullTest(source, testNum, skill),
-                    testAttemptApi.startAttempt(source, testNum, skill)
-                ]);
-                setTestData(data);
-                setAttempt(attemptData.data);
-                if (skill === 'listening' && data.length > 0) { // Use skill directly
-                    audioPlayerRefs.current = data.map((_, i) => audioPlayerRefs.current[i] ?? React.createRef());
-                }
-                setError(null);
-                if (skill === 'listening' && isAutoplay) { // Use skill directly
-                    setActiveAudioIndex(0); // Trigger first audio
-                }
-            } catch (err) {
-                setError('Failed to load test data. Please try again later.');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchAndStartTest();
-    }, [testStatus, source, testNum, skill, isAutoplay]); // Update dependencies
+    }, [testStatus, skill, loading, handleFinalSubmit]);
 
     // --- Audio Logic ---
     useEffect(() => {
-        if (testStatus !== 'running' || skill !== 'listening' || activeAudioIndex === -1) return; // Use skill directly
-        
+        if (testStatus !== 'running' || skill !== 'listening' || activeAudioIndex === -1 || loading) return;
         const player = audioPlayerRefs.current[activeAudioIndex];
         if (player) {
             player.play();
         }
-    }, [activeAudioIndex, testStatus, skill]); // Update dependencies
+    }, [activeAudioIndex, testStatus, skill, loading]);
 
     // --- Render Logic ---
-
-    // --- Render Logic ---
-    if (testStatus === 'pending') {
+    if (loading && !isResumeModalOpen) {
         return (
-            <StartTestModal
-                isOpen={true}
-                onConfirm={() => setTestStatus('running')}
-                onClose={() => navigate('/courses')}
-                skill={skill}
+            <FullPageLoader
+                key="loader"
+                message="Đang tải đề thi và khởi tạo bài làm..."
+                subMessage="Vui lòng chờ trong giây lát, hệ thống đang chuẩn bị bài test cho bạn."
             />
         );
     }
-
+    
     if (error) return <div className="error-message">{error}</div>;
-    if (!loading && !attempt && testData.length === 0) return <div className="loading-screen">No test data found.</div>; // Changed from !displayedPart
 
     return (
         <>
+            <ResumeConfirmationModal
+                isOpen={isResumeModalOpen}
+                onResume={handleResume}
+                onStartNew={handleStartNew}
+                isStartingNew={isStartingNew}
+            />
+
             <AnimatePresence>
-                {(loading && !attempt) && (
+                {isSubmitting && (
                     <FullPageLoader
-                        key="loader"
-                        message="Đang tải đề thi và khởi tạo bài làm..."
-                        subMessage="Vui lòng chờ trong giây lát, hệ thống đang chuẩn bị bài test cho bạn."
+                        key="submitting-loader"
+                        message="Đang nộp bài và chấm điểm..."
+                        subMessage="Vui lòng không đóng trang trong khi hệ thống xử lý bài làm của bạn."
                     />
                 )}
             </AnimatePresence>
 
-            {(testData.length > 0 || attempt) && (
+            {attempt && testData.length > 0 && (
                 <HighlightProvider>
-                    <AnimatePresence>
-                        {isSubmitting && (
-                            <FullPageLoader
-                                key="submitting-loader"
-                                message="Đang nộp bài và chấm điểm..."
-                                subMessage="Vui lòng không đóng trang trong khi hệ thống xử lý bài làm của bạn."
-                            />
-                        )}
-                    </AnimatePresence>
                     <TestPageContent
-                testStatus={testStatus}
-                setTestStatus={setTestStatus}
-                testData={testData}
-                attempt={attempt}
-                answers={answers}
-                setAnswers={setAnswers}
-                loading={loading}
-                isSubmitting={isSubmitting}
-                error={error}
-                isConfirmModalOpen={isConfirmModalOpen}
-                setIsConfirmModalOpen={setIsConfirmModalOpen}
-                displayPartIndex={displayPartIndex}
-                setDisplayPartIndex={setDisplayPartIndex}
-                readingTimeLeft={readingTimeLeft}
-                audioPlayerRefs={audioPlayerRefs}
-                isAutoplay={isAutoplay}
-                setIsAutoplay={setIsAutoplay}
-                setActiveAudioIndex={setActiveAudioIndex}
-                source={source}
-                testNum={testNum}
-                skill={skill}
-                navigate={navigate}
-                handleFinalSubmit={handleFinalSubmit}
-            />
+                        testStatus={testStatus}
+                        setTestStatus={setTestStatus}
+                        testData={testData}
+                        attempt={attempt}
+                        answers={answers}
+                        setAnswers={setAnswers}
+                        loading={loading}
+                        isSubmitting={isSubmitting}
+                        error={error}
+                        isConfirmModalOpen={isConfirmModalOpen}
+                        setIsConfirmModalOpen={setIsConfirmModalOpen}
+                        displayPartIndex={displayPartIndex}
+                        setDisplayPartIndex={setDisplayPartIndex}
+                        readingTimeLeft={readingTimeLeft}
+                        audioPlayerRefs={audioPlayerRefs}
+                        isAutoplay={isAutoplay}
+                        setIsAutoplay={setIsAutoplay}
+                        setActiveAudioIndex={setActiveAudioIndex}
+                        source={source}
+                        testNum={testNum}
+                        skill={skill}
+                        navigate={navigate}
+                        handleFinalSubmit={handleFinalSubmit}
+                    />
                 </HighlightProvider>
             )}
         </>

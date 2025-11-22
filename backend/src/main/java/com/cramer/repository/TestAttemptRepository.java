@@ -23,4 +23,12 @@ public interface TestAttemptRepository extends JpaRepository<TestAttempt, Long> 
     );
 
     List<TestAttempt> findByUserId(UUID userId);
+
+    Optional<TestAttempt> findTopByUserIdAndExamSourceAndTestNumberAndSkillOrderByStartedAtDesc(
+            UUID userId, String examSource, String testNumber, String skill
+    );
+
+    List<TestAttempt> findByUserIdAndExamSourceAndTestNumberAndSkillOrderByStartedAtDesc(
+            UUID userId, String examSource, String testNumber, String skill
+    );
 }

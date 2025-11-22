@@ -153,8 +153,23 @@ export const testAttemptApi = {
   submitAttempt: (attemptId, answers) => {
     return apiClient.post(`/test-attempts/${attemptId}/submit`, { answers });
   },
+  saveProgress: (attemptId, { timeLeft, currentPart, answers }) => {
+    return apiClient.post(`/test-attempts/${attemptId}/progress`, { timeLeft, currentPart, answers });
+  },
   getTestReview: (attemptId) => {
     return apiClient.get(`/test-attempts/${attemptId}/review`);
+  },
+  cancelAttempt: (attemptId) => {
+    return apiClient.post(`/test-attempts/${attemptId}/cancel`);
+  },
+  resumeAttempt: (attemptId) => {
+    return apiClient.post(`/test-attempts/${attemptId}/resume`);
+  },
+  getAttemptAnswers: (attemptId) => {
+    return apiClient.get(`/test-attempts/${attemptId}/answers`);
+  },
+  deleteAttempt: (attemptId) => {
+    return apiClient.delete(`/test-attempts/${attemptId}`);
   },
 };
 

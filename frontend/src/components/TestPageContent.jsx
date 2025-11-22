@@ -1,3 +1,4 @@
+import ExitTestModal from './ExitTestModal';
 import React, { useMemo, useRef, useCallback, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import TestHeader from './TestHeader';
@@ -12,6 +13,7 @@ import ToggleSwitch from './ToggleSwitch';
 import TestLayout from './TestLayout';
 import useTextHighlighter from '../hooks/useTextHighlighter';
 import HighlightPopup from './HighlightPopup';
+import { testAttemptApi } from '../api/backendApi';
 
 import '../css/TestPage.css';
 import '../css/TestHeader.css';
@@ -53,11 +55,11 @@ const groupQuestionsFromLayout = (part) => {
     const groups = [];
     if (uniqueQuestions.length === 0) return groups;
 
-    let currentGroup = { 
-        type: uniqueQuestions[0].questionType, 
-        questions: [uniqueQuestions[0]], 
+    let currentGroup = {
+        type: uniqueQuestions[0].questionType,
+        questions: [uniqueQuestions[0]],
         startNum: uniqueQuestions[0].questionNumber,
-        partNumber: part.partNumber 
+        partNumber: part.partNumber
     };
     for (let i = 1; i < uniqueQuestions.length; i++) {
         const q = uniqueQuestions[i];
@@ -65,11 +67,11 @@ const groupQuestionsFromLayout = (part) => {
             currentGroup.questions.push(q);
         } else {
             groups.push(currentGroup);
-            currentGroup = { 
-                type: q.questionType, 
-                questions: [q], 
+            currentGroup = {
+                type: q.questionType,
+                questions: [q],
                 startNum: q.questionNumber,
-                partNumber: part.partNumber 
+                partNumber: part.partNumber
             };
         }
     }
@@ -86,6 +88,8 @@ const TestPageContent = ({
     source, testNum, skill, navigate, handleFinalSubmit
 }) => {
     const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+    const [isSavingProgress, setIsSavingProgress] = useState(false);
+
     // --- Highlighting State ---
     const highlightContainerRef = useRef(null); // Create ref for highlightable area
     const { popupPosition, applyHighlight, clearHighlight } = useTextHighlighter(highlightContainerRef); // Use the hook
@@ -117,7 +121,7 @@ const TestPageContent = ({
                 return <img src={displayedPart.displayContentUrl} alt="Test visual aid" className="listening-visual-content" />;
             }
             // The panel is collapsed, so this won't be visible, but it's good practice to have a fallback.
-            return null; 
+            return null;
         }
         // Reading test logic
         if (displayedPart) {
@@ -150,6 +154,46 @@ const TestPageContent = ({
         }, 100);
     };
 
+    // --- Exit Handlers ---
+    const handleExitRequest = useCallback(() => setIsExitModalOpen(true), []);
+
+    const handleAbort = useCallback(async () => {
+        if (!attempt) return;
+        try {
+            setIsSavingProgress(true); // Reuse the same saving state for simplicity
+            await testAttemptApi.cancelAttempt(attempt.id);
+            setIsExitModalOpen(false);
+            navigate('/dashboard');
+        } catch (error) {
+            console.error('Failed to cancel attempt:', error);
+            alert('Không thể huỷ lần làm bài. Vui lòng thử lại.');
+        } finally {
+            setIsSavingProgress(false);
+        }
+    }, [attempt, navigate]);
+
+    const handleSaveAndExit = useCallback(async () => {
+        if (!attempt) return;
+
+        try {
+            setIsSavingProgress(true);
+
+            // Determine what to save based on skill
+            const timeLeft = skill === 'reading' ? readingTimeLeft : null;
+            const currentPart = skill === 'listening' ? displayPartIndex : null;
+
+            await testAttemptApi.saveProgress(attempt.id, { timeLeft, currentPart, answers });
+
+            setIsExitModalOpen(false);
+            navigate('/dashboard');
+        } catch (error) {
+            console.error('Failed to save progress:', error);
+            alert('Không thể lưu tiến trình. Vui lòng thử lại.');
+        } finally {
+            setIsSavingProgress(false);
+        }
+    }, [attempt, skill, readingTimeLeft, displayPartIndex, navigate]);
+
     // --- Render Logic ---
     if (testStatus === 'pending') {
         return (
@@ -166,15 +210,9 @@ const TestPageContent = ({
     if (error) return <div className="error-message">{error}</div>;
     if (!displayedPart) return <div className="loading-screen">No test data found.</div>;
 
-    const handleExitRequest = useCallback(() => setIsExitModalOpen(true), []);
-    const handleExitConfirm = useCallback(() => {
-        setIsExitModalOpen(false);
-        navigate('/courses');
-    }, [navigate]);
-
     return (
         <div className={`test-page-wrapper ${isListeningTest ? 'listening-test-active' : ''}`}>
-            <TestHeader 
+            <TestHeader
                 testName={`IELTS ${skill.charAt(0).toUpperCase() + skill.slice(1)} Test - ${source.toUpperCase()} Test ${testNum}`}
                 timeLeft={isListeningTest ? null : readingTimeLeft}
                 onSubmit={() => setIsConfirmModalOpen(true)}
@@ -213,7 +251,7 @@ const TestPageContent = ({
                         animate="visible"
                     >
                         {questionGroups.map((group, index) => (
-                            <QuestionGroupRenderer 
+                            <QuestionGroupRenderer
                                 key={index}
                                 group={group}
                                 onAnswerChange={handleAnswerChange}
@@ -241,14 +279,13 @@ const TestPageContent = ({
                 <p>Bạn có chắc chắn muốn nộp bài không? Hành động này không thể hoàn tác.</p>
             </ConfirmationModal>
 
-            <ConfirmationModal
+            <ExitTestModal
                 isOpen={isExitModalOpen}
                 onClose={() => setIsExitModalOpen(false)}
-                onConfirm={handleExitConfirm}
-                title="Thoát bài thi"
-            >
-                <p>Bạn sẽ mất tiến độ hiện tại. Bạn vẫn muốn thoát chứ?</p>
-            </ConfirmationModal>
+                onAbort={handleAbort}
+                onSaveAndExit={handleSaveAndExit}
+                isSaving={isSavingProgress}
+            />
 
             <HighlightPopup
                 x={popupPosition.x}

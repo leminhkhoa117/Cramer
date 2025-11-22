@@ -1,14 +1,17 @@
 package com.cramer.service;
 
 import com.cramer.dto.AnswerSubmissionDTO;
+import com.cramer.dto.SaveProgressDTO;
 import com.cramer.dto.TestResultDTO;
 import com.cramer.dto.TestReviewDTO;
+import com.cramer.dto.UserAnswerDTO;
 import com.cramer.dto.QuestionReviewDTO;
 import com.cramer.entity.Question;
 import com.cramer.entity.TestAttempt;
 import com.cramer.entity.UserAnswer;
 import com.cramer.repository.QuestionRepository;
 import com.cramer.util.IeltsScoreConverter;
+import com.cramer.util.EntityMapper;
 import com.cramer.repository.TestAttemptRepository;
 import com.cramer.repository.UserAnswerRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -55,64 +58,149 @@ public class TestAttemptService {
 
     @Transactional
     public TestAttempt startOrGetAttempt(String source, String testNum, String skill, UUID userId) {
-        try {
-            org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
-            logger.info("🎯 Starting/Getting test attempt: userId={}, source={}, testNum={}, skill={}", 
+        final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
+        logger.info("--- NEW REQUEST ---");
+        logger.info("🎯 [1] Starting startOrGetAttempt: userId={}, source={}, testNum={}, skill={}", 
                         userId, source, testNum, skill);
-            
+        
+        try {
+            // Trim inputs for robustness
+            String trimmedSource = source != null ? source.trim() : null;
+            String trimmedTestNum = testNum != null ? testNum.trim() : null;
+            String trimmedSkill = skill != null ? skill.trim() : null;
+
             // Validate inputs
-            if (userId == null) {
-                throw new IllegalArgumentException("User ID cannot be null");
-            }
-            if (source == null || source.trim().isEmpty()) {
-                throw new IllegalArgumentException("Source cannot be null or empty");
-            }
-            if (testNum == null || testNum.trim().isEmpty()) {
-                throw new IllegalArgumentException("Test number cannot be null or empty");
-            }
-            if (skill == null || skill.trim().isEmpty()) {
-                throw new IllegalArgumentException("Skill cannot be null or empty");
-            }
+            if (userId == null) throw new IllegalArgumentException("User ID cannot be null");
+            if (trimmedSource == null || trimmedSource.isEmpty()) throw new IllegalArgumentException("Source cannot be null or empty");
+            if (trimmedTestNum == null || trimmedTestNum.isEmpty()) throw new IllegalArgumentException("Test number cannot be null or empty");
+            if (trimmedSkill == null || trimmedSkill.isEmpty()) throw new IllegalArgumentException("Skill cannot be null or empty");
             
-            Optional<TestAttempt> existingAttemptOpt = testAttemptRepository
-                    .findAndLockByUserIdAndExamSourceAndTestNumberAndSkill(userId, source, testNum, skill);
+            logger.info("🎯 [2] Finding latest attempt with: source={}, testNum={}, skill={}", trimmedSource, trimmedTestNum, trimmedSkill);
+            Optional<TestAttempt> latestAttemptOpt = testAttemptRepository
+                    .findTopByUserIdAndExamSourceAndTestNumberAndSkillOrderByStartedAtDesc(userId, trimmedSource, trimmedTestNum, trimmedSkill);
 
-            if (existingAttemptOpt.isPresent()) {
-                TestAttempt existingAttempt = existingAttemptOpt.get();
-                logger.info("✅ Found existing attempt with id={}", existingAttempt.getId());
+            if (latestAttemptOpt.isPresent()) {
+                TestAttempt latestAttempt = latestAttemptOpt.get();
+                logger.info("🎯 [3A] Found existing attempt. ID: {}, Status: {}", latestAttempt.getId(), latestAttempt.getStatus());
 
-                // If the test was completed, this is a retake. Reset the attempt.
-                if ("COMPLETED".equals(existingAttempt.getStatus())) {
-                    logger.info("🔄 Attempt was completed. Resetting for retake.");
-                    existingAttempt.setStatus("IN_PROGRESS");
-                    existingAttempt.setStartedAt(OffsetDateTime.now()); // Reset start time
-                    existingAttempt.setCompletedAt(null);
-                    existingAttempt.setScore(null);
-                    userAnswerRepository.deleteByAttemptId(existingAttempt.getId()); // Clear old answers
-                    return testAttemptRepository.save(existingAttempt);
+                if ("COMPLETED".equals(latestAttempt.getStatus()) || "CANCELLED".equals(latestAttempt.getStatus())) {
+                    logger.info("   -> Status is '{}'. Proceeding to create a new attempt.", latestAttempt.getStatus());
+                    return createNewAttempt(userId, trimmedSource, trimmedTestNum, trimmedSkill, logger);
                 }
                 
-                return existingAttempt;
+                logger.info("   -> Status is 'IN_PROGRESS'. Resuming this attempt.");
+                // Detached copy to prevent serialization issues
+                TestAttempt detachedAttempt = new TestAttempt();
+                detachedAttempt.setId(latestAttempt.getId());
+                detachedAttempt.setUserId(latestAttempt.getUserId());
+                detachedAttempt.setExamSource(latestAttempt.getExamSource());
+                detachedAttempt.setTestNumber(latestAttempt.getTestNumber());
+                detachedAttempt.setSkill(latestAttempt.getSkill());
+                detachedAttempt.setStatus(latestAttempt.getStatus());
+                detachedAttempt.setScore(latestAttempt.getScore());
+                detachedAttempt.setStartedAt(latestAttempt.getStartedAt());
+                detachedAttempt.setCompletedAt(latestAttempt.getCompletedAt());
+                detachedAttempt.setTimeLeft(latestAttempt.getTimeLeft());
+                detachedAttempt.setCurrentPart(latestAttempt.getCurrentPart());
+                logger.info("🎯 [4A] Returning detached copy of attempt ID: {}", detachedAttempt.getId());
+                return detachedAttempt;
             } else {
-                logger.info("📝 Creating new test attempt");
-                TestAttempt newAttempt = new TestAttempt();
-                newAttempt.setUserId(userId);
-                newAttempt.setExamSource(source);
-                newAttempt.setTestNumber(testNum);
-                newAttempt.setSkill(skill);
-                // The @CreatedDate annotation will set the startedAt timestamp automatically
-                TestAttempt saved = testAttemptRepository.save(newAttempt);
-                logger.info("✅ Created new attempt with id={}", saved.getId());
-                return saved;
+                logger.info("🎯 [3B] No existing attempt found. Proceeding to create a new attempt.");
+                return createNewAttempt(userId, trimmedSource, trimmedTestNum, trimmedSkill, logger);
             }
-        } catch (IllegalArgumentException e) {
-            throw e;
         } catch (Exception e) {
-            org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
-            logger.error("❌ Error in startOrGetAttempt: userId={}, source={}, testNum={}, skill={}", 
+            logger.error("❌ [ERROR] Unhandled exception in startOrGetAttempt: userId={}, source={}, testNum={}, skill={}", 
                         userId, source, testNum, skill, e);
             throw new RuntimeException("Failed to start/get test attempt: " + e.getMessage(), e);
         }
+    }
+
+    private TestAttempt createNewAttempt(UUID userId, String source, String testNum, String skill, org.slf4j.Logger logger) {
+        logger.info("   -> [Sub-Process] Inside createNewAttempt");
+        TestAttempt newAttempt = new TestAttempt();
+        newAttempt.setUserId(userId);
+        newAttempt.setExamSource(source);
+        newAttempt.setTestNumber(testNum);
+        newAttempt.setSkill(skill);
+        
+        logger.info("   -> Attempt object to be saved: userId={}, source={}, testNum={}, skill={}, status={}", 
+            newAttempt.getUserId(), newAttempt.getExamSource(), newAttempt.getTestNumber(), newAttempt.getSkill(), newAttempt.getStatus());
+
+        try {
+            TestAttempt savedAttempt = testAttemptRepository.save(newAttempt);
+            logger.info("   -> [SUCCESS] Successfully saved new attempt with ID: {}", savedAttempt.getId());
+            return savedAttempt;
+        } catch (Exception e) {
+            logger.error("   -> [FATAL] FAILED to save new TestAttempt in repository. Error: {}", e.getMessage(), e);
+            throw e; // Re-throw the exception to be caught by the main handler
+        }
+    }
+
+    private TestAttempt createNewAttempt(UUID userId, String source, String testNum, String skill) {
+        final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
+        return createNewAttempt(userId, source, testNum, skill, logger);
+    }
+
+    @Transactional
+    public void saveProgress(Long attemptId, SaveProgressDTO saveProgressDTO, UUID userId) {
+        final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
+        logger.info("🔄 Saving progress for attempt: attemptId={}, userId={}", attemptId, userId);
+
+        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found"));
+        
+        if (!attempt.getUserId().equals(userId)) {
+            throw new AccessDeniedException("User does not have permission to update this attempt.");
+        }
+
+        if (!"IN_PROGRESS".equals(attempt.getStatus())) {
+            throw new IllegalStateException("Cannot save progress for completed or cancelled test.");
+        }
+
+        // Update time and part
+        if (saveProgressDTO.getTimeLeft() != null) attempt.setTimeLeft(saveProgressDTO.getTimeLeft());
+        if (saveProgressDTO.getCurrentPart() != null) attempt.setCurrentPart(saveProgressDTO.getCurrentPart());
+        
+        // Save answers
+        if (saveProgressDTO.getAnswers() != null && !saveProgressDTO.getAnswers().isEmpty()) {
+            logger.info("   -> Saving {} answers for attempt {}", saveProgressDTO.getAnswers().size(), attemptId);
+            // Delete existing answers for this attempt to handle un-selected options
+            userAnswerRepository.deleteByAttemptId(attemptId);
+            entityManager.flush(); // Ensure delete happens before new inserts
+
+            List<UserAnswer> userAnswers = new ArrayList<>();
+            for (Map.Entry<Long, String> entry : saveProgressDTO.getAnswers().entrySet()) {
+                Long questionId = entry.getKey();
+                String answerText = entry.getValue();
+
+                if (answerText == null || answerText.trim().isEmpty()) {
+                    continue; // Skip empty answers
+                }
+
+                Question question = questionRepository.findById(questionId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Question not found with id: " + questionId));
+                
+                // Adapt the String answer to a JsonNode to maintain compatibility with downstream logic
+                ObjectNode answerNode = objectMapper.createObjectNode();
+                answerNode.put("value", answerText);
+
+                UserAnswer userAnswer = new UserAnswer();
+                userAnswer.setUserId(userId);
+                userAnswer.setAttempt(attempt);
+                userAnswer.setQuestion(question);
+                userAnswer.setAnswerContent(answerNode);
+                userAnswer.setUserAnswer(answerText);
+                // isCorrect is not set here, as it's an in-progress save, not a submission
+                userAnswers.add(userAnswer);
+            }
+            userAnswerRepository.saveAll(userAnswers);
+            logger.info("   -> Successfully saved {} user answers.", userAnswers.size());
+        } else {
+            logger.info("   -> No answers provided or answers map is empty. Skipping answer save.");
+        }
+
+        testAttemptRepository.save(attempt);
+        logger.info("✅ Successfully saved progress for attempt: attemptId={}", attemptId);
     }
 
     @Transactional
@@ -300,5 +388,92 @@ public class TestAttemptService {
         reviewDTO.setQuestions(questionReviews);
 
         return reviewDTO;
+    }
+
+    @Transactional
+    public void cancelAttempt(Long attemptId, UUID userId) {
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
+        logger.info("🔄 Cancelling test attempt: attemptId={}, userId={}", attemptId, userId);
+
+        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + attemptId));
+
+        if (!attempt.getUserId().equals(userId)) {
+            throw new AccessDeniedException("User does not have permission to cancel this attempt.");
+        }
+
+        if (!"IN_PROGRESS".equals(attempt.getStatus())) {
+            throw new IllegalStateException("Only in-progress attempts can be cancelled.");
+        }
+
+        attempt.setStatus("CANCELLED");
+        attempt.setCompletedAt(OffsetDateTime.now()); // Mark completion time as now
+        testAttemptRepository.save(attempt);
+
+        logger.info("✅ Successfully cancelled test attempt: attemptId={}", attemptId);
+    }
+
+    @Transactional
+    public void resumeAttempt(Long attemptId, UUID userId) {
+        final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
+        logger.info("🔄 Resuming test attempt: attemptId={}, userId={}", attemptId, userId);
+
+        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + attemptId));
+
+        if (!attempt.getUserId().equals(userId)) {
+            throw new AccessDeniedException("User does not have permission to resume this attempt.");
+        }
+
+        if (!"IN_PROGRESS".equals(attempt.getStatus())) {
+            throw new IllegalStateException("Only in-progress attempts can be resumed.");
+        }
+
+        // By updating the timestamp, this attempt becomes the "latest" one
+        attempt.setStartedAt(OffsetDateTime.now());
+        testAttemptRepository.save(attempt);
+
+        logger.info("✅ Successfully marked test attempt {} as latest for resuming.", attemptId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserAnswerDTO> getAnswersForAttempt(Long attemptId, UUID userId) {
+        final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
+        logger.info("🔍 Fetching answers for attempt: attemptId={}, userId={}", attemptId, userId);
+
+        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + attemptId));
+
+        if (!attempt.getUserId().equals(userId)) {
+            throw new AccessDeniedException("User does not have permission to view answers for this attempt.");
+        }
+
+        List<UserAnswer> userAnswers = userAnswerRepository.findByAttemptId(attemptId);
+        logger.info("   -> Found {} answers for attempt {}.", userAnswers.size(), attemptId);
+
+        return userAnswers.stream()
+                .map(EntityMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void deleteAttempt(Long attemptId, UUID userId) {
+        final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
+        logger.info("🗑️ Deleting test attempt: attemptId={}, userId={}", attemptId, userId);
+
+        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + attemptId));
+
+        if (!attempt.getUserId().equals(userId)) {
+            throw new AccessDeniedException("User does not have permission to delete this attempt.");
+        }
+
+        // First, delete all associated UserAnswers to avoid foreign key constraint violations
+        userAnswerRepository.deleteByAttemptId(attemptId);
+        logger.info("   -> Deleted all user answers for attemptId={}", attemptId);
+
+        // Then, delete the TestAttempt itself
+        testAttemptRepository.deleteById(attemptId);
+        logger.info("✅ Successfully deleted test attempt: attemptId={}", attemptId);
     }
 }

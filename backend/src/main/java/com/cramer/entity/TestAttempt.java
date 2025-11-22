@@ -36,6 +36,12 @@ public class TestAttempt {
     @Column(name = "completed_at")
     private OffsetDateTime completedAt;
 
+    @Column(name = "time_left")
+    private Integer timeLeft;
+
+    @Column(name = "current_part")
+    private Integer currentPart;
+
     // Constructors
     public TestAttempt() {
         this.startedAt = OffsetDateTime.now();
@@ -113,5 +119,21 @@ public class TestAttempt {
 
     public void setCompletedAt(OffsetDateTime completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public Integer getTimeLeft() {
+        return timeLeft;
+    }
+
+    public void setTimeLeft(Integer timeLeft) {
+        this.timeLeft = timeLeft;
+    }
+
+    public Integer getCurrentPart() {
+        return currentPart;
+    }
+
+    public void setCurrentPart(Integer currentPart) {
+        this.currentPart = currentPart;
     }
 }

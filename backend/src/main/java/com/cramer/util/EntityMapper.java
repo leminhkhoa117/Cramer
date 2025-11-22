@@ -109,7 +109,7 @@ public class EntityMapper {
      */
     public static UserAnswerDTO toDTO(UserAnswer userAnswer) {
         if (userAnswer == null) return null;
-        return new UserAnswerDTO(
+        UserAnswerDTO dto = new UserAnswerDTO(
                 userAnswer.getId(),
                 userAnswer.getAttempt() != null ? userAnswer.getAttempt().getUserId() : null,
                 userAnswer.getQuestion() != null ? userAnswer.getQuestion().getId() : null,
@@ -117,6 +117,8 @@ public class EntityMapper {
                 userAnswer.getSubmittedAt(),
                 userAnswer.getCorrect()
         );
+        dto.setUserAnswer(userAnswer.getUserAnswer()); // Also set the plain text answer
+        return dto;
     }
 
     /**

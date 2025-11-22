@@ -1,8 +1,10 @@
 package com.cramer.controller;
 
 import com.cramer.dto.AnswerSubmissionDTO;
+import com.cramer.dto.SaveProgressDTO;
 import com.cramer.dto.TestResultDTO;
 import com.cramer.dto.TestReviewDTO;
+import com.cramer.dto.UserAnswerDTO;
 import com.cramer.entity.TestAttempt;
 import com.cramer.service.TestAttemptService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -81,6 +84,75 @@ public class TestAttemptController {
         }
     }
 
+    @PostMapping("/{id}/progress")
+    public ResponseEntity<Void> saveProgress(
+            @PathVariable Long id,
+            @RequestBody SaveProgressDTO saveProgressDTO,
+            Authentication authentication) {
+        
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptController.class);
+        logger.info("📥 POST /api/test-attempts/{}/progress - attemptId={}, timeLeft={}, currentPart={}, answersCount={}", 
+                    id, saveProgressDTO.getTimeLeft(), saveProgressDTO.getCurrentPart(), 
+                    saveProgressDTO.getAnswers() != null ? saveProgressDTO.getAnswers().size() : 0);
+
+        if (authentication == null || authentication.getName() == null) {
+            throw new IllegalArgumentException("Authentication required");
+        }
+
+        UUID userId = UUID.fromString(authentication.getName());
+        testAttemptService.saveProgress(id, saveProgressDTO, userId);
+        
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<Void> cancelAttempt(@PathVariable Long id, Authentication authentication) {
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptController.class);
+        logger.info("📥 POST /api/test-attempts/{}/cancel - Received request", id);
+
+        if (authentication == null || authentication.getName() == null) {
+            throw new IllegalArgumentException("Authentication required");
+        }
+
+        UUID userId = UUID.fromString(authentication.getName());
+        testAttemptService.cancelAttempt(id, userId);
+        
+        logger.info("✅ Test attempt cancelled successfully: attemptId={}", id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/resume")
+    public ResponseEntity<Void> resumeAttempt(@PathVariable Long id, Authentication authentication) {
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptController.class);
+        logger.info("📥 POST /api/test-attempts/{}/resume - Received request", id);
+
+        if (authentication == null || authentication.getName() == null) {
+            throw new IllegalArgumentException("Authentication required");
+        }
+
+        UUID userId = UUID.fromString(authentication.getName());
+        testAttemptService.resumeAttempt(id, userId);
+        
+        logger.info("✅ Test attempt marked for resume successfully: attemptId={}", id);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{id}/answers")
+    public ResponseEntity<List<UserAnswerDTO>> getAttemptAnswers(@PathVariable Long id, Authentication authentication) {
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptController.class);
+        logger.info("📥 GET /api/test-attempts/{}/answers - Received request", id);
+
+        if (authentication == null || authentication.getName() == null) {
+            throw new IllegalArgumentException("Authentication required");
+        }
+
+        UUID userId = UUID.fromString(authentication.getName());
+        List<UserAnswerDTO> answers = testAttemptService.getAnswersForAttempt(id, userId);
+        
+        logger.info("✅ Successfully fetched {} answers for attemptId={}", answers.size(), id);
+        return ResponseEntity.ok(answers);
+    }
+
     @GetMapping("/{id}/review")
     public ResponseEntity<TestReviewDTO> getTestReview(@PathVariable Long id, Authentication authentication) {
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptController.class);
@@ -96,5 +168,21 @@ public class TestAttemptController {
         
         logger.info("✅ Successfully fetched test review: attemptId={}", id);
         return ResponseEntity.ok(reviewDTO);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteAttempt(@PathVariable Long id, Authentication authentication) {
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptController.class);
+        logger.info("📥 DELETE /api/test-attempts/{} - Received request", id);
+
+        if (authentication == null || authentication.getName() == null) {
+            throw new IllegalArgumentException("Authentication required");
+        }
+
+        UUID userId = UUID.fromString(authentication.getName());
+        testAttemptService.deleteAttempt(id, userId);
+        
+        logger.info("✅ Successfully deleted test attempt: attemptId={}", id);
+        return ResponseEntity.noContent().build();
     }
 }
