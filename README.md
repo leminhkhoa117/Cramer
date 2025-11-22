@@ -42,9 +42,9 @@ Cramer is an English practice platform that delivers curated IELTS-style tests i
 - ✅ Google Chrome
 - ✅ Mozilla Firefox  
 - ✅ Zen Browser
-- ⚠️ Microsoft Edge (requires cookie settings adjustment - see [EDGE_BROWSER_FIX.md](EDGE_BROWSER_FIX.md))
+- ⚠️ Microsoft Edge (requires cookie settings adjustment)
 
-**Note:** If you see "Initializing Application..." stuck on Edge, please follow the [Edge Browser Fix Guide](EDGE_BROWSER_FIX.md).
+
 
 ## Roadmap
 
