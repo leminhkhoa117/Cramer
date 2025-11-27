@@ -1,6 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
-import { FiUploadCloud } from 'react-icons/fi';
+import { FiUploadCloud, FiTrash2, FiRefreshCw } from 'react-icons/fi';
+import 'react-image-crop/dist/ReactCrop.css';
+import { showErrorToast } from '../utils/toast';
 
 // Helper to get the cropped image
 function getCroppedImg(image, crop, fileName) {
@@ -31,23 +33,19 @@ function getCroppedImg(image, crop, fileName) {
             }
             blob.name = fileName;
             resolve(blob);
-        }, 'image/jpeg');
+        }, 'image/jpeg', 0.95);
     });
 }
 
-
-const HeroUploadTab = ({ onFileCropped }) => {
+const CroppableImageTab = ({ onFileCropped, aspectRatio = 1, minWidth = 100, maxSizeMB = 5 }) => {
     const [imgSrc, setImgSrc] = useState('');
     const [crop, setCrop] = useState();
     const [completedCrop, setCompletedCrop] = useState();
+    const [isProcessing, setIsProcessing] = useState(false);
     const imgRef = useRef(null);
     const fileInputRef = useRef(null);
 
-    // Recommended aspect ratio for the hero image
-    const aspect = 16 / 5;
-
     function onImageLoad(e) {
-        imgRef.current = e.currentTarget;
         const { width, height } = e.currentTarget;
         const crop = centerCrop(
             makeAspectCrop(
@@ -55,7 +53,7 @@ const HeroUploadTab = ({ onFileCropped }) => {
                     unit: '%',
                     width: 90,
                 },
-                aspect,
+                aspectRatio,
                 width,
                 height
             ),
@@ -67,28 +65,62 @@ const HeroUploadTab = ({ onFileCropped }) => {
 
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files.length > 0) {
-            setCrop(undefined); // Makes crop preview update between images
+            const file = e.target.files[0];
+
+            // 1. Validate Size
+            if (file.size > maxSizeMB * 1024 * 1024) {
+                showErrorToast(`File quá lớn! Vui lòng chọn ảnh dưới ${maxSizeMB}MB.`);
+                return;
+            }
+
+            setIsProcessing(true);
+            setCrop(undefined);
+
             const reader = new FileReader();
-            reader.addEventListener('load', () => setImgSrc(reader.result.toString() || ''));
-            reader.readAsDataURL(e.target.files[0]);
+            reader.addEventListener('load', () => {
+                // 2. Optimize: Resize huge images before setting state
+                const img = new Image();
+                img.src = reader.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let { width, height } = img;
+                    const MAX_WIDTH = 1500; // Limit width for performance
+
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    setImgSrc(canvas.toDataURL('image/jpeg', 0.9));
+                    setIsProcessing(false);
+                };
+            });
+            reader.readAsDataURL(file);
         }
     };
-    
+
     const handleCrop = async () => {
         if (completedCrop?.width && completedCrop?.height && imgRef.current) {
             const croppedImageBlob = await getCroppedImg(
                 imgRef.current,
                 completedCrop,
-                'hero-background.jpg'
+                'cropped-image.jpg'
             );
             onFileCropped(croppedImageBlob);
         }
     };
-    
-    // This effect calls the handleCrop whenever the user stops dragging the crop area
-    // This provides a "live review"
-    React.useEffect(() => {
-        handleCrop();
+
+    // Live review
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            handleCrop();
+        }, 100); // Debounce slightly
+        return () => clearTimeout(timer);
     }, [completedCrop]);
 
 
@@ -98,16 +130,20 @@ const HeroUploadTab = ({ onFileCropped }) => {
                 <>
                     <input
                         type="file"
-                        accept="image/*"
+                        accept="image/png, image/jpeg, image/jpg"
                         onChange={handleFileChange}
                         ref={fileInputRef}
                         hidden
                     />
                     <div className="upload-drop-zone" onClick={() => fileInputRef.current.click()}>
-                         <div className="upload-placeholder">
-                            <FiUploadCloud size={50} />
-                            <p>Tải lên ảnh bìa của bạn</p>
-                            <span>Ảnh sẽ được cắt theo tỷ lệ 16:5</span>
+                        <div className="upload-placeholder">
+                            {isProcessing ? (
+                                <FiRefreshCw className="animate-spin" size={40} />
+                            ) : (
+                                <FiUploadCloud size={50} />
+                            )}
+                            <p>Tải lên hình ảnh</p>
+                            <span>(Tối đa {maxSizeMB}MB, JPG/PNG)</span>
                         </div>
                     </div>
                 </>
@@ -118,19 +154,19 @@ const HeroUploadTab = ({ onFileCropped }) => {
                         crop={crop}
                         onChange={(_, percentCrop) => setCrop(percentCrop)}
                         onComplete={(c) => setCompletedCrop(c)}
-                        aspect={aspect}
-                        minWidth={200}
+                        aspect={aspectRatio}
+                        minWidth={minWidth}
                     >
                         <img
                             ref={imgRef}
                             alt="Crop me"
                             src={imgSrc}
                             onLoad={onImageLoad}
-                            style={{ maxHeight: '350px' }}
+                            style={{ maxHeight: '350px', maxWidth: '100%' }}
                         />
                     </ReactCrop>
-                     <button onClick={() => setImgSrc('')} className="btn-change-image">
-                        Chọn ảnh khác
+                    <button onClick={() => { setImgSrc(''); onFileCropped(null); }} className="btn-change-image">
+                        <FiTrash2 /> Chọn ảnh khác
                     </button>
                 </div>
             )}
@@ -138,4 +174,4 @@ const HeroUploadTab = ({ onFileCropped }) => {
     );
 };
 
-export default HeroUploadTab;
+export default CroppableImageTab;

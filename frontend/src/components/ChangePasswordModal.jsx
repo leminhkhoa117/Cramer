@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiKey, FiEye, FiEyeOff } from 'react-icons/fi';
 import { supabase } from '../api/supabaseClient';
 import { showSuccessToast, showErrorToast } from '../utils/toast';
+import { useAuth } from '../contexts/AuthContext';
 import '../css/ChangePasswordModal.css';
 
 const modalVariants = {
@@ -12,16 +13,19 @@ const modalVariants = {
 };
 
 const ChangePasswordModal = ({ isOpen, onClose }) => {
+    const { user } = useAuth();
+    const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isUpdating, setIsUpdating] = useState(false);
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const handleUpdatePassword = async (e) => {
         e.preventDefault();
         if (newPassword.length < 6) {
-            showErrorToast('Mật khẩu phải có ít nhất 6 ký tự.');
+            showErrorToast('Mật khẩu mới phải có ít nhất 6 ký tự.');
             return;
         }
         if (newPassword !== confirmPassword) {
@@ -31,18 +35,27 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
 
         setIsUpdating(true);
         try {
-            const { error } = await supabase.auth.updateUser({
+            // 1. Re-authenticate with current password
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email: user.email,
+                password: currentPassword,
+            });
+
+            if (signInError) {
+                throw new Error('Mật khẩu hiện tại không đúng.');
+            }
+
+            // 2. Update password
+            const { error: updateError } = await supabase.auth.updateUser({
                 password: newPassword,
             });
 
-            if (error) {
-                throw error;
+            if (updateError) {
+                throw updateError;
             }
 
             showSuccessToast('Cập nhật mật khẩu thành công!');
-            setNewPassword('');
-            setConfirmPassword('');
-            onClose();
+            handleClose();
         } catch (error) {
             console.error('Error updating password:', error);
             showErrorToast(error.message || 'Lỗi khi cập nhật mật khẩu.');
@@ -52,6 +65,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
     };
 
     const handleClose = () => {
+        setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
         onClose();
@@ -83,8 +97,25 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
                                     <FiX />
                                 </button>
                             </div>
-                            
+
                             <div className="cp-modal-body">
+                                <div className="form-group-pw">
+                                    <label htmlFor="currentPassword">Mật khẩu hiện tại</label>
+                                    <div className="password-input-wrapper">
+                                        <input
+                                            id="currentPassword"
+                                            type={showCurrentPassword ? 'text' : 'password'}
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                            required
+                                            placeholder="••••••••"
+                                        />
+                                        <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)}>
+                                            {showCurrentPassword ? <FiEyeOff /> : <FiEye />}
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div className="form-group-pw">
                                     <label htmlFor="newPassword">Mật khẩu mới</label>
                                     <div className="password-input-wrapper">
@@ -102,9 +133,10 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
                                         </button>
                                     </div>
                                 </div>
+
                                 <div className="form-group-pw">
                                     <label htmlFor="confirmPassword">Xác nhận mật khẩu mới</label>
-                                     <div className="password-input-wrapper">
+                                    <div className="password-input-wrapper">
                                         <input
                                             id="confirmPassword"
                                             type={showConfirmPassword ? 'text' : 'password'}
