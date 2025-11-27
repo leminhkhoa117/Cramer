@@ -6,7 +6,7 @@
 .attempt-history-dropdown__toggle {
     width: 100%;
     padding: 0.75rem 1rem;
-    background: rgba(108, 92, 231, 0.08);
+    background: #ffffff;
     border: 1px solid rgba(108, 92, 231, 0.2);
     border-radius: 12px;
     display: flex;
@@ -21,8 +21,10 @@
 }
 
 .attempt-history-dropdown__toggle:hover {
-    background: rgba(108, 92, 231, 0.12);
-    border-color: rgba(108, 92, 231, 0.3);
+    background: #f8f9fa;
+    border-color: #6c5ce7;
+    color: #5f51d6;
+    box-shadow: 0 2px 8px rgba(108, 92, 231, 0.15);
 }
 
 .attempt-history-dropdown__icon {
@@ -46,16 +48,17 @@
 
 .attempt-history-item {
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.5);
-    border: 1px solid rgba(108, 92, 231, 0.1);
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
     border-radius: 12px;
     transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
 }
 
 .attempt-history-item:hover {
-    background: rgba(255, 255, 255, 0.8);
-    border-color: rgba(108, 92, 231, 0.2);
-    box-shadow: 0 2px 8px rgba(108, 92, 231, 0.1);
+    border-color: #6c5ce7;
+    box-shadow: 0 8px 24px rgba(108, 92, 231, 0.15);
+    transform: translateY(-2px);
 }
 
 .attempt-history-item__header {
@@ -119,46 +122,58 @@
 }
 
 .attempt-history-item__stat .value.status-in_progress {
-    color: #fdcb6e;
+    color: #e67e22;
 }
 
-.attempt-history-item__action-buttons {
+.attempt-history-item__actions {
     display: flex;
     gap: 0.5rem;
     margin-top: 0.75rem;
+    align-items: center;
 }
 
-.attempt-history-item__action-button {
+.attempt-history-item__action {
     padding: 0.4rem 0.8rem;
     border-radius: 8px;
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    text-decoration: none; /* Ensure it looks like a button, not just a link */
+    text-decoration: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-}
-
-.attempt-history-item__action-button.resume {
     background-color: #6c5ce7;
     color: white;
     border: 1px solid #6c5ce7;
 }
 
-.attempt-history-item__action-button.resume:hover {
+.attempt-history-item__action:hover {
     background-color: #5f51d6;
     border-color: #5f51d6;
+    color: white;
 }
 
-.attempt-history-item__action-button.delete {
+.attempt-history-item__action:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.attempt-history-item__delete-btn {
+    padding: 0.4rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background-color: transparent;
     color: #e74c3c;
     border: 1px solid #e74c3c;
+    font-size: 1rem;
 }
 
-.attempt-history-item__action-button.delete:hover {
+.attempt-history-item__delete-btn:hover {
     background-color: rgba(231, 76, 60, 0.1);
     color: #c0392b;
     border-color: #c0392b;
