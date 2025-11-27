@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { targetApi } from '../api/backendApi';
+import { dashboardApi } from '../api/backendApi.js';
 import '../css/GoalModal.css';
 
 const GoalModal = ({ isOpen, onClose, currentTarget, onSave }) => {
@@ -56,7 +56,7 @@ const GoalModal = ({ isOpen, onClose, currentTarget, onSave }) => {
         };
 
         try {
-            await targetApi.saveMyTarget(payload);
+            await dashboardApi.saveTarget(payload);
             onSave();
         } catch (err) {
             console.error('Failed to save target:', err);

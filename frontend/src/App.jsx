@@ -16,6 +16,7 @@ import Courses from './pages/Courses';
 import CourseDetailPage from './pages/CourseDetailPage';
 import TestLayout from './components/TestLayout';
 import TestReviewPage from './pages/TestReviewPage';
+import Profile from './pages/profile';
 
 // This component waits for the initial auth loading to complete
 function AuthInitializer({ children }) {
@@ -122,6 +123,14 @@ function AppContent() {
                   <PageWrapper>
                     <TestReviewPage />
                   </PageWrapper>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <PageWrapper><Profile /></PageWrapper>
                 </ProtectedRoute>
               }
             />

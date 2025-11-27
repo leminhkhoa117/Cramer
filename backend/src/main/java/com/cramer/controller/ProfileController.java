@@ -42,32 +42,6 @@ public class ProfileController {
         this.profileService = profileService;
     }
 
-    /**
-     * Get all profiles.
-     * GET /api/profiles
-     */
-    @Operation(
-        summary = "Get all profiles",
-        description = "Retrieve a list of all user profiles in the system"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved list"),
-        @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    @GetMapping
-    public ResponseEntity<List<ProfileDTO>> getAllProfiles() {
-        logger.info("REST request to get all profiles");
-        List<ProfileDTO> profiles = profileService.getAllProfiles()
-                .stream()
-                .map(EntityMapper::toDTO)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(profiles);
-    }
-
-    /**
-     * Get profile by ID.
-     * GET /api/profiles/{id}
-     */
     @Operation(
         summary = "Get profile by ID",
         description = "Retrieve a specific profile by its UUID"
@@ -81,93 +55,98 @@ public class ProfileController {
             @Parameter(description = "UUID of the profile to retrieve") 
             @PathVariable UUID id) {
         logger.info("📥 GET /api/profiles/{} - Fetching profile", id);
-        
-        try {
-            Profile profile = profileService.getProfileById(id)
-                    .orElseThrow(() -> {
-                        logger.warn("⚠️ Profile not found: id={}", id);
-                        return new ResourceNotFoundException("Profile", "id", id);
-                    });
-            
-            logger.info("✅ Profile found: id={}, username={}", id, profile.getUsername());
-            return ResponseEntity.ok(EntityMapper.toDTO(profile));
-        } catch (ResourceNotFoundException e) {
-            throw e;
-        } catch (Exception e) {
-            logger.error("❌ Error fetching profile by ID: {}", id, e);
-            throw e;
-        }
+        ProfileDTO profileDTO = profileService.getProfileById(id);
+        return ResponseEntity.ok(profileDTO);
     }
 
-    /**
-     * Get profile by username.
-     * GET /api/profiles/username/{username}
-     */
-    @GetMapping("/username/{username}")
-    public ResponseEntity<ProfileDTO> getProfileByUsername(@PathVariable String username) {
-        logger.info("REST request to get profile by username: {}", username);
-        Profile profile = profileService.getProfileByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("Profile", "username", username));
-        return ResponseEntity.ok(EntityMapper.toDTO(profile));
-    }
-
-    /**
-     * Create a new profile.
-     * POST /api/profiles
-     */
-    @PostMapping
-    public ResponseEntity<ProfileDTO> createProfile(@RequestBody ProfileDTO profileDTO) {
-        logger.info("REST request to create profile: {}", profileDTO.getUsername());
-        Profile profile = EntityMapper.toEntity(profileDTO);
-        Profile createdProfile = profileService.createProfile(profile);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(EntityMapper.toDTO(createdProfile));
-    }
-
-    /**
-     * Update an existing profile.
-     * PUT /api/profiles/{id}
-     */
     @PutMapping("/{id}")
     public ResponseEntity<ProfileDTO> updateProfile(
             @PathVariable UUID id,
             @RequestBody ProfileDTO profileDTO) {
         logger.info("REST request to update profile: {}", id);
-        Profile profile = EntityMapper.toEntity(profileDTO);
-        Profile updatedProfile = profileService.updateProfile(id, profile);
-        return ResponseEntity.ok(EntityMapper.toDTO(updatedProfile));
+        ProfileDTO updatedProfile = profileService.updateProfile(id, profileDTO);
+        return ResponseEntity.ok(updatedProfile);
     }
 
-    /**
-     * Delete a profile.
-     * DELETE /api/profiles/{id}
-     */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProfile(@PathVariable UUID id) {
-        logger.info("REST request to delete profile: {}", id);
-        profileService.deleteProfile(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Check if username exists.
-     * GET /api/profiles/check-username/{username}
-     */
-    @GetMapping("/check-username/{username}")
-    public ResponseEntity<Boolean> checkUsername(@PathVariable String username) {
-        logger.info("REST request to check username: {}", username);
-        boolean exists = profileService.usernameExists(username);
-        return ResponseEntity.ok(exists);
-    }
-
-    /**
-     * Get total profile count.
-     * GET /api/profiles/count
-     */
-    @GetMapping("/count")
-    public ResponseEntity<Long> getProfileCount() {
-        logger.info("REST request to get profile count");
-        long count = profileService.getTotalProfileCount();
-        return ResponseEntity.ok(count);
-    }
+    //  TODO: The following methods are from the old implementation and need to be updated or removed.
+    //
+    //    /**
+    //     * Get all profiles.
+    //     * GET /api/profiles
+    //     */
+    //    @Operation(
+    //        summary = "Get all profiles",
+    //        description = "Retrieve a list of all user profiles in the system"
+    //    )
+    //    @ApiResponses(value = {
+    //        @ApiResponse(responseCode = "200", description = "Successfully retrieved list"),
+    //        @ApiResponse(responseCode = "500", description = "Internal server error")
+    //    })
+    //    @GetMapping
+    //    public ResponseEntity<List<ProfileDTO>> getAllProfiles() {
+    //        logger.info("REST request to get all profiles");
+    //        List<ProfileDTO> profiles = profileService.getAllProfiles()
+    //                .stream()
+    //                .map(EntityMapper::toDTO)
+    //                .collect(Collectors.toList());
+    //        return ResponseEntity.ok(profiles);
+    //    }
+    //
+    //    /**
+    //     * Get profile by username.
+    //     * GET /api/profiles/username/{username}
+    //     */
+    //    @GetMapping("/username/{username}")
+    //    public ResponseEntity<ProfileDTO> getProfileByUsername(@PathVariable String username) {
+    //        logger.info("REST request to get profile by username: {}", username);
+    //        Profile profile = profileService.getProfileByUsername(username)
+    //                .orElseThrow(() -> new ResourceNotFoundException("Profile", "username", username));
+    //        return ResponseEntity.ok(EntityMapper.toDTO(profile));
+    //    }
+    //
+    //    /**
+    //     * Create a new profile.
+    //     * POST /api/profiles
+    //     */
+    //    @PostMapping
+    //    public ResponseEntity<ProfileDTO> createProfile(@RequestBody ProfileDTO profileDTO) {
+    //        logger.info("REST request to create profile: {}", profileDTO.getUsername());
+    //        Profile profile = EntityMapper.toEntity(profileDTO);
+    //        Profile createdProfile = profileService.createProfile(profile);
+    //        return ResponseEntity.status(HttpStatus.CREATED)
+    //                .body(EntityMapper.toDTO(createdProfile));
+    //    }
+    //
+    //    /**
+    //     * Delete a profile.
+    //     * DELETE /api/profiles/{id}
+    //     */
+    //    @DeleteMapping("/{id}")
+    //    public ResponseEntity<Void> deleteProfile(@PathVariable UUID id) {
+    //        logger.info("REST request to delete profile: {}", id);
+    //        profileService.deleteProfile(id);
+    //        return ResponseEntity.noContent().build();
+    //    }
+    //
+    //    /**
+    //     * Check if username exists.
+    //     * GET /api/profiles/check-username/{username}
+    //     */
+    //    @GetMapping("/check-username/{username}")
+    //    public ResponseEntity<Boolean> checkUsername(@PathVariable String username) {
+    //        logger.info("REST request to check username: {}", username);
+    //        boolean exists = profileService.usernameExists(username);
+    //        return ResponseEntity.ok(exists);
+    //    }
+    //
+    //    /**
+    //     * Get total profile count.
+    //     * GET /api/profiles/count
+    //     */
+    //    @GetMapping("/count")
+    //    public ResponseEntity<Long> getProfileCount() {
+    //        logger.info("REST request to get profile count");
+    //        long count = profileService.getTotalProfileCount();
+    //        return ResponseEntity.ok(count);
+    //    }
 }

@@ -4,7 +4,6 @@ import com.cramer.dto.TargetDTO;
 import com.cramer.entity.Target;
 import com.cramer.repository.TargetRepository;
 import com.cramer.util.EntityMapper;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,10 +11,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class TargetService {
 
     private final TargetRepository targetRepository;
+
+    public TargetService(TargetRepository targetRepository) {
+        this.targetRepository = targetRepository;
+    }
 
     @Transactional(readOnly = true)
     public Optional<TargetDTO> getTargetByUserId(UUID userId) {

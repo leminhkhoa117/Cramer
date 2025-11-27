@@ -13,11 +13,15 @@ public class EntityMapper {
      */
     public static ProfileDTO toDTO(Profile profile) {
         if (profile == null) return null;
-        return new ProfileDTO(
-                profile.getId(),
-                profile.getUsername(),
-                profile.getCreatedAt()
-        );
+        ProfileDTO dto = new ProfileDTO();
+        dto.setId(profile.getId());
+        dto.setUsername(profile.getUsername());
+        dto.setFullName(profile.getFullName());
+        dto.setPhoneNumber(profile.getPhoneNumber());
+        dto.setAddress(profile.getAddress());
+        dto.setAvatarUrl(profile.getAvatarUrl());
+        dto.setCreatedAt(profile.getCreatedAt());
+        return dto;
     }
 
     /**
@@ -28,6 +32,10 @@ public class EntityMapper {
         Profile profile = new Profile();
         profile.setId(dto.getId());
         profile.setUsername(dto.getUsername());
+        profile.setFullName(dto.getFullName());
+        profile.setPhoneNumber(dto.getPhoneNumber());
+        profile.setAddress(dto.getAddress());
+        profile.setAvatarUrl(dto.getAvatarUrl());
         profile.setCreatedAt(dto.getCreatedAt());
         return profile;
     }

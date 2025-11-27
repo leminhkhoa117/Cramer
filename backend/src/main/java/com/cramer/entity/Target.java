@@ -9,7 +9,6 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-@Data
 @Entity
 @Table(name = "target")
 public class Target {
@@ -46,4 +45,84 @@ public class Target {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public void setUserId(UUID userId) {
+        this.userId = userId;
+    }
+
+    public String getExamName() {
+        return examName;
+    }
+
+    public void setExamName(String examName) {
+        this.examName = examName;
+    }
+
+    public LocalDate getExamDate() {
+        return examDate;
+    }
+
+    public void setExamDate(LocalDate examDate) {
+        this.examDate = examDate;
+    }
+
+    public Double getListening() {
+        return listening;
+    }
+
+    public void setListening(Double listening) {
+        this.listening = listening;
+    }
+
+    public Double getReading() {
+        return reading;
+    }
+
+    public void setReading(Double reading) {
+        this.reading = reading;
+    }
+
+    public Double getWriting() {
+        return writing;
+    }
+
+    public void setWriting(Double writing) {
+        this.writing = writing;
+    }
+
+    public Double getSpeaking() {
+        return speaking;
+    }
+
+    public void setSpeaking(Double speaking) {
+        this.speaking = speaking;
+    }
+
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(OffsetDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public OffsetDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(OffsetDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }

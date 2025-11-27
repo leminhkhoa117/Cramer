@@ -146,6 +146,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateProfileContext = (newProfileData) => {
+    console.log('🔄 Updating profile context with new data:', newProfileData);
+    setProfile(prevProfile => ({ ...prevProfile, ...newProfileData }));
+  };
+
   const createProfileForUser = async (userId) => {
     try {
       console.log('📝 Creating profile for user:', userId);
@@ -328,6 +333,7 @@ export const AuthProvider = ({ children }) => {
     signInWithGoogle,
     signInWithFacebook,
     loadUserProfile, // Expose for manual reload if needed
+    updateProfileContext,
   }), [
     user,
     profile,
@@ -343,6 +349,7 @@ export const AuthProvider = ({ children }) => {
     signInWithGoogle,
     signInWithFacebook,
     loadUserProfile,
+    updateProfileContext,
   ]);
 
   return (

@@ -1,0 +1,235 @@
+/* === Upload Image Modal Styles === */
+
+:root {
+    /* Values from UI_GUIDELINES.md */
+    --modal-glass-bg: rgba(40, 36, 92, 0.7); /* Darker, more purple modal bg */
+    --glass-border: rgba(255, 255, 255, 0.18);
+    --primary-accent: #7c3aed;
+    --text-light: #ffffff;
+    --text-muted-light: rgba(255, 255, 255, 0.7);
+    --z-modal-backdrop: 1000;
+    --z-modal-content: 1010;
+}
+
+.upload-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(10, 5, 25, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: var(--z-modal-backdrop);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+}
+
+.upload-modal-content {
+    background: var(--modal-glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 1.5rem;
+    box-shadow: 0 25px 50px rgba(15, 23, 42, 0.35);
+    width: 100%;
+    max-width: 600px; /* Adjust as needed */
+    color: var(--text-light);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.upload-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.upload-modal-header h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.upload-modal-close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted-light);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+}
+.upload-modal-close-btn:hover {
+    color: var(--text-light);
+    transform: rotate(90deg);
+}
+
+.upload-modal-navigation {
+    display: flex;
+    gap: 0.5rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 0.5rem;
+    border-radius: 16px;
+}
+
+.nav-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    color: var(--text-muted-light);
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.nav-btn.active {
+    background-color: var(--primary-accent);
+    color: var(--text-light);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn:not(.active):hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-light);
+}
+
+.upload-modal-body {
+    min-height: 300px; /* Placeholder height */
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.upload-tab-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.upload-drop-zone {
+    width: 100%;
+    height: 100%;
+    border: 2px dashed rgba(255, 255, 255, 0.4);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.upload-drop-zone:hover {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-color: var(--primary-accent);
+}
+
+.upload-placeholder {
+    text-align: center;
+    color: var(--text-muted-light);
+}
+
+.upload-placeholder svg {
+    margin-bottom: 1rem;
+}
+
+.upload-placeholder p {
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+}
+
+.upload-placeholder span {
+    font-size: 0.8rem;
+}
+
+.image-preview {
+    width: 100%;
+    height: 100%;
+    max-height: 280px; /* Limit preview height */
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.cropper-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.ReactCrop .ReactCrop__image {
+    max-height: 350px;
+}
+
+.btn-change-image {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-light);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn-change-image:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.upload-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--glass-border);
+}
+
+/* Button styles from ProfilePage for consistency */
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.upload-modal-footer .btn-save {
+    background: linear-gradient(135deg, var(--primary-accent), #6366f1);
+    color: var(--text-light);
+}
+.upload-modal-footer .btn-save:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3);
+}
+
+.upload-modal-footer .btn-cancel {
+    background-color: transparent;
+    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.upload-modal-footer .btn-cancel:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--text-light);
+}

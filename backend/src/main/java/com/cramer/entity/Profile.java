@@ -21,6 +21,24 @@ public class Profile {
     @Column(name = "username", nullable = false, unique = true)
     private String username;
 
+    @Column(name = "full_name")
+    private String fullName;
+
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
+    @Column(name = "address")
+    private String address;
+
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
+    @Column(name = "hero_background_url")
+    private String heroBackgroundUrl;
+
+    @Column(name = "page_background_url")
+    private String pageBackgroundUrl;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -51,9 +69,58 @@ public class Profile {
         this.username = username;
     }
 
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public String getHeroBackgroundUrl() {
+        return heroBackgroundUrl;
+    }
+
+    public void setHeroBackgroundUrl(String heroBackgroundUrl) {
+        this.heroBackgroundUrl = heroBackgroundUrl;
+    }
+
+    public String getPageBackgroundUrl() {
+        return pageBackgroundUrl;
+    }
+
+    public void setPageBackgroundUrl(String pageBackgroundUrl) {
+        this.pageBackgroundUrl = pageBackgroundUrl;
+    }
+
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
+
 
     public void setCreatedAt(OffsetDateTime createdAt) {
         this.createdAt = createdAt;
@@ -64,6 +131,7 @@ public class Profile {
         return "Profile{" +
                 "id=" + id +
                 ", username='" + username + '\'' +
+                ", fullName='" + fullName + '\'' +
                 ", createdAt=" + createdAt +
                 '}';
     }

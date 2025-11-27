@@ -1,10 +1,14 @@
 import axios from 'axios';
+import {
+    showErrorToast,
+    showSuccessToast
+} from '../utils/toast.js';
 
 // Base URL from environment or default to localhost
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 // Create axios instance
-const apiClient = axios.create({
+let apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
@@ -95,6 +99,8 @@ export const profileApi = {
   delete: (id) => apiClient.delete(`/profiles/${id}`),
   checkUsername: (username) => apiClient.get(`/profiles/check-username/${username}`),
   getCount: () => apiClient.get('/profiles/count'),
+  getProfile: () => apiClient.get('/profile'),
+  updateProfile: (profileData) => apiClient.put('/profile', profileData),
 };
 
 // ============================================
@@ -219,15 +225,14 @@ export const userAnswerApi = {
 // DASHBOARD APIs
 // ============================================
 export const dashboardApi = {
-  getSummary: (userId, page = 0, size = 3, search = '') => apiClient.get(`/dashboard/summary/${userId}`, { params: { page, size, search } }),
+  getSummary: (profileId, page = 0, size = 3, search = '') => {
+        return apiClient.get(`/dashboard/summary/${profileId}`, {
+            params: {
+                page,
+                size,
+                search
+            }
+        });
+    },
+    saveTarget: (targetData) => apiClient.post('/dashboard/target', targetData),
 };
-
-// ============================================
-// TARGET APIs
-// ============================================
-export const targetApi = {
-  getMyTarget: () => apiClient.get('/targets/me'),
-  saveMyTarget: (targetData) => apiClient.put('/targets/me', targetData),
-};
-
-export default apiClient;
