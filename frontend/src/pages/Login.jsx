@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaGoogle, FaFacebook } from 'react-icons/fa';
+import { FaGoogle, FaFacebook, FaUserCircle } from 'react-icons/fa';
 import OTPVerification from '../components/OTPVerification';
 import { profileApi, authApi } from '../api/backendApi';
 import { authHelpers } from '../api/supabaseClient';
@@ -63,7 +63,7 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
       // Passwords match, now request the OTP
       const { error: resetError } = await authHelpers.requestPasswordReset(email);
       if (resetError) throw resetError;
-      
+
       setSuccess('Mật khẩu đã được lưu tạm. Mã xác thực đã được gửi tới email của bạn.');
       setStep('verifyOtp');
     } catch (err) {
@@ -148,10 +148,10 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
             <h2>Xác thực OTP</h2>
             {success && <div style={{ background: '#efe', color: '#3c3', padding: '10px', borderRadius: '4px', marginBottom: '15px', textAlign: 'center' }}>{success}</div>}
             <p style={{ marginBottom: 8, textAlign: 'center' }}>Nhập mã 6 chữ số được gửi đến <strong>{email}</strong></p>
-            <OTPVerification email={email} onVerify={handleOtpSubmit} onResend={() => {}} onClose={onSwitchToLogin} />
+            <OTPVerification email={email} onVerify={handleOtpSubmit} onResend={() => { }} onClose={onSwitchToLogin} />
           </div>
         );
-      
+
       case 'done':
         return (
           <div className="login-form">
@@ -184,7 +184,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
-  
+
   const { user, signOut, signIn, signUp, verifyOtp, resendOtp, signInWithGoogle, signInWithFacebook } = useAuth();
   const navigate = useNavigate();
 
@@ -247,7 +247,7 @@ export default function Login() {
       if (formState === 'signup') {
         const { data, error } = await signUp(email, password, username);
         if (error) throw error;
-        
+
         if (data?.user) {
           if (!data.user.confirmed_at && !data.user.email_confirmed_at) {
             setPendingEmail(email);
@@ -282,18 +282,18 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-        let error;
-        if (provider === 'google') {
-            ({ error } = await signInWithGoogle());
-        } else if (provider === 'facebook') {
-            ({ error } = await signInWithFacebook());
-        }
-        if (error) throw error;
-        navigate('/dashboard');
+      let error;
+      if (provider === 'google') {
+        ({ error } = await signInWithGoogle());
+      } else if (provider === 'facebook') {
+        ({ error } = await signInWithFacebook());
+      }
+      if (error) throw error;
+      navigate('/dashboard');
     } catch (err) {
-        setError(err.message || `An error occurred with ${provider} login.`);
+      setError(err.message || `An error occurred with ${provider} login.`);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -301,21 +301,21 @@ export default function Login() {
     try {
       const { data, error } = await verifyOtp(pendingEmail, otpCode);
       if (error) throw error;
-      
+
       const username = sessionStorage.getItem('pendingUsername');
       const userId = sessionStorage.getItem('pendingUserId');
-      
+
       if (userId && username) {
         await profileApi.create({ id: userId, username: username });
         sessionStorage.removeItem('pendingUsername');
         sessionStorage.removeItem('pendingUserId');
       }
-      
+
       setShowOtpPopup(false);
       setSuccess('Account verified successfully! Please login.');
       clearForm();
       setFormState('login');
-      
+
     } catch (error) {
       throw error;
     }
@@ -341,10 +341,10 @@ export default function Login() {
     return (
       <form className="login-form" onSubmit={handleSubmit}>
         <h2>{isSignUp ? 'Create Account' : 'Login'}</h2>
-        
+
         {error && <div style={{ background: '#fee', color: '#c33', padding: '10px', borderRadius: '4px', marginBottom: '15px', textAlign: 'center', fontSize: '14px' }}>⚠️ {error}</div>}
         {success && <div style={{ background: '#efe', color: '#3c3', padding: '10px', borderRadius: '4px', marginBottom: '15px', textAlign: 'center', fontSize: '14px' }}>✓ {success}</div>}
-        
+
         {isSignUp && (
           <div className="input-box">
             <input type="text" required={isSignUp} value={username} onChange={(e) => setUsername(e.target.value)} disabled={loading} />
@@ -375,9 +375,9 @@ export default function Login() {
 
         <div className="links">
           {!isSignUp && <a href="#" onClick={(e) => { e.preventDefault(); setFormState('forgot'); clearForm(); }}>Forgot Password?</a>}
-          <a href="#" onClick={(e) => { 
-            e.preventDefault(); 
-            setFormState(isSignUp ? 'login' : 'signup'); 
+          <a href="#" onClick={(e) => {
+            e.preventDefault();
+            setFormState(isSignUp ? 'login' : 'signup');
             clearForm();
           }}>
             {isSignUp ? '← Back to Login' : 'Create Account'}
@@ -406,48 +406,72 @@ export default function Login() {
     return 'LOGIN';
   }
 
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Auto-expand effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsExpanded(true);
+    }, 500); // 500ms delay for smooth entrance
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleBoxClick = () => {
+    setIsExpanded(true);
+  };
+
   return (
     <div className="login-page-container">
-        {showOtpPopup && (
-          <OTPVerification
-            email={pendingEmail}
-            onVerify={handleVerifyOtp}
-            onResend={handleResendOtp}
-            onClose={handleCloseOtp}
-          />
-        )}
-        
-        <div className="form-section">
-          <div className="login-box">
-            <div className="login-box-border"></div>
-            <div className="login-initial">{getBoxTitle()}</div>
-            <div className="login-form-wrapper">
-              {renderFormContent()}
+      {showOtpPopup && (
+        <OTPVerification
+          email={pendingEmail}
+          onVerify={handleVerifyOtp}
+          onResend={handleResendOtp}
+          onClose={handleCloseOtp}
+        />
+      )}
+
+      <div className="form-section">
+        <div
+          className={`login-box ${isExpanded ? 'expanded' : ''}`}
+          onClick={handleBoxClick}
+          onMouseEnter={() => setIsExpanded(true)}
+        >
+          <div className="login-box-border"></div>
+          <div className="login-initial">
+            <div className="login-icon-wrapper">
+              <FaUserCircle size={40} color="#7c3aed" />
             </div>
+            <div className="login-title-text">Welcome Back</div>
+            <div className="login-subtitle-text">Click to Access</div>
+          </div>
+          <div className="login-form-wrapper">
+            {renderFormContent()}
           </div>
         </div>
-        
-        <div className="intro-section">
-          <div className="intro-content">
-            <svg className="float-animation" width="160" height="160" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="svg-grad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="rgba(255,255,255,0.8)"/>
-                  <stop offset="100%" stopColor="rgba(255,255,255,1)"/>
-                </linearGradient>
-              </defs>
-              <rect x="30" y="50" width="140" height="100" rx="10" fill="url(#svg-grad)" fillOpacity="0.2" stroke="white" strokeWidth="2.5"/>
-              <circle cx="75" cy="100" r="20" fill="url(#svg-grad)" fillOpacity="0.3" stroke="white" strokeWidth="2"/>
-              <path d="M 68 100 l 5 5 l 10 -10" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M 110 90 v 20 M 122 82 v 28 M 134 95 v 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
-              <path d="M 175 65 l 10 -10 M 170 50 l 15 -15" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.8"/>
-              <path d="M 25 65 l -10 -10 M 30 50 l -15 -15" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.8"/>
-              <path d="M 100 30 v -15" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.8"/>
-            </svg>
-            <h1>Welcome to Cramer</h1>
-            <p>Your personal platform for mastering new subjects through interactive quizzes and smart learning tools. Log in to continue your journey or sign up to get started!</p>
-          </div>
+      </div>
+
+      <div className="intro-section">
+        <div className="intro-content">
+          <svg className="float-animation" width="160" height="160" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="svg-grad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="rgba(255,255,255,0.8)" />
+                <stop offset="100%" stopColor="rgba(255,255,255,1)" />
+              </linearGradient>
+            </defs>
+            <rect x="30" y="50" width="140" height="100" rx="10" fill="url(#svg-grad)" fillOpacity="0.2" stroke="white" strokeWidth="2.5" />
+            <circle cx="75" cy="100" r="20" fill="url(#svg-grad)" fillOpacity="0.3" stroke="white" strokeWidth="2" />
+            <path d="M 68 100 l 5 5 l 10 -10" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 110 90 v 20 M 122 82 v 28 M 134 95 v 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
+            <path d="M 175 65 l 10 -10 M 170 50 l 15 -15" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.8" />
+            <path d="M 25 65 l -10 -10 M 30 50 l -15 -15" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.8" />
+            <path d="M 100 30 v -15" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.8" />
+          </svg>
+          <h1>Welcome to Cramer</h1>
+          <p>Your personal platform for mastering new subjects through interactive quizzes and smart learning tools. Log in to continue your journey or sign up to get started!</p>
         </div>
+      </div>
     </div>
   );
 }

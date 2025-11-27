@@ -46,8 +46,8 @@ function AuthInitializer({ children }) {
                 <li>Hoặc thử trình duyệt khác (Chrome, Firefox, Zen)</li>
               </ul>
             </div>
-            <button 
-              onClick={() => window.location.reload()} 
+            <button
+              onClick={() => window.location.reload()}
               className="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
             >
               Thử Lại
@@ -79,8 +79,8 @@ function AppContent() {
       <main>
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
-            <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
             <Route
               path="/dashboard"
