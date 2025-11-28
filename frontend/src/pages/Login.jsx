@@ -1,25 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { FaGoogle, FaFacebook, FaUserCircle } from 'react-icons/fa';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { FaGoogle, FaEnvelope, FaLock, FaUser, FaArrowLeft, FaEye, FaEyeSlash } from 'react-icons/fa';
 import OTPVerification from '../components/OTPVerification';
 import { profileApi, authApi } from '../api/backendApi';
 import { authHelpers } from '../api/supabaseClient';
+import logoImage from '../../pictures/logo/Icon.png';
 import '../css/Login.css';
 
 // ====================================================================
-// FORGOT PASSWORD FORM (New Workflow)
+// FORGOT PASSWORD FORM
 // ====================================================================
 function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
-  const [step, setStep] = useState('enterEmail'); // enterEmail -> enterPassword -> verifyOtp -> done
+  const [step, setStep] = useState('enterEmail');
   const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Handler for the first step: submitting the email
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -35,7 +36,6 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
         setError('Email không tồn tại trong hệ thống.');
         return;
       }
-      // Email exists, move to the next step
       setStep('enterPassword');
       setSuccess('Email được xác nhận. Vui lòng nhập mật khẩu mới.');
     } catch (err) {
@@ -45,7 +45,6 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
     }
   };
 
-  // Handler for the second step: submitting the new password to request an OTP
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -60,11 +59,9 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
     }
     setLoading(true);
     try {
-      // Passwords match, now request the OTP
       const { error: resetError } = await authHelpers.requestPasswordReset(email);
       if (resetError) throw resetError;
-
-      setSuccess('Mật khẩu đã được lưu tạm. Mã xác thực đã được gửi tới email của bạn.');
+      setSuccess('Mã xác thực đã được gửi tới email của bạn.');
       setStep('verifyOtp');
     } catch (err) {
       setError(err.message || 'Không thể gửi yêu cầu OTP. Vui lòng thử lại.');
@@ -73,108 +70,130 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
     }
   };
 
-  // Handler for the third step: verifying OTP and updating the password
   const handleOtpSubmit = async (otpCode) => {
     setError('');
     setLoading(true);
     try {
-      // 1. Verify the OTP. This creates a temporary, authenticated session.
       const { error: verifyError } = await authHelpers.verifyRecoveryOtp(email, otpCode);
       if (verifyError) throw verifyError;
-
-      // 2. Immediately use the new session to update the user's password.
       const { error: updateError } = await authHelpers.updatePassword(newPassword);
       if (updateError) throw updateError;
-
-      // 3. Sign the user out to invalidate the recovery session and force a fresh login.
       await signOut();
-
-      setSuccess('Mật khẩu đã được cập nhật thành công! Vui lòng đăng nhập lại.');
+      setSuccess('Mật khẩu đã được cập nhật thành công!');
       setStep('done');
-      setTimeout(() => onSwitchToLogin(), 3000);
-
+      setTimeout(() => onSwitchToLogin(), 2000);
     } catch (err) {
       setError(err.message || 'Mã OTP không hợp lệ hoặc đã hết hạn.');
-      // Re-throw for the OTP component to handle its internal error state
       throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  // Render different content based on the current step
-  const renderStep = () => {
-    switch (step) {
-      case 'enterEmail':
-        return (
-          <form className="login-form" onSubmit={handleEmailSubmit}>
-            <h2>Reset Password</h2>
-            {error && <div style={{ background: '#fee', color: '#c33', padding: '10px', borderRadius: '4px', marginBottom: '15px', textAlign: 'center' }}>{error}</div>}
-            <div className="input-box">
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} autoComplete="email" />
-              <span>Email</span><i></i>
-            </div>
-            <div className="links">
-              <a href="#" onClick={(e) => { e.preventDefault(); onSwitchToLogin(); }}>← Back to login</a>
-            </div>
-            <input type="submit" value={loading ? '...' : 'Confirm Email'} disabled={loading} />
-          </form>
-        );
+  if (step === 'enterEmail') {
+    return (
+      <form className="auth-form" onSubmit={handleEmailSubmit}>
+        <h2 className="auth-title">Quên mật khẩu</h2>
+        <p className="auth-subtitle">Nhập email để khôi phục mật khẩu</p>
+        
+        {error && <div className="auth-alert auth-alert--error">{error}</div>}
+        
+        <div className="auth-input-group">
+          <FaEnvelope className="auth-input-icon" />
+          <input
+            type="email"
+            placeholder="Địa chỉ email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
+            required
+          />
+        </div>
+        
+        <button type="submit" className="auth-btn auth-btn--primary" disabled={loading}>
+          {loading ? 'Đang xử lý...' : 'Tiếp tục'}
+        </button>
+        
+        <button type="button" className="auth-btn auth-btn--text" onClick={onSwitchToLogin}>
+          <FaArrowLeft /> Quay lại đăng nhập
+        </button>
+      </form>
+    );
+  }
 
-      case 'enterPassword':
-        return (
-          <form className="login-form" onSubmit={handlePasswordSubmit}>
-            <h2>Create new password</h2>
-            {success && <div style={{ background: '#efe', color: '#3c3', padding: '10px', borderRadius: '4px', marginBottom: '15px', textAlign: 'center' }}>{success}</div>}
-            {error && <div style={{ background: '#fee', color: '#c33', padding: '10px', borderRadius: '4px', marginBottom: '15px', textAlign: 'center' }}>{error}</div>}
-            <div className="input-box">
-              <input type="password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={loading} />
-              <span>New password</span><i></i>
-            </div>
-            <div className="input-box">
-              <input type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={loading} />
-              <span>Confirm password</span><i></i>
-            </div>
-            <div className="links">
-              <a href="#" onClick={(e) => { e.preventDefault(); onSwitchToLogin(); }}>Hủy</a>
-            </div>
-            <input type="submit" value={loading ? '...' : 'Gửi mã xác thực'} disabled={loading} />
-          </form>
-        );
+  if (step === 'enterPassword') {
+    return (
+      <form className="auth-form" onSubmit={handlePasswordSubmit}>
+        <h2 className="auth-title">Tạo mật khẩu mới</h2>
+        <p className="auth-subtitle">Nhập mật khẩu mới cho tài khoản của bạn</p>
+        
+        {success && <div className="auth-alert auth-alert--success">{success}</div>}
+        {error && <div className="auth-alert auth-alert--error">{error}</div>}
+        
+        <div className="auth-input-group">
+          <FaLock className="auth-input-icon" />
+          <input
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Mật khẩu mới"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            disabled={loading}
+            required
+          />
+          <button type="button" className="auth-password-toggle" onClick={() => setShowPassword(!showPassword)}>
+            {showPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
+        </div>
+        
+        <div className="auth-input-group">
+          <FaLock className="auth-input-icon" />
+          <input
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Xác nhận mật khẩu"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            disabled={loading}
+            required
+          />
+        </div>
+        
+        <button type="submit" className="auth-btn auth-btn--primary" disabled={loading}>
+          {loading ? 'Đang xử lý...' : 'Gửi mã xác thực'}
+        </button>
+        
+        <button type="button" className="auth-btn auth-btn--text" onClick={onSwitchToLogin}>
+          Hủy
+        </button>
+      </form>
+    );
+  }
 
-      case 'verifyOtp':
-        return (
-          <div className="login-form">
-            <h2>Xác thực OTP</h2>
-            {success && <div style={{ background: '#efe', color: '#3c3', padding: '10px', borderRadius: '4px', marginBottom: '15px', textAlign: 'center' }}>{success}</div>}
-            <p style={{ marginBottom: 8, textAlign: 'center' }}>Nhập mã 6 chữ số được gửi đến <strong>{email}</strong></p>
-            <OTPVerification email={email} onVerify={handleOtpSubmit} onResend={() => { }} onClose={onSwitchToLogin} />
-          </div>
-        );
+  if (step === 'verifyOtp') {
+    return (
+      <div className="auth-form">
+        <h2 className="auth-title">Xác thực OTP</h2>
+        <p className="auth-subtitle">Nhập mã 6 chữ số được gửi đến <strong>{email}</strong></p>
+        {success && <div className="auth-alert auth-alert--success">{success}</div>}
+        <OTPVerification email={email} onVerify={handleOtpSubmit} onResend={() => {}} onClose={onSwitchToLogin} />
+      </div>
+    );
+  }
 
-      case 'done':
-        return (
-          <div className="login-form">
-            <h2>Hoàn tất</h2>
-            {success && <div style={{ background: '#efe', color: '#3c3', padding: '10px', borderRadius: '4px', marginBottom: '15px', textAlign: 'center' }}>{success}</div>}
-            <p>Bạn sẽ được chuyển về trang đăng nhập.</p>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  return renderStep();
+  return (
+    <div className="auth-form">
+      <h2 className="auth-title">Hoàn tất!</h2>
+      <div className="auth-alert auth-alert--success">{success}</div>
+      <p className="auth-subtitle">Đang chuyển về trang đăng nhập...</p>
+    </div>
+  );
 }
-
 
 // ====================================================================
 // MAIN LOGIN COMPONENT
 // ====================================================================
 export default function Login() {
-  const [formState, setFormState] = useState('login'); // 'login', 'signup', 'forgot'
+  const location = useLocation();
+  const [formState, setFormState] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -182,17 +201,30 @@ export default function Login() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
 
-  const { user, signOut, signIn, signUp, verifyOtp, resendOtp, signInWithGoogle, signInWithFacebook } = useAuth();
+  const { user, signOut, signIn, signUp, verifyOtp, resendOtp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
-  // This effect handles redirection after a successful login.
-  // It is guarded by checking the formState to prevent interrupting the password reset flow.
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Handle prefilled email from homepage
+  useEffect(() => {
+    if (location.state?.prefillEmail) {
+      setEmail(location.state.prefillEmail);
+      if (location.state.mode === 'signup') {
+        setFormState('signup');
+      }
+    }
+  }, [location.state]);
+
   useEffect(() => {
     if (user && formState !== 'forgot') {
-      console.log('User detected and not in forgot password flow, navigating to dashboard...');
       navigate('/dashboard');
     }
   }, [user, formState, navigate]);
@@ -208,24 +240,24 @@ export default function Login() {
 
   const validateForm = () => {
     if (!email.trim()) {
-      setError('Email is required');
+      setError('Vui lòng nhập email');
       return false;
     }
     if (!password.trim()) {
-      setError('Password is required');
+      setError('Vui lòng nhập mật khẩu');
       return false;
     }
     if (formState === 'signup') {
       if (!username.trim()) {
-        setError('Username is required');
+        setError('Vui lòng nhập tên người dùng');
         return false;
       }
       if (password.length < 6) {
-        setError('Password must be at least 6 characters');
+        setError('Mật khẩu phải có ít nhất 6 ký tự');
         return false;
       }
       if (password !== confirmPassword) {
-        setError('Passwords do not match');
+        setError('Mật khẩu xác nhận không khớp');
         return false;
       }
     }
@@ -252,46 +284,39 @@ export default function Login() {
           if (!data.user.confirmed_at && !data.user.email_confirmed_at) {
             setPendingEmail(email);
             setShowOtpPopup(true);
-            setSuccess('Verification code sent to your email! Check your inbox.');
+            setSuccess('Mã xác thực đã được gửi! Kiểm tra email của bạn.');
           } else {
             await profileApi.create({ id: data.user.id, username: username || email.split('@')[0] });
-            setSuccess('Account created successfully! You can now login.');
+            setSuccess('Tạo tài khoản thành công! Bạn có thể đăng nhập ngay.');
             setTimeout(() => {
               clearForm();
               setFormState('login');
             }, 2000);
           }
         } else {
-          throw new Error('Signup failed. Please try again.');
+          throw new Error('Đăng ký thất bại. Vui lòng thử lại.');
         }
-      } else { // 'login' state
+      } else {
         const { data, error } = await signIn(email, password);
         if (error) throw error;
-        if (!data?.session || !data?.user) throw new Error('Login failed: No session created');
-        setSuccess('Logged in successfully! Redirecting...');
-        // The useEffect hook will handle the navigation
+        if (!data?.session || !data?.user) throw new Error('Đăng nhập thất bại');
+        setSuccess('Đăng nhập thành công! Đang chuyển hướng...');
       }
     } catch (err) {
-      setError(err.message || 'An error occurred. Please try again.');
+      setError(err.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSocialLogin = async (provider) => {
+  const handleGoogleLogin = async () => {
     setError('');
     setLoading(true);
     try {
-      let error;
-      if (provider === 'google') {
-        ({ error } = await signInWithGoogle());
-      } else if (provider === 'facebook') {
-        ({ error } = await signInWithFacebook());
-      }
+      const { error } = await signInWithGoogle();
       if (error) throw error;
-      navigate('/dashboard');
     } catch (err) {
-      setError(err.message || `An error occurred with ${provider} login.`);
+      setError(err.message || 'Đăng nhập Google thất bại.');
     } finally {
       setLoading(false);
     }
@@ -302,33 +327,22 @@ export default function Login() {
       const { data, error } = await verifyOtp(pendingEmail, otpCode);
       if (error) throw error;
 
-      const username = sessionStorage.getItem('pendingUsername');
+      const storedUsername = sessionStorage.getItem('pendingUsername');
       const userId = sessionStorage.getItem('pendingUserId');
 
-      if (userId && username) {
-        await profileApi.create({ id: userId, username: username });
+      if (userId && storedUsername) {
+        await profileApi.create({ id: userId, username: storedUsername });
         sessionStorage.removeItem('pendingUsername');
         sessionStorage.removeItem('pendingUserId');
       }
 
       setShowOtpPopup(false);
-      setSuccess('Account verified successfully! Please login.');
+      setSuccess('Xác thực thành công! Vui lòng đăng nhập.');
       clearForm();
       setFormState('login');
-
     } catch (error) {
       throw error;
     }
-  };
-
-  const handleResendOtp = async () => {
-    const { error } = await resendOtp(pendingEmail);
-    if (error) throw error;
-  };
-
-  const handleCloseOtp = () => {
-    setShowOtpPopup(false);
-    setError('Verification cancelled. Please sign up again if needed.');
   };
 
   const renderFormContent = () => {
@@ -339,137 +353,159 @@ export default function Login() {
     const isSignUp = formState === 'signup';
 
     return (
-      <form className="login-form" onSubmit={handleSubmit}>
-        <h2>{isSignUp ? 'Create Account' : 'Login'}</h2>
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <h2 className="auth-title">{isSignUp ? 'Tạo tài khoản' : 'Đăng nhập'}</h2>
+        <p className="auth-subtitle">
+          {isSignUp ? 'Đăng ký để bắt đầu hành trình chinh phục IELTS' : 'Chào mừng trở lại! Đăng nhập để tiếp tục.'}
+        </p>
 
-        {error && <div style={{ background: '#fee', color: '#c33', padding: '10px', borderRadius: '4px', marginBottom: '15px', textAlign: 'center', fontSize: '14px' }}>⚠️ {error}</div>}
-        {success && <div style={{ background: '#efe', color: '#3c3', padding: '10px', borderRadius: '4px', marginBottom: '15px', textAlign: 'center', fontSize: '14px' }}>✓ {success}</div>}
+        {error && <div className="auth-alert auth-alert--error">{error}</div>}
+        {success && <div className="auth-alert auth-alert--success">{success}</div>}
 
         {isSignUp && (
-          <div className="input-box">
-            <input type="text" required={isSignUp} value={username} onChange={(e) => setUsername(e.target.value)} disabled={loading} />
-            <span>Username</span>
-            <i></i>
+          <div className="auth-input-group">
+            <FaUser className="auth-input-icon" />
+            <input
+              type="text"
+              placeholder="Tên người dùng"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              disabled={loading}
+              required
+            />
           </div>
         )}
 
-        <div className="input-box">
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} autoComplete="email" />
-          <span>Email</span>
-          <i></i>
+        <div className="auth-input-group">
+          <FaEnvelope className="auth-input-icon" />
+          <input
+            type="email"
+            placeholder="Địa chỉ email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
+            required
+          />
         </div>
 
-        <div className="input-box">
-          <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} autoComplete={isSignUp ? 'new-password' : 'current-password'} />
-          <span>Password</span>
-          <i></i>
+        <div className="auth-input-group">
+          <FaLock className="auth-input-icon" />
+          <input
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Mật khẩu"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+            required
+          />
+          <button type="button" className="auth-password-toggle" onClick={() => setShowPassword(!showPassword)}>
+            {showPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
         </div>
 
         {isSignUp && (
-          <div className="input-box">
-            <input type="password" required={isSignUp} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={loading} />
-            <span>Confirm Password</span>
-            <i></i>
+          <div className="auth-input-group">
+            <FaLock className="auth-input-icon" />
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Xác nhận mật khẩu"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={loading}
+              required
+            />
           </div>
         )}
-
-        <div className="links">
-          {!isSignUp && <a href="#" onClick={(e) => { e.preventDefault(); setFormState('forgot'); clearForm(); }}>Forgot Password?</a>}
-          <a href="#" onClick={(e) => {
-            e.preventDefault();
-            setFormState(isSignUp ? 'login' : 'signup');
-            clearForm();
-          }}>
-            {isSignUp ? '← Back to Login' : 'Create Account'}
-          </a>
-        </div>
-
-        <input type="submit" value={loading ? '...' : (isSignUp ? 'Sign Up' : 'Login')} disabled={loading} />
 
         {!isSignUp && (
-          <div className="social-login">
-            <p>Or sign in with:</p>
-            <div className="social-icons">
-              <button type="button" onClick={() => handleSocialLogin('google')} aria-label="Login with Google" disabled={loading}><FaGoogle /></button>
-              <button type="button" onClick={() => handleSocialLogin('facebook')} aria-label="Login with Facebook" disabled={loading}><FaFacebook /></button>
-            </div>
+          <div className="auth-links">
+            <button type="button" className="auth-link" onClick={() => { setFormState('forgot'); clearForm(); }}>
+              Quên mật khẩu?
+            </button>
           </div>
         )}
+
+        <button type="submit" className="auth-btn auth-btn--primary" disabled={loading}>
+          {loading ? 'Đang xử lý...' : (isSignUp ? 'Đăng ký' : 'Đăng nhập')}
+        </button>
+
+        <div className="auth-divider">
+          <span>hoặc</span>
+        </div>
+
+        <button type="button" className="auth-btn auth-btn--google" onClick={handleGoogleLogin} disabled={loading}>
+          <FaGoogle />
+          <span>Tiếp tục với Google</span>
+        </button>
+
+        <p className="auth-switch">
+          {isSignUp ? 'Đã có tài khoản?' : 'Chưa có tài khoản?'}
+          <button type="button" onClick={() => { setFormState(isSignUp ? 'login' : 'signup'); clearForm(); }}>
+            {isSignUp ? 'Đăng nhập' : 'Đăng ký ngay'}
+          </button>
+        </p>
       </form>
     );
   };
 
-  const getBoxTitle = () => {
-    if (formState === 'login') return 'LOGIN';
-    if (formState === 'signup') return 'SIGN UP';
-    if (formState === 'forgot') return 'RESET';
-    return 'LOGIN';
-  }
-
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  // Auto-expand effect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsExpanded(true);
-    }, 500); // 500ms delay for smooth entrance
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleBoxClick = () => {
-    setIsExpanded(true);
-  };
-
   return (
-    <div className="login-page-container">
+    <div className="login-page">
       {showOtpPopup && (
         <OTPVerification
           email={pendingEmail}
           onVerify={handleVerifyOtp}
-          onResend={handleResendOtp}
-          onClose={handleCloseOtp}
+          onResend={() => resendOtp(pendingEmail)}
+          onClose={() => { setShowOtpPopup(false); setError('Xác thực đã bị hủy.'); }}
         />
       )}
 
-      <div className="form-section">
-        <div
-          className={`login-box ${isExpanded ? 'expanded' : ''}`}
-          onClick={handleBoxClick}
-          onMouseEnter={() => setIsExpanded(true)}
-        >
-          <div className="login-box-border"></div>
-          <div className="login-initial">
-            <div className="login-icon-wrapper">
-              <FaUserCircle size={40} color="#7c3aed" />
-            </div>
-            <div className="login-title-text">Welcome Back</div>
-            <div className="login-subtitle-text">Click to Access</div>
-          </div>
-          <div className="login-form-wrapper">
-            {renderFormContent()}
-          </div>
-        </div>
+      {/* Background orbs */}
+      <div className="login-bg-orbs">
+        <div className="login-orb login-orb--1" />
+        <div className="login-orb login-orb--2" />
+        <div className="login-orb login-orb--3" />
       </div>
 
-      <div className="intro-section">
-        <div className="intro-content">
-          <svg className="float-animation" width="160" height="160" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="svg-grad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="rgba(255,255,255,0.8)" />
-                <stop offset="100%" stopColor="rgba(255,255,255,1)" />
-              </linearGradient>
-            </defs>
-            <rect x="30" y="50" width="140" height="100" rx="10" fill="url(#svg-grad)" fillOpacity="0.2" stroke="white" strokeWidth="2.5" />
-            <circle cx="75" cy="100" r="20" fill="url(#svg-grad)" fillOpacity="0.3" stroke="white" strokeWidth="2" />
-            <path d="M 68 100 l 5 5 l 10 -10" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M 110 90 v 20 M 122 82 v 28 M 134 95 v 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
-            <path d="M 175 65 l 10 -10 M 170 50 l 15 -15" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.8" />
-            <path d="M 25 65 l -10 -10 M 30 50 l -15 -15" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.8" />
-            <path d="M 100 30 v -15" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.8" />
-          </svg>
-          <h1>Welcome to Cramer</h1>
-          <p>Your personal platform for mastering new subjects through interactive quizzes and smart learning tools. Log in to continue your journey or sign up to get started!</p>
+      <div className="login-container">
+        {/* Left side - Branding */}
+        <div className="login-branding">
+          <div className="login-branding-content">
+            <img src={logoImage} alt="Cramer" className="login-logo" />
+            <h1 className="login-headline">
+              Chinh phục IELTS
+              <br />
+              <span>cùng Cramer</span>
+            </h1>
+            <p className="login-tagline">
+              Nền tảng luyện thi IELTS thông minh với công nghệ AI, 
+              giúp bạn đạt band điểm mơ ước.
+            </p>
+            
+            <div className="login-features">
+              <div className="login-feature">
+                <div className="login-feature-icon">✓</div>
+                <span>1000+ đề thi thực tế</span>
+              </div>
+              <div className="login-feature">
+                <div className="login-feature-icon">✓</div>
+                <span>AI đánh giá chi tiết</span>
+              </div>
+              <div className="login-feature">
+                <div className="login-feature-icon">✓</div>
+                <span>Lộ trình cá nhân hóa</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right side - Form */}
+        <div className="login-form-section">
+          <div className="login-form-card">
+            <div className="login-form-card-border" />
+            <div className="login-form-card-inner">
+              {renderFormContent()}
+            </div>
+          </div>
         </div>
       </div>
     </div>
