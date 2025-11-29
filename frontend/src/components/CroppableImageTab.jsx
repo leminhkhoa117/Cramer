@@ -76,31 +76,36 @@ const CroppableImageTab = ({ onFileCropped, aspectRatio = 1, minWidth = 100, max
             setIsProcessing(true);
             setCrop(undefined);
 
-            const reader = new FileReader();
-            reader.addEventListener('load', () => {
-                // 2. Optimize: Resize huge images before setting state
-                const img = new Image();
-                img.src = reader.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let { width, height } = img;
-                    const MAX_WIDTH = 1500; // Limit width for performance
+            // 2. Use URL.createObjectURL for better memory performance (no base64)
+            const objectUrl = URL.createObjectURL(file);
+            const img = new Image();
+            img.src = objectUrl;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let { width, height } = img;
+                const MAX_WIDTH = 1500; // Limit width for performance
 
-                    if (width > MAX_WIDTH) {
-                        height = Math.round((height * MAX_WIDTH) / width);
-                        width = MAX_WIDTH;
-                    }
+                if (width > MAX_WIDTH) {
+                    height = Math.round((height * MAX_WIDTH) / width);
+                    width = MAX_WIDTH;
+                }
 
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Clean up object URL after use
+                URL.revokeObjectURL(objectUrl);
 
-                    setImgSrc(canvas.toDataURL('image/jpeg', 0.9));
-                    setIsProcessing(false);
-                };
-            });
-            reader.readAsDataURL(file);
+                setImgSrc(canvas.toDataURL('image/jpeg', 0.9));
+                setIsProcessing(false);
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                setIsProcessing(false);
+                showErrorToast('Không thể đọc ảnh. Vui lòng thử lại.');
+            };
         }
     };
 
@@ -115,11 +120,11 @@ const CroppableImageTab = ({ onFileCropped, aspectRatio = 1, minWidth = 100, max
         }
     };
 
-    // Live review
+    // Live review - debounced for performance
     useEffect(() => {
         const timer = setTimeout(() => {
             handleCrop();
-        }, 100); // Debounce slightly
+        }, 400); // Increased debounce for smoother performance
         return () => clearTimeout(timer);
     }, [completedCrop]);
 
