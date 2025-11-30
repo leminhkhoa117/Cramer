@@ -16,7 +16,7 @@ import Courses from './pages/Courses';
 import CourseDetailPage from './pages/CourseDetailPage';
 import TestLayout from './components/TestLayout';
 import TestReviewPage from './pages/TestReviewPage';
-import Profile from './pages/profile';
+import Profile from './pages/Profile';
 
 // This component waits for the initial auth loading to complete
 function AuthInitializer({ children }) {
@@ -79,7 +79,7 @@ function AppContent() {
       <main>
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
             <Route path="/login" element={<Login />} />
             <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
             <Route

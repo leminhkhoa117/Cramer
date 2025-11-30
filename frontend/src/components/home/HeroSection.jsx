@@ -23,20 +23,6 @@ const HeroSection = () => {
     },
   };
 
-  const logoVariants = {
-    hidden: { scale: 0.8, opacity: 0, y: 20 },
-    visible: {
-      scale: 1,
-      opacity: 1,
-      y: 0,
-      transition: {
-        type: 'spring',
-        stiffness: 100,
-        damping: 15,
-      },
-    },
-  };
-
   const textVariants = {
     hidden: { opacity: 0, y: 30 },
     visible: {
@@ -67,22 +53,19 @@ const HeroSection = () => {
         initial="hidden"
         animate="visible"
       >
-        {/* Logo */}
-        <motion.div className="hero-logo-wrapper" variants={logoVariants}>
-          <img src={logoImage} alt="Cramer Logo" className="hero-logo" />
-          <div className="hero-logo-glow" />
-        </motion.div>
-
         {/* Main headline */}
         <motion.h1 className="hero-headline" variants={textVariants}>
           <span className="hero-headline-accent">Chinh phục IELTS</span>
           <br />
-          cùng Cramer
+          <span className="hero-headline-with-logo">
+            cùng {' '}
+            <img src={logoImage} alt="Cramer" className="hero-logo-inline" />
+          </span>
         </motion.h1>
 
         {/* Subheadline */}
         <motion.p className="hero-subheadline" variants={textVariants}>
-          Nền tảng luyện thi IELTS thông minh với công nghệ AI, 
+          Nền tảng luyện thi IELTS thông minh với công nghệ AI,
           giúp bạn đạt band điểm mơ ước một cách hiệu quả nhất.
         </motion.p>
 
@@ -109,8 +92,8 @@ const HeroSection = () => {
           </div>
           <span className="scroll-text">Cuộn xuống</span>
         </motion.div>
-      </motion.div>
-    </section>
+      </motion.div >
+    </section >
   );
 };
 

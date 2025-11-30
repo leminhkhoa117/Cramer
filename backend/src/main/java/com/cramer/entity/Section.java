@@ -18,16 +18,16 @@ public class Section {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "exam_source", nullable = false)
+    @Column(name = "exam_source")
     private String examSource; // e.g., "cam17", "cam18"
 
-    @Column(name = "test_number", nullable = false)
+    @Column(name = "test_number")
     private Integer testNumber; // e.g., 1, 2, 3, 4
 
-    @Column(name = "skill", nullable = false)
+    @Column(name = "skill")
     private String skill; // e.g., "reading", "listening"
 
-    @Column(name = "part_number", nullable = false)
+    @Column(name = "part_number")
     private Integer partNumber; // e.g., 1, 2, 3
 
     @Column(name = "display_content_url")

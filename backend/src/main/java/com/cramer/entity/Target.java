@@ -20,7 +20,7 @@ public class Target {
     @Column(name = "user_id", nullable = false, unique = true)
     private UUID userId;
 
-    @Column(name = "exam_name")
+    @Column(name = "exam_name", nullable = false)
     private String examName;
 
     @Column(name = "exam_date")

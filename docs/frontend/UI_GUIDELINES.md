@@ -1,4 +1,4 @@
-# Cramer UI/UX Design System (v2)
+# Cramer UI/UX Design System (v2.2)
 
 This document outlines the official design language and UI guidelines for the Cramer application. Its purpose is to ensure a consistent, modern, and responsive user experience across the entire platform. This is a living document, intended to be updated as the platform evolves.
 
@@ -10,6 +10,8 @@ Our design is built on these core principles:
 -   **Clarity & Focus:** UI elements are clean and well-spaced to guide the user's attention to what matters most.
 -   **Fluidity & Animation:** Interactions are smooth and provide meaningful feedback through subtle, consistent animations.
 -   **Responsiveness:** The interface is designed for a desktop-first experience and gracefully adapts to smaller screens.
+-   **Single Scroll Context:** The browser's native scrollbar is the only scroll mechanism. Avoid nested scroll containers.
+-   **Performance-First:** Render content only when visible; pause animations and intervals when off-screen.
 
 ---
 
@@ -131,6 +133,18 @@ Animations should be subtle and quick to provide feedback without being distract
 -   **Hover Effect (Cards/Buttons):** A subtle "lift" effect using `transform` and the shadow system.
     -   `transform: translateY(-5px);`
     -   `box-shadow: var(--shadow-lg);`
+-   **3D Parallax Cards:** Interactive cards with mouse-tracking 3D parallax effects.
+    -   **Transition Duration:** `0.4s` for smooth, fluid motion
+    -   **Easing Function:** `cubic-bezier(0.25, 0.46, 0.45, 0.94)` for natural acceleration/deceleration
+    -   **Interpolation (Lerp):** Use linear interpolation with a factor of `0.15` for smooth following motion
+    -   **Rotation Limits:** Maximum ±15° rotation on both X and Y axes
+    -   **Implementation:** Use `useRef` to track current rotation values and apply smooth interpolation between current and target positions
+    -   **Example:**
+        ```javascript
+        const currentRotationRef = useRef({ x: 0, y: 0 });
+        const lerpFactor = 0.15;
+        const smoothRotateX = currentRotationRef.current.x + (targetRotateX - currentRotationRef.current.x) * lerpFactor;
+        ```
 -   **Page Transitions:** Use simple fades or slide-ins. The `framer-motion` library is preferred for staggering animations.
     -   **Stagger Container:** `transition: { staggerChildren: 0.1 }`
     -   **Stagger Item:** `initial={{ y: 20, opacity: 0 }}`, `animate={{ y: 0, opacity: 1 }}`
@@ -167,3 +181,263 @@ Animations should be subtle and quick to provide feedback without being distract
       }
     }
     ```
+
+---
+
+## 11. Page Structure & Scrolling
+
+To ensure smooth scrolling and prevent double scrollbar issues, follow these structural guidelines.
+
+### Global Layout Architecture
+
+The app uses a **flex-column layout** in `#root` to position Header, main content, and Footer:
+
+```css
+/* styles.css */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+#root > main {
+  flex: 1 0 auto;
+}
+
+#root > .navbar,
+#root > .site-footer {
+  flex-shrink: 0;
+}
+```
+
+### Preventing Double Scrollbars
+
+**❌ Avoid:**
+-   Setting `min-height: 100vh` on page containers inside `<main>` (creates nested scroll context)
+-   Using `overflow-y: auto` or `overflow-y: scroll` on page-level elements
+-   Combining `height: 100vh` with `overflow: auto` on inner containers
+
+**✅ Do:**
+-   Let the browser handle scrolling at the `<html>` level
+-   Use `overflow: visible` on page containers (e.g., `.home-page`, `.dashboard-page`)
+-   Use `overflow: hidden` only for clipping decorative elements (orbs, backgrounds)
+-   Reserve `min-height: 100vh` / `100dvh` for hero sections only
+
+### Page Container Pattern
+
+```css
+/* Correct page container styling */
+.my-page {
+  background: #f5f0ff;
+  overflow: visible;  /* Don't create scroll context */
+  position: relative;
+  width: 100%;
+}
+
+/* Hero sections can use viewport height */
+.my-page__hero {
+  min-height: 100vh;
+  min-height: 100dvh;  /* Dynamic viewport for mobile */
+  overflow: hidden;    /* Clip decorative elements only */
+}
+```
+
+### PageWrapper Component
+
+All routes should be wrapped with `PageWrapper` for consistent animations and scroll behavior:
+
+```jsx
+// components/PageWrapper.jsx
+import { motion } from 'framer-motion';
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+
+const PageWrapper = ({ children }) => {
+  const { pathname } = useLocation();
+
+  // Reset scroll position on route change
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      style={{ width: '100%' }}
+    >
+      {children}
+    </motion.div>
+  );
+};
+```
+
+**Key points:**
+-   Use `behavior: 'instant'` for scroll reset to prevent visual jank
+-   Avoid `y` transforms in page animations (can cause initial scroll offset)
+-   Keep animations opacity-only for page transitions
+
+### Mobile Viewport Units
+
+For full-viewport sections on mobile (where address bars affect height):
+
+| Unit | Description | Use Case |
+|------|-------------|----------|
+| `100vh` | Fixed viewport height | Desktop layouts |
+| `100dvh` | Dynamic viewport height | Mobile hero sections (accounts for address bar) |
+| `100svh` | Small viewport height | When you want minimum height regardless of address bar |
+| `100lvh` | Large viewport height | When you want maximum height with address bar hidden |
+
+```css
+.hero-section {
+  min-height: 100vh;
+  min-height: 100dvh;  /* Fallback for browsers supporting dvh */
+}
+```
+
+---
+
+## 12. File Organization
+
+### CSS File Structure
+
+```
+frontend/src/
+├── styles.css          # Global styles, resets, #root layout
+├── css/
+│   ├── Header.css      # Header/navbar styles
+│   ├── Footer.css      # Footer styles
+│   ├── Home.css        # Homepage-specific styles
+│   ├── Dashboard.css   # Dashboard page styles
+│   ├── Profile.css     # Profile page styles
+│   └── [Component].css # Component-specific styles
+```
+
+### Naming Conventions
+
+-   **Page classes:** `.{page-name}-page` (e.g., `.home-page`, `.dashboard-page`)
+-   **Section classes:** `.{page-name}__{section}` (e.g., `.home-page__hero`, `.dashboard__stats`)
+-   **Component classes:** `.{component-name}` (e.g., `.course-card`, `.stat-badge`)
+-   **Modifiers:** `.{class}--{modifier}` (e.g., `.btn--primary`, `.card--highlighted`)
+
+---
+
+## 13. Performance & Visibility Optimization
+
+Heavy pages (3D scenes, carousels, animations) should optimize rendering by only activating content when it is visible in the viewport. This reduces GPU/CPU load and improves battery life on mobile devices.
+
+### Shared `useInView` Hook
+
+Use the shared hook at `src/hooks/useInView.js` for visibility tracking:
+
+```javascript
+import { useInView, useSectionInView } from '../hooks/useInView';
+
+// For animation triggers (fires once, stays true)
+const [ref, isInView] = useInView({ threshold: 0.1, triggerOnce: true });
+
+// For section-level optimization (toggles both ways with preload buffer)
+const [sectionRef, sectionInView] = useSectionInView({ rootMargin: '200px' });
+```
+
+| Hook | Behavior | Use Case |
+|------|----------|----------|
+| `useInView` | Configurable; can be `triggerOnce` or toggle | Scroll-triggered animations |
+| `useSectionInView` | Toggles visibility; 200px preload buffer | Pausing heavy sections |
+
+### Pausing Heavy Components
+
+#### 3D Scenes (Three.js / React Three Fiber)
+
+Pass an `isActive` prop to pause the render loop when off-screen:
+
+```jsx
+// Parent component
+const [heroRef, heroInView] = useSectionInView({ rootMargin: '100px' });
+
+<section ref={heroRef}>
+  <Scene3D isActive={heroInView} />
+</section>
+
+// Scene component
+<Canvas frameloop={isActive ? 'always' : 'demand'}>
+  {/* ... */}
+</Canvas>
+```
+
+#### Auto-Rotating Carousels / Intervals
+
+Gate intervals with the section's visibility state:
+
+```jsx
+const [sectionRef, sectionInView] = useSectionInView();
+
+useEffect(() => {
+  if (!sectionInView) return; // Don't start interval if not visible
+  
+  const interval = setInterval(() => {
+    setActiveSlide((prev) => (prev + 1) % slides.length);
+  }, 5000);
+  
+  return () => clearInterval(interval);
+}, [sectionInView]);
+```
+
+#### Framer Motion Animations
+
+Conditionally animate based on visibility:
+
+```jsx
+<motion.div
+  animate={isInView ? 'visible' : 'hidden'}
+  variants={{
+    visible: { opacity: 1, y: 0 },
+    hidden: { opacity: 0, y: 20 }
+  }}
+/>
+```
+
+### Root Margin (Preload Buffer)
+
+Use `rootMargin` to start loading/rendering content *before* it enters the viewport to avoid visible pop-in:
+
+| Margin | Use Case |
+|--------|----------|
+| `"100px"` | Heavy 3D scenes (start GPU work early) |
+| `"200px"` | Standard sections with animations |
+| `"50px"` | Lightweight content |
+
+### Reduced Motion Support
+
+Always respect the user's `prefers-reduced-motion` preference:
+
+```javascript
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+if (prefersReducedMotion) {
+  // Return static fallback instead of animated content
+  return <div className="static-fallback" />;
+}
+```
+
+### Performance Checklist
+
+When building a new page with heavy visuals:
+
+- [ ] Lazy-load heavy components with `React.lazy()` + `<Suspense>`
+- [ ] Use `useSectionInView` to track section visibility
+- [ ] Pass `isActive` prop to 3D scenes to pause render loops
+- [ ] Gate `setInterval`/`setTimeout` with visibility state
+- [ ] Add `rootMargin` buffer to prevent visible pop-in
+- [ ] Provide static fallbacks for `prefers-reduced-motion`
+- [ ] Use `loading="lazy"` on images below the fold

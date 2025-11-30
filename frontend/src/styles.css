@@ -40,9 +40,15 @@
   --primary-rgb: 124, 58, 237;
 }
 
-body {
+html, body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+body {
   background: #ffffff;
   /* Fallback */
   background-image:
@@ -51,7 +57,6 @@ body {
     radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
   background-attachment: fixed;
   color: var(--text-primary);
-  min-height: 100vh;
 }
 
 /* Liquid Glass Utility */
@@ -65,9 +70,20 @@ body {
 }
 
 #root {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
+}
+
+/* Main content area grows to fill available space */
+#root > main {
+  flex: 1 0 auto;
+}
+
+/* Header (navbar) and footer don't shrink */
+#root > .navbar,
+#root > .site-footer {
+  flex-shrink: 0;
 }
 
 /* No special style needed for main anymore */
@@ -206,8 +222,26 @@ a:hover {
 /* --- Appended Styles from About.css --- */
 
 .about-page {
-  background-color: #f8f9fa;
+  background: #f5f0ff;
   color: #343a40;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Floating orbs background for About page */
+.about-page::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 30%, rgba(124, 58, 237, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 80% 70%, rgba(99, 102, 241, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 30% at 50% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .about-page .container {
@@ -215,6 +249,8 @@ a:hover {
   margin: 0 auto;
   padding: 0 2rem;
   box-sizing: border-box;
+  position: relative;
+  z-index: 1;
 }
 
 .text-center {
@@ -263,7 +299,9 @@ a:hover {
 .about-hero__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(86, 38, 163, 0.85) 0%, rgba(69, 72, 168, 0.85) 100%);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.75) 0%, rgba(99, 102, 241, 0.75) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .about-hero .container {
@@ -274,8 +312,10 @@ a:hover {
 .about-hero__title {
   font-size: 3rem;
   font-weight: 800;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 2px 10px rgba(124, 58, 237, 0.2);
   margin-bottom: 1rem;
+  position: relative;
+  z-index: 1;
 }
 
 .about-hero__subtitle {
@@ -291,7 +331,9 @@ a:hover {
 /* Founders Section */
 .about-founders {
   padding: 6rem 0;
-  background-color: #ffffff;
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 .founders-grid {
@@ -302,19 +344,74 @@ a:hover {
 }
 
 .founder-card {
-  background: #f8f9fa;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 24px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   text-align: center;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 25px 50px rgba(15, 23, 42, 0.28);
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.3s ease, opacity 0.3s ease;
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transform: translateZ(0);
+  min-height: 550px;
+  height: 100%;
 }
 
-.founder-card:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+.founder-card-3d {
+  transform-style: preserve-3d;
+}
+
+.founder-card-border {
+  position: absolute;
+  inset: -20px;
+  border-radius: 24px;
+  background: radial-gradient(circle at center,
+      rgba(124, 58, 237, 0.1) 0%,
+      rgba(99, 102, 241, 0.075) 30%,
+      rgba(139, 92, 246, 0.05) 50%,
+      transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  animation: rotate-gradient 8s linear infinite;
+  z-index: -1;
+  pointer-events: none;
+  transform-origin: center center;
+}
+
+@keyframes rotate-gradient {
+  from {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.1);
+  }
+  to {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.founder-card-3d:hover .founder-card-border {
+  opacity: 1;
+}
+
+.founder-card-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 5;
+}
+
+.founder-card-3d:hover .founder-card-glare {
+  opacity: 1;
 }
 
 .founder-card__image-wrapper {
@@ -328,18 +425,23 @@ a:hover {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.8;
-  transition: transform 0.4s ease;
-  /* Add transition for zoom effect */
+  opacity: 0.9;
+  transition: transform 0.4s ease, opacity 0.3s ease;
+  will-change: transform;
 }
 
-.founder-card:hover .founder-card__image {
-  transform: scale(1.1);
-  /* Zoom effect on hover */
+.founder-card-3d:hover .founder-card__image {
+  transform: scale(1.15) translateZ(10px);
+  opacity: 1;
 }
 
 .founder-card__content {
   padding: 2rem;
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .founder-card__name {
@@ -383,7 +485,9 @@ a:hover {
 /* Values Section */
 .about-values {
   padding: 6rem 0;
-  background: linear-gradient(180deg, #ffffff 0%, #f5f3ff 100%);
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 .values-grid {
@@ -396,6 +500,99 @@ a:hover {
 .value-card {
   text-align: center;
   padding: 2rem;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 25px 50px rgba(15, 23, 42, 0.28);
+  position: relative;
+  transform-style: preserve-3d;
+  transform: translateZ(0);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  min-height: 400px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  will-change: auto;
+}
+
+/* Only apply backdrop-filter on hover to reduce scroll lag */
+.value-card-3d:hover {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Only enable will-change on hover for 3D effect */
+.value-card-3d:hover {
+  will-change: transform;
+}
+
+.value-card > * {
+  position: relative;
+  z-index: 2;
+}
+
+.value-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle,
+      rgba(124, 58, 237, 0.08) 0%,
+      rgba(99, 102, 241, 0.05) 40%,
+      transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+/* Only show shimmer on hover, not continuously */
+.value-card:hover::before {
+  opacity: 0.5;
+}
+
+.value-card-3d {
+  transform-style: preserve-3d;
+}
+
+.value-card-border {
+  position: absolute;
+  inset: -20px;
+  border-radius: var(--radius-lg);
+  background: radial-gradient(circle at center,
+      rgba(124, 58, 237, 0.1) 0%,
+      rgba(99, 102, 241, 0.075) 30%,
+      rgba(139, 92, 246, 0.05) 50%,
+      transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+  pointer-events: none;
+  transform-origin: center center;
+}
+
+/* Only animate border on hover, not continuously */
+.value-card-3d:hover .value-card-border {
+  opacity: 1;
+  animation: rotate-gradient 8s linear infinite;
+}
+
+.value-card-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 5;
+}
+
+.value-card-3d:hover .value-card-glare {
+  opacity: 1;
 }
 
 .value-card__icon {
@@ -404,30 +601,46 @@ a:hover {
   margin-bottom: 1.5rem;
   display: inline-block;
   transition: transform 0.3s ease;
-  /* Add transition for hover effect */
+  position: relative;
+  z-index: 1;
 }
 
+/* Remove continuous pulse animation - only scale on hover */
 .value-card:hover .value-card__icon {
-  transform: rotate(15deg) scale(1.1);
-  /* Rotate and scale effect on hover */
+  transform: scale(1.1);
+}
+
+
+.value-card-3d:hover .value-card__icon {
+  transform: rotate(15deg) scale(1.15);
+  animation: none;
 }
 
 .value-card__title {
   font-size: 1.25rem;
   font-weight: 700;
   margin-bottom: 0.75rem;
+  position: relative;
+  z-index: 1;
+  color: var(--text-primary);
 }
 
 .value-card__text {
   color: #4b5563;
   line-height: 1.6;
+  position: relative;
+  z-index: 1;
 }
 
 /* CTA Section */
 .about-cta {
   padding: 5rem 0;
-  background-color: #1f2937;
+  background: linear-gradient(135deg, rgba(31, 41, 55, 0.95) 0%, rgba(17, 24, 39, 0.95) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: white;
+  position: relative;
+  z-index: 1;
 }
 
 .cta-title {
@@ -453,21 +666,53 @@ a:hover {
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.cta-button:hover::before {
+  left: 100%;
 }
 
 .cta-button:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 20px rgba(124, 58, 237, 0.3);
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 15px 30px rgba(124, 58, 237, 0.4);
 }
 
 /* Responsive */
 @media (max-width: 992px) {
   .founders-grid {
     grid-template-columns: 1fr;
+    gap: 2rem;
   }
 
   .values-grid {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .founder-card-3d,
+  .value-card-3d {
+    transform: none !important;
+  }
+
+  .founder-card-3d:hover,
+  .value-card-3d:hover {
+    transform: translateY(-8px) scale(1.02) !important;
   }
 }
 
@@ -482,6 +727,19 @@ a:hover {
 
   .about-hero__subtitle {
     font-size: 1.1rem;
+  }
+
+  .founder-card__content {
+    padding: 1.5rem;
+  }
+
+  .value-card {
+    padding: 1.5rem;
+  }
+
+  .founder-card-border,
+  .value-card-border {
+    inset: -10px;
   }
 }
 

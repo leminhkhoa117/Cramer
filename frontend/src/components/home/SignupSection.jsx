@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FaGoogle, FaArrowRight } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
@@ -6,6 +6,28 @@ const SignupSection = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [isHovered, setIsHovered] = useState(false);
+  const sectionRef = useRef(null);
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) observer.unobserve(sectionRef.current);
+    };
+  }, []);
 
   const handleNavigate = (path, state = {}) => {
     window.scrollTo(0, 0);
@@ -18,7 +40,7 @@ const SignupSection = () => {
   };
 
   return (
-    <section className="signup-section">
+    <section ref={sectionRef} className={`signup-section ${isInView ? 'in-view' : ''}`}>
       {/* CSS animated floating decorative elements */}
       <div className="signup-floating-circle signup-floating-circle--1" />
       <div className="signup-floating-circle signup-floating-circle--2" />

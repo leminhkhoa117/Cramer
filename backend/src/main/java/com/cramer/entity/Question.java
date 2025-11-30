@@ -21,24 +21,24 @@ public class Question {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "section_id", nullable = false)
+    @Column(name = "section_id")
     private Long sectionId; // Foreign key to sections table
 
-    @Column(name = "question_number", nullable = false)
+    @Column(name = "question_number")
     private Integer questionNumber; // Sequential number within section
 
-    @Column(name = "question_uid", nullable = false)
+    @Column(name = "question_uid", unique = true)
     private String questionUid; // Unique identifier (e.g., "cam17-t1-r-q1")
 
-    @Column(name = "question_type", nullable = false)
+    @Column(name = "question_type")
     private String questionType; // e.g., "FILL_IN_BLANK", "TRUE_FALSE_NOT_GIVEN"
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "question_content", columnDefinition = "jsonb", nullable = false)
+    @Column(name = "question_content", columnDefinition = "jsonb")
     private JsonNode questionContent; // Stores question text and options as JSON
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "correct_answer", columnDefinition = "jsonb", nullable = false)
+    @Column(name = "correct_answer", columnDefinition = "jsonb")
     private JsonNode correctAnswer; // Stores correct answer(s) as JSON array
 
     @ManyToOne(fetch = FetchType.LAZY)
