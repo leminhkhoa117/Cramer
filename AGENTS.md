@@ -79,6 +79,35 @@
   - Click-to-scroll from highlighted text to analysis sections
   - Detailed feedback: sentence corrections, paragraph rewrites, sample essays (band+1, band 9), word analysis
   - User can save Gemini API key in profile for personalized AI grading
+  
+    Added files and notable points for the Writing feature commit (2025-12-05):
+    - Backend additions: controllers, DTOs, entity, repository, and services:
+      - `backend/src/main/java/com/cramer/controller/WritingController.java`
+      - `backend/src/main/java/com/cramer/entity/WritingSubmission.java`
+      - `backend/src/main/java/com/cramer/repository/WritingSubmissionRepository.java`
+      - `backend/src/main/java/com/cramer/dto/WritingSubmitDTO.java`
+      - `backend/src/main/java/com/cramer/dto/WritingSubmissionDTO.java`
+      - `backend/src/main/java/com/cramer/dto/WritingReviewDTO.java`
+      - `backend/src/main/java/com/cramer/service/AsyncGradingService.java`
+      - `backend/src/main/java/com/cramer/service/GeminiGradingService.java`
+      - `backend/src/main/java/com/cramer/service/WritingSubmissionService.java`
+
+    - Frontend additions and updates:
+      - `frontend/src/pages/WritingTestPage.jsx`
+      - `frontend/src/pages/WritingResultPage.jsx`
+      - `frontend/src/css/WritingTestPage.css`
+      - `frontend/src/css/WritingResultPage.css`
+      - Updates to `ResumeConfirmationModal.jsx` and `TestPageContent.jsx` to support the writing attempt flow and modal behavior
+
+    - Docs & migrations:
+      - `docs/backend/migrations/001_writing_feature.sql`
+      - `docs/backend/IELTS Cambridge 17_T1_W.sql`
+      - `docs/marking_criteria/IELTS_W_Band_Descriptors.md`
+      - Sample assets added under `docs/test_materials/` and `docs/marking_criteria/` (image and PDF)
+
+    - Backend behavior updates:
+      - `TestAttemptService` updated to return COMPLETED attempts on `forceNew=false` instead of creating new attempts to avoid ghost `IN_PROGRESS` attempts.
+      - Repository delete methods corrected with explicit `@Query` and `@Modifying` annotation to support reliable delete semantics.
 - 2025-12-04: **Fixed test cancellation bug** — attempts are now properly deleted when user clicks "Huỷ bài". Required fixes:
   - Added explicit `@Query` annotations to repository delete methods.
   - Added RLS policies for service_role on test_attempts and user_answers tables.

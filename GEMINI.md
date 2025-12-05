@@ -127,6 +127,10 @@ The Writing test has a special attempt lifecycle to prevent ghost attempts:
   - Backend now returns COMPLETED attempt when `forceNew=false` instead of auto-creating new
   - Frontend shows choice modal ("Xem kết quả" / "Làm bài mới") when COMPLETED attempt exists
   - `ResumeConfirmationModal` updated to handle both IN_PROGRESS and COMPLETED states
-- **2025-12-05:** Implemented comprehensive Writing Test with AI grading — includes async grading with Gemini 2.0 Flash, resizable review panels, essay highlighting, and click-to-scroll analysis.
+- **2025-12-05:** Implemented comprehensive Writing Test with AI grading — includes async grading with Gemini 2.5 Pro, resizable review panels, essay highlighting, and click-to-scroll analysis.
+ - **2025-12-05:** Full list of files and features added in the Writing feature commit:
+     - Backend: `WritingController.java`, `WritingSubmission.java` (entity), `WritingSubmissionRepository.java`, `WritingSubmitDTO.java`, `WritingSubmissionDTO.java`, `WritingReviewDTO.java`, `AsyncGradingService.java`, `GeminiGradingService.java`, `WritingSubmissionService.java`.
+     - Frontend: `WritingTestPage.jsx`, `WritingResultPage.jsx`, `frontend/src/css/WritingTestPage.css`, `frontend/src/css/WritingResultPage.css`, and UI changes to `ResumeConfirmationModal.jsx`, `TestPageContent.jsx`, `AttemptHistoryDropdown.jsx`, and other minor UI files.
+     - Docs & Assets: `docs/backend/migrations/001_writing_feature.sql`, `docs/backend/IELTS Cambridge 17_T1_W.sql`, `docs/marking_criteria/IELTS_W_Band_Descriptors.md`, `docs/marking_criteria/IELTS_Writing_Band_descriptors.pdf`, and sample image assets under `docs/test_materials/`
 - **2025-12-04:** Fixed test cancellation not deleting attempts — required explicit JPQL queries and RLS policy updates.
 - **2025-12-04:** Fixed duplicate API calls in React StrictMode causing orphan test attempts.

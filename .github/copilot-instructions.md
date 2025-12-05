@@ -74,6 +74,17 @@ Keep changes small, well-scoped and documented. If you modify DB schema, update 
 - ✅ RLS policies added for service_role on test_attempts and user_answers tables.
 - ✅ Duplicate API calls in React StrictMode prevented with refs.
 
+## Recent Changes (2025-12-05)
+When adding new features, especially those that touch both the backend and frontend, please document the changes in the repo docs and update `GEMINI.md`/`AGENTS.md` accordingly.
+
+- **Writing feature + AI Grading (2025-12-05):**
+  - Backend: `WritingController`, `WritingSubmission` entity, `WritingSubmissionRepository`, DTOs (`WritingSubmitDTO`, `WritingSubmissionDTO`, `WritingReviewDTO`), services (`AsyncGradingService`, `GeminiGradingService`, `WritingSubmissionService`).
+  - Frontend: `WritingTestPage.jsx`, `WritingResultPage.jsx`, `WritingTestPage.css`, `WritingResultPage.css`, `ResumeConfirmationModal.jsx` and `TestPageContent.jsx` updates.
+  - Docs & migrations: `docs/backend/migrations/001_writing_feature.sql`, `docs/backend/IELTS Cambridge 17_T1_W.sql`, marking criteria `docs/marking_criteria/*` and sample assets under `docs/test_materials/`.
+  - Behavior changes: test attempt flow updated to avoid ghost `IN_PROGRESS` attempts and improved deletion semantics.
+
+Add a short summary like the above whenever a commit touches multiple subsystems so agents and reviewers can quickly understand the scope without scanning code changes.
+
 ## Useful quick links in repo
 - API client: `frontend/src/api/backendApi.js`
 - Test page: `frontend/src/pages/TestPage.jsx`
