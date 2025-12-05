@@ -1189,7 +1189,7 @@ const ProfilePage = () => {
                         và không được chia sẻ với bất kỳ bên thứ ba nào.
                       </li>
                       <li>
-                        <strong>Model:</strong> Hệ thống sử dụng Gemini 2.0 Flash cho việc chấm điểm, 
+                        <strong>Model:</strong> Hệ thống sử dụng Gemini 2.5 Pro (model: `gemini-2.5-pro`) cho việc chấm điểm, 
                         đảm bảo tốc độ và độ chính xác cao.
                       </li>
                       <li>

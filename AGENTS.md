@@ -72,7 +72,7 @@
   - `ResumeConfirmationModal.jsx`: Added `attemptStatus` prop to show different messages for COMPLETED vs IN_PROGRESS
   - Flow: COMPLETED → show "Xem kết quả" / "Làm bài mới" choice → user decides
 - 2025-12-05: **Implemented IELTS Writing Test with AI Grading** — comprehensive feature including:
-  - Async grading service using Gemini 2.0 Flash API
+  - Async grading service using gemini-2.5-pro (Gemini 2.5 Pro) API
   - WritingResultPage with resizable 3-column layout (react-resizable-panels)
   - Top collapsible scores bar with 4 IELTS band criteria
   - Essay highlighting with color-coded error types (grammar, spelling, vocabulary, punctuation, coherence)

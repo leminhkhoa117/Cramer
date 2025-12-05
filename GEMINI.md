@@ -11,7 +11,7 @@ Cramer is a full-stack web application designed as an English practice platform,
 - ✅ **Test Review**: Completed tests show correct answers with explanations.
 - ✅ **Dashboard**: Shows course progress, skill summaries, and test history.
 - ✅ **Profile Management**: Users can update profile info, avatar, and Gemini API key.
-- ✅ **Writing Test**: Full implementation with async AI grading using Gemini 2.0 Flash.
+- ✅ **Writing Test**: Full implementation with async AI grading using gemini-2.5-pro (Gemini 2.5 Pro).
 - ✅ **Writing Review**: Comprehensive review UI with resizable panels, highlighted essay, and detailed feedback.
 
 ## Architecture
