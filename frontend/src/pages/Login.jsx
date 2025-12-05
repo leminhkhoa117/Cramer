@@ -95,9 +95,9 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
       <form className="auth-form" onSubmit={handleEmailSubmit}>
         <h2 className="auth-title">Quên mật khẩu</h2>
         <p className="auth-subtitle">Nhập email để khôi phục mật khẩu</p>
-        
+
         {error && <div className="auth-alert auth-alert--error">{error}</div>}
-        
+
         <div className="auth-input-group">
           <FaEnvelope className="auth-input-icon" />
           <input
@@ -109,11 +109,11 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
             required
           />
         </div>
-        
+
         <button type="submit" className="auth-btn auth-btn--primary" disabled={loading}>
           {loading ? 'Đang xử lý...' : 'Tiếp tục'}
         </button>
-        
+
         <button type="button" className="auth-btn auth-btn--text" onClick={onSwitchToLogin}>
           <FaArrowLeft /> Quay lại đăng nhập
         </button>
@@ -126,10 +126,10 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
       <form className="auth-form" onSubmit={handlePasswordSubmit}>
         <h2 className="auth-title">Tạo mật khẩu mới</h2>
         <p className="auth-subtitle">Nhập mật khẩu mới cho tài khoản của bạn</p>
-        
+
         {success && <div className="auth-alert auth-alert--success">{success}</div>}
         {error && <div className="auth-alert auth-alert--error">{error}</div>}
-        
+
         <div className="auth-input-group">
           <FaLock className="auth-input-icon" />
           <input
@@ -144,7 +144,7 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
             {showPassword ? <FaEyeSlash /> : <FaEye />}
           </button>
         </div>
-        
+
         <div className="auth-input-group">
           <FaLock className="auth-input-icon" />
           <input
@@ -156,11 +156,11 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
             required
           />
         </div>
-        
+
         <button type="submit" className="auth-btn auth-btn--primary" disabled={loading}>
           {loading ? 'Đang xử lý...' : 'Gửi mã xác thực'}
         </button>
-        
+
         <button type="button" className="auth-btn auth-btn--text" onClick={onSwitchToLogin}>
           Hủy
         </button>
@@ -174,7 +174,7 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
         <h2 className="auth-title">Xác thực OTP</h2>
         <p className="auth-subtitle">Nhập mã 6 chữ số được gửi đến <strong>{email}</strong></p>
         {success && <div className="auth-alert auth-alert--success">{success}</div>}
-        <OTPVerification email={email} onVerify={handleOtpSubmit} onResend={() => {}} onClose={onSwitchToLogin} />
+        <OTPVerification email={email} onVerify={handleOtpSubmit} onResend={() => { }} onClose={onSwitchToLogin} />
       </div>
     );
   }
@@ -205,7 +205,7 @@ export default function Login() {
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
 
-  const { user, signOut, signIn, signUp, verifyOtp, resendOtp, signInWithGoogle } = useAuth();
+  const { user, loading: authLoading, signOut, signIn, signUp, verifyOtp, resendOtp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   // Scroll to top on mount
@@ -228,6 +228,23 @@ export default function Login() {
       navigate('/dashboard');
     }
   }, [user, formState, navigate]);
+
+  // Show a styled loading indicator while auth state is being determined
+  // This prevents the blank page issue during logout → login transition
+  if (authLoading) {
+    return (
+      <div className="login-page">
+        <div className="login-bg-orbs">
+          <div className="login-orb login-orb--1" />
+          <div className="login-orb login-orb--2" />
+          <div className="login-orb login-orb--3" />
+        </div>
+        <div className="login-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div style={{ color: 'white', fontSize: '1.2rem' }}>Đang tải...</div>
+        </div>
+      </div>
+    );
+  }
 
   const clearForm = () => {
     setEmail('');
@@ -477,10 +494,10 @@ export default function Login() {
               <span>cùng Cramer</span>
             </h1>
             <p className="login-tagline">
-              Nền tảng luyện thi IELTS thông minh với công nghệ AI, 
+              Nền tảng luyện thi IELTS thông minh với công nghệ AI,
               giúp bạn đạt band điểm mơ ước.
             </p>
-            
+
             <div className="login-features">
               <div className="login-feature">
                 <div className="login-feature-icon">✓</div>

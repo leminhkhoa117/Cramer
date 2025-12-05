@@ -5,6 +5,7 @@ import com.cramer.entity.Question;
 import com.cramer.entity.Section;
 import com.cramer.entity.TestAttempt;
 import com.cramer.entity.UserAnswer;
+import com.cramer.entity.WritingSubmission;
 import com.cramer.exception.ResourceNotFoundException;
 import com.cramer.repository.*;
 import com.cramer.util.EntityMapper;
@@ -25,19 +26,22 @@ public class DashboardService {
     private final UserAnswerRepository userAnswerRepository;
     private final QuestionRepository questionRepository;
     private final SectionRepository sectionRepository;
+    private final WritingSubmissionRepository writingSubmissionRepository;
 
     public DashboardService(ProfileRepository profileRepository,
                             TargetRepository targetRepository,
                             TestAttemptRepository testAttemptRepository,
                             UserAnswerRepository userAnswerRepository,
                             QuestionRepository questionRepository,
-                            SectionRepository sectionRepository) {
+                            SectionRepository sectionRepository,
+                            WritingSubmissionRepository writingSubmissionRepository) {
         this.profileRepository = profileRepository;
         this.targetRepository = targetRepository;
         this.testAttemptRepository = testAttemptRepository;
         this.userAnswerRepository = userAnswerRepository;
         this.questionRepository = questionRepository;
         this.sectionRepository = sectionRepository;
+        this.writingSubmissionRepository = writingSubmissionRepository;
     }
 
     public DashboardSummaryDTO buildDashboardSummary(UUID userId, int page, int size, String search) {
@@ -98,7 +102,14 @@ public class DashboardService {
             // Sort attempts by startedAt desc (latest first)
             testAttempts.sort(Comparator.comparing(TestAttempt::getStartedAt, Comparator.nullsLast(Comparator.reverseOrder())));
 
-            TestAttempt latestAttempt = testAttempts.get(0);
+            // Find the latest non-CANCELLED attempt for display
+            TestAttempt latestAttempt = testAttempts.stream()
+                    .filter(a -> !"CANCELLED".equals(a.getStatus()))
+                    .findFirst()
+                    .orElse(null);
+            
+            // Skip this test if all attempts are cancelled
+            if (latestAttempt == null) continue;
 
             // Filter by search if needed
             if (search != null && !search.trim().isEmpty()) {
@@ -108,15 +119,21 @@ public class DashboardService {
                 if (!matches) continue;
             }
 
-            // Build History
+            // Build History - exclude CANCELLED attempts (they have no value to show)
             List<AttemptHistoryDTO> history = testAttempts.stream()
+                    .filter(a -> !"CANCELLED".equals(a.getStatus()))
                     .map(a -> {
                         int correct = (int) answersByAttemptId.getOrDefault(a.getId(), Collections.emptyList()).stream()
                                 .filter(ans -> Boolean.TRUE.equals(ans.getCorrect()))
                                 .count();
                         Double band = null;
-                         if ("COMPLETED".equals(a.getStatus()) && ("reading".equalsIgnoreCase(a.getSkill()) || "listening".equalsIgnoreCase(a.getSkill()))) {
-                            band = IeltsScoreConverter.convertToBand(a.getScore() != null ? a.getScore() : correct);
+                        if ("COMPLETED".equals(a.getStatus())) {
+                            if ("reading".equalsIgnoreCase(a.getSkill()) || "listening".equalsIgnoreCase(a.getSkill())) {
+                                band = IeltsScoreConverter.convertToBand(a.getScore() != null ? a.getScore() : correct);
+                            } else if ("writing".equalsIgnoreCase(a.getSkill())) {
+                                // For writing, get band from writing_submissions
+                                band = getWritingAttemptBand(a.getId());
+                            }
                         }
                         return new AttemptHistoryDTO(a.getId(), a.getCompletedAt(), a.getScore(), a.getStatus(), band);
                     })
@@ -127,7 +144,17 @@ public class DashboardService {
             List<UserAnswer> attemptAnswers = answersByAttemptId.getOrDefault(latestAttempt.getId(), Collections.emptyList());
             int answersAttempted = attemptAnswers.size();
             int correctCount = (int) attemptAnswers.stream().filter(a -> Boolean.TRUE.equals(a.getCorrect())).count();
-            double score = IeltsScoreConverter.convertToBand(correctCount);
+            
+            // Calculate score based on skill type
+            double score;
+            if ("writing".equalsIgnoreCase(latestAttempt.getSkill())) {
+                // For writing, get band from writing_submissions
+                Double writingBand = getWritingAttemptBand(latestAttempt.getId());
+                score = writingBand != null ? writingBand : 0.0;
+            } else {
+                score = IeltsScoreConverter.convertToBand(correctCount);
+            }
+            
             double completionRate = totalQuestions > 0 ? (double) answersAttempted / totalQuestions : 0.0;
 
             courseProgressList.add(new CourseProgressDTO(
@@ -277,6 +304,48 @@ public class DashboardService {
         } catch (NumberFormatException ex) {
             return null;
         }
+    }
+
+    /**
+     * Get the overall band score for a writing attempt using IELTS weighted average.
+     * Task 1 = 1/3 weight, Task 2 = 2/3 weight (consistent with WritingSubmissionService)
+     */
+    private Double getWritingAttemptBand(Long attemptId) {
+        List<WritingSubmission> submissions = writingSubmissionRepository.findByAttemptId(attemptId);
+        if (submissions.isEmpty()) {
+            return null;
+        }
+        
+        // Find graded bands for Task 1 and Task 2
+        Double task1Band = null;
+        Double task2Band = null;
+        
+        for (WritingSubmission sub : submissions) {
+            if ("COMPLETED".equals(sub.getGradingStatus()) && sub.getOverallBand() != null) {
+                if (sub.getTaskNumber() == 1) {
+                    task1Band = sub.getOverallBand().doubleValue();
+                } else if (sub.getTaskNumber() == 2) {
+                    task2Band = sub.getOverallBand().doubleValue();
+                }
+            }
+        }
+        
+        // Calculate weighted average using IELTS formula
+        Double result;
+        if (task1Band != null && task2Band != null) {
+            // Weighted average: (Task1 * 1 + Task2 * 2) / 3
+            double weighted = (task1Band + task2Band * 2) / 3.0;
+            // Round to nearest 0.5
+            result = Math.round(weighted * 2) / 2.0;
+        } else if (task1Band != null) {
+            result = task1Band;
+        } else if (task2Band != null) {
+            result = task2Band;
+        } else {
+            result = null;
+        }
+        
+        return result;
     }
 
     private record TestKey(String examSource, Integer testNumber, String skill) {

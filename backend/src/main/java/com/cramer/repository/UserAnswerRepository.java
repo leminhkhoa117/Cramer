@@ -3,6 +3,8 @@ package com.cramer.repository;
 import com.cramer.entity.UserAnswer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -30,8 +32,9 @@ public interface UserAnswerRepository extends JpaRepository<UserAnswer, Long> {
      * This is useful for allowing users to re-submit a test.
      * @param testAttemptId The ID of the test attempt whose answers should be deleted.
      */
-    @Modifying
-    void deleteByAttemptId(Long testAttemptId);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM UserAnswer ua WHERE ua.attempt.id = :attemptId")
+    void deleteByAttemptId(@Param("attemptId") Long testAttemptId);
 
     /**
      * Finds the 5 most recent answers for a specific user.

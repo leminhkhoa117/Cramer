@@ -77,6 +77,16 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
     long countByExamSource(String examSource);
 
     /**
+     * Find all sections by exam source, test number, and skill.
+     * 
+     * @param examSource the exam source identifier
+     * @param testNumber the test number
+     * @param skill the skill type
+     * @return list of sections
+     */
+    List<Section> findByExamSourceAndTestNumberAndSkill(String examSource, Integer testNumber, String skill);
+
+    /**
      * Check if a section exists with the given parameters.
      * 
      * @param examSource the exam source identifier

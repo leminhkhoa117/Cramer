@@ -58,10 +58,15 @@ public class TestAttemptService {
 
     @Transactional
     public TestAttempt startOrGetAttempt(String source, String testNum, String skill, UUID userId) {
+        return startOrGetAttempt(source, testNum, skill, userId, false);
+    }
+    
+    @Transactional
+    public TestAttempt startOrGetAttempt(String source, String testNum, String skill, UUID userId, boolean forceNew) {
         final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
         logger.info("--- NEW REQUEST ---");
-        logger.info("🎯 [1] Starting startOrGetAttempt: userId={}, source={}, testNum={}, skill={}", 
-                        userId, source, testNum, skill);
+        logger.info("🎯 [1] Starting startOrGetAttempt: userId={}, source={}, testNum={}, skill={}, forceNew={}", 
+                        userId, source, testNum, skill, forceNew);
         
         try {
             // Trim inputs for robustness
@@ -75,16 +80,82 @@ public class TestAttemptService {
             if (trimmedTestNum == null || trimmedTestNum.isEmpty()) throw new IllegalArgumentException("Test number cannot be null or empty");
             if (trimmedSkill == null || trimmedSkill.isEmpty()) throw new IllegalArgumentException("Skill cannot be null or empty");
             
-            logger.info("🎯 [2] Finding latest attempt with: source={}, testNum={}, skill={}", trimmedSource, trimmedTestNum, trimmedSkill);
-            Optional<TestAttempt> latestAttemptOpt = testAttemptRepository
-                    .findTopByUserIdAndExamSourceAndTestNumberAndSkillOrderByStartedAtDesc(userId, trimmedSource, trimmedTestNum, trimmedSkill);
+            logger.info("🎯 [2] Finding all attempts for this test");
+            List<TestAttempt> allAttempts = testAttemptRepository
+                    .findByUserIdAndExamSourceAndTestNumberAndSkillOrderByStartedAtDesc(userId, trimmedSource, trimmedTestNum, trimmedSkill);
+            
+            // Find the latest attempt and all IN_PROGRESS attempts
+            TestAttempt latestAttempt = allAttempts.isEmpty() ? null : allAttempts.get(0);
+            List<TestAttempt> inProgressAttempts = allAttempts.stream()
+                    .filter(a -> "IN_PROGRESS".equals(a.getStatus()))
+                    .toList();
+            
+            logger.info("🎯 [3] Found {} total attempts, {} IN_PROGRESS", allAttempts.size(), inProgressAttempts.size());
+            
+            // If forceNew is true, cancel ALL IN_PROGRESS attempts and create new
+            if (forceNew && !inProgressAttempts.isEmpty()) {
+                logger.info("   -> forceNew=true. Cancelling all {} IN_PROGRESS attempts.", inProgressAttempts.size());
+                for (TestAttempt oldAttempt : inProgressAttempts) {
+                    logger.info("   -> Cancelling IN_PROGRESS attempt ID: {}", oldAttempt.getId());
+                    oldAttempt.setStatus("CANCELLED");
+                    testAttemptRepository.save(oldAttempt);
+                }
+                return createNewAttempt(userId, trimmedSource, trimmedTestNum, trimmedSkill, logger);
+            }
+            
+            // If there are multiple IN_PROGRESS attempts, cancel all but the most recent one
+            if (inProgressAttempts.size() > 1) {
+                logger.info("   -> Found multiple IN_PROGRESS attempts. Keeping only the most recent.");
+                TestAttempt mostRecentInProgress = inProgressAttempts.get(0); // Already sorted by startedAt DESC
+                for (int i = 1; i < inProgressAttempts.size(); i++) {
+                    TestAttempt oldAttempt = inProgressAttempts.get(i);
+                    logger.info("   -> Cancelling stale IN_PROGRESS attempt ID: {}", oldAttempt.getId());
+                    oldAttempt.setStatus("CANCELLED");
+                    testAttemptRepository.save(oldAttempt);
+                }
+            }
+            
+            // Also check: if there's a COMPLETED attempt that's MORE RECENT than an IN_PROGRESS,
+            // the IN_PROGRESS is stale and should be cancelled
+            if (!inProgressAttempts.isEmpty() && latestAttempt != null && "COMPLETED".equals(latestAttempt.getStatus())) {
+                logger.info("   -> Latest attempt is COMPLETED but there are stale IN_PROGRESS attempts. Cancelling them.");
+                for (TestAttempt staleAttempt : inProgressAttempts) {
+                    logger.info("   -> Cancelling stale IN_PROGRESS attempt ID: {}", staleAttempt.getId());
+                    staleAttempt.setStatus("CANCELLED");
+                    testAttemptRepository.save(staleAttempt);
+                }
+                // Now create a new attempt
+                return createNewAttempt(userId, trimmedSource, trimmedTestNum, trimmedSkill, logger);
+            }
 
-            if (latestAttemptOpt.isPresent()) {
-                TestAttempt latestAttempt = latestAttemptOpt.get();
-                logger.info("🎯 [3A] Found existing attempt. ID: {}, Status: {}", latestAttempt.getId(), latestAttempt.getStatus());
+            if (latestAttempt != null) {
+                logger.info("🎯 [4] Latest attempt ID: {}, Status: {}", latestAttempt.getId(), latestAttempt.getStatus());
 
-                if ("COMPLETED".equals(latestAttempt.getStatus()) || "CANCELLED".equals(latestAttempt.getStatus())) {
-                    logger.info("   -> Status is '{}'. Proceeding to create a new attempt.", latestAttempt.getStatus());
+                if ("COMPLETED".equals(latestAttempt.getStatus())) {
+                    if (forceNew) {
+                        logger.info("   -> Status is 'COMPLETED' and forceNew=true. Creating new attempt.");
+                        return createNewAttempt(userId, trimmedSource, trimmedTestNum, trimmedSkill, logger);
+                    } else {
+                        // Return the COMPLETED attempt - frontend will decide what to do
+                        logger.info("   -> Status is 'COMPLETED' and forceNew=false. Returning existing COMPLETED attempt.");
+                        TestAttempt detachedAttempt = new TestAttempt();
+                        detachedAttempt.setId(latestAttempt.getId());
+                        detachedAttempt.setUserId(latestAttempt.getUserId());
+                        detachedAttempt.setExamSource(latestAttempt.getExamSource());
+                        detachedAttempt.setTestNumber(latestAttempt.getTestNumber());
+                        detachedAttempt.setSkill(latestAttempt.getSkill());
+                        detachedAttempt.setStatus(latestAttempt.getStatus());
+                        detachedAttempt.setScore(latestAttempt.getScore());
+                        detachedAttempt.setStartedAt(latestAttempt.getStartedAt());
+                        detachedAttempt.setCompletedAt(latestAttempt.getCompletedAt());
+                        detachedAttempt.setTimeLeft(latestAttempt.getTimeLeft());
+                        detachedAttempt.setCurrentPart(latestAttempt.getCurrentPart());
+                        return detachedAttempt;
+                    }
+                }
+                
+                if ("CANCELLED".equals(latestAttempt.getStatus())) {
+                    logger.info("   -> Status is 'CANCELLED'. Proceeding to create a new attempt.");
                     return createNewAttempt(userId, trimmedSource, trimmedTestNum, trimmedSkill, logger);
                 }
                 
@@ -117,6 +188,17 @@ public class TestAttemptService {
 
     private TestAttempt createNewAttempt(UUID userId, String source, String testNum, String skill, org.slf4j.Logger logger) {
         logger.info("   -> [Sub-Process] Inside createNewAttempt");
+        
+        // Cancel any existing IN_PROGRESS attempts for this test before creating a new one
+        List<TestAttempt> existingInProgressAttempts = testAttemptRepository
+                .findByUserIdAndExamSourceAndTestNumberAndSkillAndStatus(userId, source, testNum, skill, "IN_PROGRESS");
+        
+        for (TestAttempt oldAttempt : existingInProgressAttempts) {
+            logger.info("   -> Cancelling old IN_PROGRESS attempt ID: {}", oldAttempt.getId());
+            oldAttempt.setStatus("CANCELLED");
+            testAttemptRepository.save(oldAttempt);
+        }
+        
         TestAttempt newAttempt = new TestAttempt();
         newAttempt.setUserId(userId);
         newAttempt.setExamSource(source);
@@ -393,7 +475,7 @@ public class TestAttemptService {
     @Transactional
     public void cancelAttempt(Long attemptId, UUID userId) {
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
-        logger.info("🔄 Cancelling test attempt: attemptId={}, userId={}", attemptId, userId);
+        logger.info("🗑️ Cancelling and deleting test attempt: attemptId={}, userId={}", attemptId, userId);
 
         TestAttempt attempt = testAttemptRepository.findById(attemptId)
                 .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + attemptId));
@@ -406,11 +488,13 @@ public class TestAttemptService {
             throw new IllegalStateException("Only in-progress attempts can be cancelled.");
         }
 
-        attempt.setStatus("CANCELLED");
-        attempt.setCompletedAt(OffsetDateTime.now()); // Mark completion time as now
-        testAttemptRepository.save(attempt);
+        // First delete all associated user answers to avoid FK constraint violations
+        userAnswerRepository.deleteByAttemptId(attemptId);
+        logger.info("   -> Deleted all user answers for attemptId={}", attemptId);
 
-        logger.info("✅ Successfully cancelled test attempt: attemptId={}", attemptId);
+        // Then delete the attempt itself using explicit JPQL query
+        testAttemptRepository.deleteAttemptById(attemptId);
+        logger.info("✅ Successfully cancelled and deleted test attempt: attemptId={}", attemptId);
     }
 
     @Transactional

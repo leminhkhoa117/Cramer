@@ -39,6 +39,9 @@ public class Profile {
     @Column(name = "page_background_url")
     private String pageBackgroundUrl;
 
+    @Column(name = "gemini_api_key")
+    private String geminiApiKey;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -115,6 +118,14 @@ public class Profile {
 
     public void setPageBackgroundUrl(String pageBackgroundUrl) {
         this.pageBackgroundUrl = pageBackgroundUrl;
+    }
+
+    public String getGeminiApiKey() {
+        return geminiApiKey;
+    }
+
+    public void setGeminiApiKey(String geminiApiKey) {
+        this.geminiApiKey = geminiApiKey;
     }
 
     public OffsetDateTime getCreatedAt() {

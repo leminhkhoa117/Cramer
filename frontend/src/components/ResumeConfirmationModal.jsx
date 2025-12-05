@@ -13,8 +13,15 @@ const modalVariants = {
     exit: { y: "50px", opacity: 0 },
 };
 
-const ResumeConfirmationModal = ({ isOpen, onResume, onStartNew, isStartingNew }) => {
+const ResumeConfirmationModal = ({ isOpen, onResume, onStartNew, isStartingNew, attemptStatus = 'IN_PROGRESS' }) => {
     if (!isOpen) return null;
+
+    const isCompleted = attemptStatus === 'COMPLETED';
+    const title = isCompleted ? 'Đã có bài làm trước đó' : 'Bài làm đang dang dở';
+    const message = isCompleted 
+        ? 'Bạn đã hoàn thành bài test này trước đó. Bạn muốn xem kết quả hay làm bài mới?'
+        : 'Chúng tôi tìm thấy một lần làm bài chưa hoàn thành cho bài test này. Bạn muốn tiếp tục hay bắt đầu một bài mới?';
+    const resumeButtonText = isCompleted ? 'Xem kết quả' : 'Tiếp tục làm bài';
 
     return (
         <AnimatePresence>
@@ -31,10 +38,10 @@ const ResumeConfirmationModal = ({ isOpen, onResume, onStartNew, isStartingNew }
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="confirmation-modal-header">
-                        <h3>Bài làm đang dang dở</h3>
+                        <h3>{title}</h3>
                     </div>
                     <div className="confirmation-modal-body">
-                        <p>Chúng tôi tìm thấy một lần làm bài chưa hoàn thành cho bài test này. Bạn muốn tiếp tục hay bắt đầu một bài mới?</p>
+                        <p>{message}</p>
                     </div>
                     <div className="confirmation-modal-footer">
                         <button 
@@ -42,14 +49,14 @@ const ResumeConfirmationModal = ({ isOpen, onResume, onStartNew, isStartingNew }
                             onClick={onStartNew}
                             disabled={isStartingNew}
                         >
-                            {isStartingNew ? 'Đang tạo...' : 'Bắt đầu bài mới'}
+                            {isStartingNew ? 'Đang tạo...' : 'Làm bài mới'}
                         </button>
                         <button 
                             className="btn btn-primary-gradient" 
                             onClick={onResume}
                             disabled={isStartingNew}
                         >
-                            Tiếp tục làm bài
+                            {resumeButtonText}
                         </button>
                     </div>
                 </motion.div>

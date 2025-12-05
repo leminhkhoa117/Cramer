@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { testApi, testAttemptApi } from '../api/backendApi';
 import { HighlightProvider } from '../contexts/HighlightContext';
@@ -40,6 +40,7 @@ const TestPage = () => {
     const [activeAudioIndex, setActiveAudioIndex] = useState(-1);
 
     const isSubmittingRef = useRef(false);
+    const hasFetchedRef = useRef(false);
 
     // --- Data Loading and Setup ---
     const setupTestState = useCallback(async (attemptData, fullTestData) => {
@@ -79,15 +80,19 @@ const TestPage = () => {
     }, [skill, isAutoplay]);
 
     useEffect(() => {
+        // Prevent duplicate calls in React StrictMode
+        if (hasFetchedRef.current) return;
+        hasFetchedRef.current = true;
+
         const fetchAndStartTest = async () => {
             try {
                 setLoading(true);
                 const attemptRes = await testAttemptApi.startAttempt(source, testNum, skill);
                 const attemptData = attemptRes.data;
 
-                const isDirty = (attemptData.timeLeft !== null && attemptData.timeLeft < INITIAL_READING_TIME) || 
-                                (attemptData.currentPart !== null && attemptData.currentPart > 0) ||
-                                (attemptData.status === 'IN_PROGRESS' && attemptData.id && (await testAttemptApi.getAttemptAnswers(attemptData.id)).data.length > 0); // Check if answers exist
+                const isDirty = (attemptData.timeLeft !== null && attemptData.timeLeft < INITIAL_READING_TIME) ||
+                    (attemptData.currentPart !== null && attemptData.currentPart > 0) ||
+                    (attemptData.status === 'IN_PROGRESS' && attemptData.id && (await testAttemptApi.getAttemptAnswers(attemptData.id)).data.length > 0); // Check if answers exist
 
                 if (attemptData.status === 'IN_PROGRESS' && isDirty) {
                     setInProgressAttempt(attemptData);
@@ -120,12 +125,22 @@ const TestPage = () => {
     const handleStartNew = async () => {
         try {
             setIsStartingNew(true);
-            await testAttemptApi.cancelAttempt(inProgressAttempt.id);
-            
+
+            // Try to cancel the old attempt, but continue even if it's already deleted
+            try {
+                await testAttemptApi.cancelAttempt(inProgressAttempt.id);
+            } catch (cancelError) {
+                // If attempt was already deleted (404), that's fine - continue
+                if (cancelError.response?.status !== 404) {
+                    throw cancelError;
+                }
+                console.log('Previous attempt already deleted, proceeding with new test.');
+            }
+
             // Refetch a brand new attempt
             const newAttemptRes = await testAttemptApi.startAttempt(source, testNum, skill);
             const fullTestData = await testApi.getFullTest(source, testNum, skill);
-            
+
             // Reset answers and other states for the new test
             setAnswers({});
             setReadingTimeLeft(INITIAL_READING_TIME);
@@ -189,6 +204,11 @@ const TestPage = () => {
         }
     }, [activeAudioIndex, testStatus, skill, loading]);
 
+    // --- Redirect Writing to dedicated page ---
+    if (skill === 'writing') {
+        return <Navigate to={`/test/writing/${source}/${testNum}`} replace />;
+    }
+
     // --- Render Logic ---
     if (loading && !isResumeModalOpen) {
         return (
@@ -199,7 +219,7 @@ const TestPage = () => {
             />
         );
     }
-    
+
     if (error) return <div className="error-message">{error}</div>;
 
     return (

@@ -160,13 +160,20 @@ const TestPageContent = ({
     const handleAbort = useCallback(async () => {
         if (!attempt) return;
         try {
-            setIsSavingProgress(true); // Reuse the same saving state for simplicity
+            setIsSavingProgress(true);
             await testAttemptApi.cancelAttempt(attempt.id);
             setIsExitModalOpen(false);
-            navigate('/dashboard');
+            // Pass state to trigger dashboard refresh
+            navigate('/dashboard', { state: { refreshData: true } });
         } catch (error) {
             console.error('Failed to cancel attempt:', error);
-            alert('Không thể huỷ lần làm bài. Vui lòng thử lại.');
+            // If the attempt was already deleted (404), still navigate away
+            if (error.response?.status === 404) {
+                setIsExitModalOpen(false);
+                navigate('/dashboard', { state: { refreshData: true } });
+            } else {
+                alert('Không thể huỷ lần làm bài. Vui lòng thử lại.');
+            }
         } finally {
             setIsSavingProgress(false);
         }

@@ -41,20 +41,47 @@
 
 ## Auth & API Notes
 
-- All `/api/**` routes are JWT-protected; the JWT subject must be the Supabase user UUID and the secret comes from `supabase.jwt.secret` (see PROJECT_DIARY.md 2025-11-08 for the unresolved signature mismatch blocker).
-- `SupabaseAdminService` expects a base URL without `/rest/v1`; the current `.env.example` points to `/rest/v1`, which breaks `/auth/v1` admin calls (email checks).
-- Profile API surface is currently only `GET`/`PUT /api/profiles/{id}`; the frontend still tries `POST /api/profiles` when a profile is missing, so signup/profile creation will 404 until the backend is expanded.
-- Target endpoints live at `/api/targets/me`, but the frontend posts to `/api/dashboard/target`; align before relying on dashboard target saves.
-- Test attempt flow requires auth; `/api/test-attempts/{id}/progress` wipes and rewrites answers, and `/submit` recalculates scores and marks attempts `COMPLETED`.
+- All `/api/**` routes are JWT-protected; the JWT subject is the Supabase user UUID and validated using `supabase.jwt.secret`.
+- **Authentication is fully functional** as of 2025-12-04 — JWT signature validation works correctly.
+- Profile API: `GET`/`PUT /api/profiles/{id}` — frontend handles profile creation via Supabase triggers.
+- Dashboard API: `GET /api/dashboard/summary/{userId}` — aggregates test progress, targets, and stats.
+- Target endpoints: `POST /api/dashboard/target` saves user learning targets.
+- Test attempt flow is fully implemented with start, progress, submit, cancel, and delete endpoints.
 
 ## Frontend Notes
 
-- Use `.env.local` with `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_API_BASE_URL`; `frontend/README.md` still mentions port 3000 (actual dev port is 5173).
-- Supabase Storage bucket `userImages` is expected with folders `avatars/`, `hero-backgrounds/`, and `backgrounds/`; uploads delete prior files and resize avatars to 200x200 client-side.
-- `App.jsx` imports `./pages/profile` (lowercase) while the file is `Profile.jsx`; this will break on case-sensitive filesystems.
-- Routes: tests live at `/test/:source/:testNum/:skill`, course details at `/courses/:courseName`, profile page depends on the profile API notes above.
+- Use `.env.local` with `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_API_BASE_URL`.
+- Dev server runs on port **5173** (Vite default).
+- Supabase Storage bucket `userImages` is expected with folders `avatars/`, `hero-backgrounds/`, and `backgrounds/`.
+- Routes: tests at `/test/:source/:testNum/:skill`, course details at `/courses/:courseName`.
+- Writing test at `/test/writing/:source/:testNum`, review at `/test/writing/review/:attemptId`.
+- `TestPage.jsx` uses `hasFetchedRef` to prevent duplicate API calls in React StrictMode.
+- `WritingResultPage.jsx` uses `react-resizable-panels` for 3-column layout with collapsible scores bar.
+
+## Database Notes
+
+- **RLS (Row Level Security)** is enabled on `test_attempts` and `user_answers` tables.
+- Service role policies have been added to allow backend DELETE operations.
+- When adding new tables with RLS, ensure service_role policies are created for backend operations.
 
 ## Recent Agent Notes
 
-- 2025-11-28: Skimmed repo - docs still diverge from the Spring Boot + Supabase setup; profile creation and dashboard target APIs are missing server handlers the frontend calls; Supabase admin base URL must exclude `/rest/v1`; auth remains blocked by Supabase JWT signature mismatch (see PROJECT_DIARY.md 2025-11-08).
-- 2025-11-16: Verified the two-pane Test layout (passage/questions) and confirmed that dragging the resize handle fully left does not remove the passage panel when the layout is configured correctly; no code change required beyond the existing safeguards.
+- 2025-12-05: **Fixed ghost IN_PROGRESS attempts for Writing tests** — when user completes a Writing test and navigates back, the system no longer creates phantom IN_PROGRESS attempts. Changes:
+  - `TestAttemptService.java`: When `forceNew=false` and latest attempt is COMPLETED, return the COMPLETED attempt instead of creating new
+  - `WritingTestPage.jsx`: Detect COMPLETED status and show choice modal
+  - `ResumeConfirmationModal.jsx`: Added `attemptStatus` prop to show different messages for COMPLETED vs IN_PROGRESS
+  - Flow: COMPLETED → show "Xem kết quả" / "Làm bài mới" choice → user decides
+- 2025-12-05: **Implemented IELTS Writing Test with AI Grading** — comprehensive feature including:
+  - Async grading service using Gemini 2.0 Flash API
+  - WritingResultPage with resizable 3-column layout (react-resizable-panels)
+  - Top collapsible scores bar with 4 IELTS band criteria
+  - Essay highlighting with color-coded error types (grammar, spelling, vocabulary, punctuation, coherence)
+  - Click-to-scroll from highlighted text to analysis sections
+  - Detailed feedback: sentence corrections, paragraph rewrites, sample essays (band+1, band 9), word analysis
+  - User can save Gemini API key in profile for personalized AI grading
+- 2025-12-04: **Fixed test cancellation bug** — attempts are now properly deleted when user clicks "Huỷ bài". Required fixes:
+  - Added explicit `@Query` annotations to repository delete methods.
+  - Added RLS policies for service_role on test_attempts and user_answers tables.
+  - Added `hasFetchedRef` to prevent duplicate API calls from React StrictMode creating orphan attempts.
+- 2025-12-04: JWT authentication confirmed working — no more signature mismatch issues.
+- 2025-11-16: Verified the two-pane Test layout (passage/questions) works correctly.

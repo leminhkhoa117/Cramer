@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { profileApi } from '../api/backendApi';
+import { writingApi } from '../api/backendApi';
 import { showErrorToast, showSuccessToast } from '../utils/toast.js';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -23,7 +24,10 @@ import {
   FiLogOut,
   FiGlobe,
   FiClock,
-  FiLink
+  FiLink,
+  FiCpu,
+  FiEye,
+  FiEyeOff
 } from 'react-icons/fi';
 import { FaGoogle, FaFacebook } from 'react-icons/fa';
 import '../css/ProfilePage.css';
@@ -56,6 +60,14 @@ const ProfilePage = () => {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [deleteImageModal, setDeleteImageModal] = useState({ isOpen: false, type: null });
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // AI Settings states
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [isValidatingApiKey, setIsValidatingApiKey] = useState(false);
+  const [apiKeyStatus, setApiKeyStatus] = useState(null); // null, 'valid', 'invalid'
+  const [isSavingApiKey, setIsSavingApiKey] = useState(false);
+  const [isApiKeyModified, setIsApiKeyModified] = useState(false); // Track if user has modified the key
   
   // Security states (mock data for now - will be replaced with API calls)
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -96,6 +108,11 @@ const ProfilePage = () => {
         const fullProfile = { ...response.data, email: user.email };
         setProfileData(fullProfile);
         setEditedProfile(fullProfile);
+        // Check if API key exists (backend only returns hasGeminiApiKey, not the actual key for security)
+        if (response.data.hasGeminiApiKey) {
+          setGeminiApiKey('••••••••••••••••••••••••••••••••••••••••'); // Masked placeholder
+          setApiKeyStatus('valid'); // Assume valid if saved
+        }
         setError(null);
       } catch (err) {
         setError('Không thể tải thông tin cá nhân.');
@@ -397,6 +414,84 @@ const ProfilePage = () => {
     showSuccessToast('Đã đăng xuất tất cả các phiên khác.');
   }, []);
 
+  // AI Settings Handlers
+  const handleValidateApiKey = useCallback(async () => {
+    if (!geminiApiKey.trim()) {
+      showErrorToast('Vui lòng nhập API key');
+      return;
+    }
+    
+    // Don't validate masked placeholder
+    if (!isApiKeyModified && geminiApiKey.startsWith('••')) {
+      showSuccessToast('API key đã được lưu và xác thực trước đó');
+      return;
+    }
+    
+    setIsValidatingApiKey(true);
+    setApiKeyStatus(null);
+    
+    try {
+      const response = await writingApi.validateApiKey(geminiApiKey);
+      if (response.data.valid) {
+        setApiKeyStatus('valid');
+        showSuccessToast('API key hợp lệ!');
+      } else {
+        setApiKeyStatus('invalid');
+        showErrorToast('API key không hợp lệ hoặc đã hết hạn');
+      }
+    } catch (err) {
+      console.error('API key validation error:', err);
+      setApiKeyStatus('invalid');
+      showErrorToast('Không thể xác thực API key');
+    } finally {
+      setIsValidatingApiKey(false);
+    }
+  }, [geminiApiKey, isApiKeyModified]);
+
+  const handleSaveApiKey = useCallback(async () => {
+    if (!geminiApiKey.trim()) {
+      showErrorToast('Vui lòng nhập API key');
+      return;
+    }
+    
+    // Don't save masked placeholder
+    if (!isApiKeyModified && geminiApiKey.startsWith('••')) {
+      showSuccessToast('API key đã được lưu trước đó');
+      return;
+    }
+    
+    setIsSavingApiKey(true);
+    
+    try {
+      await profileApi.update(user.id, { geminiApiKey: geminiApiKey });
+      showSuccessToast('Đã lưu API key thành công!');
+      setApiKeyStatus('valid');
+      setIsApiKeyModified(false); // Reset modified state after saving
+    } catch (err) {
+      console.error('Error saving API key:', err);
+      showErrorToast('Không thể lưu API key');
+    } finally {
+      setIsSavingApiKey(false);
+    }
+  }, [geminiApiKey, user?.id, isApiKeyModified]);
+
+  const handleDeleteApiKey = useCallback(async () => {
+    setIsSavingApiKey(true);
+    
+    try {
+      await profileApi.update(user.id, { geminiApiKey: '' }); // Send empty string to clear
+      setGeminiApiKey('');
+      setApiKeyStatus(null);
+      setIsApiKeyModified(false);
+      showSuccessToast('Đã xoá API key');
+    } catch (err) {
+      console.error('Error deleting API key:', err);
+      showErrorToast('Không thể xoá API key');
+    } finally {
+      setIsSavingApiKey(false);
+    }
+  }, [user?.id]);
+
   const getInitials = useCallback((name) => {
     if (!name) return '';
     const nameParts = name.split(' ');
@@ -430,7 +525,8 @@ const ProfilePage = () => {
   const tabs = [
     { id: 'personal', label: 'Thông tin', icon: FiUser },
     { id: 'appearance', label: 'Giao diện', icon: FiSliders },
-    { id: 'security', label: 'Bảo mật', icon: FiShield }
+    { id: 'security', label: 'Bảo mật', icon: FiShield },
+    { id: 'ai-settings', label: 'Cài đặt AI', icon: FiCpu }
   ];
 
   return (
@@ -974,6 +1070,133 @@ const ProfilePage = () => {
                     <button className="profile-btn profile-btn--danger">
                       <FiTrash2 /> Xóa tài khoản
                     </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'ai-settings' && (
+              <motion.div
+                key="ai-settings"
+                className="profile-tab-panel"
+                variants={tabContentVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+              >
+                {/* Gemini API Key Section */}
+                <div className="profile-card">
+                  <div className="profile-card__header">
+                    <h3 className="profile-card__title">
+                      <FiCpu />
+                      Gemini API Key
+                    </h3>
+                  </div>
+
+                  <div className="ai-settings-info">
+                    <p className="ai-settings-description">
+                      Để sử dụng tính năng chấm điểm bài Writing bằng AI, bạn cần cung cấp API key từ Google Gemini.
+                      API key của bạn được lưu trữ an toàn và chỉ được sử dụng để chấm bài viết của bạn.
+                    </p>
+                    <a 
+                      href="https://aistudio.google.com/app/apikey" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="ai-settings-link"
+                    >
+                      <FiLink /> Lấy API key từ Google AI Studio
+                    </a>
+                  </div>
+
+                  <div className="api-key-input-group">
+                    <div className="api-key-input-wrapper">
+                      <input
+                        type={showApiKey ? 'text' : 'password'}
+                        className="profile-form-input api-key-input"
+                        value={geminiApiKey}
+                        onChange={(e) => {
+                          setGeminiApiKey(e.target.value);
+                          setApiKeyStatus(null);
+                          setIsApiKeyModified(true); // Mark as modified by user
+                        }}
+                        placeholder="Nhập Gemini API key của bạn (AIza...)"
+                      />
+                      <button
+                        type="button"
+                        className="api-key-toggle-btn"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                        aria-label={showApiKey ? 'Ẩn API key' : 'Hiện API key'}
+                      >
+                        {showApiKey ? <FiEyeOff /> : <FiEye />}
+                      </button>
+                    </div>
+                    
+                    {apiKeyStatus && (
+                      <div className={`api-key-status ${apiKeyStatus}`}>
+                        {apiKeyStatus === 'valid' ? (
+                          <><FiCheck /> API key hợp lệ</>
+                        ) : (
+                          <><FiX /> API key không hợp lệ</>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="api-key-actions">
+                    <button
+                      className="profile-btn profile-btn--secondary"
+                      onClick={handleValidateApiKey}
+                      disabled={isValidatingApiKey || !geminiApiKey.trim()}
+                    >
+                      {isValidatingApiKey ? 'Đang kiểm tra...' : 'Kiểm tra API key'}
+                    </button>
+                    <button
+                      className="profile-btn profile-btn--primary"
+                      onClick={handleSaveApiKey}
+                      disabled={isSavingApiKey || !geminiApiKey.trim()}
+                    >
+                      <FiSave /> {isSavingApiKey ? 'Đang lưu...' : 'Lưu API key'}
+                    </button>
+                    {geminiApiKey && (
+                      <button
+                        className="profile-btn profile-btn--danger"
+                        onClick={handleDeleteApiKey}
+                        disabled={isSavingApiKey}
+                      >
+                        <FiTrash2 /> Xoá
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* AI Usage Info */}
+                <div className="profile-card">
+                  <div className="profile-card__header">
+                    <h3 className="profile-card__title">
+                      <FiAlertTriangle />
+                      Lưu ý khi sử dụng
+                    </h3>
+                  </div>
+
+                  <div className="ai-usage-notes">
+                    <ul>
+                      <li>
+                        <strong>Chi phí:</strong> Google Gemini tính phí theo số lượng token sử dụng. 
+                        Mỗi bài Writing thường tiêu tốn khoảng 2,000-5,000 tokens.
+                      </li>
+                      <li>
+                        <strong>Bảo mật:</strong> API key của bạn chỉ được sử dụng để gọi API Gemini 
+                        và không được chia sẻ với bất kỳ bên thứ ba nào.
+                      </li>
+                      <li>
+                        <strong>Model:</strong> Hệ thống sử dụng Gemini 2.0 Flash cho việc chấm điểm, 
+                        đảm bảo tốc độ và độ chính xác cao.
+                      </li>
+                      <li>
+                        <strong>Giới hạn:</strong> Có thể có giới hạn số lần gọi API miễn phí mỗi ngày. 
+                        Kiểm tra quota tại Google AI Studio.
+                      </li>
+                    </ul>
                   </div>
                 </div>
               </motion.div>

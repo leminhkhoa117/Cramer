@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { FiEdit3 } from 'react-icons/fi';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { dashboardApi } from '../api/backendApi';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -51,6 +51,7 @@ const itemVariants = {
 
 export default function Dashboard() {
   const { profile, profileLoading, user } = useAuth();
+  const location = useLocation();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -67,6 +68,21 @@ export default function Dashboard() {
 
   // Track the last profile ID we fetched for to avoid unnecessary refetches
   const [lastFetchedProfileId, setLastFetchedProfileId] = useState(null);
+
+  // Used to trigger manual refresh (e.g., after cancelling test)
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Handle refresh request from navigation (e.g., after cancelling test)
+  useEffect(() => {
+    console.log('📍 Dashboard location.state:', location.state);
+    if (location.state?.refreshData) {
+      console.log('🔄 Refresh triggered from navigation state!');
+      // Clear the navigation state to prevent re-refresh on subsequent renders
+      window.history.replaceState({}, document.title);
+      // Increment trigger to force re-fetch
+      setRefreshTrigger(prev => prev + 1);
+    }
+  }, [location.state]);
 
   // Debounce search
   useEffect(() => {
@@ -106,7 +122,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [profile?.id, page, debouncedSearch]);
+  }, [profile?.id, page, debouncedSearch, refreshTrigger]);
 
   const { overallTarget, skillTargets } = useMemo(() => {
     if (!summary?.target) {
@@ -468,14 +484,21 @@ export default function Dashboard() {
                                         <>
                                           {course.attemptId && (
                                             <Link
-                                              to={`/test/review/${course.attemptId}`}
+                                              to={course.skill === 'writing' 
+                                                ? `/test/writing/review/${course.attemptId}`
+                                                : `/test/review/${course.attemptId}`
+                                              }
                                               className="btn-action-dashboard btn-action-dashboard--outline"
                                             >
                                               Xem lại
                                             </Link>
                                           )}
                                           <Link
-                                            to={`/test/${course.examSource}/${course.testNumber}/${course.skill}`}
+                                            to={course.skill === 'writing'
+                                              ? `/test/writing/${course.examSource}/${course.testNumber}`
+                                              : `/test/${course.examSource}/${course.testNumber}/${course.skill}`
+                                            }
+                                            state={{ forceNew: true }}
                                             className="btn-action-dashboard"
                                           >
                                             Làm lại
@@ -484,7 +507,10 @@ export default function Dashboard() {
                                       )}
                                       {course.status === 'IN_PROGRESS' && (
                                         <Link
-                                          to={`/test/${course.examSource}/${course.testNumber}/${course.skill}`}
+                                          to={course.skill === 'writing'
+                                            ? `/test/writing/${course.examSource}/${course.testNumber}`
+                                            : `/test/${course.examSource}/${course.testNumber}/${course.skill}`
+                                          }
                                           className="btn-action-dashboard"
                                         >
                                           Tiếp tục

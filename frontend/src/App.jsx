@@ -12,10 +12,12 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import About from './pages/About';
 import TestPage from './pages/TestPage';
+import WritingTestPage from './pages/WritingTestPage';
 import Courses from './pages/Courses';
 import CourseDetailPage from './pages/CourseDetailPage';
 import TestLayout from './components/TestLayout';
 import TestReviewPage from './pages/TestReviewPage';
+import WritingResultPage from './pages/WritingResultPage';
 import Profile from './pages/Profile';
 
 // This component waits for the initial auth loading to complete
@@ -70,8 +72,11 @@ function ProtectedRoute({ children }) {
 // This component contains the actual app layout and routes
 function AppContent() {
   const location = useLocation();
-  // Only hide header/footer on the actual test-taking page, not on the review page.
-  const isTestPage = /^\/test\/\w+\/\d+\/\w+$/.test(location.pathname);
+  // Hide header/footer on test-taking pages and writing review page
+  const isTestPage = /^\/test\/\w+\/\d+\/\w+$/.test(location.pathname) ||
+                     /^\/test\/writing\/(?!review)\w+\/\d+$/.test(location.pathname);
+  // Hide footer (but keep header) on writing review page
+  const isWritingReviewPage = /^\/test\/writing\/review\/\d+$/.test(location.pathname);
 
   return (
     <>
@@ -97,6 +102,24 @@ function AppContent() {
                   <TestLayout>
                     <TestPage />
                   </TestLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/test/writing/:source/:testNum"
+              element={
+                <ProtectedRoute>
+                  <WritingTestPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/test/writing/review/:attemptId"
+              element={
+                <ProtectedRoute>
+                  <PageWrapper>
+                    <WritingResultPage />
+                  </PageWrapper>
                 </ProtectedRoute>
               }
             />
@@ -137,7 +160,7 @@ function AppContent() {
           </Routes>
         </AnimatePresence>
       </main>
-      {!isTestPage && <Footer />}
+      {!isTestPage && !isWritingReviewPage && <Footer />}
     </>
   );
 }

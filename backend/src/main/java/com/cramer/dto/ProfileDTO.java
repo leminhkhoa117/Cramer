@@ -15,12 +15,14 @@ public class ProfileDTO {
     private String avatarUrl;
     private String heroBackgroundUrl;
     private String pageBackgroundUrl;
+    private String geminiApiKey;
+    private boolean hasGeminiApiKey;
     private OffsetDateTime createdAt;
 
     public ProfileDTO() {
     }
 
-    public ProfileDTO(UUID id, String username, String fullName, String phoneNumber, String address, String avatarUrl, String heroBackgroundUrl, String pageBackgroundUrl, OffsetDateTime createdAt) {
+    public ProfileDTO(UUID id, String username, String fullName, String phoneNumber, String address, String avatarUrl, String heroBackgroundUrl, String pageBackgroundUrl, String geminiApiKey, boolean hasGeminiApiKey, OffsetDateTime createdAt) {
         this.id = id;
         this.username = username;
         this.fullName = fullName;
@@ -29,6 +31,8 @@ public class ProfileDTO {
         this.avatarUrl = avatarUrl;
         this.heroBackgroundUrl = heroBackgroundUrl;
         this.pageBackgroundUrl = pageBackgroundUrl;
+        this.geminiApiKey = geminiApiKey;
+        this.hasGeminiApiKey = hasGeminiApiKey;
         this.createdAt = createdAt;
     }
 
@@ -104,5 +108,21 @@ public class ProfileDTO {
 
     public void setCreatedAt(OffsetDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getGeminiApiKey() {
+        return geminiApiKey;
+    }
+
+    public void setGeminiApiKey(String geminiApiKey) {
+        this.geminiApiKey = geminiApiKey;
+    }
+
+    public boolean isHasGeminiApiKey() {
+        return hasGeminiApiKey;
+    }
+
+    public void setHasGeminiApiKey(boolean hasGeminiApiKey) {
+        this.hasGeminiApiKey = hasGeminiApiKey;
     }
 }

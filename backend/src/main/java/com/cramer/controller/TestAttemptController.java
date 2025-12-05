@@ -33,10 +33,11 @@ public class TestAttemptController {
             @RequestParam String source,
             @RequestParam String test,
             @RequestParam String skill,
+            @RequestParam(required = false, defaultValue = "false") boolean forceNew,
             Authentication authentication) {
 
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptController.class);
-        logger.info("📥 POST /api/test-attempts/start - source={}, test={}, skill={}", source, test, skill);
+        logger.info("📥 POST /api/test-attempts/start - source={}, test={}, skill={}, forceNew={}", source, test, skill, forceNew);
         
         try {
             if (authentication == null || authentication.getName() == null) {
@@ -47,7 +48,7 @@ public class TestAttemptController {
             UUID userId = UUID.fromString(authentication.getName());
             logger.info("🔐 User authenticated: userId={}", userId);
             
-            TestAttempt attempt = testAttemptService.startOrGetAttempt(source, test, skill, userId);
+            TestAttempt attempt = testAttemptService.startOrGetAttempt(source, test, skill, userId, forceNew);
             logger.info("✅ Test attempt returned: attemptId={}", attempt.getId());
             return ResponseEntity.ok(attempt);
         } catch (IllegalArgumentException e) {

@@ -1,0 +1,391 @@
+/* Writing Test Page Styles - Light Mode (matching TestPage) */
+/* Font: Be Vietnam Pro (inherited from global styles) */
+
+/* ============================================
+   Writing Test Wrapper - adjust grid for no tabs
+   ============================================ */
+.writing-test-wrapper {
+    grid-template-rows: auto 1fr auto; /* Header, Main Content, Footer */
+}
+
+/* ============================================
+   Writing Prompt Panel - Left side with scrolling
+   ============================================ */
+.writing-prompt-panel {
+    height: 100%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.writing-prompt-panel .task-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+}
+
+.writing-prompt-panel .task-prompt {
+    flex-shrink: 0;
+    margin-bottom: 1rem;
+}
+
+.writing-prompt-panel .task-image {
+    margin: 1.5rem 0;
+    flex-shrink: 0;
+    max-width: 100%;
+    overflow: visible;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.writing-prompt-panel .task-image img {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+}
+
+.writing-prompt-panel .word-requirement {
+    margin-top: auto;
+    flex-shrink: 0;
+    padding: 0.875rem 1rem;
+    background: linear-gradient(135deg, #eff6ff, #f5f3ff);
+    border-radius: 8px;
+    border-left: 4px solid #7c3aed;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.9rem;
+    color: #4b5563;
+}
+
+.writing-prompt-panel .word-requirement strong {
+    color: #7c3aed;
+    font-weight: 600;
+}
+
+/* ============================================
+   Prompt Text Styling
+   ============================================ */
+.prompt-text {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 1rem;
+    line-height: 1.75;
+    color: #374151;
+}
+
+.prompt-text p {
+    margin-bottom: 1rem;
+}
+
+.prompt-text ul, 
+.prompt-text ol {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+}
+
+.prompt-text li {
+    margin-bottom: 0.5rem;
+}
+
+.prompt-text em {
+    font-style: italic;
+    color: #6b7280;
+}
+
+.prompt-text strong {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+/* ============================================
+   Writing Editor Panel - Right side
+   ============================================ */
+.writing-editor-panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 2rem;
+    background: #ffffff;
+}
+
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+}
+
+.editor-header h3 {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+/* ============================================
+   Word Counter
+   ============================================ */
+.word-counter {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 20px;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.word-counter.warning {
+    background-color: #fef3c7;
+    color: #d97706;
+}
+
+.word-counter.warning .count {
+    color: #d97706;
+    font-weight: 700;
+}
+
+.word-counter.success {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+.word-counter.success .count {
+    color: #16a34a;
+    font-weight: 700;
+}
+
+.word-counter .count {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.word-counter .separator {
+    opacity: 0.5;
+}
+
+.word-counter .min {
+    font-weight: 400;
+}
+
+/* ============================================
+   Writing Textarea
+   ============================================ */
+.writing-textarea {
+    flex: 1;
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #1f2937;
+    background-color: #ffffff;
+    resize: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.writing-textarea:focus {
+    outline: none;
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.writing-textarea::placeholder {
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* ============================================
+   Submit Summary in Modal
+   ============================================ */
+.submit-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 1rem 0;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.submit-summary-item {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.95rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e5e7eb;
+    color: #374151;
+}
+
+.submit-summary-item:last-child {
+    border-bottom: none;
+}
+
+.submit-warning {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background-color: #fffbeb;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: #92400e;
+    border: 1px solid #fef3c7;
+}
+
+/* ============================================
+   Writing Footer - Task Navigation
+   ============================================ */
+.writing-footer {
+    cursor: default;
+    padding: 0 !important;
+    gap: 0;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.writing-footer .footer-part-section {
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 0.6rem 1.5rem;
+    transition: all 0.15s ease;
+    border-top: 2px solid transparent;
+    opacity: 0.7;
+}
+
+.writing-footer .footer-part-section:hover {
+    background-color: #faf5ff;
+    opacity: 0.9;
+}
+
+.writing-footer .footer-part-section.active {
+    opacity: 1;
+    background-color: #f5f3ff;
+    border-top-color: #7c3aed;
+}
+
+.writing-footer .footer-part-title {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.writing-footer .footer-part-section.active .footer-part-title {
+    color: #7c3aed;
+}
+
+.writing-task-info {
+    display: flex;
+    align-items: center;
+}
+
+.word-count-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.word-count-badge.incomplete {
+    background-color: #fef3c7;
+    color: #d97706;
+}
+
+.word-count-badge.complete {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+/* ============================================
+   Scrollbar Styling - Light mode
+   ============================================ */
+.writing-prompt-panel::-webkit-scrollbar,
+.writing-editor-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.writing-prompt-panel::-webkit-scrollbar-track,
+.writing-editor-panel::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.writing-prompt-panel::-webkit-scrollbar-thumb,
+.writing-editor-panel::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.writing-prompt-panel::-webkit-scrollbar-thumb:hover,
+.writing-editor-panel::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.writing-textarea::-webkit-scrollbar {
+    width: 6px;
+}
+
+.writing-textarea::-webkit-scrollbar-track {
+    background: #f9fafb;
+}
+
+.writing-textarea::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+}
+
+.writing-textarea::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+@media (max-width: 768px) {
+    .writing-editor-panel {
+        padding: 1rem;
+    }
+    
+    .editor-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .writing-footer .footer-part-section {
+        flex: 1;
+        padding: 0.75rem 1rem;
+    }
+}
+
+/* ============================================
+   Error Message - Light mode
+   ============================================ */
+.error-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #f8fafc;
+    color: #dc2626;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 1.25rem;
+    text-align: center;
+    padding: 2rem;
+}

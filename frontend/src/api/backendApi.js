@@ -151,9 +151,9 @@ export const testApi = {
 // TEST ATTEMPT APIs
 // ============================================
 export const testAttemptApi = {
-  startAttempt: (source, testNum, skill) => {
+  startAttempt: (source, testNum, skill, forceNew = false) => {
     return apiClient.post('/test-attempts/start', null, {
-      params: { source, test: testNum, skill },
+      params: { source, test: testNum, skill, forceNew },
     });
   },
   submitAttempt: (attemptId, answers) => {
@@ -235,4 +235,39 @@ export const dashboardApi = {
         });
     },
     saveTarget: (targetData) => apiClient.post('/dashboard/target', targetData),
+};
+
+// ============================================
+// WRITING APIs
+// ============================================
+export const writingApi = {
+  // Save essay draft during test
+  saveDraft: (attemptId, taskNumber, essayText) => 
+    apiClient.post(`/writing/draft/${attemptId}?taskNumber=${taskNumber}`, essayText, {
+      headers: { 'Content-Type': 'text/plain' }
+    }),
+  
+  // Submit essays for AI grading
+  submitForGrading: (attemptId, essays) => 
+    apiClient.post(`/writing/submit/${attemptId}`, { essays }),
+  
+  // Get grading status
+  getGradingStatus: (attemptId) => 
+    apiClient.get(`/writing/status/${attemptId}`),
+  
+  // Get full writing review with AI feedback
+  getWritingReview: (attemptId) => 
+    apiClient.get(`/writing/review/${attemptId}`),
+  
+  // Get submissions for an attempt
+  getSubmissions: (attemptId) => 
+    apiClient.get(`/writing/submissions/${attemptId}`),
+  
+  // Validate Gemini API key
+  validateApiKey: (apiKey) => 
+    apiClient.post('/writing/validate-api-key', { apiKey }),
+
+  // Re-grade a completed writing attempt
+  regradeAttempt: (attemptId) =>
+    apiClient.post(`/writing/regrade/${attemptId}`),
 };

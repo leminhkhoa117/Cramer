@@ -46,6 +46,15 @@ public class ProfileServiceImpl implements ProfileService {
         if (profileDto.getPageBackgroundUrl() != null) {
             profile.setPageBackgroundUrl(profileDto.getPageBackgroundUrl());
         }
+        
+        // Update Gemini API key if provided (empty string clears it)
+        if (profileDto.getGeminiApiKey() != null) {
+            if (profileDto.getGeminiApiKey().isEmpty()) {
+                profile.setGeminiApiKey(null); // Clear the key
+            } else {
+                profile.setGeminiApiKey(profileDto.getGeminiApiKey());
+            }
+        }
 
         Profile updatedProfile = profileRepository.save(profile);
         return convertToDto(updatedProfile);
@@ -61,6 +70,8 @@ public class ProfileServiceImpl implements ProfileService {
         dto.setAvatarUrl(profile.getAvatarUrl());
         dto.setHeroBackgroundUrl(profile.getHeroBackgroundUrl());
         dto.setPageBackgroundUrl(profile.getPageBackgroundUrl());
+        // For security, don't return the actual API key - just indicate if it exists
+        dto.setHasGeminiApiKey(profile.getGeminiApiKey() != null && !profile.getGeminiApiKey().isEmpty());
         return dto;
     }
 }

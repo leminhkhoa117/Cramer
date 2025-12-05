@@ -31,7 +31,12 @@ const AttemptHistoryDropdown = ({ history, examSource, testNumber, skill, onAtte
         setLoadingAttemptId(attemptId);
         try {
             await testAttemptApi.resumeAttempt(attemptId);
-            navigate(`/test/${examSource}/${testNumber}/${skill}`);
+            // Navigate to correct route based on skill
+            if (skill === 'writing') {
+                navigate(`/test/writing/${examSource}/${testNumber}`);
+            } else {
+                navigate(`/test/${examSource}/${testNumber}/${skill}`);
+            }
         } catch (error) {
             console.error("Failed to resume attempt:", error);
             alert("Không thể tiếp tục lần làm bài này. Vui lòng thử lại.");
@@ -121,7 +126,10 @@ const AttemptHistoryDropdown = ({ history, examSource, testNumber, skill, onAtte
                                     <div className="attempt-history-item__actions">
                                         {attempt.status === 'COMPLETED' && attempt.attemptId && (
                                             <Link
-                                                to={`/test/review/${attempt.attemptId}`}
+                                                to={skill === 'writing' 
+                                                    ? `/test/writing/review/${attempt.attemptId}`
+                                                    : `/test/review/${attempt.attemptId}`
+                                                }
                                                 className="attempt-history-item__action"
                                             >
                                                 Xem chi tiết →

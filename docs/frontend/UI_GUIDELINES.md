@@ -441,3 +441,140 @@ When building a new page with heavy visuals:
 - [ ] Add `rootMargin` buffer to prevent visible pop-in
 - [ ] Provide static fallbacks for `prefers-reduced-motion`
 - [ ] Use `loading="lazy"` on images below the fold
+
+---
+
+## 14. Full-Viewport Layouts (Writing Review Pattern)
+
+For pages that require fitting all content within the viewport with internal scrolling (e.g., Writing Review, Test Layout), follow this pattern:
+
+### Container Setup
+
+```css
+.full-viewport-page {
+    height: 100vh;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Prevent page-level scroll */
+}
+```
+
+### Resizable Panel Layout
+
+Use `react-resizable-panels` for multi-column layouts with user-adjustable widths:
+
+```jsx
+import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
+
+<PanelGroup direction="horizontal">
+    <Panel defaultSize={25} minSize={15} maxSize={40}>
+        {/* Left column */}
+    </Panel>
+    <PanelResizeHandle className="resize-handle" />
+    <Panel defaultSize={40} minSize={25}>
+        {/* Middle column */}
+    </Panel>
+    <PanelResizeHandle className="resize-handle" />
+    <Panel defaultSize={35} minSize={20}>
+        {/* Right column */}
+    </Panel>
+</PanelGroup>
+```
+
+### Column Scrolling
+
+Each column should have its own scroll context:
+
+```css
+.column-content {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0; /* Critical for flex overflow to work */
+    padding: 0.75rem;
+}
+
+/* Custom scrollbar styling */
+.column-content::-webkit-scrollbar {
+    width: 8px;
+}
+.column-content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+.column-content::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+```
+
+### Resize Handle Styling
+
+```css
+.resize-handle {
+    background-color: #f3f4f6;
+    width: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    position: relative;
+    z-index: 10; /* Above panel content */
+}
+
+.resize-handle-icon-container {
+    width: 28px;
+    height: 28px;
+    background-color: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 11;
+}
+```
+
+### Collapsible Sections
+
+For sections that can be toggled (e.g., scores bar):
+
+```css
+.collapsible-section-toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+```
+
+### Panel Border Radius
+
+Apply rounded corners to first and last panels:
+
+```css
+/* First column (left) */
+.first-column {
+    border-radius: 12px 0 0 12px;
+}
+
+/* Last column (right) */
+.last-column {
+    border-radius: 0 12px 12px 0;
+}
+
+/* Column headers inherit parent radius */
+.first-column .column-header {
+    border-radius: 11px 0 0 0;
+}
+.last-column .column-header {
+    border-radius: 0 11px 0 0;
+}
+```

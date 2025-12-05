@@ -34,53 +34,73 @@ const HighlightableHtmlContent = ({ htmlString, contentId, className = '' }) => 
             );
 
             let currentOffset = 0;
+            const nodesToHighlight = [];
 
+            // First pass: collect all text nodes that fall within the highlight range
             while (walker.nextNode()) {
                 const node = walker.currentNode;
                 const text = node.textContent || '';
                 const nodeStart = currentOffset;
                 const nodeEnd = nodeStart + text.length;
 
-                // Skip nodes that are entirely before the highlight.
+                // Skip nodes entirely before the highlight
                 if (nodeEnd <= startOffset) {
                     currentOffset = nodeEnd;
                     continue;
                 }
 
-                // Stop once we've passed the end of the highlight.
+                // Stop once we've passed the end of the highlight
                 if (nodeStart >= endOffset) {
                     break;
                 }
 
+                // Calculate the portion of this node to highlight
                 const highlightStartInNode = Math.max(startOffset, nodeStart) - nodeStart;
                 const highlightEndInNode = Math.min(endOffset, nodeEnd) - nodeStart;
 
-                if (highlightStartInNode >= highlightEndInNode) {
-                    currentOffset = nodeEnd;
-                    continue;
-                }
-
-                const range = document.createRange();
-                range.setStart(node, highlightStartInNode);
-                range.setEnd(node, highlightEndInNode);
-
-                const span = document.createElement('span');
-                span.setAttribute('data-highlight-id', id);
-                span.classList.add('highlighted-text');
-
-                if (style && typeof style === 'object') {
-                    Object.entries(style).forEach(([key, value]) => {
-                        try {
-                            span.style[key] = value;
-                        } catch {
-                            // Ignore invalid style keys to avoid breaking highlights.
-                        }
+                if (highlightStartInNode < highlightEndInNode) {
+                    nodesToHighlight.push({
+                        node,
+                        start: highlightStartInNode,
+                        end: highlightEndInNode
                     });
                 }
 
-                range.surroundContents(span);
-
                 currentOffset = nodeEnd;
+            }
+
+            // Second pass: apply highlights in reverse order to preserve node positions
+            for (let i = nodesToHighlight.length - 1; i >= 0; i--) {
+                const { node, start, end } = nodesToHighlight[i];
+
+                try {
+                    const range = document.createRange();
+                    range.setStart(node, start);
+                    range.setEnd(node, end);
+
+                    const span = document.createElement('span');
+                    span.setAttribute('data-highlight-id', id);
+                    span.classList.add('highlighted-text');
+
+                    if (style && typeof style === 'object') {
+                        Object.entries(style).forEach(([key, value]) => {
+                            try {
+                                span.style[key] = value;
+                            } catch {
+                                // Ignore invalid style keys
+                            }
+                        });
+                    }
+
+                    // extractContents + appendChild + insertNode handles cross-boundary ranges
+                    // This is more robust than surroundContents which fails when ranges
+                    // span multiple elements (e.g., bold text mixed with normal text)
+                    const fragment = range.extractContents();
+                    span.appendChild(fragment);
+                    range.insertNode(span);
+                } catch (err) {
+                    console.warn('Failed to apply highlight to node:', err);
+                }
             }
         };
 

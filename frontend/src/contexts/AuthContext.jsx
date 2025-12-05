@@ -19,18 +19,18 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+
   // Track the last user ID we loaded profile for to prevent duplicate loads
   const lastLoadedUserIdRef = useRef(null);
 
   useEffect(() => {
     setLoading(true);
-    
+
     // Try to set up auth state listener with error handling for browser security issues
     try {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('🔐 Auth state change:', event);
-        
+
         // On tab focus, Supabase client might refresh the token, triggering this.
         // We only want to trigger a profile reload if the user actually changes (signs in/out).
         // The 'TOKEN_REFRESHED' event should not cause a full user state update.
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
             return prevSession;
           });
         }
-        
+
         setLoading(false);
       });
 
@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }) => {
       };
     } catch (error) {
       console.error('❌ Failed to initialize auth listener:', error);
-      
+
       // If we get a SecurityError (Edge/browser blocking storage), 
       // show a helpful error message
       if (error.name === 'SecurityError') {
@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }) => {
         console.error('💡 Please enable cookies/storage for this site in your browser settings.');
         console.error('💡 Or try using a different browser (Chrome, Firefox).');
       }
-      
+
       setLoading(false);
       setError('Trình duyệt đang chặn xác thực. Vui lòng bật cookies hoặc thử trình duyệt khác.');
     }
@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const userId = user?.id;
-    
+
     // Only load profile if:
     // 1. We have a user ID
     // 2. We haven't loaded this user's profile yet
@@ -101,7 +101,7 @@ export const AuthProvider = ({ children }) => {
       console.error('❌ loadUserProfile called without userId');
       return;
     }
-    
+
     // Check if we already loaded this user's profile
     if (userId === lastLoadedUserIdRef.current && profile !== null) {
       console.log('✅ Profile already loaded for user:', userId);
@@ -113,7 +113,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const response = await profileApi.getById(userId);
-      
+
       if (response?.data) {
         console.log('✅ Profile loaded successfully:', response.data.username);
         setProfile(response.data);
@@ -129,7 +129,7 @@ export const AuthProvider = ({ children }) => {
       if (!profile) {
         setProfile(null);
       }
-      
+
       // If profile doesn't exist (404), try to create it
       if (error.response?.status === 404) {
         console.log('🔨 Profile not found (404), attempting to create...');
@@ -154,10 +154,10 @@ export const AuthProvider = ({ children }) => {
   const createProfileForUser = async (userId) => {
     try {
       console.log('📝 Creating profile for user:', userId);
-      
+
       // Get user email from auth
       const { user: authUser } = await authHelpers.getUser();
-      
+
       if (!authUser) {
         console.error('❌ Cannot create profile - no auth user found');
         return;
@@ -165,7 +165,7 @@ export const AuthProvider = ({ children }) => {
 
       // Generate username from email or use a default
       const username = authUser.email?.split('@')[0] || `user_${userId.substring(0, 8)}`;
-      
+
       const newProfile = {
         id: userId,
         username: username,
@@ -173,7 +173,7 @@ export const AuthProvider = ({ children }) => {
 
       console.log('� Creating profile with data:', newProfile);
       const response = await profileApi.create(newProfile);
-      
+
       if (response?.data) {
         console.log('✅ Profile created successfully:', response.data);
         setProfile(response.data);
@@ -181,18 +181,18 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (createError) {
       console.error('❌ Failed to create profile:', createError);
-      
+
       // If username already exists, try with timestamp
       if (createError.response?.status === 409 || createError.response?.status === 400) {
         console.log('⚠️ Username conflict, retrying with timestamp...');
-        
+
         try {
           const timestampUsername = `user_${Date.now()}`;
           const retryProfile = {
             id: userId,
             username: timestampUsername,
           };
-          
+
           const retryResponse = await profileApi.create(retryProfile);
           if (retryResponse?.data) {
             console.log('✅ Profile created with timestamp username:', retryResponse.data);
@@ -208,13 +208,13 @@ export const AuthProvider = ({ children }) => {
 
   const signUp = async (email, password, username) => {
     console.log('AuthContext signUp called with:', { email, username });
-    
+
     try {
       // Sign up with Supabase Auth (will send OTP email if enabled)
       console.log('Calling Supabase signUp...');
       const { data, error } = await authHelpers.signUp(email, password);
       console.log('Supabase signUp response:', { data, error });
-      
+
       if (error) {
         console.error('Supabase signup error:', error);
         throw error;
@@ -240,14 +240,14 @@ export const AuthProvider = ({ children }) => {
       console.log('AuthContext: Verifying OTP for:', email);
       // Verify OTP with Supabase
       const { data, error } = await authHelpers.verifyOtp(email, otpCode);
-      
+
       if (error) {
         console.error('AuthContext: OTP verification failed:', error);
         throw error;
       }
 
       console.log('AuthContext: OTP verified successfully', data);
-      
+
       // Profile will be created in Login.jsx handleVerifyOtp()
       // Don't create it here to avoid duplication
 
@@ -273,19 +273,19 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('🔑 Signing in user:', email);
       const { data, error } = await authHelpers.signIn(email, password);
-      
+
       if (error) {
         console.error('❌ Sign in error:', error);
         return { data: null, error };
       }
-      
+
       // If login successful, update state. The useEffect hooks will handle the rest.
       if (data?.session && data?.user) {
         console.log('✅ Sign in successful for user:', data.user.id);
         setSession(data.session);
         setUser(data.user);
       }
-      
+
       return { data, error: null };
     } catch (error) {
       console.error('❌ Sign in exception:', error);
@@ -295,13 +295,19 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = async () => {
     try {
+      // Briefly set loading to prevent race conditions during state transitions
+      setLoading(true);
       const { error } = await authHelpers.signOut();
       setUser(null);
       setProfile(null);
       setSession(null);
-      lastLoadedUserIdRef.current = null; // Reset the loaded user ID ref
+      lastLoadedUserIdRef.current = null;
+      // Small delay to ensure auth state is fully cleared before next navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
+      setLoading(false);
       return { error };
     } catch (error) {
+      setLoading(false);
       return { error };
     }
   };

@@ -3,32 +3,49 @@
     border-top: 1px solid #e5e7eb;
     display: flex;
     justify-content: space-around;
-    padding: 1rem;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+    padding: 0.6rem 0.75rem;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+    gap: 0;
 }
 
 .footer-part-section {
     flex: 1;
-    padding: 0 1rem;
+    padding: 0.5rem 0.75rem;
     border-right: 1px solid #e5e7eb;
-    opacity: 0.6;
-    transition: opacity 0.3s ease;
+    opacity: 0.65;
+    transition: all 0.15s ease;
+    border-top: 2px solid transparent;
+    margin-top: -0.6rem;
+    padding-top: calc(0.5rem + 0.6rem);
 }
 
 .footer-part-section:last-child {
     border-right: none;
 }
 
+.footer-part-section:hover {
+    opacity: 0.85;
+    background-color: #faf5ff;
+}
+
 .footer-part-section.active {
     opacity: 1;
+    background-color: #f5f3ff;
+    border-top-color: #7c3aed;
 }
 
 .footer-part-title {
-    margin: 0 0 1rem 0;
-    font-size: 1.1rem;
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
     font-weight: 600;
     text-align: center;
     cursor: pointer;
+    color: #374151;
+    transition: color 0.15s ease;
+}
+
+.footer-part-section.active .footer-part-title {
+    color: #7c3aed;
 }
 
 .footer-part-title:hover {
@@ -36,9 +53,10 @@
 }
 
 .footer-question-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(35px, 1fr));
-    gap: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
 }
 
 /* Re-using question-nav-btn styles from QuestionNavBar.css */
@@ -46,21 +64,21 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 35px;
-    height: 35px;
-    border: 1px solid #ccc;
+    width: 32px;
+    height: 32px;
+    border: 1px solid #d1d5db;
     border-radius: 50%;
     background-color: #fff;
     cursor: pointer;
     font-weight: 500;
-    font-size: 0.8rem;
-    transition: all 0.2s ease;
+    font-size: 0.75rem;
+    transition: all 0.15s ease;
 }
 
 .question-nav-btn:hover {
     background-color: #f0eaff;
     border-color: #7c3aed;
-    transform: scale(1.1);
+    transform: scale(1.08);
 }
 
 .question-nav-btn.answered {

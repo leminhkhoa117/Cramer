@@ -26,24 +26,24 @@ export default function Header() {
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
-  
+
   const handleLogout = async () => {
     await signOut();
-    navigate('/');
+    navigate('/login');
   };
 
   // Display username with proper loading state
-  const displayName = profileLoading 
-    ? 'Loading...' 
+  const displayName = profileLoading
+    ? 'Loading...'
     : profile?.username || user?.email?.split('@')[0] || 'User';
 
   return (
     <Navbar sticky="top" expand="lg" className={`w-100 ${isScrolled ? 'scrolled' : ''}`}>
       <Container fluid style={{ paddingLeft: '2rem', paddingRight: '2rem' }}>
         <Navbar.Brand as={Link} to="/" className="font-bold text-2xl" style={{ marginLeft: 0, display: 'flex', alignItems: 'center' }}>
-          <img 
-            src="/pictures/logo/Icon.png" 
-            alt="Cramer Logo" 
+          <img
+            src="/pictures/logo/Icon.png"
+            alt="Cramer Logo"
             style={{ height: '40px', objectFit: 'contain' }}
           />
         </Navbar.Brand>
@@ -53,11 +53,11 @@ export default function Header() {
             <Nav.Link as={NavLink} end to="/" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }} className="header-nav-link">Trang chủ</Nav.Link>
             <Nav.Link as={NavLink} to="/courses" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }} className="header-nav-link">Khóa học</Nav.Link>
             <Nav.Link as={NavLink} to="/about" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }} className="header-nav-link">Về chúng tôi</Nav.Link>
-            
+
             {user ? (
               <Dropdown align="end">
-                <Dropdown.Toggle 
-                  variant="light" 
+                <Dropdown.Toggle
+                  variant="light"
                   id="dropdown-user"
                   style={{
                     color: '#7c3aed',
@@ -88,8 +88,8 @@ export default function Header() {
               </Dropdown>
             ) : (
               <Button onClick={() => navigate('/login')}
-                variant="light" 
-                style={{ 
+                variant="light"
+                style={{
                   color: '#7c3aed',
                   fontWeight: '600',
                   fontSize: '0.95rem',
