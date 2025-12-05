@@ -244,6 +244,28 @@
 }
 
 /* ============================================
+   Fix resize handle overflow in Writing test
+   ============================================ */
+.writing-test-wrapper .test-page-container {
+    position: relative;
+    z-index: 1;
+}
+
+.writing-test-wrapper .resize-handle {
+    z-index: 1;
+}
+
+.writing-test-wrapper .resize-handle-icon-container {
+    position: relative;
+    z-index: 1;
+}
+
+.writing-test-wrapper .writing-footer {
+    position: relative;
+    z-index: 2;
+}
+
+/* ============================================
    Writing Footer - Task Navigation
    ============================================ */
 .writing-footer {
