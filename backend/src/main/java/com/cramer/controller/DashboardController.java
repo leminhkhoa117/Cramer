@@ -1,17 +1,14 @@
 package com.cramer.controller;
-import java.util.UUID;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
 import com.cramer.dto.DashboardSummaryDTO;
+import com.cramer.dto.TargetDTO;
 import com.cramer.service.DashboardService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/dashboard")
@@ -32,5 +29,18 @@ public class DashboardController {
             @RequestParam(required = false) String search
     ) {
         return ResponseEntity.ok(dashboardService.buildDashboardSummary(userId, page, size, search));
+    }
+
+    @PostMapping("/target")
+    public ResponseEntity<TargetDTO> saveTarget(
+            @RequestBody TargetDTO targetDTO,
+            Authentication authentication
+    ) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        UUID userId = UUID.fromString(authentication.getName());
+        TargetDTO savedTarget = dashboardService.saveTarget(userId, targetDTO);
+        return ResponseEntity.ok(savedTarget);
     }
 }

@@ -9,12 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface TargetRepository extends JpaRepository<Target, UUID> {
-
-    /**
-     * Finds a target by the user's ID.
-     *
-     * @param userId The ID of the user.
-     * @return an Optional containing the target if found.
-     */
     Optional<Target> findByUserId(UUID userId);
 }

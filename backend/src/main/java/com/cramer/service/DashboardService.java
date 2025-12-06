@@ -3,6 +3,7 @@ package com.cramer.service;
 import com.cramer.dto.*;
 import com.cramer.entity.Question;
 import com.cramer.entity.Section;
+import com.cramer.entity.Target;
 import com.cramer.entity.TestAttempt;
 import com.cramer.entity.UserAnswer;
 import com.cramer.entity.WritingSubmission;
@@ -76,6 +77,28 @@ public class DashboardService {
         dto.setGoals(buildGoalsFromTarget(target));
 
         return dto;
+    }
+
+    public TargetDTO saveTarget(UUID userId, TargetDTO targetDTO) {
+        Objects.requireNonNull(userId, "User ID cannot be null");
+        Objects.requireNonNull(targetDTO, "Target data cannot be null");
+
+        // Find existing target by userId or create a new one
+        Target target = targetRepository.findByUserId(userId)
+                .orElse(new Target());
+
+        // Update target fields from DTO
+        target.setUserId(userId); // Set the user ID
+        target.setExamName(targetDTO.examName());
+        target.setExamDate(targetDTO.examDate());
+        target.setListening(targetDTO.listening());
+        target.setReading(targetDTO.reading());
+        target.setWriting(targetDTO.writing());
+        target.setSpeaking(targetDTO.speaking());
+
+        // Save and return as DTO
+        Target savedTarget = targetRepository.save(target);
+        return EntityMapper.toDTO(savedTarget);
     }
 
     private PageDTO<CourseProgressDTO> aggregateCourseProgress(List<TestAttempt> attempts, List<UserAnswer> allAnswers, int page, int size, String search) {
@@ -266,11 +289,11 @@ public class DashboardService {
             return List.of();
         }
         List<DashboardGoalDTO> goals = new ArrayList<>();
-        LocalDate examDate = targetDto.getExamDate();
-        if (targetDto.getListening() != null) goals.add(new DashboardGoalDTO("Listening", String.valueOf(targetDto.getListening()), examDate));
-        if (targetDto.getReading() != null) goals.add(new DashboardGoalDTO("Reading", String.valueOf(targetDto.getReading()), examDate));
-        if (targetDto.getWriting() != null) goals.add(new DashboardGoalDTO("Writing", String.valueOf(targetDto.getWriting()), examDate));
-        if (targetDto.getSpeaking() != null) goals.add(new DashboardGoalDTO("Speaking", String.valueOf(targetDto.getSpeaking()), examDate));
+        LocalDate examDate = targetDto.examDate();
+        if (targetDto.listening() != null) goals.add(new DashboardGoalDTO("Listening", String.valueOf(targetDto.listening()), examDate));
+        if (targetDto.reading() != null) goals.add(new DashboardGoalDTO("Reading", String.valueOf(targetDto.reading()), examDate));
+        if (targetDto.writing() != null) goals.add(new DashboardGoalDTO("Writing", String.valueOf(targetDto.writing()), examDate));
+        if (targetDto.speaking() != null) goals.add(new DashboardGoalDTO("Speaking", String.valueOf(targetDto.speaking()), examDate));
         return goals;
     }
 

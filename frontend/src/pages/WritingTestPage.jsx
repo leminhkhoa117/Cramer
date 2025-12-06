@@ -396,10 +396,6 @@ const WritingTestPage = () => {
                                             />
                                         </div>
                                     )}
-
-                                    <div className="word-requirement">
-                                        Write at least <strong>{minWords}</strong> words.
-                                    </div>
                                 </div>
                             </Panel>
 

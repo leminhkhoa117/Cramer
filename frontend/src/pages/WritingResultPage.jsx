@@ -384,7 +384,7 @@ const WritingResultPage = () => {
 
             {/* Task Tabs */}
             <div className="result-task-tabs">
-                {review?.tasks?.map(task => (
+                {review?.tasks?.sort((a, b) => a.taskNumber - b.taskNumber).map(task => (
                     <button
                         key={task.taskNumber}
                         className={`task-tab ${activeTask === task.taskNumber ? 'active' : ''}`}
@@ -473,10 +473,10 @@ const WritingResultPage = () => {
                                         <img src={currentTaskPrompt.imageUrl} alt="Task Figure" />
                                     </div>
                                 )}
-                                <div className="word-requirement">
+                                {/* <div className="word-requirement">
                                     <span>Yêu cầu tối thiểu:</span>
                                     <strong>{activeTask === 1 ? '150' : '250'} từ</strong>
-                                </div>
+                                </div> */}
                             </div>
                         </div>
                     </Panel>

@@ -35,16 +35,6 @@
     font-style: italic;
 }
 
-.resize-handle {
-    background-color: #f3f4f6; /* Light gray to be visible */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 15px !important;
-    border-left: 1px solid #e5e7eb; /* Slightly darker gray border */
-    border-right: 1px solid #e5e7eb;
-}
-
 .resize-handle.hidden {
     display: none;
 }
@@ -59,16 +49,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.questions-column {
-    height: 100%;
-    overflow-y: auto;
-    padding: 1.5rem 2rem;
-}
-
-.questions-container {
-    min-height: 100%;
 }
 
 

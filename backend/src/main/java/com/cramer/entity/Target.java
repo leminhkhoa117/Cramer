@@ -1,7 +1,6 @@
 package com.cramer.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -14,13 +13,12 @@ import java.util.UUID;
 public class Target {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
     @Column(name = "user_id", nullable = false, unique = true)
     private UUID userId;
 
-    @Column(name = "exam_name", nullable = false)
+    @Column(name = "exam_name")
     private String examName;
 
     @Column(name = "exam_date")
@@ -46,6 +44,15 @@ public class Target {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    @PrePersist
+    public void prePersist() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID();
+        }
+    }
+
+
+    // Getters and Setters
     public UUID getId() {
         return id;
     }

@@ -56,8 +56,8 @@ const GoalModal = ({ isOpen, onClose, currentTarget, onSave }) => {
         };
 
         try {
-            await dashboardApi.saveTarget(payload);
-            onSave();
+            const savedTarget = await dashboardApi.saveTarget(payload);
+            onSave(savedTarget.data);
         } catch (err) {
             console.error('Failed to save target:', err);
             setError('Không thể lưu mục tiêu. Vui lòng thử lại.');

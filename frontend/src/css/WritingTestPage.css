@@ -48,7 +48,7 @@
     border-radius: 8px;
 }
 
-.writing-prompt-panel .word-requirement {
+/* .writing-prompt-panel .word-requirement {
     margin-top: auto;
     flex-shrink: 0;
     padding: 0.875rem 1rem;
@@ -58,12 +58,12 @@
     font-family: 'Be Vietnam Pro', sans-serif;
     font-size: 0.9rem;
     color: #4b5563;
-}
+} */
 
-.writing-prompt-panel .word-requirement strong {
+/* .writing-prompt-panel .word-requirement strong {
     color: #7c3aed;
     font-weight: 600;
-}
+} */
 
 /* ============================================
    Prompt Text Styling

@@ -1,0 +1,43 @@
+/* Base styles for PanelResizeHandle */
+.resize-handle {
+    background-color: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px !important;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    transition: background-color 0.2s ease;
+    position: relative;
+    z-index: 10;
+}
+
+.resize-handle:hover {
+    background-color: #e5e7eb;
+}
+
+.resize-handle.hidden {
+    display: none;
+}
+
+.resize-handle-icon-container {
+    width: 28px;
+    height: 28px;
+    background-color: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 11;
+}
+
+.resize-handle-icon {
+    text-align: center;
+    width: 40px;
+    color: #4b5563;
+    font-size: 20px;
+    font-weight: normal;
+}

@@ -568,11 +568,12 @@ export default function Dashboard() {
             isOpen={isGoalModalOpen}
             onClose={() => setIsGoalModalOpen(false)}
             currentTarget={summary?.target}
-            onSave={() => {
+            onSave={(newTargetData) => {
               setIsGoalModalOpen(false);
-              // Invalidate the cache and re-fetch
-              setLastFetchedProfileId(null);
-              fetchDashboardData();
+              setSummary(prevSummary => ({
+                ...prevSummary,
+                target: newTargetData,
+              }));
             }}
           />
 
