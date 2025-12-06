@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
-import { FiEdit3 } from 'react-icons/fi';
+import { FiEdit3, FiClock, FiTrendingUp, FiPieChart } from 'react-icons/fi';
 import { Link, useLocation } from 'react-router-dom';
 import { dashboardApi } from '../api/backendApi';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,7 +9,7 @@ import FilterModal from '../components/FilterModal';
 
 import '../css/Dashboard.css';
 import '../css/FilterModal.css';
-import '../css/common/TabSwitcher.css';
+import TabSwitcher from '../components/common/TabSwitcher';
 import ProgressChart from '../components/ProgressChart';
 import SkillAnalysis from '../components/SkillAnalysis';
 import '../css/ProgressChart.css';
@@ -355,30 +355,16 @@ export default function Dashboard() {
             </div>
           </section>
 
-          <div className="container tab-switcher">
-            <nav className="tab-switcher__nav">
-              <button
-                type="button"
-                className={`tab-switcher__btn ${activeView === 'courses' ? 'active' : ''}`}
-                onClick={() => setActiveView('courses')}
-              >
-                Lịch sử làm bài
-              </button>
-              <button
-                type="button"
-                className={`tab-switcher__btn ${activeView === 'progress' ? 'active' : ''}`}
-                onClick={() => setActiveView('progress')}
-              >
-                Biểu đồ tiến độ
-              </button>
-              <button
-                type="button"
-                className={`tab-switcher__btn ${activeView === 'analysis' ? 'active' : ''}`}
-                onClick={() => setActiveView('analysis')}
-              >
-                Phân tích Kỹ năng
-              </button>
-            </nav>
+          <div className="container">
+            <TabSwitcher
+              tabs={[
+                { id: 'courses', label: 'Lịch sử làm bài', icon: FiClock },
+                { id: 'progress', label: 'Biểu đồ tiến độ', icon: FiTrendingUp },
+                { id: 'analysis', label: 'Phân tích Kỹ năng', icon: FiPieChart },
+              ]}
+              activeTab={activeView}
+              onTabChange={setActiveView}
+            />
           </div>
 
           <main className="dash-main-content">

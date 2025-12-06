@@ -31,7 +31,6 @@ import {
 } from 'react-icons/fi';
 import { FaGoogle, FaFacebook } from 'react-icons/fa';
 import '../css/ProfilePage.css';
-import '../css/common/TabSwitcher.css';
 import FullPageLoader from '../components/FullPageLoader';
 import { supabase } from '../api/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
@@ -524,15 +523,14 @@ const ProfilePage = () => {
 
   // Tab definitions
   const tabs = [
-    { id: 'personal', label: 'Thông tin', icon: FiUser },
-    { id: 'appearance', label: 'Giao diện', icon: FiSliders },
+    { id: 'personal', label: 'Thông tin chung', icon: FiUser },
     { id: 'security', label: 'Bảo mật', icon: FiShield },
     { id: 'ai-settings', label: 'Cài đặt AI', icon: FiCpu }
   ];
 
   return (
     <div
-      className="profile-page-new"
+      className="profile-page"
       style={profileData?.pageBackgroundUrl ? {
         backgroundImage: `url(${profileData.pageBackgroundUrl})`,
         backgroundSize: 'cover',
@@ -542,7 +540,7 @@ const ProfilePage = () => {
     >
       {/* Overlay for readability when background image is set */}
       {profileData?.pageBackgroundUrl && (
-        <div className="profile-page-new__overlay" />
+        <div className="profile-page__overlay" />
       )}
 
       <UploadImageModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onConfirm={handleImageUpdate} />
@@ -564,74 +562,75 @@ const ProfilePage = () => {
         </p>
       </ConfirmationModal>
 
-      {/* Hero Section - Simple gradient background */}
-      <section className={`profile-hero ${profileData?.heroBackgroundUrl ? 'profile-hero--has-cover' : ''} ${profileData?.pageBackgroundUrl ? 'profile-hero--transparent' : ''}`}>
-        {/* Cover image box */}
-        {profileData?.heroBackgroundUrl && (
-          <div className="profile-cover-box">
-            <div className="profile-cover-box__inner">
+      {/* Main Layout: Sidebar + Content */}
+      <div className="profile-layout container">
+        {/* Left Sidebar */}
+        <aside className="profile-sidebar">
+          {/* Cover Image Banner */}
+          <div className="profile-sidebar__cover">
+            {profileData?.heroBackgroundUrl ? (
               <img
                 src={profileData.heroBackgroundUrl}
                 alt="Ảnh bìa"
-                className="profile-cover-box__img"
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="profile-hero__content">
-          <div className="profile-avatar-container">
-            {isUploading ? (
-              <div className="profile-avatar-uploading" />
-            ) : profileData?.avatarUrl ? (
-              <img
-                src={profileData.avatarUrl}
-                alt="Avatar"
-                className="profile-avatar-large"
+                className="profile-sidebar__cover-img"
               />
             ) : (
-              <div className="profile-avatar-large profile-avatar-large--placeholder">
-                {displayInitials}
+              <div className="profile-sidebar__cover-placeholder">
+                <FiMonitor />
               </div>
             )}
             <button
-              className="profile-avatar-edit"
+              className="profile-sidebar__cover-edit"
               onClick={() => setIsModalOpen(true)}
-              disabled={isUploading}
-              aria-label="Thay đổi ảnh đại diện"
+              aria-label="Thay đổi ảnh bìa"
             >
               <FiCamera />
             </button>
           </div>
-          <h1 className="profile-user-name">
-            {displayName}
-          </h1>
-          <p className="profile-user-email">
-            {profileData?.email}
-          </p>
-        </div>
-        {/* note: do not add container wrapper here - hero is intentionally positioned relative to viewport */}
-      </section>
 
-      {/* Tab Navigation */}
-      <div className="profile-tabs container">
-        <div className="tab-switcher">
-          <nav className="tab-switcher__nav">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                className={`tab-switcher__btn ${activeTab === tab.id ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                <tab.icon />
-                {tab.label}
-              </button>
-            ))}
+          {/* Sidebar Header with Avatar */}
+          <div className="profile-sidebar__header">
+            <div className="profile-sidebar__avatar-container">
+              {isUploading ? (
+                <div className="profile-sidebar__avatar-uploading" />
+              ) : profileData?.avatarUrl ? (
+                <img
+                  src={profileData.avatarUrl}
+                  alt="Avatar"
+                  className="profile-sidebar__avatar"
+                />
+              ) : (
+                <div className="profile-sidebar__avatar profile-sidebar__avatar--placeholder">
+                  {displayInitials}
+                </div>
+              )}
+            </div>
+            <h2 className="profile-sidebar__name">{displayName}</h2>
+            <p className="profile-sidebar__email">{profileData?.email}</p>
+          </div>
+
+          {/* Sidebar Navigation */}
+          <nav className="profile-sidebar__nav">
+            {tabs.map(tab => {
+              const IconComponent = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`profile-sidebar__nav-btn ${activeTab === tab.id ? 'active' : ''}`}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  <IconComponent />
+                  <span>{tab.label}</span>
+                  <FiChevronRight className="profile-sidebar__nav-arrow" />
+                </button>
+              );
+            })}
           </nav>
-        </div>
+        </aside>
 
-        {/* Tab Content */}
-        <div className="profile-tabs__content">
+        {/* Right Content Area */}
+        <main className="profile-content">
           <AnimatePresence mode="wait">
             {activeTab === 'personal' && (
               <motion.div
@@ -736,103 +735,6 @@ const ProfilePage = () => {
                     </div>
                   )}
                 </div>
-              </motion.div>
-            )}
-
-            {activeTab === 'appearance' && (
-              <motion.div
-                key="appearance"
-                className="profile-tab-panel"
-                variants={tabContentVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-              >
-                {/* Avatar Section */}
-                <div className="profile-card">
-                  <div className="profile-card__header">
-                    <div className="profile-card__header-left">
-                      <h3 className="profile-card__title">
-                        <FiCamera />
-                        Ảnh đại diện
-                      </h3>
-                      <p className="profile-card__description">Hiển thị ở header và trang hồ sơ</p>
-                    </div>
-                    <div className="profile-card__actions">
-                      <button
-                        className="profile-btn profile-btn--secondary profile-btn--small"
-                        onClick={() => setIsModalOpen(true)}
-                      >
-                        <FiEdit3 /> Thay đổi
-                      </button>
-                      {profileData?.avatarUrl && (
-                        <button
-                          className="profile-btn profile-btn--danger profile-btn--small"
-                          onClick={() => openDeleteModal('avatar')}
-                        >
-                          <FiTrash2 /> Xoá
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="appearance-preview appearance-preview--avatar">
-                    {profileData?.avatarUrl ? (
-                      <img
-                        src={profileData.avatarUrl}
-                        alt="Ảnh đại diện"
-                        className="appearance-preview__avatar-img"
-                      />
-                    ) : (
-                      <div className="appearance-preview__avatar-placeholder">
-                        <FiUser />
-                        <span>Chưa có ảnh đại diện</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Hero Background Section */}
-                <div className="profile-card">
-                  <div className="profile-card__header">
-                    <div className="profile-card__header-left">
-                      <h3 className="profile-card__title">
-                        <FiMonitor />
-                        Ảnh bìa
-                      </h3>
-                      <p className="profile-card__description">Ảnh banner hiển thị ở đầu trang hồ sơ</p>
-                    </div>
-                    <div className="profile-card__actions">
-                      <button
-                        className="profile-btn profile-btn--secondary profile-btn--small"
-                        onClick={() => setIsModalOpen(true)}
-                      >
-                        <FiEdit3 /> Thay đổi
-                      </button>
-                      {profileData?.heroBackgroundUrl && (
-                        <button
-                          className="profile-btn profile-btn--danger profile-btn--small"
-                          onClick={() => openDeleteModal('hero')}
-                        >
-                          <FiTrash2 /> Xoá
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="appearance-preview appearance-preview--hero">
-                    {profileData?.heroBackgroundUrl ? (
-                      <img
-                        src={profileData.heroBackgroundUrl}
-                        alt="Ảnh bìa"
-                        className="appearance-preview__hero-img"
-                      />
-                    ) : (
-                      <div className="appearance-preview__hero-placeholder">
-                        <FiMonitor />
-                        <span>Chưa có ảnh bìa</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
 
                 {/* Page Background Section */}
                 <div className="profile-card">
@@ -878,6 +780,7 @@ const ProfilePage = () => {
                 </div>
               </motion.div>
             )}
+
 
             {activeTab === 'security' && (
               <motion.div
@@ -1205,10 +1108,11 @@ const ProfilePage = () => {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </main>
       </div>
     </div>
   );
 };
 
 export default ProfilePage;
+
