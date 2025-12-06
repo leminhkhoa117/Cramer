@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { testAttemptApi } from '../api/backendApi';
-import ReviewedQuestion from '../components/ReviewedQuestion';
 import { IeltsScoreConverter } from '../utils/IeltsScoreConverter';
-import { FiChevronDown } from 'react-icons/fi';
+import {
+    FiArrowLeft, FiRefreshCw, FiChevronDown,
+    FiFileText, FiEdit3, FiCheckCircle, FiXCircle, FiHelpCircle
+} from 'react-icons/fi';
 import { AnimatePresence, motion } from 'framer-motion';
 import '../css/TestReviewPage.css';
 import FullPageLoader from '../components/FullPageLoader';
@@ -15,6 +18,12 @@ const TestReviewPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isSummaryExpanded, setIsSummaryExpanded] = useState(true);
+    const [activePartIndex, setActivePartIndex] = useState(0);
+    const [selectedQuestionId, setSelectedQuestionId] = useState(null);
+
+    // Refs for scroll sync
+    const answersColumnRef = useRef(null);
+    const questionRefs = useRef({});
 
     useEffect(() => {
         const fetchReviewData = async () => {
@@ -35,7 +44,9 @@ const TestReviewPage = () => {
 
     const handleRetake = () => {
         if (!reviewData) return;
-        navigate(`/test/${reviewData.examSource}/${reviewData.testNumber}/${reviewData.skill}`);
+        navigate(`/test/${reviewData.examSource}/${reviewData.testNumber}/${reviewData.skill}`, {
+            state: { forceNew: true }
+        });
     };
 
     const { bandScore, duration, completionDate } = useMemo(() => {
@@ -71,14 +82,54 @@ const TestReviewPage = () => {
     }, [reviewData]);
 
     const testDisplayName = useMemo(() => {
-        if (!reviewData) {
-            return '';
-        }
+        if (!reviewData) return '';
         const examLabel = reviewData.examSource ? reviewData.examSource.toUpperCase() : '';
         const testLabel = reviewData.testNumber ? `Test ${reviewData.testNumber}` : '';
         const skillLabel = reviewData.skill ? reviewData.skill.charAt(0).toUpperCase() + reviewData.skill.slice(1) : '';
         return [examLabel, testLabel, skillLabel].filter(Boolean).join(' · ');
     }, [reviewData]);
+
+    // Get current section data
+    const currentSection = useMemo(() => {
+        if (!reviewData?.sections || reviewData.sections.length === 0) return null;
+        return reviewData.sections[activePartIndex] || reviewData.sections[0];
+    }, [reviewData, activePartIndex]);
+
+    // Compute stats for current section
+    const sectionStats = useMemo(() => {
+        if (!currentSection?.questions) return { correct: 0, total: 0 };
+        const correct = currentSection.questions.filter(q => q.isCorrect === true).length;
+        return { correct, total: currentSection.questions.length };
+    }, [currentSection]);
+
+    // Scroll to question in answers panel
+    const scrollToAnswer = (questionId) => {
+        setSelectedQuestionId(questionId);
+        const element = questionRefs.current[questionId];
+        if (element && answersColumnRef.current) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.classList.add('highlight-flash');
+            setTimeout(() => element.classList.remove('highlight-flash'), 1500);
+        }
+    };
+
+    // Get user answer display text
+    const getUserAnswerText = (question) => {
+        if (!question.userAnswer) return 'Không trả lời';
+        if (typeof question.userAnswer === 'string') return question.userAnswer;
+        if (question.userAnswer.value) return question.userAnswer.value;
+        return JSON.stringify(question.userAnswer);
+    };
+
+    // Get correct answer display text
+    const getCorrectAnswerText = (question) => {
+        if (!question.correctAnswer) return 'N/A';
+        if (Array.isArray(question.correctAnswer)) {
+            return question.correctAnswer.join(' / ');
+        }
+        if (typeof question.correctAnswer === 'string') return question.correctAnswer;
+        return JSON.stringify(question.correctAnswer);
+    };
 
     if (error) {
         return <div className="review-error">{error}</div>;
@@ -88,7 +139,8 @@ const TestReviewPage = () => {
         return <div className="review-error">Không có dữ liệu.</div>;
     }
 
-    const { score, totalQuestions, questions } = reviewData || {};
+    const { score, totalQuestions, sections } = reviewData || {};
+    const hasSections = sections && sections.length > 0;
 
     return (
         <>
@@ -104,79 +156,230 @@ const TestReviewPage = () => {
 
             {reviewData && (
                 <div className="review-page">
-            <header className="review-header">
-                <div
-                    className="review-header-top"
-                    onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
-                >
-                    <div className="review-header-heading">
-                        <h1 className="review-title">Kết quả bài làm</h1>
-                        {testDisplayName && <p className="review-test-name">{testDisplayName}</p>}
-                    </div>
-                    <motion.div
-                        animate={{ rotate: isSummaryExpanded ? 0 : -180 }}
-                        transition={{ duration: 0.3 }}
-                    >
-                        <FiChevronDown size={20} />
-                    </motion.div>
-                </div>
-                <AnimatePresence>
-                    {isSummaryExpanded && (
-                        <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            style={{ overflow: 'hidden' }}
-                            transition={{ duration: 0.3 }}
+                    {/* Purple Header - ORIGINAL DESIGN */}
+                    <header className="review-header">
+                        <div
+                            className="review-header-top"
+                            onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
                         >
-                            <div className="review-summary-grid">
+                            <div className="review-header-left">
+                                <button className="back-btn" onClick={(e) => { e.stopPropagation(); navigate('/dashboard'); }}>
+                                    <FiArrowLeft size={14} /> Quay lại
+                                </button>
+                                <h1 className="review-title">{testDisplayName} - Review</h1>
+                            </div>
+                            <div className="review-header-center">
                                 <div className="summary-item">
-                                    <span className="summary-label">Số câu đúng</span>
-                                    <span className="summary-value">
-                                        {score}/{totalQuestions}
-                                    </span>
+                                    <span className="summary-label">SỐ CÂU ĐÚNG</span>
+                                    <span className="summary-value">{score}/{totalQuestions}</span>
                                 </div>
                                 <div className="summary-item">
-                                    <span className="summary-label">Điểm Band</span>
-                                    <span className="summary-value">
-                                        {bandScore ? bandScore.toFixed(1) : 'N/A'}
-                                    </span>
-                                </div>
-                                <div className="summary-item">
-                                    <span className="summary-label">Thời gian làm</span>
+                                    <span className="summary-label">THỜI GIAN LÀM</span>
                                     <span className="summary-value">{duration}</span>
                                 </div>
                                 <div className="summary-item">
-                                    <span className="summary-label">Ngày làm</span>
+                                    <span className="summary-label">NGÀY LÀM</span>
                                     <span className="summary-value">{completionDate}</span>
                                 </div>
                             </div>
-                            <div className="review-actions">
-                                <button onClick={handleRetake} className="btn btn-primary">
-                                    Làm bài lại
-                                </button>
-                                <Link to="/dashboard" className="btn btn-secondary">
-                                    Về Bảng điều khiển
-                                </Link>
+                            <div className="review-header-right">
+                                <div className="header-actions">
+                                    <button onClick={(e) => { e.stopPropagation(); handleRetake(); }} className="btn btn-primary">
+                                        <FiRefreshCw size={14} /> Làm bài lại
+                                    </button>
+                                    <Link to="/dashboard" className="btn btn-secondary" onClick={(e) => e.stopPropagation()}>
+                                        Về Bảng điều khiển
+                                    </Link>
+                                </div>
+                                <div className="band-badge">
+                                    <span className="label">BAND</span>
+                                    <span className={`value band-${Math.floor(bandScore || 0)}`}>
+                                        {bandScore ? bandScore.toFixed(1) : 'N/A'}
+                                    </span>
+                                </div>
                             </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </header>
+                        </div>
+                    </header>
 
-            <main className="review-main">
-                <h2 className="review-section-title">Đáp án & Giải thích</h2>
-                <div className="review-questions-list">
-                    {questions.map((q) => (
-                        <ReviewedQuestion key={q.questionUid} questionReview={q} />
-                    ))}
+                    {/* Part Tabs - ORIGINAL DESIGN */}
+                    {hasSections && sections.length > 1 && (
+                        <div className="review-part-tabs">
+                            {sections.map((section, index) => (
+                                <button
+                                    key={section.sectionId}
+                                    className={`part-tab ${activePartIndex === index ? 'active' : ''}`}
+                                    onClick={() => setActivePartIndex(index)}
+                                >
+                                    Part {section.partNumber}
+                                    <span className="part-questions-count">
+                                        ({section.questions?.length || 0} câu)
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Main Content - THREE COLUMN LAYOUT */}
+                    <main className="review-main-content">
+                        <PanelGroup direction="horizontal" className="review-panel-group">
+                            {/* Left Column - Passage/Đề thi */}
+                            <Panel defaultSize={30} minSize={20} maxSize={45}>
+                                <div className="review-column passage-column">
+                                    <div className="column-header">
+                                        <h3><FiFileText size={16} /> Bài đọc</h3>
+                                        <span className="part-badge">Part {currentSection?.partNumber || 1}</span>
+                                    </div>
+                                    <div className="column-content">
+                                        {currentSection?.passageText ? (
+                                            <div
+                                                className="passage-text"
+                                                dangerouslySetInnerHTML={{ __html: currentSection.passageText }}
+                                            />
+                                        ) : currentSection?.displayContentUrl ? (
+                                            <div className="passage-image">
+                                                <img src={currentSection.displayContentUrl} alt="Test content" />
+                                            </div>
+                                        ) : (
+                                            <p className="no-content">Không có nội dung passage cho phần này.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </Panel>
+
+                            <PanelResizeHandle className="resize-handle">
+                                <div className="resize-handle-icon-container">
+                                    <span className="resize-handle-icon">↔</span>
+                                </div>
+                            </PanelResizeHandle>
+
+                            {/* Middle Column - Bài làm (User Answers) */}
+                            <Panel defaultSize={35} minSize={25}>
+                                <div className="review-column answers-column">
+                                    <div className="column-header">
+                                        <h3><FiEdit3 size={16} /> Bài làm của bạn</h3>
+                                        <div className="answers-summary">
+                                            <span className="correct-count">{sectionStats.correct} đúng</span>
+                                            <span className="separator">/</span>
+                                            <span className="total-count">{sectionStats.total} câu</span>
+                                        </div>
+                                    </div>
+                                    <div className="column-content">
+                                        <div className="user-answers-list">
+                                            {currentSection?.questions?.map((q, idx) => (
+                                                <div
+                                                    key={q.questionUid || idx}
+                                                    className={`user-answer-card ${q.isCorrect === true ? 'correct' : q.isCorrect === false ? 'incorrect' : 'unanswered'} ${selectedQuestionId === q.questionUid ? 'selected' : ''}`}
+                                                    onClick={() => scrollToAnswer(q.questionUid)}
+                                                >
+                                                    <div className="answer-header">
+                                                        <span className="question-number">Câu {q.questionNumber}</span>
+                                                        <span className="answer-status">
+                                                            {q.isCorrect === true ? (
+                                                                <FiCheckCircle className="status-icon correct" />
+                                                            ) : q.isCorrect === false ? (
+                                                                <FiXCircle className="status-icon incorrect" />
+                                                            ) : (
+                                                                <FiHelpCircle className="status-icon unanswered" />
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <div className="answer-content">
+                                                        <span className="answer-label">Trả lời:</span>
+                                                        <span className={`answer-text ${q.isCorrect === true ? 'correct' : q.isCorrect === false ? 'incorrect' : ''}`}>
+                                                            {getUserAnswerText(q)}
+                                                        </span>
+                                                    </div>
+                                                    {q.isCorrect === false && (
+                                                        <div className="correct-answer-hint">
+                                                            <span className="hint-label">Đáp án đúng:</span>
+                                                            <span className="hint-text">{getCorrectAnswerText(q)}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </Panel>
+
+                            <PanelResizeHandle className="resize-handle">
+                                <div className="resize-handle-icon-container">
+                                    <span className="resize-handle-icon">↔</span>
+                                </div>
+                            </PanelResizeHandle>
+
+                            {/* Right Column - Đáp án & Giải thích */}
+                            <Panel defaultSize={35} minSize={25}>
+                                <div className="review-column explanation-column" ref={answersColumnRef}>
+                                    <div className="column-header">
+                                        <h3><FiCheckCircle size={16} /> Đáp án & Giải thích</h3>
+                                    </div>
+                                    <div className="column-content">
+                                        <div className="explanations-list">
+                                            {currentSection?.questions?.map((q, idx) => (
+                                                <div
+                                                    key={q.questionUid || idx}
+                                                    ref={el => questionRefs.current[q.questionUid] = el}
+                                                    className={`explanation-card ${q.isCorrect === true ? 'correct' : q.isCorrect === false ? 'incorrect' : 'unanswered'} ${selectedQuestionId === q.questionUid ? 'highlighted' : ''}`}
+                                                >
+                                                    <div className="explanation-header">
+                                                        <span className="question-number">Câu {q.questionNumber}</span>
+                                                        <span className={`result-badge ${q.isCorrect === true ? 'correct' : q.isCorrect === false ? 'incorrect' : 'unanswered'}`}>
+                                                            {q.isCorrect === true ? 'Đúng' : q.isCorrect === false ? 'Sai' : 'Bỏ qua'}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Question Content */}
+                                                    {q.questionContent && (
+                                                        <div className="question-content-box">
+                                                            <div
+                                                                className="question-text"
+                                                                dangerouslySetInnerHTML={{
+                                                                    __html: typeof q.questionContent === 'string'
+                                                                        ? q.questionContent
+                                                                        : q.questionContent.text || q.questionContent.prompt || ''
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    )}
+
+                                                    {/* Answer Comparison */}
+                                                    <div className="answer-comparison">
+                                                        <div className="comparison-row your-answer">
+                                                            <span className="comparison-label">Câu trả lời của bạn:</span>
+                                                            <span className={`comparison-value ${q.isCorrect === true ? 'correct' : q.isCorrect === false ? 'incorrect' : 'empty'}`}>
+                                                                {getUserAnswerText(q)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="comparison-row correct-answer">
+                                                            <span className="comparison-label">Đáp án đúng:</span>
+                                                            <span className="comparison-value correct">
+                                                                {getCorrectAnswerText(q)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Explanation */}
+                                                    {q.explanation && (
+                                                        <div className="explanation-content">
+                                                            <div className="explanation-title">
+                                                                <FiHelpCircle size={14} /> Giải thích
+                                                            </div>
+                                                            <p className="explanation-text">{q.explanation}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </Panel>
+                        </PanelGroup>
+                    </main>
                 </div>
-            </main>
-        </div>
             )}
         </>
     );
 };
 
 export default TestReviewPage;
-

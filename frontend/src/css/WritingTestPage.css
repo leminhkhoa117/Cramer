@@ -265,75 +265,7 @@
     z-index: 2;
 }
 
-/* ============================================
-   Writing Footer - Task Navigation
-   ============================================ */
-.writing-footer {
-    cursor: default;
-    padding: 0 !important;
-    gap: 0;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.writing-footer .footer-part-section {
-    cursor: pointer;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 0.6rem;
-    padding: 0.6rem 1.5rem;
-    transition: all 0.15s ease;
-    border-top: 2px solid transparent;
-    opacity: 0.7;
-}
-
-.writing-footer .footer-part-section:hover {
-    background-color: #faf5ff;
-    opacity: 0.9;
-}
-
-.writing-footer .footer-part-section.active {
-    opacity: 1;
-    background-color: #f5f3ff;
-    border-top-color: #7c3aed;
-}
-
-.writing-footer .footer-part-title {
-    margin: 0;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #374151;
-}
-
-.writing-footer .footer-part-section.active .footer-part-title {
-    color: #7c3aed;
-}
-
-.writing-task-info {
-    display: flex;
-    align-items: center;
-}
-
-.word-count-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.2rem 0.6rem;
-    border-radius: 12px;
-    font-family: 'Be Vietnam Pro', sans-serif;
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-.word-count-badge.incomplete {
-    background-color: #fef3c7;
-    color: #d97706;
-}
-
-.word-count-badge.complete {
-    background-color: #dcfce7;
-    color: #16a34a;
-}
+/* Footer styles are now in TestFooter.css */
 
 /* ============================================
    Scrollbar Styling - Light mode

@@ -1,0 +1,118 @@
+/* ============================================
+   ReviewLayoutBase.css - Common Layout for Review Pages
+   Shared between Reading, Listening, and Writing review
+   ============================================ */
+
+/* Main review page wrapper */
+.review-page {
+    height: 100vh;
+    max-height: 100vh;
+    background-color: #f8fafc;
+    color: #1f2937;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Prevent page-level scroll */
+}
+
+/* Main content area for the panels */
+.review-main-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-height: 0; /* Important for flex children to shrink */
+    padding: 0.75rem 1.5rem;
+    background: #f8fafc;
+}
+
+/* Panel group container */
+.review-panel-group {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+}
+
+/* ============================================
+   Resize Handle (reusing from common)
+   ============================================ */
+.review-main-content .resize-handle {
+    background-color: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px !important;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    transition: background-color 0.2s ease;
+    position: relative;
+    z-index: 10;
+}
+
+.review-main-content .resize-handle:hover {
+    background-color: #e5e7eb;
+}
+
+.review-main-content .resize-handle-icon-container {
+    width: 28px;
+    height: 28px;
+    background-color: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 11;
+}
+
+.review-main-content .resize-handle-icon {
+    text-align: center;
+    width: 40px;
+    color: #4b5563;
+    font-size: 20px;
+    font-weight: normal;
+}
+
+/* ============================================
+   Loading & Error States
+   ============================================ */
+.review-loading, .review-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-size: 1.2rem;
+    background-color: #f8fafc;
+    font-family: 'Be Vietnam Pro', sans-serif;
+}
+
+.review-error {
+    color: #dc2626;
+    text-align: center;
+    padding: 2rem;
+}
+
+/* ============================================
+   Scrollbar Styling
+   ============================================ */
+.review-page .column-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.review-page .column-content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.review-page .column-content::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.review-page .column-content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}

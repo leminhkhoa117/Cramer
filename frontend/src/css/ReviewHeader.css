@@ -1,0 +1,186 @@
+/* ============================================
+   ReviewHeader.css - Header Styles for Review Pages
+   ============================================ */
+
+/* ============================================
+   Top Header Bar
+   ============================================ */
+.review-top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.review-top-header .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.review-top-header .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: transparent;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    padding: 0.45rem 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.review-top-header .back-btn:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.review-top-header .back-btn svg {
+    flex-shrink: 0;
+}
+
+.review-top-header h1 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: #1f2937;
+}
+
+.review-top-header .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* ============================================
+   Overall Band Badge
+   ============================================ */
+.overall-band-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    border-radius: 20px;
+    border: 1px solid #ddd6fe;
+}
+
+.overall-band-badge .label {
+    font-size: 0.7rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+.overall-band-badge .value {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+/* Band Color Coding */
+.band-9, .band-8 { color: #16a34a; }
+.band-7 { color: #22c55e; }
+.band-6 { color: #ca8a04; }
+.band-5 { color: #ea580c; }
+.band-4, .band-3, .band-2, .band-1, .band-0 { color: #dc2626; }
+
+/* ============================================
+   Tabs
+   ============================================ */
+.review-tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 1.5rem;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.review-tabs .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6b7280;
+    cursor: pointer;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.review-tabs .tab-btn:hover {
+    background-color: #f9fafb;
+    color: #4b5563;
+}
+
+.review-tabs .tab-btn.active {
+    color: #7c3aed;
+    border-bottom-color: #7c3aed;
+    font-weight: 600;
+}
+
+.tab-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    background: #f3f4f6;
+    border-radius: 10px;
+}
+
+.review-tabs .tab-btn.active .tab-value {
+    background: #ede9fe;
+}
+
+/* ============================================
+   Regrade Button (for Writing)
+   ============================================ */
+.regrade-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    color: #0369a1;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.regrade-btn svg {
+    flex-shrink: 0;
+}
+
+.regrade-btn svg.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.regrade-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+    border-color: #7dd3fc;
+    box-shadow: 0 2px 8px rgba(3, 105, 161, 0.15);
+}
+
+.regrade-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

@@ -4,12 +4,12 @@ import { profileApi } from '../api/backendApi';
 import { writingApi } from '../api/backendApi';
 import { showErrorToast, showSuccessToast } from '../utils/toast.js';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FiUser, 
-  FiEdit3, 
-  FiCamera, 
-  FiKey, 
-  FiSave, 
+import {
+  FiUser,
+  FiEdit3,
+  FiCamera,
+  FiKey,
+  FiSave,
   FiX,
   FiShield,
   FiSliders,
@@ -31,6 +31,7 @@ import {
 } from 'react-icons/fi';
 import { FaGoogle, FaFacebook } from 'react-icons/fa';
 import '../css/ProfilePage.css';
+import '../css/common/TabSwitcher.css';
 import FullPageLoader from '../components/FullPageLoader';
 import { supabase } from '../api/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
@@ -47,7 +48,7 @@ const tabContentVariants = {
 
 const ProfilePage = () => {
   const { user, profileLoading, updateProfileContext } = useAuth();
-  
+
   // State
   const [activeTab, setActiveTab] = useState('personal');
   const [isEditing, setIsEditing] = useState(false);
@@ -60,7 +61,7 @@ const ProfilePage = () => {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [deleteImageModal, setDeleteImageModal] = useState({ isOpen: false, type: null });
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   // AI Settings states
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
@@ -68,21 +69,21 @@ const ProfilePage = () => {
   const [apiKeyStatus, setApiKeyStatus] = useState(null); // null, 'valid', 'invalid'
   const [isSavingApiKey, setIsSavingApiKey] = useState(false);
   const [isApiKeyModified, setIsApiKeyModified] = useState(false); // Track if user has modified the key
-  
+
   // Security states (mock data for now - will be replaced with API calls)
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [sessions, setSessions] = useState([
-    { 
-      id: '1', 
-      device: 'Chrome trên Windows', 
+    {
+      id: '1',
+      device: 'Chrome trên Windows',
       location: 'Hồ Chí Minh, Việt Nam',
       lastActive: 'Đang hoạt động',
       isCurrent: true,
       icon: FiMonitor
     },
-    { 
-      id: '2', 
-      device: 'Safari trên iPhone', 
+    {
+      id: '2',
+      device: 'Safari trên iPhone',
       location: 'Hà Nội, Việt Nam',
       lastActive: '2 giờ trước',
       isCurrent: false,
@@ -344,11 +345,11 @@ const ProfilePage = () => {
     if (!type) return;
 
     setIsDeleting(true);
-    
+
     try {
       let updateData = {};
       let oldUrl = null;
-      
+
       switch (type) {
         case 'avatar':
           oldUrl = profileData?.avatarUrl;
@@ -384,11 +385,11 @@ const ProfilePage = () => {
       // Update profile in database
       const response = await profileApi.update(user.id, updateData);
       console.log('Profile updated:', response);
-      
+
       // Update local state
       setProfileData(prev => ({ ...prev, ...updateData }));
       setEditedProfile(prev => ({ ...prev, ...updateData }));
-      
+
       // Update context
       if (updateProfileContext) {
         await updateProfileContext();
@@ -420,16 +421,16 @@ const ProfilePage = () => {
       showErrorToast('Vui lòng nhập API key');
       return;
     }
-    
+
     // Don't validate masked placeholder
     if (!isApiKeyModified && geminiApiKey.startsWith('••')) {
       showSuccessToast('API key đã được lưu và xác thực trước đó');
       return;
     }
-    
+
     setIsValidatingApiKey(true);
     setApiKeyStatus(null);
-    
+
     try {
       const response = await writingApi.validateApiKey(geminiApiKey);
       if (response.data.valid) {
@@ -453,15 +454,15 @@ const ProfilePage = () => {
       showErrorToast('Vui lòng nhập API key');
       return;
     }
-    
+
     // Don't save masked placeholder
     if (!isApiKeyModified && geminiApiKey.startsWith('••')) {
       showSuccessToast('API key đã được lưu trước đó');
       return;
     }
-    
+
     setIsSavingApiKey(true);
-    
+
     try {
       await profileApi.update(user.id, { geminiApiKey: geminiApiKey });
       showSuccessToast('Đã lưu API key thành công!');
@@ -477,7 +478,7 @@ const ProfilePage = () => {
 
   const handleDeleteApiKey = useCallback(async () => {
     setIsSavingApiKey(true);
-    
+
     try {
       await profileApi.update(user.id, { geminiApiKey: '' }); // Send empty string to clear
       setGeminiApiKey('');
@@ -502,13 +503,13 @@ const ProfilePage = () => {
   }, []);
 
   // Memoized computed values
-  const displayInitials = useMemo(() => 
-    getInitials(profileData?.fullName || user?.email), 
+  const displayInitials = useMemo(() =>
+    getInitials(profileData?.fullName || user?.email),
     [getInitials, profileData?.fullName, user?.email]
   );
 
-  const displayName = useMemo(() => 
-    profileData?.fullName || 'Người dùng', 
+  const displayName = useMemo(() =>
+    profileData?.fullName || 'Người dùng',
     [profileData?.fullName]
   );
 
@@ -530,7 +531,7 @@ const ProfilePage = () => {
   ];
 
   return (
-    <div 
+    <div
       className="profile-page-new"
       style={profileData?.pageBackgroundUrl ? {
         backgroundImage: `url(${profileData.pageBackgroundUrl})`,
@@ -543,10 +544,10 @@ const ProfilePage = () => {
       {profileData?.pageBackgroundUrl && (
         <div className="profile-page-new__overlay" />
       )}
-      
+
       <UploadImageModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onConfirm={handleImageUpdate} />
       <ChangePasswordModal isOpen={isChangePasswordModalOpen} onClose={() => setIsChangePasswordModalOpen(false)} />
-      
+
       {/* Delete Image Confirmation Modal */}
       <ConfirmationModal
         isOpen={deleteImageModal.isOpen}
@@ -569,32 +570,32 @@ const ProfilePage = () => {
         {profileData?.heroBackgroundUrl && (
           <div className="profile-cover-box">
             <div className="profile-cover-box__inner">
-              <img 
-                src={profileData.heroBackgroundUrl} 
-                alt="Ảnh bìa" 
+              <img
+                src={profileData.heroBackgroundUrl}
+                alt="Ảnh bìa"
                 className="profile-cover-box__img"
               />
             </div>
           </div>
         )}
-        
+
         <div className="profile-hero__content">
           <div className="profile-avatar-container">
             {isUploading ? (
               <div className="profile-avatar-uploading" />
             ) : profileData?.avatarUrl ? (
-              <img 
-                src={profileData.avatarUrl} 
-                alt="Avatar" 
-                className="profile-avatar-large" 
+              <img
+                src={profileData.avatarUrl}
+                alt="Avatar"
+                className="profile-avatar-large"
               />
             ) : (
               <div className="profile-avatar-large profile-avatar-large--placeholder">
                 {displayInitials}
               </div>
             )}
-            <button 
-              className="profile-avatar-edit" 
+            <button
+              className="profile-avatar-edit"
               onClick={() => setIsModalOpen(true)}
               disabled={isUploading}
               aria-label="Thay đổi ảnh đại diện"
@@ -614,18 +615,20 @@ const ProfilePage = () => {
 
       {/* Tab Navigation */}
       <div className="profile-tabs container">
-        <nav className="profile-tabs__nav">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              className={`profile-tabs__btn ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <tab.icon />
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+        <div className="tab-switcher">
+          <nav className="tab-switcher__nav">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                className={`tab-switcher__btn ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <tab.icon />
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
 
         {/* Tab Content */}
         <div className="profile-tabs__content">
@@ -656,43 +659,43 @@ const ProfilePage = () => {
                       <div className="profile-form-grid">
                         <div className="profile-form-group">
                           <label className="profile-form-label">Họ và Tên</label>
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             name="fullName"
                             className="profile-form-input"
-                            value={editedProfile.fullName || ''} 
-                            onChange={handleInputChange} 
+                            value={editedProfile.fullName || ''}
+                            onChange={handleInputChange}
                             placeholder="Nhập họ và tên"
                           />
                         </div>
                         <div className="profile-form-group">
                           <label className="profile-form-label">Email</label>
-                          <input 
-                            type="email" 
+                          <input
+                            type="email"
                             className="profile-form-input"
-                            value={editedProfile.email || ''} 
-                            disabled 
+                            value={editedProfile.email || ''}
+                            disabled
                           />
                         </div>
                         <div className="profile-form-group">
                           <label className="profile-form-label">Số điện thoại</label>
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             name="phoneNumber"
                             className="profile-form-input"
-                            value={editedProfile.phoneNumber || ''} 
-                            onChange={handleInputChange} 
+                            value={editedProfile.phoneNumber || ''}
+                            onChange={handleInputChange}
                             placeholder="Nhập số điện thoại"
                           />
                         </div>
                         <div className="profile-form-group">
                           <label className="profile-form-label">Địa chỉ</label>
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             name="address"
                             className="profile-form-input"
-                            value={editedProfile.address || ''} 
-                            onChange={handleInputChange} 
+                            value={editedProfile.address || ''}
+                            onChange={handleInputChange}
                             placeholder="Nhập địa chỉ"
                           />
                         </div>
@@ -756,14 +759,14 @@ const ProfilePage = () => {
                       <p className="profile-card__description">Hiển thị ở header và trang hồ sơ</p>
                     </div>
                     <div className="profile-card__actions">
-                      <button 
+                      <button
                         className="profile-btn profile-btn--secondary profile-btn--small"
                         onClick={() => setIsModalOpen(true)}
                       >
                         <FiEdit3 /> Thay đổi
                       </button>
                       {profileData?.avatarUrl && (
-                        <button 
+                        <button
                           className="profile-btn profile-btn--danger profile-btn--small"
                           onClick={() => openDeleteModal('avatar')}
                         >
@@ -774,9 +777,9 @@ const ProfilePage = () => {
                   </div>
                   <div className="appearance-preview appearance-preview--avatar">
                     {profileData?.avatarUrl ? (
-                      <img 
-                        src={profileData.avatarUrl} 
-                        alt="Ảnh đại diện" 
+                      <img
+                        src={profileData.avatarUrl}
+                        alt="Ảnh đại diện"
                         className="appearance-preview__avatar-img"
                       />
                     ) : (
@@ -799,14 +802,14 @@ const ProfilePage = () => {
                       <p className="profile-card__description">Ảnh banner hiển thị ở đầu trang hồ sơ</p>
                     </div>
                     <div className="profile-card__actions">
-                      <button 
+                      <button
                         className="profile-btn profile-btn--secondary profile-btn--small"
                         onClick={() => setIsModalOpen(true)}
                       >
                         <FiEdit3 /> Thay đổi
                       </button>
                       {profileData?.heroBackgroundUrl && (
-                        <button 
+                        <button
                           className="profile-btn profile-btn--danger profile-btn--small"
                           onClick={() => openDeleteModal('hero')}
                         >
@@ -817,9 +820,9 @@ const ProfilePage = () => {
                   </div>
                   <div className="appearance-preview appearance-preview--hero">
                     {profileData?.heroBackgroundUrl ? (
-                      <img 
-                        src={profileData.heroBackgroundUrl} 
-                        alt="Ảnh bìa" 
+                      <img
+                        src={profileData.heroBackgroundUrl}
+                        alt="Ảnh bìa"
                         className="appearance-preview__hero-img"
                       />
                     ) : (
@@ -842,14 +845,14 @@ const ProfilePage = () => {
                       <p className="profile-card__description">Hình nền cho toàn bộ trang hồ sơ</p>
                     </div>
                     <div className="profile-card__actions">
-                      <button 
+                      <button
                         className="profile-btn profile-btn--secondary profile-btn--small"
                         onClick={() => setIsModalOpen(true)}
                       >
                         <FiEdit3 /> Thay đổi
                       </button>
                       {profileData?.pageBackgroundUrl && (
-                        <button 
+                        <button
                           className="profile-btn profile-btn--danger profile-btn--small"
                           onClick={() => openDeleteModal('page')}
                         >
@@ -860,9 +863,9 @@ const ProfilePage = () => {
                   </div>
                   <div className="appearance-preview appearance-preview--background">
                     {profileData?.pageBackgroundUrl ? (
-                      <img 
-                        src={profileData.pageBackgroundUrl} 
-                        alt="Hình nền trang" 
+                      <img
+                        src={profileData.pageBackgroundUrl}
+                        alt="Hình nền trang"
                         className="appearance-preview__background-img"
                       />
                     ) : (
@@ -927,7 +930,7 @@ const ProfilePage = () => {
                           Chưa bật
                         </span>
                       )}
-                      <div 
+                      <div
                         className={`toggle-switch ${twoFactorEnabled ? 'active' : ''}`}
                         onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}
                       />
@@ -943,7 +946,7 @@ const ProfilePage = () => {
                       Phiên đăng nhập
                     </h3>
                     {sessions.length > 1 && (
-                      <button 
+                      <button
                         className="profile-btn profile-btn--secondary profile-btn--small"
                         onClick={handleRevokeAllSessions}
                       >
@@ -973,7 +976,7 @@ const ProfilePage = () => {
                         </div>
                         {!session.isCurrent && (
                           <div className="session-item__actions">
-                            <button 
+                            <button
                               className="profile-btn profile-btn--danger profile-btn--small"
                               onClick={() => handleRevokeSession(session.id)}
                             >
@@ -1098,9 +1101,9 @@ const ProfilePage = () => {
                       Để sử dụng tính năng chấm điểm bài Writing bằng AI, bạn cần cung cấp API key từ Google Gemini.
                       API key của bạn được lưu trữ an toàn và chỉ được sử dụng để chấm bài viết của bạn.
                     </p>
-                    <a 
-                      href="https://aistudio.google.com/app/apikey" 
-                      target="_blank" 
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="ai-settings-link"
                     >
@@ -1130,7 +1133,7 @@ const ProfilePage = () => {
                         {showApiKey ? <FiEyeOff /> : <FiEye />}
                       </button>
                     </div>
-                    
+
                     {apiKeyStatus && (
                       <div className={`api-key-status ${apiKeyStatus}`}>
                         {apiKeyStatus === 'valid' ? (
@@ -1181,19 +1184,19 @@ const ProfilePage = () => {
                   <div className="ai-usage-notes">
                     <ul>
                       <li>
-                        <strong>Chi phí:</strong> Google Gemini tính phí theo số lượng token sử dụng. 
+                        <strong>Chi phí:</strong> Google Gemini tính phí theo số lượng token sử dụng.
                         Mỗi bài Writing thường tiêu tốn khoảng 2,000-5,000 tokens.
                       </li>
                       <li>
-                        <strong>Bảo mật:</strong> API key của bạn chỉ được sử dụng để gọi API Gemini 
+                        <strong>Bảo mật:</strong> API key của bạn chỉ được sử dụng để gọi API Gemini
                         và không được chia sẻ với bất kỳ bên thứ ba nào.
                       </li>
                       <li>
-                        <strong>Model:</strong> Hệ thống sử dụng Gemini 2.5 Pro (model: `gemini-2.5-pro`) cho việc chấm điểm, 
+                        <strong>Model:</strong> Hệ thống sử dụng Gemini 2.5 Pro (model: `gemini-2.5-pro`) cho việc chấm điểm,
                         đảm bảo tốc độ và độ chính xác cao.
                       </li>
                       <li>
-                        <strong>Giới hạn:</strong> Có thể có giới hạn số lần gọi API miễn phí mỗi ngày. 
+                        <strong>Giới hạn:</strong> Có thể có giới hạn số lần gọi API miễn phí mỗi ngày.
                         Kiểm tra quota tại Google AI Studio.
                       </li>
                     </ul>

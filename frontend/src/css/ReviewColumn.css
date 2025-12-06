@@ -1,0 +1,107 @@
+/* ============================================
+   ReviewColumn.css - Column Styles for Review Pages
+   ============================================ */
+
+.review-column {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    overflow: hidden;
+    position: relative;
+}
+
+/* First column - round left corners */
+.review-column:first-child,
+.prompt-column,
+.passage-column {
+    border-radius: 12px 0 0 12px;
+}
+
+/* Last column - round right corners */
+.review-column:last-child,
+.analysis-column,
+.answers-column {
+    border-radius: 0 12px 12px 0;
+}
+
+/* ============================================
+   Column Header
+   ============================================ */
+.column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #f3f4f6 100%);
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+}
+
+.column-header h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #7c3aed;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.column-header h3 .header-icon {
+    display: flex;
+    align-items: center;
+}
+
+.column-header h3 svg {
+    flex-shrink: 0;
+}
+
+.header-right-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Round corners for first column header */
+.review-column:first-child .column-header,
+.prompt-column .column-header,
+.passage-column .column-header {
+    border-radius: 11px 0 0 0;
+}
+
+/* Round corners for last column header */
+.review-column:last-child .column-header,
+.analysis-column .column-header,
+.answers-column .column-header {
+    border-radius: 0 11px 0 0;
+}
+
+/* ============================================
+   Column Content
+   ============================================ */
+.column-content {
+    flex: 1;
+    padding: 1rem 1.25rem;
+    overflow-y: auto;
+    min-height: 0; /* Important for overflow to work in flex */
+}
+
+/* ============================================
+   Common Content Styles
+   ============================================ */
+.column-content .no-content {
+    color: #6b7280;
+    font-style: italic;
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+/* Word count badge in header */
+.word-count {
+    font-size: 0.85rem;
+    color: #6b7280;
+    padding: 0.15rem 0.5rem;
+    background: #f3f4f6;
+    border-radius: 10px;
+}

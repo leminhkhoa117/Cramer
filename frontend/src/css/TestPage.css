@@ -1,180 +1,20 @@
-/* Existing styles in TestPage.css */
-.test-page-wrapper {
-    display: grid;
-    grid-template-rows: auto auto 1fr auto; /* Header, Listening Controls, Main Content, Footer */
-    height: 100vh;
-    overflow: hidden;
-}
+/* TestPage.css - Reading & Listening Test Specific Styles */
+/* Base layout imported from common */
+@import './common/TestLayoutBase.css';
 
-.test-page-container {
-    flex-grow: 1;
-    display: flex;
-    overflow: hidden;
-    background-color: #f0f2f5; /* A light neutral background */
-}
-
-.passage-container {
-    background-color: #ffffff;
-    padding: 1.5rem 2rem;
-    overflow-y: auto;
-    height: 100%;
-    border-right: 1px solid #d1d5db;
-}
-
-.passage-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: var(--color-text-primary);
-}
-
-.passage-instructions {
-    font-size: 0.9rem;
-    color: var(--color-text-secondary);
-    margin-bottom: 24px;
-    font-style: italic;
-}
-
-.resize-handle.hidden {
-    display: none;
-}
-
-.resize-handle-icon-container {
-    width: 28px;
-    height: 28px;
-    background-color: white;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-
-.resize-handle-icon {
-    text-align: center;
-    width: 40px;
-    color: #4b5563;
-    font-size: 25px;
-    font-weight: normal;
-}
-
-.loading-screen {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(240, 242, 245, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    z-index: 2000; /* Ensure it's on top of everything */
-}
-
-.error-message {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    font-size: 1.2rem;
-    color: #b42318;
-}
-
-/* --- New Styles for Listening Test --- */
-
-
+/* ============================================
+   Listening Test Specific Styles
+   ============================================ */
 
 .listening-controls-container {
-
     display: flex;
-
     justify-content: space-between;
-
     align-items: center;
-
-    padding: 10px 20px; /* Re-added padding */
-
-    background-color: var(--color-background-primary); /* Re-added background */
-
-    border-bottom: 1px solid var(--color-border);
-
+    padding: 10px 20px;
+    background-color: var(--color-background-primary, #ffffff);
+    border-bottom: 1px solid var(--color-border, #e5e7eb);
     gap: 20px;
-
 }
-
-
-
-.review-banner {
-
-    background-color: var(--color-accent);
-
-    color: white;
-
-    text-align: center;
-
-    padding: 12px;
-
-    font-size: 1.1rem;
-
-    font-weight: 500;
-
-    position: fixed;
-
-    top: 120px; /* Below header (60px) + audio controls (approx 60px) */
-
-    left: 0;
-
-    width: 100%;
-
-    z-index: 999;
-
-}
-
-
-
-.listening-visual-content {
-
-    width: 100%;
-
-    max-width: 800px;
-
-    height: auto;
-
-    display: block;
-
-    margin: 0 auto;
-
-    border-radius: 8px;
-
-}
-
-
-
-.listening-visual-placeholder {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    height: 100%;
-
-    min-height: 300px;
-
-    background-color: var(--color-background-tertiary);
-
-    border-radius: 8px;
-
-    color: var(--color-text-secondary);
-
-    font-style: italic;
-
-}
-
-
-
-
 
 .audio-players-wrapper {
     display: grid;
@@ -183,5 +23,37 @@
     width: 100%;
 }
 
+.review-banner {
+    background-color: var(--color-accent, #7c3aed);
+    color: white;
+    text-align: center;
+    padding: 12px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    position: fixed;
+    top: 120px; /* Below header + audio controls */
+    left: 0;
+    width: 100%;
+    z-index: 999;
+}
 
+.listening-visual-content {
+    width: 100%;
+    max-width: 800px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    border-radius: 8px;
+}
 
+.listening-visual-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 300px;
+    background-color: var(--color-background-tertiary, #f3f4f6);
+    border-radius: 8px;
+    color: var(--color-text-secondary, #6b7280);
+    font-style: italic;
+}

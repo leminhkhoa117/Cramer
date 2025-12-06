@@ -6,10 +6,13 @@ import com.cramer.dto.TestResultDTO;
 import com.cramer.dto.TestReviewDTO;
 import com.cramer.dto.UserAnswerDTO;
 import com.cramer.dto.QuestionReviewDTO;
+import com.cramer.dto.SectionReviewDTO;
 import com.cramer.entity.Question;
+import com.cramer.entity.Section;
 import com.cramer.entity.TestAttempt;
 import com.cramer.entity.UserAnswer;
 import com.cramer.repository.QuestionRepository;
+import com.cramer.repository.SectionRepository;
 import com.cramer.util.IeltsScoreConverter;
 import com.cramer.util.EntityMapper;
 import com.cramer.repository.TestAttemptRepository;
@@ -40,6 +43,7 @@ public class TestAttemptService {
     private final TestAttemptRepository testAttemptRepository;
     private final UserAnswerRepository userAnswerRepository;
     private final QuestionRepository questionRepository;
+    private final SectionRepository sectionRepository;
     private final ObjectMapper objectMapper;
     
     @PersistenceContext
@@ -49,10 +53,12 @@ public class TestAttemptService {
     public TestAttemptService(TestAttemptRepository testAttemptRepository,
                               UserAnswerRepository userAnswerRepository,
                               QuestionRepository questionRepository,
+                              SectionRepository sectionRepository,
                               ObjectMapper objectMapper) {
         this.testAttemptRepository = testAttemptRepository;
         this.userAnswerRepository = userAnswerRepository;
         this.questionRepository = questionRepository;
+        this.sectionRepository = sectionRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -428,7 +434,18 @@ public class TestAttemptService {
             testAttempt.getSkill()
         );
 
-        // 4. Build the DTO
+        // 4. Fetch all sections for this test
+        List<Section> sections = sectionRepository.findSectionsForTest(
+            testAttempt.getExamSource(),
+            Integer.valueOf(testAttempt.getTestNumber()),
+            testAttempt.getSkill()
+        );
+
+        // 5. Group questions by sectionId
+        Map<Long, List<Question>> questionsBySectionId = allTestQuestions.stream()
+                .collect(Collectors.groupingBy(Question::getSectionId));
+
+        // 6. Build the DTO
         TestReviewDTO reviewDTO = new TestReviewDTO();
         reviewDTO.setAttemptId(testAttempt.getId());
         reviewDTO.setExamSource(testAttempt.getExamSource());
@@ -450,6 +467,7 @@ public class TestAttemptService {
             reviewDTO.setBandScore(IeltsScoreConverter.convertToBand(testAttempt.getScore()));
         }
 
+        // 7. Build flat list of QuestionReviewDTOs (for backward compatibility)
         List<QuestionReviewDTO> questionReviews = allTestQuestions.stream()
             .sorted(Comparator.comparing(Question::getQuestionNumber))
             .map(question -> {
@@ -468,6 +486,43 @@ public class TestAttemptService {
             .collect(Collectors.toList());
 
         reviewDTO.setQuestions(questionReviews);
+
+        // 8. Build SectionReviewDTOs with grouped questions
+        List<SectionReviewDTO> sectionReviews = sections.stream()
+            .sorted(Comparator.comparing(Section::getPartNumber))
+            .map(section -> {
+                List<Question> sectionQuestions = questionsBySectionId.getOrDefault(section.getId(), List.of());
+                
+                List<QuestionReviewDTO> sectionQuestionReviews = sectionQuestions.stream()
+                    .sorted(Comparator.comparing(Question::getQuestionNumber))
+                    .map(question -> {
+                        UserAnswer userAnswer = answersByQuestionId.get(question.getId());
+                        return new QuestionReviewDTO(
+                            question.getQuestionNumber(),
+                            question.getQuestionUid(),
+                            question.getQuestionType(),
+                            question.getQuestionContent(),
+                            userAnswer != null ? userAnswer.getAnswerContent() : null,
+                            question.getCorrectAnswer(),
+                            userAnswer != null ? userAnswer.getCorrect() : null,
+                            question.getExplanation()
+                        );
+                    })
+                    .collect(Collectors.toList());
+
+                return new SectionReviewDTO(
+                    section.getId(),
+                    section.getPartNumber(),
+                    section.getPassageText(),
+                    section.getDisplayContentUrl(),
+                    section.getAudioUrl(),
+                    section.getSectionLayout(),
+                    sectionQuestionReviews
+                );
+            })
+            .collect(Collectors.toList());
+
+        reviewDTO.setSections(sectionReviews);
 
         return reviewDTO;
     }

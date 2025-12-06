@@ -32,10 +32,13 @@ export default function Header() {
     navigate('/login');
   };
 
-  // Display username with proper loading state
+  // Display name priority: fullName > username > email prefix
   const displayName = profileLoading
     ? 'Loading...'
-    : profile?.username || user?.email?.split('@')[0] || 'User';
+    : profile?.fullName || profile?.full_name || profile?.username || user?.email?.split('@')[0] || 'User';
+
+  // Avatar URL from profile
+  const avatarUrl = profile?.avatarUrl || profile?.avatar_url;
 
   return (
     <Navbar sticky="top" expand="lg" className={`w-100 ${isScrolled ? 'scrolled' : ''}`}>
@@ -69,7 +72,21 @@ export default function Header() {
                     gap: '0.5rem'
                   }}
                 >
-                  <FaUserCircle size={20} />
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Avatar"
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '1px solid #e9d5ff'
+                      }}
+                    />
+                  ) : (
+                    <FaUserCircle size={20} />
+                  )}
                   {displayName}
                 </Dropdown.Toggle>
 

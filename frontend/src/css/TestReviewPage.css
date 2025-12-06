@@ -1,212 +1,735 @@
 :root {
-    --review-bg: transparent; /* Page background is now handled by the wrapper */
-    --review-card-bg: #ffffff; /* Solid white for better contrast and readability */
+    --review-bg: #f8fafc;
+    --review-card-bg: #ffffff;
     --review-text-primary: #130b38;
     --review-text-secondary: #4a4e69;
-    --correct-color: #28a745;
-    --incorrect-color: #dc3545;
+    --correct-color: #22c55e;
+    --incorrect-color: #ef4444;
     --primary-purple: #8c52ff;
 }
 
+/* ============================================
+   Page Layout - Full Height
+   ============================================ */
 .review-page {
-    /* Full page background to match Dashboard */
-    background: #f8fafc;
-    min-height: 100vh;
-    width: 100%;
-    padding: 2rem 0;
+    height: 100vh;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--review-bg);
+    overflow: hidden;
+    font-family: 'Be Vietnam Pro', sans-serif;
 }
 
+/* ============================================
+   Header - Original Purple Glassmorphism Style
+   ============================================ */
 .review-header {
-    position: sticky;
-    /* Increase top offset to clear the main navigation bar (approx 64px-80px) */
-    top: 80px; 
-    z-index: 40; /* Lower than modals (usually 50+) but above content */
-    
-    /* Centered Pill Layout */
-    max-width: 1100px;
-    margin: 0 auto 2rem auto;
-    width: calc(100% - 3rem);
-
-    /* Glassmorphism with stronger opacity for legibility */
-    background: rgba(102, 97, 241, 0.95);
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(102, 97, 241, 0.95), rgba(140, 82, 255, 0.95));
     backdrop-filter: blur(16px);
     color: white;
-    
-    padding: 1.5rem 2rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 12px 40px rgba(102, 97, 241, 0.3);
-    border-radius: 32px;
-    transition: all 0.3s ease;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 4px 20px rgba(102, 97, 241, 0.3);
 }
 
 .review-header-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    cursor: pointer;
-    user-select: none;
+    gap: 2rem;
 }
 
-.review-header-heading {
+.review-header-left {
     display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+.review-header-left .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.review-header-left .back-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
 }
 
 .review-title {
-    font-size: 1.5rem;
-    font-weight: 800;
+    font-size: 1.1rem;
+    font-weight: 700;
     margin: 0;
     color: white;
-    letter-spacing: -0.02em;
+    white-space: nowrap;
 }
 
-.review-test-name {
-    margin: 0;
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.9);
-    font-weight: 500;
+.review-header-center {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+    flex: 1;
+    justify-content: center;
 }
 
-.review-summary-grid {
-    display: grid;
-    /* Force 4 columns on desktop for a clean row */
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.summary-item {
-    /* Remove box styling to make it look cleaner inside the pill */
-    background: transparent;
-    border: none;
-    padding: 0;
-    text-align: left;
-    color: white;
-    
-    /* Flex column to ensure label and value are stacked */
+.review-header-center .summary-item {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    align-items: center;
+    gap: 0.25rem;
 }
 
-.summary-label {
-    display: block;
-    font-size: 0.75rem;
+.review-header-center .summary-label {
+    font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+}
+
+.review-header-center .summary-value {
+    font-size: 1.1rem;
     font-weight: 700;
+    color: white;
 }
 
-.summary-value {
-    display: block;
-    font-size: 1.5rem;
-    font-weight: 800;
-    line-height: 1.2;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.review-actions {
+.review-header-right {
     display: flex;
+    align-items: center;
     gap: 1rem;
-    margin-top: 1.5rem;
-    padding-top: 0; /* Removed border-top here as it's handled by grid */
-    justify-content: flex-end; /* Align buttons to right */
+    flex-shrink: 0;
 }
 
-.review-actions .btn {
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.header-actions .btn {
     border: none;
-    border-radius: 12px;
-    padding: 0.75rem 1.5rem;
-    font-weight: 700;
-    font-size: 0.9rem;
+    border-radius: 10px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s ease;
     display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none;
+}
+
+.header-actions .btn-primary {
+    background: white;
+    color: #5b21b6;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-actions .btn-primary:hover {
+    background: #f1f5f9;
+    transform: translateY(-1px);
+}
+
+.header-actions .btn-secondary {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.header-actions .btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+.band-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.band-badge .label {
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.band-badge .value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: white;
+    line-height: 1.2;
+}
+
+/* Band Color Coding */
+.band-9, .band-8 { color: #4ade80 !important; }
+.band-7 { color: #86efac !important; }
+.band-6 { color: #fbbf24 !important; }
+.band-5 { color: #fb923c !important; }
+.band-4, .band-3, .band-2, .band-1, .band-0 { color: #f87171 !important; }
+
+/* ============================================
+   Part Tabs - Original Design
+   ============================================ */
+.review-part-tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 1.5rem;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+}
+
+.part-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6b7280;
+    cursor: pointer;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.part-tab:hover {
+    background-color: #f9fafb;
+    color: #4b5563;
+}
+
+.part-tab.active {
+    color: var(--primary-purple);
+    border-bottom-color: var(--primary-purple);
+    font-weight: 600;
+}
+
+.part-questions-count {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+.part-tab.active .part-questions-count {
+    color: var(--primary-purple);
+}
+
+/* ============================================
+   Main Content - Three Panel Layout
+   ============================================ */
+.review-main-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-height: 0;
+    padding: 0.75rem 1rem;
+    background: var(--review-bg);
+}
+
+.review-panel-group {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+}
+
+.review-column {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.passage-column {
+    border-right: 1px solid #e5e7eb;
+}
+
+.answers-column {
+    border-right: 1px solid #e5e7eb;
+}
+
+.column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #f3f4f6 100%);
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+}
+
+.column-header h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary-purple);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.part-badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6b7280;
+    padding: 0.2rem 0.6rem;
+    background: #f3f4f6;
+    border-radius: 6px;
+}
+
+.column-content {
+    flex: 1;
+    padding: 1rem 1.25rem;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+/* ============================================
+   Passage Column Styling
+   ============================================ */
+.passage-text {
+    font-size: 0.92rem;
+    line-height: 1.85;
+    color: #374151;
+    white-space: pre-wrap;
+}
+
+.passage-text p {
+    margin-bottom: 1em;
+    text-align: justify;
+}
+
+.passage-image img {
+    max-width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.no-content {
+    color: #9ca3af;
+    font-style: italic;
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px dashed #e5e7eb;
+}
+
+/* ============================================
+   Middle Column - User Answers
+   ============================================ */
+.answers-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.75rem;
+    background: rgba(34, 197, 94, 0.1);
+    border-radius: 12px;
+}
+
+.answers-summary .correct-count {
+    font-weight: 600;
+    color: #16a34a;
+}
+
+.answers-summary .separator {
+    color: #9ca3af;
+}
+
+.answers-summary .total-count {
+    color: #6b7280;
+}
+
+.user-answers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.user-answer-card {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 0.875rem 1rem;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.user-answer-card:hover {
+    border-color: #c7d2fe;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+}
+
+.user-answer-card.selected {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+}
+
+.user-answer-card.correct {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #86efac;
+}
+
+.user-answer-card.incorrect {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border-color: #fca5a5;
+}
+
+.user-answer-card.unanswered {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.user-answer-card .answer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.user-answer-card .question-number {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.85rem;
+}
+
+.user-answer-card .status-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.user-answer-card .status-icon.correct { color: #22c55e; }
+.user-answer-card .status-icon.incorrect { color: #ef4444; }
+.user-answer-card .status-icon.unanswered { color: #9ca3af; }
+
+.user-answer-card .answer-content {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+}
+
+.user-answer-card .answer-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    flex-shrink: 0;
+}
+
+.user-answer-card .answer-text {
+    font-size: 0.9rem;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.user-answer-card .answer-text.correct { color: #16a34a; }
+.user-answer-card .answer-text.incorrect {
+    color: #dc2626;
+    text-decoration: line-through;
+    text-decoration-color: rgba(220, 38, 38, 0.5);
+}
+
+.user-answer-card .correct-answer-hint {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed #fca5a5;
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+}
+
+.user-answer-card .hint-label {
+    font-size: 0.7rem;
+    color: #16a34a;
+    flex-shrink: 0;
+}
+
+.user-answer-card .hint-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #16a34a;
+}
+
+/* ============================================
+   Right Column - Explanations
+   ============================================ */
+.explanations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.explanation-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+}
+
+.explanation-card.highlighted {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25), 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+
+.explanation-card.correct { border-left: 4px solid #22c55e; }
+.explanation-card.incorrect { border-left: 4px solid #ef4444; }
+.explanation-card.unanswered { border-left: 4px solid #9ca3af; }
+
+.explanation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.explanation-header .question-number {
+    font-weight: 700;
+    color: #1f2937;
+    font-size: 0.95rem;
+}
+
+.result-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.result-badge.correct { background: #dcfce7; color: #16a34a; }
+.result-badge.incorrect { background: #fee2e2; color: #dc2626; }
+.result-badge.unanswered { background: #f3f4f6; color: #6b7280; }
+
+.question-content-box {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+    border: 1px solid #e2e8f0;
+}
+
+.question-content-box .question-text {
+    font-size: 0.9rem;
+    color: #374151;
+    line-height: 1.6;
+}
+
+.answer-comparison {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.comparison-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+}
+
+.comparison-row.your-answer { background: #f9fafb; }
+.comparison-row.correct-answer { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); }
+
+.comparison-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    flex-shrink: 0;
+    min-width: 130px;
+}
+
+.comparison-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.comparison-value.correct { color: #16a34a; }
+.comparison-value.incorrect { color: #dc2626; }
+.comparison-value.empty { color: #9ca3af; font-style: italic; font-weight: 400; }
+
+.explanation-content {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-radius: 8px;
+    padding: 0.875rem 1rem;
+    border: 1px solid #bfdbfe;
+}
+
+.explanation-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #1d4ed8;
+    margin-bottom: 0.5rem;
+}
+
+.explanation-text {
+    font-size: 0.875rem;
+    color: #1e40af;
+    line-height: 1.7;
+    margin: 0;
+}
+
+/* ============================================
+   Resize Handle
+   ============================================ */
+.resize-handle {
+    background-color: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px !important;
+    transition: background-color 0.2s ease;
+}
+
+.resize-handle:hover {
+    background-color: #e5e7eb;
+}
+
+.resize-handle-icon-container {
+    width: 24px;
+    height: 24px;
+    background-color: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.review-actions .btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+.resize-handle-icon {
+    color: #4b5563;
+    font-size: 12px;
 }
 
-.review-actions .btn-primary {
-    background: white; /* Use shorthand to override global gradient */
-    color: #5b21b6; /* Darker purple (Violet-800) for high contrast */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border: none;
+/* ============================================
+   Scrollbar Styling
+   ============================================ */
+.column-content::-webkit-scrollbar {
+    width: 8px;
 }
 
-.review-actions .btn-primary:hover {
-    background: #f8fafc;
-    color: #4c1d95; /* Even darker on hover */
+.column-content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
 }
 
-.review-actions .btn-secondary {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: white;
-    backdrop-filter: blur(4px);
+.column-content::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
 }
 
-.review-actions .btn-secondary:hover {
-    background-color: rgba(255, 255, 255, 0.3);
+.column-content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .review-summary-grid {
-        grid-template-columns: repeat(2, 1fr); /* 2x2 on tablet */
-    }
-    
-    .review-header {
-        top: 70px;
-        padding: 1.25rem;
-    }
+/* ============================================
+   Highlight Flash Animation
+   ============================================ */
+@keyframes highlightFlash {
+    0%, 100% { background-color: inherit; }
+    50% { background-color: rgba(129, 140, 248, 0.3); }
 }
 
-@media (max-width: 480px) {
-    .review-summary-grid {
-        grid-template-columns: 1fr; /* Stack on mobile */
-    }
-    
-    .review-actions {
-        flex-direction: column;
-    }
-    
-    .review-actions .btn {
-        width: 100%;
-    }
+.highlight-flash {
+    animation: highlightFlash 0.75s ease-in-out 2;
 }
 
-.review-main {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 1.5rem;
-}
-
-.review-section-title {
-    font-size: 1.8rem;
-    font-weight: 800; /* Increased weight */
-    color: var(--review-text-primary);
-    margin-bottom: 1.5rem;
-    padding-left: 1rem;
-    border-left: 5px solid var(--primary-purple); /* Thicker border */
-    line-height: 1.2;
-}
-
-.review-questions-list {
-    display: grid;
-    gap: 1.5rem; /* Increased gap */
-}
-
+/* ============================================
+   Loading & Error States
+   ============================================ */
 .review-loading, .review-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
     text-align: center;
     padding: 4rem;
     font-size: 1.2rem;
     font-weight: 600;
+    background: var(--review-bg);
+}
+
+.review-error {
+    color: var(--incorrect-color);
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 1200px) {
+    .review-header-center {
+        gap: 1.5rem;
+    }
+    
+    .review-header-center .summary-value {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 1024px) {
+    .review-header-top {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .review-header-center {
+        order: 3;
+        width: 100%;
+        justify-content: space-around;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        margin-top: 0.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .review-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .review-title {
+        font-size: 0.95rem;
+    }
+    
+    .review-main-content {
+        padding: 0.5rem;
+    }
+    
+    .comparison-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .comparison-label {
+        min-width: auto;
+    }
 }

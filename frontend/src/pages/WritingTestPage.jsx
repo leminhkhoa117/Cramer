@@ -62,6 +62,18 @@ const WritingTestPage = () => {
 
     const minWords = activeTask === 1 ? 150 : 250;
 
+    // Computed word counts for TestFooter
+    const wordCounts = useMemo(() => ({
+        1: {
+            current: essays[1]?.trim().split(/\s+/).filter(Boolean).length || 0,
+            min: 150
+        },
+        2: {
+            current: essays[2]?.trim().split(/\s+/).filter(Boolean).length || 0,
+            min: 250
+        }
+    }), [essays]);
+
     // --- Data Loading and Setup ---
     const setupTestState = useCallback(async (attemptData, fullTestData) => {
         setAttempt(attemptData);
@@ -150,7 +162,7 @@ const WritingTestPage = () => {
             navigate(`/test/writing/review/${inProgressAttempt.id}`, { replace: true });
             return;
         }
-        
+
         // Otherwise, resume IN_PROGRESS attempt
         try {
             setLoading(true);
@@ -189,13 +201,13 @@ const WritingTestPage = () => {
         if (!attempt || isSubmittingRef.current) return;
         isSubmittingRef.current = true;
         setIsConfirmModalOpen(false);
-        
+
         try {
             setIsSubmitting(true);
-            
+
             // Submit essays for grading
             await writingApi.submitForGrading(attempt.id, essays);
-            
+
             // Navigate to review page
             navigate(`/test/writing/review/${attempt.id}`);
         } catch (err) {
@@ -210,7 +222,7 @@ const WritingTestPage = () => {
     // --- Timer ---
     useEffect(() => {
         if (testStatus !== 'running' || loading) return;
-        
+
         const timer = setInterval(() => {
             setTimeLeft(prevTime => {
                 if (prevTime <= 1) {
@@ -221,7 +233,7 @@ const WritingTestPage = () => {
                 return prevTime - 1;
             });
         }, 1000);
-        
+
         return () => clearInterval(timer);
     }, [testStatus, loading, handleFinalSubmit]);
 
@@ -267,10 +279,10 @@ const WritingTestPage = () => {
             }
 
             // Save progress
-            await testAttemptApi.saveProgress(attempt.id, { 
-                timeLeft, 
-                currentPart: activeTask, 
-                answers: {} 
+            await testAttemptApi.saveProgress(attempt.id, {
+                timeLeft,
+                currentPart: activeTask,
+                answers: {}
             });
 
             setIsExitModalOpen(false);
@@ -373,15 +385,15 @@ const WritingTestPage = () => {
                                     <div className="task-header">
                                         <h2 className="passage-title">WRITING TASK {activeTask}</h2>
                                         <p className="passage-instructions">
-                                            {activeTask === 1 
-                                                ? 'You should spend about 20 minutes on this task.' 
+                                            {activeTask === 1
+                                                ? 'You should spend about 20 minutes on this task.'
                                                 : 'You should spend about 40 minutes on this task.'}
                                         </p>
                                     </div>
 
                                     <div className="task-prompt">
                                         {currentTask?.passageText && (
-                                            <div 
+                                            <div
                                                 className="prompt-text"
                                                 dangerouslySetInnerHTML={{ __html: currentTask.passageText }}
                                             />
@@ -390,9 +402,9 @@ const WritingTestPage = () => {
 
                                     {activeTask === 1 && currentTask?.displayContentUrl && (
                                         <div className="task-image">
-                                            <img 
-                                                src={currentTask.displayContentUrl} 
-                                                alt="Task 1 Figure" 
+                                            <img
+                                                src={currentTask.displayContentUrl}
+                                                alt="Task 1 Figure"
                                             />
                                         </div>
                                     )}
@@ -429,31 +441,15 @@ const WritingTestPage = () => {
                         </PanelGroup>
                     </div>
 
-                    {/* Footer with Task Navigation - like Part navigation in Reading */}
-                    <footer className="test-page-footer writing-footer">
-                        <div 
-                            className={`footer-part-section ${activeTask === 1 ? 'active' : ''}`}
-                            onClick={() => setActiveTask(1)}
-                        >
-                            <h3 className="footer-part-title">Task 1</h3>
-                            <div className="writing-task-info">
-                                <span className={`word-count-badge ${(essays[1]?.trim().split(/\s+/).filter(Boolean).length || 0) >= 150 ? 'complete' : 'incomplete'}`}>
-                                    {essays[1]?.trim().split(/\s+/).filter(Boolean).length || 0} / 150 từ
-                                </span>
-                            </div>
-                        </div>
-                        <div 
-                            className={`footer-part-section ${activeTask === 2 ? 'active' : ''}`}
-                            onClick={() => setActiveTask(2)}
-                        >
-                            <h3 className="footer-part-title">Task 2</h3>
-                            <div className="writing-task-info">
-                                <span className={`word-count-badge ${(essays[2]?.trim().split(/\s+/).filter(Boolean).length || 0) >= 250 ? 'complete' : 'incomplete'}`}>
-                                    {essays[2]?.trim().split(/\s+/).filter(Boolean).length || 0} / 250 từ
-                                </span>
-                            </div>
-                        </div>
-                    </footer>
+                    {/* Footer with Task Navigation - using TestFooter component */}
+                    <TestFooter
+                        testData={testData}
+                        currentPartIndex={activeTask - 1}
+                        onPartSelect={(index) => setActiveTask(index + 1)}
+                        mode="wordCount"
+                        wordCounts={wordCounts}
+                        partLabel="Task"
+                    />
                 </div>
             )}
         </>

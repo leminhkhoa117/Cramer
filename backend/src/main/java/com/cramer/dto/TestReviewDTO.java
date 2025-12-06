@@ -14,7 +14,8 @@ public class TestReviewDTO {
     private OffsetDateTime completedAt;
     private Double bandScore;
     private Long duration; // Duration in seconds
-    private List<QuestionReviewDTO> questions;
+    private List<QuestionReviewDTO> questions;          // Flat list for backward compatibility
+    private List<SectionReviewDTO> sections;            // Grouped by section with passage content
 
     // Constructors
     public TestReviewDTO() {}
@@ -107,5 +108,13 @@ public class TestReviewDTO {
 
     public void setQuestions(List<QuestionReviewDTO> questions) {
         this.questions = questions;
+    }
+
+    public List<SectionReviewDTO> getSections() {
+        return sections;
+    }
+
+    public void setSections(List<SectionReviewDTO> sections) {
+        this.sections = sections;
     }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { testApi, testAttemptApi } from '../api/backendApi';
 import { HighlightProvider } from '../contexts/HighlightContext';
@@ -14,6 +14,10 @@ const INITIAL_READING_TIME = 3600;
 const TestPage = () => {
     const { source, testNum, skill } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Check if navigating from "Làm lại" button (forceNew flag)
+    const forceNew = location.state?.forceNew || false;
 
     // --- Core State ---
     const [testStatus, setTestStatus] = useState('running'); // No longer need 'pending' state here
@@ -87,8 +91,16 @@ const TestPage = () => {
         const fetchAndStartTest = async () => {
             try {
                 setLoading(true);
-                const attemptRes = await testAttemptApi.startAttempt(source, testNum, skill);
+                // Pass forceNew to handle retake scenarios
+                const attemptRes = await testAttemptApi.startAttempt(source, testNum, skill, forceNew);
                 const attemptData = attemptRes.data;
+
+                // If backend returned a COMPLETED attempt (forceNew was false), show choice modal
+                if (attemptData.status === 'COMPLETED') {
+                    setInProgressAttempt(attemptData);
+                    setIsResumeModalOpen(true);
+                    return;
+                }
 
                 const isDirty = (attemptData.timeLeft !== null && attemptData.timeLeft < INITIAL_READING_TIME) ||
                     (attemptData.currentPart !== null && attemptData.currentPart > 0) ||
@@ -107,15 +119,22 @@ const TestPage = () => {
             }
         };
         fetchAndStartTest();
-    }, [source, testNum, skill, setupTestState]);
+    }, [source, testNum, skill, setupTestState, forceNew]);
 
 
     // --- Modal Handlers ---
     const handleResume = async () => {
+        // If the attempt is COMPLETED, redirect to review page
+        if (inProgressAttempt?.status === 'COMPLETED') {
+            navigate(`/test/review/${inProgressAttempt.id}`, { replace: true });
+            return;
+        }
+
+        // Otherwise, resume IN_PROGRESS attempt
         try {
             setLoading(true);
             const fullTestData = await testApi.getFullTest(source, testNum, skill);
-            await setupTestState(inProgressAttempt, fullTestData); // Use await here
+            await setupTestState(inProgressAttempt, fullTestData);
         } catch (err) {
             setError('Failed to load test data for resuming.');
             setLoading(false);
@@ -126,19 +145,21 @@ const TestPage = () => {
         try {
             setIsStartingNew(true);
 
-            // Try to cancel the old attempt, but continue even if it's already deleted
-            try {
-                await testAttemptApi.cancelAttempt(inProgressAttempt.id);
-            } catch (cancelError) {
-                // If attempt was already deleted (404), that's fine - continue
-                if (cancelError.response?.status !== 404) {
-                    throw cancelError;
+            // Only cancel in-progress attempts (not COMPLETED ones)
+            if (inProgressAttempt?.status === 'IN_PROGRESS') {
+                try {
+                    await testAttemptApi.cancelAttempt(inProgressAttempt.id);
+                } catch (cancelError) {
+                    // If attempt was already deleted (404), that's fine - continue
+                    if (cancelError.response?.status !== 404) {
+                        throw cancelError;
+                    }
+                    console.log('Previous attempt already deleted, proceeding with new test.');
                 }
-                console.log('Previous attempt already deleted, proceeding with new test.');
             }
 
-            // Refetch a brand new attempt
-            const newAttemptRes = await testAttemptApi.startAttempt(source, testNum, skill);
+            // Use forceNew=true to create a brand new attempt
+            const newAttemptRes = await testAttemptApi.startAttempt(source, testNum, skill, true);
             const fullTestData = await testApi.getFullTest(source, testNum, skill);
 
             // Reset answers and other states for the new test
@@ -229,6 +250,7 @@ const TestPage = () => {
                 onResume={handleResume}
                 onStartNew={handleStartNew}
                 isStartingNew={isStartingNew}
+                attemptStatus={inProgressAttempt?.status}
             />
 
             <AnimatePresence>

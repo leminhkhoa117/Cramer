@@ -9,6 +9,7 @@ import FilterModal from '../components/FilterModal';
 
 import '../css/Dashboard.css';
 import '../css/FilterModal.css';
+import '../css/common/TabSwitcher.css';
 import ProgressChart from '../components/ProgressChart';
 import SkillAnalysis from '../components/SkillAnalysis';
 import '../css/ProgressChart.css';
@@ -354,25 +355,25 @@ export default function Dashboard() {
             </div>
           </section>
 
-          <div className="container">
-            <nav className="dash-nav">
+          <div className="container tab-switcher">
+            <nav className="tab-switcher__nav">
               <button
                 type="button"
-                className={`dash-nav-btn ${activeView === 'courses' ? 'active' : ''}`}
+                className={`tab-switcher__btn ${activeView === 'courses' ? 'active' : ''}`}
                 onClick={() => setActiveView('courses')}
               >
                 Lịch sử làm bài
               </button>
               <button
                 type="button"
-                className={`dash-nav-btn ${activeView === 'progress' ? 'active' : ''}`}
+                className={`tab-switcher__btn ${activeView === 'progress' ? 'active' : ''}`}
                 onClick={() => setActiveView('progress')}
               >
                 Biểu đồ tiến độ
               </button>
               <button
                 type="button"
-                className={`dash-nav-btn ${activeView === 'analysis' ? 'active' : ''}`}
+                className={`tab-switcher__btn ${activeView === 'analysis' ? 'active' : ''}`}
                 onClick={() => setActiveView('analysis')}
               >
                 Phân tích Kỹ năng
@@ -484,7 +485,7 @@ export default function Dashboard() {
                                         <>
                                           {course.attemptId && (
                                             <Link
-                                              to={course.skill === 'writing' 
+                                              to={course.skill === 'writing'
                                                 ? `/test/writing/review/${course.attemptId}`
                                                 : `/test/review/${course.attemptId}`
                                               }
