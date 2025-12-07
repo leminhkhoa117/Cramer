@@ -74,11 +74,19 @@ FRANK: Of course.',
             {
               "block_type": "NOTE_COMPLETION",
               "content": {
-                "title": "Questions 1-10",
-                "instructions_text": "Questions 1–7<br/>Complete the notes below.<br/><br/>Questions 8–10<br/>Complete the table below.<br/><br/>Write ONE WORD ONLY for each answer.",
+                "title": "Questions 1-7",
+                "instructions_text": "Complete the notes below.<br/><br/>Write ONE WORD ONLY for each answer.",
                 "main_title": "Opportunities for voluntary work in Southoe village"
               },
-              "question_numbers": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+              "question_numbers": [1, 2, 3, 4, 5, 6, 7]
+            },
+            {
+              "block_type": "NOTE_COMPLETION",
+              "content": {
+                "title": "Questions 8-10",
+                "instructions_text": "Complete the table below.<br/><br/>Write ONE WORD ONLY for each answer."
+              },
+              "question_numbers": [8, 9, 10]
             }
           ]
         }'::jsonb
@@ -86,16 +94,16 @@ FRANK: Of course.',
     RETURNING id INTO section_1_id;
 
     INSERT INTO public.questions (section_id, question_number, question_uid, question_type, question_content, correct_answer, word_limit) VALUES
-    (section_1_id, 1, 'cam17-t2-l-q1', 'FILL_IN_BLANK',  '{"section_title": "Library", "text": "\u2022 Help with 1 ____ books (times to be arranged)"}',           '["collecting"]', 'ONE WORD ONLY'),
-    (section_1_id, 2, 'cam17-t2-l-q2', 'FILL_IN_BLANK',  '{"section_title": "Library", "text": "\u2022 Help needed to keep 2 ____ of books up to date"}',         '["records"]',   'ONE WORD ONLY'),
-    (section_1_id, 3, 'cam17-t2-l-q3', 'FILL_IN_BLANK',  '{"section_title": "Library", "text": "\u2022 Library is in the 3 ____ Room in the village hall"}',      '["West"]',      'ONE WORD ONLY'),
-    (section_1_id, 4, 'cam17-t2-l-q4', 'FILL_IN_BLANK',  '{"section_title": "Lunch club", "text": "\u2022 Help by providing 4 ____"}',                            '["transport"]', 'ONE WORD ONLY'),
-    (section_1_id, 5, 'cam17-t2-l-q5', 'FILL_IN_BLANK',  '{"section_title": "Lunch club", "text": "\u2022 Help with hobbies such as 5 ____"}',                    '["art"]',       'ONE WORD ONLY'),
-    (section_1_id, 6, 'cam17-t2-l-q6', 'FILL_IN_BLANK',  '{"section_title": "Help for individuals", "text": "\u2022 Taking Mrs Carroll to 6 ____"}',              '["hospital"]',  'ONE WORD ONLY'),
-    (section_1_id, 7, 'cam17-t2-l-q7', 'FILL_IN_BLANK',  '{"section_title": "Help for individuals", "text": "\u2022 Work in the 7 ____ at Mr Selsbury''s house"}','["garden"]',    'ONE WORD ONLY'),
-    (section_1_id, 8, 'cam17-t2-l-q8', 'FILL_IN_BLANK',  '{"section_title": "Village social events", "text": "19 Oct 8 ____ \u2013 Village hall \u2013 providing refreshments"}', '["quiz"]',      'ONE WORD ONLY'),
-    (section_1_id, 9, 'cam17-t2-l-q9', 'FILL_IN_BLANK',  '{"section_title": "Village social events", "text": "18 Nov dance \u2013 Village hall \u2013 checking 9 ____"}',          '["tickets"]',   'ONE WORD ONLY'),
-    (section_1_id, 10,'cam17-t2-l-q10','FILL_IN_BLANK',  '{"section_title": "Village social events", "text": "31 Dec New Year''s Eve party \u2013 Mountfort Hotel \u2013 designing the 10 ____"}', '["poster"]', 'ONE WORD ONLY');
+    (section_1_id, 1, 'cam17-t2-l-q1', 'FILL_IN_BLANK',  '{"section_title": "Library", "text": "\u2022 Help with ____ books (times to be arranged)"}',           '["collecting"]', 'ONE WORD ONLY'),
+    (section_1_id, 2, 'cam17-t2-l-q2', 'FILL_IN_BLANK',  '{"section_title": "Library", "text": "\u2022 Help needed to keep ____ of books up to date"}',         '["records"]',   'ONE WORD ONLY'),
+    (section_1_id, 3, 'cam17-t2-l-q3', 'FILL_IN_BLANK',  '{"section_title": "Library", "text": "\u2022 Library is in the ____ Room in the village hall"}',      '["West"]',      'ONE WORD ONLY'),
+    (section_1_id, 4, 'cam17-t2-l-q4', 'FILL_IN_BLANK',  '{"section_title": "Lunch club", "text": "\u2022 Help by providing ____"}',                            '["transport"]', 'ONE WORD ONLY'),
+    (section_1_id, 5, 'cam17-t2-l-q5', 'FILL_IN_BLANK',  '{"section_title": "Lunch club", "text": "\u2022 Help with hobbies such as ____"}',                    '["art"]',       'ONE WORD ONLY'),
+    (section_1_id, 6, 'cam17-t2-l-q6', 'FILL_IN_BLANK',  '{"section_title": "Help for individuals", "text": "\u2022 Taking Mrs Carroll to ____"}',              '["hospital"]',  'ONE WORD ONLY'),
+    (section_1_id, 7, 'cam17-t2-l-q7', 'FILL_IN_BLANK',  '{"section_title": "Help for individuals", "text": "\u2022 Work in the ____ at Mr Selsbury''s house"}','["garden"]',    'ONE WORD ONLY'),
+    (section_1_id, 8, 'cam17-t2-l-q8', 'FILL_IN_BLANK',  '{"section_title": "Village social events", "text": "19 Oct ____ \u2013 Village hall \u2013 providing refreshments"}', '["quiz"]',      'ONE WORD ONLY'),
+    (section_1_id, 9, 'cam17-t2-l-q9', 'FILL_IN_BLANK',  '{"section_title": "Village social events", "text": "18 Nov dance \u2013 Village hall \u2013 checking ____"}',          '["tickets"]',   'ONE WORD ONLY'),
+    (section_1_id, 10,'cam17-t2-l-q10','FILL_IN_BLANK',  '{"section_title": "Village social events", "text": "31 Dec New Year''s Eve party \u2013 Mountfort Hotel \u2013 designing the ____"}', '["poster"]', 'ONE WORD ONLY');
 
     -- =================================================================
     -- == CAMBRIDGE 17, TEST 2, LISTENING PART 2
@@ -276,16 +284,16 @@ ED: I was reading that it''s because his plays are about basic themes that peopl
     RETURNING id INTO section_4_id;
 
     INSERT INTO public.questions (section_id, question_number, question_uid, question_type, question_content, correct_answer, word_limit) VALUES
-    (section_4_id, 31, 'cam17-t2-l-q31', 'FILL_IN_BLANK', '{"section_title": "The Icelandic language", "text": "\u2022 has approximately 31 ____ speakers"}', '["321,000"]', 'ONE WORD AND/OR A NUMBER'),
-    (section_4_id, 32, 'cam17-t2-l-q32', 'FILL_IN_BLANK', '{"section_title": "The Icelandic language", "text": "\u2022 has a 32 ____ that is still growing"}', '["vocabulary"]', 'ONE WORD AND/OR A NUMBER'),
-    (section_4_id, 33, 'cam17-t2-l-q33', 'FILL_IN_BLANK', '{"section_title": "The Icelandic language", "text": "\u2022 has its own words for computer-based concepts, such as web browser and 33 ____"}', '["podcast"]', 'ONE WORD AND/OR A NUMBER'),
-    (section_4_id, 34, 'cam17-t2-l-q34', 'FILL_IN_BLANK', '{"section_title": "Young speakers", "text": "\u2022 are big users of digital technology, such as 34 ____"}', '["smartphones"]', 'ONE WORD AND/OR A NUMBER'),
-    (section_4_id, 35, 'cam17-t2-l-q35', 'FILL_IN_BLANK', '{"section_title": "Young speakers", "text": "\u2022 are becoming 35 ____ very quickly"}', '["bilingual"]', 'ONE WORD AND/OR A NUMBER'),
-    (section_4_id, 36, 'cam17-t2-l-q36', 'FILL_IN_BLANK', '{"section_title": "Young speakers", "text": "\u2022 are having discussions using only English while they are in the 36 ____ at school"}', '["playground"]', 'ONE WORD AND/OR A NUMBER'),
-    (section_4_id, 37, 'cam17-t2-l-q37', 'FILL_IN_BLANK', '{"section_title": "Young speakers", "text": "\u2022 are better able to identify the content of a 37 ____ in English than Icelandic"}', '["picture"]', 'ONE WORD AND/OR A NUMBER'),
-    (section_4_id, 38, 'cam17-t2-l-q38', 'FILL_IN_BLANK', '{"section_title": "Technology and internet companies", "text": "\u2022 write very little in Icelandic because of the small number of speakers and because of how complicated its 38 ____ is"}', '["grammar"]', 'ONE WORD AND/OR A NUMBER'),
-    (section_4_id, 39, 'cam17-t2-l-q39', 'FILL_IN_BLANK', '{"section_title": "The Icelandic government", "text": "\u2022 is worried that young Icelanders may lose their 39 ____ as Icelanders"}', '["identity"]', 'ONE WORD AND/OR A NUMBER'),
-    (section_4_id, 40, 'cam17-t2-l-q40', 'FILL_IN_BLANK', '{"section_title": "The Icelandic government", "text": "• is worried about the consequences of children not being 40 ____ in either Icelandic or English"}', '["fluent"]', 'ONE WORD AND/OR A NUMBER');
+    (section_4_id, 31, 'cam17-t2-l-q31', 'FILL_IN_BLANK', '{"section_title": "The Icelandic language", "text": "\u2022 has approximately ____ speakers"}', '["321,000"]', 'ONE WORD AND/OR A NUMBER'),
+    (section_4_id, 32, 'cam17-t2-l-q32', 'FILL_IN_BLANK', '{"section_title": "The Icelandic language", "text": "\u2022 has a ____ that is still growing"}', '["vocabulary"]', 'ONE WORD AND/OR A NUMBER'),
+    (section_4_id, 33, 'cam17-t2-l-q33', 'FILL_IN_BLANK', '{"section_title": "The Icelandic language", "text": "\u2022 has its own words for computer-based concepts, such as web browser and ____"}', '["podcast"]', 'ONE WORD AND/OR A NUMBER'),
+    (section_4_id, 34, 'cam17-t2-l-q34', 'FILL_IN_BLANK', '{"section_title": "Young speakers", "text": "\u2022 are big users of digital technology, such as ____"}', '["smartphones"]', 'ONE WORD AND/OR A NUMBER'),
+    (section_4_id, 35, 'cam17-t2-l-q35', 'FILL_IN_BLANK', '{"section_title": "Young speakers", "text": "\u2022 are becoming ____ very quickly"}', '["bilingual"]', 'ONE WORD AND/OR A NUMBER'),
+    (section_4_id, 36, 'cam17-t2-l-q36', 'FILL_IN_BLANK', '{"section_title": "Young speakers", "text": "\u2022 are having discussions using only English while they are in the ____ at school"}', '["playground"]', 'ONE WORD AND/OR A NUMBER'),
+    (section_4_id, 37, 'cam17-t2-l-q37', 'FILL_IN_BLANK', '{"section_title": "Young speakers", "text": "\u2022 are better able to identify the content of a ____ in English than Icelandic"}', '["picture"]', 'ONE WORD AND/OR A NUMBER'),
+    (section_4_id, 38, 'cam17-t2-l-q38', 'FILL_IN_BLANK', '{"section_title": "Technology and internet companies", "text": "\u2022 write very little in Icelandic because of the small number of speakers and because of how complicated its ____ is"}', '["grammar"]', 'ONE WORD AND/OR A NUMBER'),
+    (section_4_id, 39, 'cam17-t2-l-q39', 'FILL_IN_BLANK', '{"section_title": "The Icelandic government", "text": "\u2022 is worried that young Icelanders may lose their ____ as Icelanders"}', '["identity"]', 'ONE WORD AND/OR A NUMBER'),
+    (section_4_id, 40, 'cam17-t2-l-q40', 'FILL_IN_BLANK', '{"section_title": "The Icelandic government", "text": "• is worried about the consequences of children not being ____ in either Icelandic or English"}', '["fluent"]', 'ONE WORD AND/OR A NUMBER');
 
 END $$;
 
