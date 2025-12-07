@@ -185,35 +185,65 @@ public class GeminiGradingService {
 
     /**
      * Build the comprehensive IELTS grading system prompt with official band descriptors.
+     * Enhanced with calibration anchors and generous scoring philosophy.
      */
     private String buildSystemPrompt(Integer taskNumber, int wordCount) {
         StringBuilder prompt = new StringBuilder();
         
-        prompt.append("# IELTS Writing Examiner System\n\n");
-        prompt.append("You are a certified IELTS examiner with 15+ years of experience. ");
-        prompt.append("Your role is to grade IELTS Writing essays accurately and fairly according to the official IELTS band descriptors.\n\n");
+        prompt.append("# HỆ THỐNG CHẤM ĐIỂM IELTS WRITING\n\n");
+        prompt.append("Bạn là một giám khảo IELTS được chứng nhận với hơn 15 năm kinh nghiệm. ");
+        prompt.append("Nhiệm vụ của bạn là chấm điểm bài viết IELTS một cách chính xác và công bằng theo tiêu chí band descriptors chính thức của IELTS.\n\n");
         
-        // Grading philosophy - tolerant but accurate
-        prompt.append("## Grading Philosophy\n");
-        prompt.append("- Grade **accurately but tolerantly** - recognize that test-takers are under time pressure\n");
-        prompt.append("- Focus on **what the student CAN do**, not just errors\n");
-        prompt.append("- Minor slips that don't impede communication should NOT heavily penalize the score\n");
-        prompt.append("- A score of 6.0-6.5 represents a competent user - this is a good, achievable score\n");
-        prompt.append("- A score of 7.0+ requires consistent demonstration of the criteria across the essay\n");
-        prompt.append("- Band 9 is extremely rare and requires near-native proficiency\n");
-        prompt.append("- **Do NOT under-score** - if in doubt between two bands, give the higher one\n\n");
+        // CRITICAL: Calibration-focused grading philosophy
+        prompt.append("## TRIẾT LÝ CHẤM ĐIỂM (RẤT QUAN TRỌNG)\n\n");
+        prompt.append("### Nguyên tắc cốt lõi:\n");
+        prompt.append("1. **Chấm điểm DỰA TRÊN NHỮNG GÌ THÍ SINH THỂ HIỆN ĐƯỢC**, không phải những gì thiếu sót\n");
+        prompt.append("2. **Lỗi nhỏ (minor errors)** = lỗi KHÔNG ảnh hưởng đến việc hiểu ý → KHÔNG trừ điểm nặng\n");
+        prompt.append("3. **Lỗi lớn (major errors)** = lỗi GÂY HIỂU SAI hoặc không hiểu được → mới ảnh hưởng band score\n");
+        prompt.append("4. **Khi phân vân giữa 2 band, CHỌN BAND CAO HƠN** cho thí sinh\n");
+        prompt.append("5. Nhớ rằng thí sinh viết trong điều kiện thi có giới hạn thời gian\n\n");
+        
+        prompt.append("### Mốc calibration quan trọng:\n");
+        prompt.append("| Đối tượng | Band thường đạt |\n");
+        prompt.append("|-----------|----------------|\n");
+        prompt.append("| Sinh viên đại học Việt Nam viết tốt | 6.0 - 6.5 |\n");
+        prompt.append("| Người đi làm có tiếng Anh khá | 6.5 - 7.0 |\n");
+        prompt.append("| Giáo viên tiếng Anh / du học sinh | 7.0 - 7.5 |\n");
+        prompt.append("| Người gần như native speaker | 8.0 - 8.5 |\n");
+        prompt.append("| Bài mẫu có thể in trong sách IELTS chính thức | 9.0 |\n\n");
+        
+        prompt.append("### Về Band 8.0 - 9.0:\n");
+        prompt.append("- **Band 8.0**: Bài viết xuất sắc với \"occasional errors\" - có thể có 2-4 lỗi nhỏ rải rác\n");
+        prompt.append("- **Band 8.5**: Gần như hoàn hảo, chỉ có 1-2 lỗi rất nhỏ\n");
+        prompt.append("- **Band 9.0**: Hiếm gặp, bài viết như native speaker viết, hầu như không có lỗi\n");
+        prompt.append("- **QUAN TRỌNG**: Nếu bài viết có ý tưởng hay, cấu trúc tốt, từ vựng đa dạng với chỉ vài lỗi nhỏ → XỨng đáng Band 8.0+\n\n");
+        
+        prompt.append("### Phân loại lỗi:\n");
+        prompt.append("**Lỗi NHỎ (minor) - KHÔNG trừ nặng:**\n");
+        prompt.append("- Thiếu/thừa article (a, an, the) nhưng vẫn hiểu được\n");
+        prompt.append("- Lỗi số ít/số nhiều không gây hiểu lầm\n");
+        prompt.append("- Lỗi chính tả nhỏ (1-2 chữ cái)\n");
+        prompt.append("- Dấu phẩy không hoàn hảo\n");
+        prompt.append("- Collocation hơi awkward nhưng vẫn tự nhiên\n\n");
+        
+        prompt.append("**Lỗi LỚN (major) - CÓ ẢNH HƯỞNG band score:**\n");
+        prompt.append("- Câu không có nghĩa, không hiểu được\n");
+        prompt.append("- Sai thì động từ gây hiểu sai timeline\n");
+        prompt.append("- Dùng từ sai hoàn toàn meaning\n");
+        prompt.append("- Cấu trúc câu khiến người đọc phải đọc lại nhiều lần\n");
+        prompt.append("- Thiếu coherence khiến không theo được logic\n\n");
         
         // Word count context
         int minWords = taskNumber == 1 ? TASK_1_MIN_WORDS : TASK_2_MIN_WORDS;
-        prompt.append("## Word Count Information\n");
-        prompt.append("- **Submitted word count**: ").append(wordCount).append(" words\n");
-        prompt.append("- **Minimum requirement**: ").append(minWords).append(" words\n");
+        prompt.append("## Thông tin số từ\n");
+        prompt.append("- **Số từ đã nộp**: ").append(wordCount).append(" từ\n");
+        prompt.append("- **Yêu cầu tối thiểu**: ").append(minWords).append(" từ\n");
         if (wordCount < minWords) {
             int deficit = minWords - wordCount;
-            prompt.append("- **WARNING**: Essay is ").append(deficit).append(" words SHORT of minimum. ");
-            prompt.append("This will affect Task Achievement/Response score, but other criteria should still be assessed fairly.\n");
+            prompt.append("- **CHÚ Ý**: Bài viết THIẾU ").append(deficit).append(" từ so với yêu cầu. ");
+            prompt.append("Điều này ảnh hưởng Task Achievement/Response, nhưng các tiêu chí khác vẫn chấm công bằng.\n");
         } else {
-            prompt.append("- Word count requirement is MET.\n");
+            prompt.append("- Đã đạt yêu cầu số từ ✓\n");
         }
         prompt.append("\n");
         
@@ -228,204 +258,222 @@ public class GeminiGradingService {
     }
 
     /**
-     * Get official IELTS Task 1 band descriptors (bands 3-9).
+     * Get official IELTS Task 1 band descriptors (bands 5-9) with full detail.
+     * Based on official IELTS.org band descriptors (May 2023).
      */
     private String getTask1BandDescriptors() {
         StringBuilder desc = new StringBuilder();
-        desc.append("## Official IELTS Writing Task 1 Band Descriptors\n\n");
+        desc.append("## TIÊU CHÍ CHẤM ĐIỂM CHÍNH THỨC - IELTS WRITING TASK 1\n\n");
         
         // Band 9
-        desc.append("### Band 9\n");
-        desc.append("- **Task Achievement**: All requirements fully and appropriately satisfied. Extremely rare lapses in content.\n");
-        desc.append("- **Coherence & Cohesion**: Message followed effortlessly. Cohesion rarely attracts attention. Skilful paragraphing.\n");
-        desc.append("- **Lexical Resource**: Full flexibility and precise use. Very natural and sophisticated control. Minor errors extremely rare.\n");
-        desc.append("- **Grammatical Range & Accuracy**: Wide range with full flexibility and control. Minor errors extremely rare.\n\n");
+        desc.append("### Band 9 (Expert User)\n");
+        desc.append("- **Task Achievement**: Tất cả yêu cầu được đáp ứng đầy đủ và phù hợp. Có thể có những sơ suất cực kỳ hiếm về nội dung.\n");
+        desc.append("- **Coherence & Cohesion**: Thông điệp được theo dõi một cách dễ dàng tuyệt đối. Cohesion được sử dụng rất hiếm khi thu hút sự chú ý. Paragraphing được quản lý khéo léo.\n");
+        desc.append("- **Lexical Resource**: Linh hoạt hoàn toàn và chính xác. Phạm vi từ vựng rộng được sử dụng chính xác với sự kiểm soát rất tự nhiên và tinh tế. Lỗi chính tả cực kỳ hiếm.\n");
+        desc.append("- **Grammar**: Phạm vi cấu trúc rộng với sự linh hoạt và kiểm soát hoàn toàn. Lỗi cực kỳ hiếm và ảnh hưởng tối thiểu.\n\n");
         
         // Band 8
-        desc.append("### Band 8\n");
-        desc.append("- **Task Achievement**: Covers all requirements appropriately and sufficiently. Key features skilfully selected and clearly presented. Occasional lapses.\n");
-        desc.append("- **Coherence & Cohesion**: Message followed with ease. Information logically sequenced. Cohesion well managed. Occasional lapses.\n");
-        desc.append("- **Lexical Resource**: Wide resource fluently and flexibly used. Skilful use of uncommon items. Occasional errors have minimal impact.\n");
-        desc.append("- **Grammatical Range & Accuracy**: Wide range flexibly and accurately used. Majority error-free. Occasional non-systematic errors.\n\n");
+        desc.append("### Band 8 (Very Good User)\n");
+        desc.append("- **Task Achievement**: Đáp ứng tất cả yêu cầu một cách phù hợp, liên quan và đầy đủ. Key features được chọn lọc khéo léo và trình bày rõ ràng. Có thể có sơ suất occasional.\n");
+        desc.append("- **Coherence & Cohesion**: Thông điệp được theo dõi dễ dàng. Thông tin được sắp xếp logic. Cohesion được quản lý tốt. Occasional lapses có thể xảy ra.\n");
+        desc.append("- **Lexical Resource**: Nguồn từ vựng rộng được sử dụng linh hoạt và trôi chảy. Sử dụng khéo léo từ uncommon/idiomatic. Occasional errors có ảnh hưởng tối thiểu.\n");
+        desc.append("- **Grammar**: Phạm vi cấu trúc rộng được sử dụng linh hoạt và chính xác. **Đa số câu không có lỗi**. Occasional non-systematic errors.\n");
+        desc.append("- **LƯU Ý**: 'Occasional' = 2-4 lỗi trong toàn bài, không phải mỗi đoạn!\n\n");
         
         // Band 7
-        desc.append("### Band 7\n");
-        desc.append("- **Task Achievement**: Covers requirements. Content relevant and accurate with few omissions. Clear overview, appropriate categorisation.\n");
-        desc.append("- **Coherence & Cohesion**: Information logically organised with clear progression. Some inaccuracies in cohesive devices.\n");
-        desc.append("- **Lexical Resource**: Sufficient flexibility and precision. Some ability to use less common items. Few spelling/word form errors.\n");
-        desc.append("- **Grammatical Range & Accuracy**: Variety of complex structures with some flexibility. Generally well controlled. Few errors persist.\n\n");
+        desc.append("### Band 7 (Good User)\n");
+        desc.append("- **Task Achievement**: Đáp ứng các yêu cầu. Nội dung liên quan và chính xác với vài thiếu sót. Có overview rõ ràng, data được phân loại phù hợp.\n");
+        desc.append("- **Coherence & Cohesion**: Thông tin được tổ chức logic với progression rõ ràng. Một vài lapses có thể xảy ra. Cohesive devices được sử dụng linh hoạt.\n");
+        desc.append("- **Lexical Resource**: Đủ linh hoạt và chính xác. Có khả năng sử dụng less common items. Chỉ có vài lỗi spelling/word form.\n");
+        desc.append("- **Grammar**: Đa dạng cấu trúc phức tạp với sự linh hoạt. Generally well controlled. **Error-free sentences thường xuyên xuất hiện**.\n\n");
         
         // Band 6
-        desc.append("### Band 6\n");
-        desc.append("- **Task Achievement**: Focuses on requirements with appropriate format. Key features covered adequately. Some irrelevant or inaccurate details.\n");
-        desc.append("- **Coherence & Cohesion**: Generally arranged coherently with clear overall progression. Some faulty cohesion. Some repetition.\n");
-        desc.append("- **Lexical Resource**: Generally adequate for the task. Meaning generally clear despite restricted range or lack of precision.\n");
-        desc.append("- **Grammatical Range & Accuracy**: Mix of simple and complex forms. Limited flexibility. Errors rarely impede communication.\n\n");
+        desc.append("### Band 6 (Competent User)\n");
+        desc.append("- **Task Achievement**: Tập trung vào yêu cầu với format phù hợp. Key features được cover adequately. Có thể có vài chi tiết irrelevant hoặc inaccurate.\n");
+        desc.append("- **Coherence & Cohesion**: Generally arranged coherently với overall progression rõ ràng. Một số cohesion có thể faulty hoặc mechanical.\n");
+        desc.append("- **Lexical Resource**: Generally adequate cho task. Meaning generally clear dù có restricted range hoặc thiếu precision.\n");
+        desc.append("- **Grammar**: Mix of simple and complex forms nhưng flexibility hạn chế. Errors **rarely impede communication**.\n\n");
         
         // Band 5
-        desc.append("### Band 5\n");
-        desc.append("- **Task Achievement**: Generally addresses requirements. Key features not adequately covered. May focus too much on details.\n");
-        desc.append("- **Coherence & Cohesion**: Organisation evident but not wholly logical. Sentences not fluently linked. Limited/overuse of cohesive devices.\n");
-        desc.append("- **Lexical Resource**: Limited but minimally adequate. Simple vocabulary used accurately. Frequent lapses in appropriacy.\n");
-        desc.append("- **Grammatical Range & Accuracy**: Limited and rather repetitive structures. Complex sentences tend to be faulty.\n\n");
-        
-        // Band 4
-        desc.append("### Band 4\n");
-        desc.append("- **Task Achievement**: Attempts to address task. Few key features selected. May be irrelevant or repetitive.\n");
-        desc.append("- **Coherence & Cohesion**: Information not arranged coherently. No clear progression. Basic cohesive devices may be inaccurate.\n");
-        desc.append("- **Lexical Resource**: Limited and inadequate for task. Basic vocabulary used repetitively. Errors may impede meaning.\n");
-        desc.append("- **Grammatical Range & Accuracy**: Very limited range. Simple sentences predominate. Frequent errors may impede meaning.\n\n");
-        
-        // Band 3
-        desc.append("### Band 3\n");
-        desc.append("- **Task Achievement**: Does not address requirements (possibly misunderstanding). Limited information, may be irrelevant.\n");
-        desc.append("- **Coherence & Cohesion**: No apparent logical organisation. Minimal use of cohesive devices. Little control of organisational features.\n");
-        desc.append("- **Lexical Resource**: Inadequate. Very limited control. Errors predominate and may severely impede meaning.\n");
-        desc.append("- **Grammatical Range & Accuracy**: Errors predominate. Little evidence of sentence forms except memorised phrases.\n\n");
+        desc.append("### Band 5 (Modest User)\n");
+        desc.append("- **Task Achievement**: Generally addresses yêu cầu. Key features not adequately covered. Có thể focus quá nhiều vào details.\n");
+        desc.append("- **Coherence & Cohesion**: Organisation evident nhưng không wholly logical. Sentences không fluently linked.\n");
+        desc.append("- **Lexical Resource**: Limited nhưng minimally adequate. Simple vocabulary, frequent lapses in appropriacy.\n");
+        desc.append("- **Grammar**: Limited và repetitive structures. Complex sentences thường faulty.\n\n");
         
         return desc.toString();
     }
 
     /**
-     * Get official IELTS Task 2 band descriptors (bands 3-9).
+     * Get official IELTS Task 2 band descriptors (bands 5-9) with full detail.
+     * Based on official IELTS.org band descriptors (May 2023).
      */
     private String getTask2BandDescriptors() {
         StringBuilder desc = new StringBuilder();
-        desc.append("## Official IELTS Writing Task 2 Band Descriptors\n\n");
+        desc.append("## TIÊU CHÍ CHẤM ĐIỂM CHÍNH THỨC - IELTS WRITING TASK 2\n\n");
         
         // Band 9
-        desc.append("### Band 9\n");
-        desc.append("- **Task Response**: Prompt appropriately addressed and explored in depth. Clear, fully developed position. Ideas fully extended and well supported.\n");
-        desc.append("- **Coherence & Cohesion**: Message followed effortlessly. Cohesion rarely attracts attention. Skilful paragraphing.\n");
-        desc.append("- **Lexical Resource**: Full flexibility and precise use. Very natural and sophisticated control. Minor errors extremely rare.\n");
-        desc.append("- **Grammatical Range & Accuracy**: Wide range with full flexibility and control. Minor errors extremely rare.\n\n");
+        desc.append("### Band 9 (Expert User)\n");
+        desc.append("- **Task Response**: Prompt được addressed và explored một cách sâu sắc. Vị trí (position) rõ ràng và phát triển đầy đủ. Ideas được extended và supported tốt.\n");
+        desc.append("- **Coherence & Cohesion**: Thông điệp được theo dõi dễ dàng tuyệt đối. Cohesion rất hiếm khi thu hút sự chú ý. Paragraphing khéo léo.\n");
+        desc.append("- **Lexical Resource**: Linh hoạt hoàn toàn và chính xác. Kiểm soát rất tự nhiên và tinh tế. Lỗi cực kỳ hiếm.\n");
+        desc.append("- **Grammar**: Phạm vi rộng với sự linh hoạt và kiểm soát hoàn toàn. Lỗi cực kỳ hiếm.\n\n");
         
         // Band 8
-        desc.append("### Band 8\n");
-        desc.append("- **Task Response**: Prompt appropriately and sufficiently addressed. Clear, well-developed position. Ideas relevant, well extended and supported.\n");
-        desc.append("- **Coherence & Cohesion**: Message followed with ease. Information logically sequenced. Cohesion well managed.\n");
-        desc.append("- **Lexical Resource**: Wide resource fluently and flexibly used. Skilful use of uncommon items. Occasional errors have minimal impact.\n");
-        desc.append("- **Grammatical Range & Accuracy**: Wide range flexibly and accurately used. Majority error-free. Occasional non-systematic errors.\n\n");
+        desc.append("### Band 8 (Very Good User)\n");
+        desc.append("- **Task Response**: Prompt được addressed đầy đủ và phù hợp. Vị trí rõ ràng, well-developed. Ideas relevant, well extended và supported. Occasional omissions có thể có.\n");
+        desc.append("- **Coherence & Cohesion**: Thông điệp dễ theo dõi. Thông tin sắp xếp logic. Cohesion managed tốt. Occasional lapses.\n");
+        desc.append("- **Lexical Resource**: Wide resource sử dụng fluently và flexibly. Skilful use of uncommon/idiomatic items. Occasional inaccuracies có minimal impact.\n");
+        desc.append("- **Grammar**: Wide range sử dụng flexibly và accurately. **Majority of sentences error-free**. Occasional non-systematic errors.\n");
+        desc.append("- **LƯU Ý QUAN TRỌNG**: Band 8 cho phép 'occasional errors' - tức là 2-4 lỗi rải rác trong bài, KHÔNG phải bài hoàn hảo!\n\n");
         
         // Band 7
-        desc.append("### Band 7\n");
-        desc.append("- **Task Response**: Main parts of prompt appropriately addressed. Clear, developed position. Some tendency to over-generalise.\n");
-        desc.append("- **Coherence & Cohesion**: Information logically organised with clear progression. Some inaccuracies in cohesive devices. Effective paragraphing.\n");
-        desc.append("- **Lexical Resource**: Sufficient flexibility and precision. Some ability to use less common items. Few spelling/word form errors.\n");
-        desc.append("- **Grammatical Range & Accuracy**: Variety of complex structures with some flexibility. Generally well controlled. Few errors persist.\n\n");
+        desc.append("### Band 7 (Good User)\n");
+        desc.append("- **Task Response**: Main parts được addressed phù hợp. Vị trí rõ ràng và developed. Có thể có tendency to over-generalise hoặc thiếu focus.\n");
+        desc.append("- **Coherence & Cohesion**: Thông tin tổ chức logic với clear progression. A few lapses (minor). Paragraphing hiệu quả.\n");
+        desc.append("- **Lexical Resource**: Đủ flexibility và precision. Có khả năng dùng less common items. Few spelling/word form errors.\n");
+        desc.append("- **Grammar**: Variety of complex structures với some flexibility và accuracy. **Error-free sentences frequent**. Few errors persist but don't impede.\n\n");
         
         // Band 6
-        desc.append("### Band 6\n");
-        desc.append("- **Task Response**: Main parts addressed but some more fully than others. Position relevant but conclusions may be unclear.\n");
-        desc.append("- **Coherence & Cohesion**: Generally arranged coherently. Some faulty cohesion. Paragraphing may not always be logical.\n");
-        desc.append("- **Lexical Resource**: Generally adequate for task. Meaning generally clear despite restricted range or lack of precision.\n");
-        desc.append("- **Grammatical Range & Accuracy**: Mix of simple and complex forms. Limited flexibility. Errors rarely impede communication.\n\n");
+        desc.append("### Band 6 (Competent User)\n");
+        desc.append("- **Task Response**: Main parts addressed (có thể không đều). Vị trí relevant nhưng conclusions có thể unclear hoặc repetitive. Some ideas insufficiently developed.\n");
+        desc.append("- **Coherence & Cohesion**: Generally coherent với clear progression. Some faulty/mechanical cohesion. Paragraphing có thể không always logical.\n");
+        desc.append("- **Lexical Resource**: Generally adequate. Meaning generally clear dù restricted range. Some errors in spelling/word form.\n");
+        desc.append("- **Grammar**: Mix of simple và complex nhưng limited flexibility. Errors **rarely impede communication**.\n\n");
         
         // Band 5
-        desc.append("### Band 5\n");
-        desc.append("- **Task Response**: Main parts incompletely addressed. Position expressed but development not always clear. Limited ideas, some irrelevant detail.\n");
-        desc.append("- **Coherence & Cohesion**: Organisation evident but not wholly logical. Sentences not fluently linked. Paragraphing may be inadequate.\n");
-        desc.append("- **Lexical Resource**: Limited but minimally adequate. Simple vocabulary used accurately. Frequent lapses in appropriacy.\n");
-        desc.append("- **Grammatical Range & Accuracy**: Limited and rather repetitive structures. Complex sentences tend to be faulty.\n\n");
-        
-        // Band 4
-        desc.append("### Band 4\n");
-        desc.append("- **Task Response**: Tackled in minimal way or tangential. Position discernible but reader must work to find it. Ideas lack clarity.\n");
-        desc.append("- **Coherence & Cohesion**: Information not arranged coherently. No clear progression. No paragraphing or unclear topics.\n");
-        desc.append("- **Lexical Resource**: Limited and inadequate for task. Basic vocabulary used repetitively. Errors may impede meaning.\n");
-        desc.append("- **Grammatical Range & Accuracy**: Very limited range. Simple sentences predominate. Frequent errors may impede meaning.\n\n");
-        
-        // Band 3
-        desc.append("### Band 3\n");
-        desc.append("- **Task Response**: No part of prompt adequately addressed or misunderstood. No relevant position. Few ideas, barely related to prompt.\n");
-        desc.append("- **Coherence & Cohesion**: No apparent logical organisation. Minimal use of cohesive devices. Little control of organisational features.\n");
-        desc.append("- **Lexical Resource**: Inadequate. Very limited control. Errors predominate and may severely impede meaning.\n");
-        desc.append("- **Grammatical Range & Accuracy**: Errors predominate. Little evidence of sentence forms except memorised phrases.\n\n");
+        desc.append("### Band 5 (Modest User)\n");
+        desc.append("- **Task Response**: Main parts incompletely addressed. Position expressed nhưng development không always clear. Limited ideas, có thể irrelevant detail.\n");
+        desc.append("- **Coherence & Cohesion**: Organisation evident nhưng không wholly logical. Paragraphing có thể inadequate.\n");
+        desc.append("- **Lexical Resource**: Limited nhưng minimally adequate. Frequent lapses in appropriacy.\n");
+        desc.append("- **Grammar**: Limited, repetitive structures. Complex sentences tend to be faulty.\n\n");
         
         return desc.toString();
     }
 
     /**
      * Build the user prompt with task details and essay.
+     * Enhanced with Vietnamese code-switching and detailed feedback schema.
      */
     private String buildUserPrompt(Integer taskNumber, String taskPrompt, String essay) {
         StringBuilder prompt = new StringBuilder();
         
-        prompt.append("## Task Prompt:\n");
+        prompt.append("## Đề bài (Task Prompt):\n");
         prompt.append(taskPrompt).append("\n\n");
         
-        prompt.append("## Student's Essay:\n");
+        prompt.append("## Bài viết của thí sinh:\n");
         prompt.append("```\n").append(essay).append("\n```\n\n");
         
-        prompt.append("## Required Response Format\n");
-        prompt.append("You MUST return a valid JSON object with this exact structure. ");
-        prompt.append("Do NOT include any text outside the JSON. Do NOT use markdown code fences.\n\n");
+        prompt.append("## YÊU CẦU ĐỊNH DẠNG RESPONSE\n");
+        prompt.append("Bạn PHẢI trả về một JSON object hợp lệ với cấu trúc chính xác như sau. ");
+        prompt.append("KHÔNG thêm bất kỳ text nào ngoài JSON. KHÔNG dùng markdown code fences.\n\n");
+        
+        prompt.append("### NGÔN NGỮ OUTPUT:\n");
+        prompt.append("- Tất cả feedback, explanation, comments PHẢI viết bằng **tiếng Việt**\n");
+        prompt.append("- Có thể code-switch với thuật ngữ tiếng Anh khi cần (ví dụ: 'coherence', 'collocation', 'topic sentence')\n");
+        prompt.append("- Sample essays vẫn viết bằng tiếng Anh (vì đây là bài IELTS)\n\n");
         
         prompt.append("{\n");
         prompt.append("  \"band_scores\": {\n");
         if (taskNumber == 1) {
-            prompt.append("    \"task_achievement\": <number 3.0-9.0, use 0.5 increments>,\n");
+            prompt.append("    \"task_achievement\": <số từ 3.0-9.0, dùng bước 0.5>,\n");
         } else {
-            prompt.append("    \"task_response\": <number 3.0-9.0, use 0.5 increments>,\n");
+            prompt.append("    \"task_response\": <số từ 3.0-9.0, dùng bước 0.5>,\n");
         }
-        prompt.append("    \"coherence_cohesion\": <number 3.0-9.0, use 0.5 increments>,\n");
-        prompt.append("    \"lexical_resource\": <number 3.0-9.0, use 0.5 increments>,\n");
-        prompt.append("    \"grammatical_range_accuracy\": <number 3.0-9.0, use 0.5 increments>\n");
+        prompt.append("    \"coherence_cohesion\": <số từ 3.0-9.0, dùng bước 0.5>,\n");
+        prompt.append("    \"lexical_resource\": <số từ 3.0-9.0, dùng bước 0.5>,\n");
+        prompt.append("    \"grammatical_range_accuracy\": <số từ 3.0-9.0, dùng bước 0.5>\n");
         prompt.append("  },\n");
-        prompt.append("  \"overall_band\": <calculated average of 4 criteria, rounded to nearest 0.5>,\n");
+        prompt.append("  \"overall_band\": <trung bình 4 tiêu chí, làm tròn đến 0.5 gần nhất>,\n\n");
+        
+        // Enhanced sentence corrections with severity
         prompt.append("  \"sentence_corrections\": [\n");
         prompt.append("    {\n");
-        prompt.append("      \"original\": \"<exact original sentence with error>\",\n");
-        prompt.append("      \"corrected\": \"<corrected sentence>\",\n");
-        prompt.append("      \"error_type\": \"<grammar|spelling|vocabulary|punctuation|coherence>\",\n");
-        prompt.append("      \"explanation\": \"<brief explanation in Vietnamese>\"\n");
+        prompt.append("      \"original\": \"<câu gốc chính xác từ bài viết - copy nguyên văn>\",\n");
+        prompt.append("      \"corrected\": \"<câu đã sửa>\",\n");
+        prompt.append("      \"error_type\": \"<grammar|spelling|vocabulary|punctuation|coherence|style>\",\n");
+        prompt.append("      \"severity\": \"<major|minor>\",\n");
+        prompt.append("      \"explanation\": \"<giải thích bằng tiếng Việt, ví dụ: 'Thiếu article 'the' trước danh từ xác định'>\"\n");
         prompt.append("    }\n");
-        prompt.append("  ],\n");
+        prompt.append("  ],\n\n");
+        
+        // Enhanced paragraph rewrites
         prompt.append("  \"paragraph_rewrites\": [\n");
         prompt.append("    {\n");
-        prompt.append("      \"paragraph_index\": <0-based index>,\n");
-        prompt.append("      \"original\": \"<original paragraph>\",\n");
-        prompt.append("      \"improved\": \"<improved paragraph at band+1 level>\",\n");
-        prompt.append("      \"improvements_made\": [\"<improvement 1 in Vietnamese>\", \"<improvement 2>\"]\n");
+        prompt.append("      \"paragraph_index\": <index 0-based>,\n");
+        prompt.append("      \"original\": \"<đoạn văn gốc - copy nguyên văn cả đoạn>\",\n");
+        prompt.append("      \"improved\": \"<đoạn văn cải thiện ở mức band+1>\",\n");
+        prompt.append("      \"improvements_made\": [\"<cải thiện 1 bằng tiếng Việt>\", \"<cải thiện 2>\"]\n");
         prompt.append("    }\n");
-        prompt.append("  ],\n");
-        prompt.append("  \"sample_essay_band_plus_one\": \"<complete rewritten essay that is 1 band higher>\",\n");
-        prompt.append("  \"sample_essay_band_9\": \"<band 9 level model essay for this exact topic>\",\n");
+        prompt.append("  ],\n\n");
+        
+        // NEW: Highlighted vocabulary with position info
+        prompt.append("  \"vocabulary_highlights\": [\n");
+        prompt.append("    {\n");
+        prompt.append("      \"word\": \"<từ/cụm từ đáng chú ý trong bài>\",\n");
+        prompt.append("      \"category\": \"<advanced_good|collocation_good|academic|error|awkward>\",\n");
+        prompt.append("      \"note\": \"<nhận xét ngắn bằng tiếng Việt, ví dụ: 'Dùng collocation tốt' hoặc 'Sai word form'>\"\n");
+        prompt.append("    }\n");
+        prompt.append("  ],\n\n");
+        
+        // NEW: Error severity summary
+        prompt.append("  \"error_analysis\": {\n");
+        prompt.append("    \"major_errors\": <số lỗi lớn ảnh hưởng nghĩa>,\n");
+        prompt.append("    \"minor_errors\": <số lỗi nhỏ không ảnh hưởng nghĩa>,\n");
+        prompt.append("    \"summary\": \"<tóm tắt bằng tiếng Việt, ví dụ: 'Hầu hết lỗi là minor errors không ảnh hưởng communication'>\"\n");
+        prompt.append("  },\n\n");
+        
+        prompt.append("  \"sample_essay_band_plus_one\": \"<bài viết hoàn chỉnh ở mức band+1, viết bằng tiếng Anh>\",\n");
+        prompt.append("  \"sample_essay_band_9\": \"<bài mẫu band 9 cho đề này, viết bằng tiếng Anh>\",\n\n");
+        
         prompt.append("  \"feedback_summary\": {\n");
-        prompt.append("    \"strengths\": [\"<strength 1 in Vietnamese>\", \"<strength 2>\", \"<strength 3>\"],\n");
-        prompt.append("    \"weaknesses\": [\"<weakness 1 in Vietnamese>\", \"<weakness 2>\"],\n");
-        prompt.append("    \"writing_approach\": \"<suggested approach in Vietnamese, 2-3 sentences>\",\n");
-        prompt.append("    \"improvement_tips\": \"<actionable tips in Vietnamese, 2-3 sentences>\"\n");
-        prompt.append("  },\n");
+        prompt.append("    \"strengths\": [\"<điểm mạnh 1 - tiếng Việt>\", \"<điểm mạnh 2>\", \"<điểm mạnh 3>\"],\n");
+        prompt.append("    \"weaknesses\": [\"<điểm yếu 1 - tiếng Việt>\", \"<điểm yếu 2>\"],\n");
+        prompt.append("    \"writing_approach\": \"<gợi ý cách tiếp cận bài viết - tiếng Việt, 2-3 câu>\",\n");
+        prompt.append("    \"improvement_tips\": \"<tips cải thiện cụ thể - tiếng Việt, 2-3 câu>\"\n");
+        prompt.append("  },\n\n");
+        
         prompt.append("  \"word_analysis\": [\n");
         prompt.append("    {\n");
-        prompt.append("      \"word\": \"<advanced/notable word or phrase used>\",\n");
-        prompt.append("      \"definition\": \"<Vietnamese definition>\",\n");
-        prompt.append("      \"context\": \"<how it was used in the essay>\",\n");
+        prompt.append("      \"word\": \"<từ/cụm từ nổi bật>\",\n");
+        prompt.append("      \"definition\": \"<định nghĩa tiếng Việt>\",\n");
+        prompt.append("      \"context\": \"<câu chứa từ đó trong bài>\",\n");
         prompt.append("      \"usage_quality\": \"<good|acceptable|incorrect>\"\n");
         prompt.append("    }\n");
-        prompt.append("  ],\n");
+        prompt.append("  ],\n\n");
+        
         prompt.append("  \"criteria_comments\": {\n");
         if (taskNumber == 1) {
-            prompt.append("    \"task_achievement\": \"<2-3 sentences explaining the Task Achievement score in Vietnamese>\",\n");
+            prompt.append("    \"task_achievement\": \"<2-3 câu giải thích điểm Task Achievement - tiếng Việt, có thể dùng thuật ngữ tiếng Anh>\",\n");
         } else {
-            prompt.append("    \"task_achievement\": \"<2-3 sentences explaining the Task Response score in Vietnamese>\",\n");
+            prompt.append("    \"task_achievement\": \"<2-3 câu giải thích điểm Task Response - tiếng Việt, có thể dùng thuật ngữ tiếng Anh>\",\n");
         }
-        prompt.append("    \"coherence_cohesion\": \"<2-3 sentences explaining the Coherence & Cohesion score in Vietnamese>\",\n");
-        prompt.append("    \"lexical_resource\": \"<2-3 sentences explaining the Lexical Resource score in Vietnamese>\",\n");
-        prompt.append("    \"grammatical_range\": \"<2-3 sentences explaining the Grammatical Range & Accuracy score in Vietnamese>\"\n");
+        prompt.append("    \"coherence_cohesion\": \"<2-3 câu giải thích điểm Coherence & Cohesion - tiếng Việt>\",\n");
+        prompt.append("    \"lexical_resource\": \"<2-3 câu giải thích điểm Lexical Resource - tiếng Việt>\",\n");
+        prompt.append("    \"grammatical_range\": \"<2-3 câu giải thích điểm Grammatical Range & Accuracy - tiếng Việt>\"\n");
         prompt.append("  }\n");
         prompt.append("}\n\n");
         
-        prompt.append("## Grading Instructions\n");
-        prompt.append("1. Read the essay carefully and assess against each criterion\n");
-        prompt.append("2. For Task 1, carefully analyze the visual data (chart/diagram/map) to verify accuracy of descriptions\n");
-        prompt.append("3. Provide at least 3-5 sentence corrections with clear explanations\n");
-        prompt.append("4. Rewrite at least the introduction and one body paragraph\n");
-        prompt.append("5. The sample essays should be realistic and relevant to the exact topic\n");
-        prompt.append("6. All feedback text MUST be in Vietnamese for the student\n");
-        prompt.append("7. Be encouraging - highlight what the student did well before weaknesses\n");
-        prompt.append("8. Return ONLY the JSON object, no markdown fences or extra text\n");
+        prompt.append("## HƯỚNG DẪN CHẤM ĐIỂM\n\n");
+        
+        prompt.append("### Về điểm số:\n");
+        prompt.append("1. Đọc kỹ bài viết và đánh giá theo từng tiêu chí\n");
+        prompt.append("2. **NHỚ**: Band 8 cho phép 'occasional errors' (2-4 lỗi nhỏ rải rác)\n");
+        prompt.append("3. **NHỚ**: Nếu bài có ý tưởng hay, cấu trúc tốt, chỉ vài lỗi nhỏ → xứng đáng Band 7.5-8.0\n");
+        prompt.append("4. **KHÔNG** chấm quá khắt khe - focus vào những gì thí sinh làm được\n");
+        prompt.append("5. Phân biệt major errors (ảnh hưởng nghĩa) vs minor errors (không ảnh hưởng)\n\n");
+        
+        prompt.append("### Về nội dung feedback:\n");
+        prompt.append("6. Cung cấp ít nhất 3-5 sentence corrections với giải thích rõ ràng\n");
+        prompt.append("7. Viết lại ít nhất introduction và 1 body paragraph\n");
+        prompt.append("8. Sample essays phải realistic và relevant với đề bài cụ thể\n");
+        prompt.append("9. **TẤT CẢ feedback phải bằng tiếng Việt**, có thể code-switch thuật ngữ tiếng Anh\n");
+        prompt.append("10. Highlight ít nhất 5-8 từ/cụm từ đáng chú ý (cả tốt và cần sửa)\n");
+        prompt.append("11. Khuyến khích thí sinh - nêu điểm mạnh trước điểm yếu\n\n");
+        
+        prompt.append("### Lưu ý cuối:\n");
+        prompt.append("- Chỉ trả về JSON object, không có markdown fences hay text thừa\n");
+        prompt.append("- Đảm bảo JSON hợp lệ, escape đúng các ký tự đặc biệt\n");
         
         return prompt.toString();
     }
@@ -481,9 +529,10 @@ public class GeminiGradingService {
         requestBody.put("contents", contents);
         
         // Generation config optimized for accurate JSON output
+        // Using slightly higher temperature for more generous scoring
         Map<String, Object> generationConfig = new HashMap<>();
-        generationConfig.put("temperature", 0.3); // Lower for more consistent scoring
-        generationConfig.put("topP", 0.9);
+        generationConfig.put("temperature", 0.4); // Slightly higher for more generous, less rigid scoring
+        generationConfig.put("topP", 0.92);
         generationConfig.put("topK", 40);
         generationConfig.put("maxOutputTokens", 16384); // Increased for detailed feedback
         generationConfig.put("responseMimeType", "application/json"); // Force JSON output
@@ -595,6 +644,18 @@ public class GeminiGradingService {
         if (gradingResult.has("paragraph_rewrites")) {
             aiFeedback.put("paragraph_rewrites", 
                 objectMapper.convertValue(gradingResult.path("paragraph_rewrites"), List.class));
+        }
+        
+        // NEW: Vocabulary highlights for essay annotation
+        if (gradingResult.has("vocabulary_highlights")) {
+            aiFeedback.put("vocabulary_highlights", 
+                objectMapper.convertValue(gradingResult.path("vocabulary_highlights"), List.class));
+        }
+        
+        // NEW: Error analysis summary
+        if (gradingResult.has("error_analysis")) {
+            aiFeedback.put("error_analysis", 
+                objectMapper.convertValue(gradingResult.path("error_analysis"), Map.class));
         }
         
         if (gradingResult.has("sample_essay_band_plus_one")) {

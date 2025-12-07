@@ -19,6 +19,9 @@ const ERROR_TYPE_COLORS = {
     punctuation: { bg: '#ecfeff', border: '#06b6d4', text: '#0891b2', label: 'Dấu câu' },
     coherence: { bg: '#f0fdf4', border: '#10b981', text: '#059669', label: 'Mạch lạc' },
     style: { bg: '#fefce8', border: '#eab308', text: '#ca8a04', label: 'Văn phong' },
+    // NEW: Vocabulary highlight types (for good/error vocabulary)
+    vocabulary_good: { bg: '#dcfce7', border: '#22c55e', text: '#15803d', label: 'Từ vựng tốt' },
+    vocabulary_error: { bg: '#fee2e2', border: '#f87171', text: '#dc2626', label: 'Từ vựng sai' },
 };
 
 const getErrorStyle = (errorType) => {
@@ -107,6 +110,8 @@ const WritingResultPage = () => {
         return {
             sentenceCorrections: feedback.sentence_corrections || [],
             paragraphRewrites: feedback.paragraph_rewrites || [],
+            vocabularyHighlights: feedback.vocabulary_highlights || [],
+            errorAnalysis: feedback.error_analysis || {},
             sampleEssayBandPlus: feedback.sample_essay_band_plus_one || '',
             sampleEssayBand9: feedback.sample_essay_band_9 || '',
             feedbackSummary: feedback.feedback_summary || {},
@@ -128,32 +133,60 @@ const WritingResultPage = () => {
         };
     }, [currentTaskReview]);
 
-    // Build highlight map for essay
+    // Build highlight map for essay - enhanced with vocabulary and full paragraphs
     const highlightMap = useMemo(() => {
         const map = [];
         
-        // Add sentence corrections
+        // 1. Add sentence corrections (errors to fix)
         aiFeedback.sentenceCorrections?.forEach((corr, idx) => {
             if (corr.original) {
                 map.push({
                     id: `correction-${idx}`,
                     text: corr.original,
                     type: corr.error_type || 'grammar',
+                    severity: corr.severity || 'minor',
                     category: 'corrections',
                 });
             }
         });
 
-        // Add paragraph issues (just mark first sentence of each paragraph)
-        aiFeedback.paragraphRewrites?.forEach((para, idx) => {
-            if (para.original) {
-                const firstSentence = para.original.split('.')[0];
-                if (firstSentence) {
+        // 2. Add vocabulary highlights (both good and problematic)
+        aiFeedback.vocabularyHighlights?.forEach((vocab, idx) => {
+            if (vocab.word) {
+                const category = vocab.category || 'vocabulary';
+                let type = 'vocabulary';
+                if (category.includes('good') || category === 'advanced_good' || category === 'collocation_good' || category === 'academic') {
+                    type = 'vocabulary_good';
+                } else if (category === 'error' || category === 'awkward') {
+                    type = 'vocabulary_error';
+                }
+                map.push({
+                    id: `vocab-${idx}`,
+                    text: vocab.word,
+                    type: type,
+                    category: 'wordAnalysis',
+                    note: vocab.note,
+                });
+            }
+        });
+
+        // 3. Add word analysis items (from the detailed word analysis section)
+        aiFeedback.wordAnalysis?.forEach((word, idx) => {
+            if (word.word) {
+                let type = 'vocabulary';
+                if (word.usage_quality === 'good') {
+                    type = 'vocabulary_good';
+                } else if (word.usage_quality === 'incorrect') {
+                    type = 'vocabulary_error';
+                }
+                // Only add if not already in vocabularyHighlights
+                const alreadyExists = map.some(m => m.text.toLowerCase() === word.word.toLowerCase());
+                if (!alreadyExists) {
                     map.push({
-                        id: `paragraph-${idx}`,
-                        text: firstSentence,
-                        type: 'coherence',
-                        category: 'paragraphs',
+                        id: `word-${idx}`,
+                        text: word.word,
+                        type: type,
+                        category: 'wordAnalysis',
                     });
                 }
             }
@@ -227,7 +260,8 @@ const WritingResultPage = () => {
             const escapedText = highlight.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(escapedText, 'gi');
             const style = getErrorStyle(highlight.type);
-            result = result.replace(regex, `<mark class="essay-highlight" data-id="${highlight.id}" data-category="${highlight.category}" style="background-color: ${style.bg}; border-bottom: 2px solid ${style.border}; cursor: pointer;">${highlight.text}</mark>`);
+            // Add data-type attribute for CSS styling of vocabulary highlights
+            result = result.replace(regex, `<mark class="essay-highlight" data-id="${highlight.id}" data-category="${highlight.category}" data-type="${highlight.type}" style="background-color: ${style.bg}; border-bottom: 2px solid ${style.border}; cursor: pointer;">${highlight.text}</mark>`);
         });
 
         // Split into paragraphs
@@ -296,43 +330,125 @@ const WritingResultPage = () => {
         );
     };
 
-    // Loading state
+    // Loading state - Enhanced animated grading screen
     if (loading) {
         return (
             <div className="writing-result-loading">
+                {/* Animated background elements */}
+                <div className="loading-bg-effects">
+                    <div className="floating-shape shape-1" />
+                    <div className="floating-shape shape-2" />
+                    <div className="floating-shape shape-3" />
+                    <div className="floating-shape shape-4" />
+                    <div className="floating-shape shape-5" />
+                </div>
+
                 <div className="grading-animation-container">
                     <div className="grading-animation">
-                        <div className="ai-brain">
-                            <FiBarChart2 size={48} className="brain-icon" />
-                            <div className="pulse-ring" />
-                            <div className="pulse-ring delay-1" />
-                            <div className="pulse-ring delay-2" />
-                        </div>
-                        <h2>Cramer đang chấm điểm bài viết...</h2>
-                        <p>Quá trình này sẽ mất khoảng 2 phút.</p>
-                        <p className="grading-tip"><FiInfo size={14} /> Bạn có thể đóng trang này và quay lại sau - kết quả sẽ được lưu tự động.</p>
-                        
-                        <div className="grading-steps">
-                            <div className={`step ${gradingStatus !== 'PENDING' ? 'done' : 'active'}`}>
-                                <FiFileText size={18} className="step-icon" />
-                                <span>Nhận bài</span>
+                        {/* Main AI animation orb */}
+                        <div className="ai-orb-container">
+                            <div className="ai-orb">
+                                <div className="orb-core" />
+                                <div className="orb-ring ring-1" />
+                                <div className="orb-ring ring-2" />
+                                <div className="orb-ring ring-3" />
+                                <div className="orb-particles">
+                                    {[...Array(8)].map((_, i) => (
+                                        <div key={i} className={`particle particle-${i + 1}`} />
+                                    ))}
+                                </div>
                             </div>
-                            <div className={`step ${gradingStatus === 'GRADING' ? 'active' : gradingStatus === 'COMPLETED' ? 'done' : ''}`}>
-                                <FiTarget size={18} className="step-icon" />
-                                <span>Phân tích</span>
-                            </div>
-                            <div className={`step ${gradingStatus === 'COMPLETED' ? 'done' : ''}`}>
-                                <FiCheckCircle size={18} className="step-icon" />
-                                <span>Hoàn thành</span>
+                            <div className="ai-text-badge">
+                                <span className="ai-badge-icon">✨</span>
+                                <span>AI</span>
                             </div>
                         </div>
-                        
-                        <div className="progress-bar-container">
-                            <div className={`progress-bar ${gradingStatus === 'GRADING' ? 'grading' : gradingStatus === 'COMPLETED' ? 'done' : ''}`} />
+
+                        {/* Main heading with typing effect */}
+                        <h2 className="grading-title">
+                            <span className="title-text">Cramer đang chấm điểm</span>
+                            <span className="typing-dots">
+                                <span className="dot" />
+                                <span className="dot" />
+                                <span className="dot" />
+                            </span>
+                        </h2>
+                        <p className="grading-subtitle">Quá trình này mất khoảng 1-2 phút</p>
+
+                        {/* Enhanced progress steps */}
+                        <div className="grading-steps-enhanced">
+                            <div className={`step-enhanced ${gradingStatus !== 'PENDING' ? 'done' : 'active'}`}>
+                                <div className="step-icon-wrapper">
+                                    <FiFileText size={20} className="step-icon" />
+                                    <div className="step-glow" />
+                                </div>
+                                <div className="step-content">
+                                    <span className="step-label">Nhận bài viết</span>
+                                    <span className="step-status">
+                                        {gradingStatus !== 'PENDING' ? '✓ Hoàn thành' : 'Đang xử lý...'}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div className="step-connector">
+                                <div className={`connector-line ${gradingStatus !== 'PENDING' ? 'active' : ''}`} />
+                            </div>
+                            
+                            <div className={`step-enhanced ${gradingStatus === 'GRADING' ? 'active' : gradingStatus === 'COMPLETED' ? 'done' : ''}`}>
+                                <div className="step-icon-wrapper">
+                                    <FiTarget size={20} className="step-icon" />
+                                    <div className="step-glow" />
+                                </div>
+                                <div className="step-content">
+                                    <span className="step-label">Phân tích & Chấm điểm</span>
+                                    <span className="step-status">
+                                        {gradingStatus === 'GRADING' ? 'Đang phân tích...' : gradingStatus === 'COMPLETED' ? '✓ Hoàn thành' : 'Chờ xử lý'}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div className="step-connector">
+                                <div className={`connector-line ${gradingStatus === 'GRADING' || gradingStatus === 'COMPLETED' ? 'active' : ''}`} />
+                            </div>
+                            
+                            <div className={`step-enhanced ${gradingStatus === 'COMPLETED' ? 'done' : ''}`}>
+                                <div className="step-icon-wrapper">
+                                    <FiCheckCircle size={20} className="step-icon" />
+                                    <div className="step-glow" />
+                                </div>
+                                <div className="step-content">
+                                    <span className="step-label">Tạo nhận xét</span>
+                                    <span className="step-status">
+                                        {gradingStatus === 'COMPLETED' ? '✓ Hoàn thành' : 'Chờ xử lý'}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                        
+
+                        {/* Animated progress bar */}
+                        <div className="progress-bar-enhanced">
+                            <div className="progress-track">
+                                <div className={`progress-fill ${gradingStatus === 'GRADING' ? 'grading' : gradingStatus === 'COMPLETED' ? 'done' : 'pending'}`}>
+                                    <div className="progress-shimmer" />
+                                </div>
+                            </div>
+                            <div className="progress-percentage">
+                                {gradingStatus === 'PENDING' ? '10%' : gradingStatus === 'GRADING' ? '60%' : '100%'}
+                            </div>
+                        </div>
+
+                        {/* Fun facts carousel */}
+                        <div className="fun-facts-section">
+                            <div className="fun-fact-card">
+                                <FiInfo size={16} className="fact-icon" />
+                                <p>Bạn có thể đóng trang này và quay lại sau - kết quả sẽ được lưu tự động!</p>
+                            </div>
+                        </div>
+
+                        {/* Action button */}
                         <button className="back-to-dashboard-btn" onClick={() => navigate('/dashboard')}>
-                            <FiArrowLeft size={16} /> Quay về Dashboard
+                            <FiArrowLeft size={16} />
+                            <span>Quay về Dashboard</span>
                         </button>
                     </div>
                 </div>
@@ -592,6 +708,25 @@ const WritingResultPage = () => {
                                                 <h4><FiZap size={14} /> Hướng dẫn cải thiện</h4>
                                                 <p>{aiFeedback.feedbackSummary.improvement_tips}</p>
                                             </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Error Analysis Summary - NEW */}
+                                {aiFeedback.errorAnalysis && (aiFeedback.errorAnalysis.major_errors !== undefined || aiFeedback.errorAnalysis.minor_errors !== undefined) && (
+                                    <div className="error-analysis-summary">
+                                        <div className="error-counts">
+                                            <div className="error-count major">
+                                                <span className="count">{aiFeedback.errorAnalysis.major_errors || 0}</span>
+                                                <span className="label">Lỗi lớn</span>
+                                            </div>
+                                            <div className="error-count minor">
+                                                <span className="count">{aiFeedback.errorAnalysis.minor_errors || 0}</span>
+                                                <span className="label">Lỗi nhỏ</span>
+                                            </div>
+                                        </div>
+                                        {aiFeedback.errorAnalysis.summary && (
+                                            <p className="error-summary-text">{aiFeedback.errorAnalysis.summary}</p>
                                         )}
                                     </div>
                                 )}

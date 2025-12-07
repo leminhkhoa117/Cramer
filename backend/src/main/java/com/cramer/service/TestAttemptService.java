@@ -130,8 +130,21 @@ public class TestAttemptService {
                     staleAttempt.setStatus("CANCELLED");
                     testAttemptRepository.save(staleAttempt);
                 }
-                // Now create a new attempt
-                return createNewAttempt(userId, trimmedSource, trimmedTestNum, trimmedSkill, logger);
+                // Return the COMPLETED attempt - frontend will decide what to do (show modal or redirect)
+                logger.info("   -> Returning existing COMPLETED attempt ID: {}", latestAttempt.getId());
+                TestAttempt detachedAttempt = new TestAttempt();
+                detachedAttempt.setId(latestAttempt.getId());
+                detachedAttempt.setUserId(latestAttempt.getUserId());
+                detachedAttempt.setExamSource(latestAttempt.getExamSource());
+                detachedAttempt.setTestNumber(latestAttempt.getTestNumber());
+                detachedAttempt.setSkill(latestAttempt.getSkill());
+                detachedAttempt.setStatus(latestAttempt.getStatus());
+                detachedAttempt.setScore(latestAttempt.getScore());
+                detachedAttempt.setStartedAt(latestAttempt.getStartedAt());
+                detachedAttempt.setCompletedAt(latestAttempt.getCompletedAt());
+                detachedAttempt.setTimeLeft(latestAttempt.getTimeLeft());
+                detachedAttempt.setCurrentPart(latestAttempt.getCurrentPart());
+                return detachedAttempt;
             }
 
             if (latestAttempt != null) {
