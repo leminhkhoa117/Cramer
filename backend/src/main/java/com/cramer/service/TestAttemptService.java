@@ -17,6 +17,7 @@ import com.cramer.util.IeltsScoreConverter;
 import com.cramer.util.EntityMapper;
 import com.cramer.repository.TestAttemptRepository;
 import com.cramer.repository.UserAnswerRepository;
+import com.cramer.repository.WritingSubmissionRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -42,6 +43,7 @@ public class TestAttemptService {
 
     private final TestAttemptRepository testAttemptRepository;
     private final UserAnswerRepository userAnswerRepository;
+    private final WritingSubmissionRepository writingSubmissionRepository;
     private final QuestionRepository questionRepository;
     private final SectionRepository sectionRepository;
     private final ObjectMapper objectMapper;
@@ -52,11 +54,13 @@ public class TestAttemptService {
     @Autowired
     public TestAttemptService(TestAttemptRepository testAttemptRepository,
                               UserAnswerRepository userAnswerRepository,
+                              WritingSubmissionRepository writingSubmissionRepository,
                               QuestionRepository questionRepository,
                               SectionRepository sectionRepository,
                               ObjectMapper objectMapper) {
         this.testAttemptRepository = testAttemptRepository;
         this.userAnswerRepository = userAnswerRepository;
+        this.writingSubmissionRepository = writingSubmissionRepository;
         this.questionRepository = questionRepository;
         this.sectionRepository = sectionRepository;
         this.objectMapper = objectMapper;
@@ -559,6 +563,10 @@ public class TestAttemptService {
         // First delete all associated user answers to avoid FK constraint violations
         userAnswerRepository.deleteByAttemptId(attemptId);
         logger.info("   -> Deleted all user answers for attemptId={}", attemptId);
+
+        // Delete all associated writing submissions (for writing skill tests)
+        writingSubmissionRepository.deleteByAttemptId(attemptId);
+        logger.info("   -> Deleted all writing submissions for attemptId={}", attemptId);
 
         // Then delete the attempt itself using explicit JPQL query
         testAttemptRepository.deleteAttemptById(attemptId);
