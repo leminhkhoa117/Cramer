@@ -31,8 +31,15 @@ public class GeminiGradingService {
     
     // Using Gemini 2.5 Flash for higher rate limits (10 RPM vs 2 RPM for Pro)
     // Trade-off: Slightly less nuanced but still accurate for IELTS grading
-    private static final String GEMINI_MODEL = "gemini-2.5-flash";
-    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent";
+    private static final String DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+    private static final String GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
+    
+    // Available models for user selection
+    public static final String[] AVAILABLE_MODELS = {
+        "gemini-2.5-flash",      // Fast, high rate limits (10 RPM free)
+        "gemini-2.5-flash-lite", // Fastest, highest rate limits
+        "gemini-2.5-pro"         // Most capable, lower rate limits (5 RPM free)
+    };
     
     // Minimum word thresholds for IELTS Writing
     private static final int TASK_1_MIN_WORDS = 150;
@@ -54,10 +61,11 @@ public class GeminiGradingService {
      * @param taskPrompt The original task prompt/question
      * @param taskImageUrl Optional image URL for Task 1 (charts, diagrams, maps)
      * @param apiKey User's Gemini API key
+     * @param model User's selected Gemini model (optional, defaults to gemini-2.5-flash)
      * @return Updated submission with grading results
      */
     public WritingSubmission gradeSubmission(WritingSubmission submission, String taskPrompt, 
-                                              String taskImageUrl, String apiKey) {
+                                              String taskImageUrl, String apiKey, String model) {
         if (apiKey == null || apiKey.trim().isEmpty()) {
             logger.error("No Gemini API key provided for grading");
             submission.setGradingStatus("FAILED");
@@ -66,6 +74,9 @@ public class GeminiGradingService {
             submission.setAiFeedback(errorFeedback);
             return submission;
         }
+        
+        // Use default model if not specified
+        String selectedModel = (model != null && !model.trim().isEmpty()) ? model : DEFAULT_GEMINI_MODEL;
 
         try {
             // Check for empty or minimal essay - return band 0-1 without calling API
@@ -91,7 +102,8 @@ public class GeminiGradingService {
                 essayText,
                 wordCount,
                 taskImageUrl,
-                apiKey
+                apiKey,
+                selectedModel
             );
             
             // Parse and apply results
@@ -537,8 +549,8 @@ public class GeminiGradingService {
      * Call Gemini API with multimodal support (text + image for Task 1).
      */
     private String callGeminiApiWithImage(Integer taskNumber, String taskPrompt, String essay, 
-                                           int wordCount, String imageUrl, String apiKey) {
-        String url = GEMINI_API_URL + "?key=" + apiKey;
+                                           int wordCount, String imageUrl, String apiKey, String model) {
+        String url = GEMINI_API_BASE_URL + model + ":generateContent?key=" + apiKey;
         
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -805,12 +817,21 @@ public class GeminiGradingService {
      * Validate API key by making a simple test request.
      */
     public boolean validateApiKey(String apiKey) {
+        return validateApiKey(apiKey, DEFAULT_GEMINI_MODEL);
+    }
+    
+    /**
+     * Validate API key by making a simple test request with specified model.
+     */
+    public boolean validateApiKey(String apiKey, String model) {
         if (apiKey == null || apiKey.trim().isEmpty()) {
             return false;
         }
         
+        String selectedModel = (model != null && !model.trim().isEmpty()) ? model : DEFAULT_GEMINI_MODEL;
+        
         try {
-            String url = GEMINI_API_URL + "?key=" + apiKey;
+            String url = GEMINI_API_BASE_URL + selectedModel + ":generateContent?key=" + apiKey;
             
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);

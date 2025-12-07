@@ -17,6 +17,7 @@ public class ProfileDTO {
     private String pageBackgroundUrl;
     private String geminiApiKey;
     private boolean hasGeminiApiKey;
+    private String geminiModel;
     private OffsetDateTime createdAt;
 
     public ProfileDTO() {
@@ -124,5 +125,13 @@ public class ProfileDTO {
 
     public void setHasGeminiApiKey(boolean hasGeminiApiKey) {
         this.hasGeminiApiKey = hasGeminiApiKey;
+    }
+
+    public String getGeminiModel() {
+        return geminiModel;
+    }
+
+    public void setGeminiModel(String geminiModel) {
+        this.geminiModel = geminiModel;
     }
 }

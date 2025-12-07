@@ -64,11 +64,19 @@ const ProfilePage = () => {
 
   // AI Settings states
   const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [geminiModel, setGeminiModel] = useState('gemini-2.5-flash');
   const [showApiKey, setShowApiKey] = useState(false);
   const [isValidatingApiKey, setIsValidatingApiKey] = useState(false);
   const [apiKeyStatus, setApiKeyStatus] = useState(null); // null, 'valid', 'invalid'
   const [isSavingApiKey, setIsSavingApiKey] = useState(false);
   const [isApiKeyModified, setIsApiKeyModified] = useState(false); // Track if user has modified the key
+
+  // Available Gemini models
+  const GEMINI_MODELS = [
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', description: 'Nhanh, rate limit cao (10 RPM miễn phí)' },
+    { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite', description: 'Nhanh nhất, rate limit cao nhất' },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', description: 'Chính xác nhất, rate limit thấp (5 RPM miễn phí)' }
+  ];
 
   // Security states (mock data for now - will be replaced with API calls)
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -113,6 +121,10 @@ const ProfilePage = () => {
         if (response.data.hasGeminiApiKey) {
           setGeminiApiKey('••••••••••••••••••••••••••••••••••••••••'); // Masked placeholder
           setApiKeyStatus('valid'); // Assume valid if saved
+        }
+        // Set saved model or default
+        if (response.data.geminiModel) {
+          setGeminiModel(response.data.geminiModel);
         }
         setError(null);
       } catch (err) {
@@ -464,7 +476,7 @@ const ProfilePage = () => {
     setIsSavingApiKey(true);
 
     try {
-      await profileApi.update(user.id, { geminiApiKey: geminiApiKey });
+      await profileApi.update(user.id, { geminiApiKey: geminiApiKey, geminiModel: geminiModel });
       showSuccessToast('Đã lưu API key thành công!');
       setApiKeyStatus('valid');
       setIsApiKeyModified(false); // Reset modified state after saving
@@ -474,7 +486,18 @@ const ProfilePage = () => {
     } finally {
       setIsSavingApiKey(false);
     }
-  }, [geminiApiKey, user?.id, isApiKeyModified]);
+  }, [geminiApiKey, geminiModel, user?.id, isApiKeyModified]);
+
+  const handleSaveModel = useCallback(async (newModel) => {
+    try {
+      await profileApi.update(user.id, { geminiModel: newModel });
+      setGeminiModel(newModel);
+      showSuccessToast('Đã cập nhật model AI!');
+    } catch (err) {
+      console.error('Error saving model:', err);
+      showErrorToast('Không thể cập nhật model');
+    }
+  }, [user?.id]);
 
   const handleDeleteApiKey = useCallback(async () => {
     setIsSavingApiKey(true);
@@ -1076,6 +1099,40 @@ const ProfilePage = () => {
                   </div>
                 </div>
 
+                {/* Model Selection Section */}
+                <div className="profile-card">
+                  <div className="profile-card__header">
+                    <h3 className="profile-card__title">
+                      <FiSliders />
+                      Chọn Model AI
+                    </h3>
+                  </div>
+
+                  <div className="ai-settings-info">
+                    <p className="ai-settings-description">
+                      Chọn model Gemini phù hợp với nhu cầu của bạn. Mỗi model có đặc điểm riêng về tốc độ, độ chính xác và rate limit.
+                    </p>
+                  </div>
+
+                  <div className="model-selector">
+                    {GEMINI_MODELS.map((model) => (
+                      <div
+                        key={model.value}
+                        className={`model-option ${geminiModel === model.value ? 'selected' : ''}`}
+                        onClick={() => handleSaveModel(model.value)}
+                      >
+                        <div className="model-option__radio">
+                          {geminiModel === model.value ? <FiCheck /> : null}
+                        </div>
+                        <div className="model-option__info">
+                          <h4 className="model-option__name">{model.label}</h4>
+                          <p className="model-option__description">{model.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* AI Usage Info */}
                 <div className="profile-card">
                   <div className="profile-card__header">
@@ -1096,8 +1153,8 @@ const ProfilePage = () => {
                         và không được chia sẻ với bất kỳ bên thứ ba nào.
                       </li>
                       <li>
-                        <strong>Model:</strong> Hệ thống sử dụng Gemini 2.5 Pro (model: `gemini-2.5-pro`) cho việc chấm điểm,
-                        đảm bảo tốc độ và độ chính xác cao.
+                        <strong>Model:</strong> Bạn có thể chọn model phù hợp ở phần trên. Gemini 2.5 Pro chính xác nhất
+                        nhưng có rate limit thấp hơn (5 RPM miễn phí).
                       </li>
                       <li>
                         <strong>Giới hạn:</strong> Có thể có giới hạn số lần gọi API miễn phí mỗi ngày.

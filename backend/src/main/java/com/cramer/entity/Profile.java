@@ -42,6 +42,9 @@ public class Profile {
     @Column(name = "gemini_api_key")
     private String geminiApiKey;
 
+    @Column(name = "gemini_model")
+    private String geminiModel;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -126,6 +129,14 @@ public class Profile {
 
     public void setGeminiApiKey(String geminiApiKey) {
         this.geminiApiKey = geminiApiKey;
+    }
+
+    public String getGeminiModel() {
+        return geminiModel;
+    }
+
+    public void setGeminiModel(String geminiModel) {
+        this.geminiModel = geminiModel;
     }
 
     public OffsetDateTime getCreatedAt() {

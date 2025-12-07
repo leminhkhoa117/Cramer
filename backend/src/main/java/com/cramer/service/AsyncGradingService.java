@@ -60,6 +60,7 @@ public class AsyncGradingService {
                 .orElseThrow(() -> new IllegalArgumentException("Profile not found"));
             
             String apiKey = profile.getGeminiApiKey();
+            String model = profile.getGeminiModel();
             if (apiKey == null || apiKey.trim().isEmpty()) {
                 logger.warn("❌ No Gemini API key found for user {}", userId);
                 for (WritingSubmission submission : submissions) {
@@ -94,7 +95,7 @@ public class AsyncGradingService {
                     String taskPrompt = section != null ? section.getPassageText() : "";
                     String imageUrl = section != null ? section.getDisplayContentUrl() : null;
                     
-                    geminiGradingService.gradeSubmission(submission, taskPrompt, imageUrl, apiKey);
+                    geminiGradingService.gradeSubmission(submission, taskPrompt, imageUrl, apiKey, model);
                     writingSubmissionRepository.save(submission);
                     
                     logger.info("✅ Graded submission {} with band {}", 

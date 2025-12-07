@@ -38,6 +38,7 @@ const WritingResultPage = () => {
     const [gradingStatus, setGradingStatus] = useState('PENDING');
     const [error, setError] = useState(null);
     const [activeTask, setActiveTask] = useState(1);
+    const [pollKey, setPollKey] = useState(0); // Used to force restart polling
     
     // UI state
     const [expandedScores, setExpandedScores] = useState({});
@@ -67,6 +68,9 @@ const WritingResultPage = () => {
         let currentPollCount = 0;
         const MAX_CONSECUTIVE_ERRORS = 3;
         const MAX_POLL_COUNT = 120; // Max 6 minutes of polling (120 * 3 seconds)
+        
+        // Add initial delay for regrade to let backend update status
+        const initialDelay = isRegrading ? 2000 : 0;
 
         const checkStatus = async () => {
             if (!isMounted) return;
@@ -122,28 +126,41 @@ const WritingResultPage = () => {
             }
         };
 
-        // Initial check
-        checkStatus();
-        
-        // Start polling - every 3 seconds
-        pollInterval = setInterval(() => {
-            if (currentPollCount < MAX_POLL_COUNT) {
-                checkStatus();
-            } else {
-                clearInterval(pollInterval);
-                if (isMounted && loading) {
-                    setError('Quá thời gian chờ. Vui lòng tải lại trang để xem kết quả.');
-                    setLoading(false);
-                    setIsRegrading(false);
+        // Start polling with optional initial delay
+        const startPolling = () => {
+            // Initial check
+            checkStatus();
+            
+            // Start polling - every 3 seconds
+            pollInterval = setInterval(() => {
+                if (currentPollCount < MAX_POLL_COUNT) {
+                    checkStatus();
+                } else {
+                    clearInterval(pollInterval);
+                    if (isMounted) {
+                        setError('Quá thời gian chờ. Vui lòng tải lại trang để xem kết quả.');
+                        setLoading(false);
+                        setIsRegrading(false);
+                    }
                 }
-            }
-        }, 3000);
-        
-        return () => {
-            isMounted = false;
-            clearInterval(pollInterval);
+            }, 3000);
         };
-    }, [attemptId, review, error]); // Only re-run if attemptId changes or review/error is set
+
+        if (initialDelay > 0) {
+            const delayTimeout = setTimeout(startPolling, initialDelay);
+            return () => {
+                isMounted = false;
+                clearTimeout(delayTimeout);
+                clearInterval(pollInterval);
+            };
+        } else {
+            startPolling();
+            return () => {
+                isMounted = false;
+                clearInterval(pollInterval);
+            };
+        }
+    }, [attemptId, review, error, pollKey, isRegrading]); // pollKey and isRegrading force restart when regrading
 
     // Helpers
     const getTaskReview = useCallback((taskNumber) => {
@@ -283,7 +300,9 @@ const WritingResultPage = () => {
             setError(null);  // Reset error to allow polling
             
             await writingApi.regradeAttempt(attemptId);
-            // The useEffect polling will pick up the new grading status
+            
+            // Increment pollKey to force useEffect to restart with fresh state
+            setPollKey(prev => prev + 1);
         } catch (err) {
             console.error('Failed to start re-grading:', err);
             setError('Không thể bắt đầu chấm lại. Vui lòng thử lại sau.');

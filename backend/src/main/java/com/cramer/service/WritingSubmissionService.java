@@ -356,11 +356,14 @@ public class WritingSubmissionService {
             sub.setBandScores(null);
             sub.setAiFeedback(null);
             sub.setGradedAt(null);
-            writingSubmissionRepository.save(sub);
         }
+        // Batch save all submissions
+        List<WritingSubmission> savedSubmissions = writingSubmissionRepository.saveAll(submissions);
+        // Force flush to ensure database is updated before async call
+        writingSubmissionRepository.flush();
         
-        // Trigger async grading
-        asyncGradingService.gradeSubmissionsAsync(submissions, attempt, userId);
+        // Trigger async grading (runs after transaction commits due to @Async proxy)
+        asyncGradingService.gradeSubmissionsAsync(savedSubmissions, attempt, userId);
         
         Map<String, Object> result = new HashMap<>();
         result.put("attemptId", attemptId);
