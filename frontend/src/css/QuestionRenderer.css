@@ -1,46 +1,120 @@
+/* QuestionRenderer.css - Beautified to match Review Pages */
+
 .question-block {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #f3f4f6;
+    transition: all 0.2s ease;
+}
+
+.question-block:hover {
+    border-color: #e5e7eb;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.06);
+}
+
+.question-number {
+    font-weight: 700;
+    color: #7c3aed;
+    margin-right: 0.5rem;
+}
+
+.mcq-options,
+.tfn-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+    margin-left: 1.5rem;
 }
 
 .mcq-options label,
 .tfn-options label {
-    display: block;
-    margin: 8px 0;
-    padding: 8px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    transition: all 0.15s ease;
     cursor: pointer;
+    font-size: 0.9rem;
+    color: #374151;
+    border: 1px solid transparent;
 }
 
 .mcq-options label:hover,
 .tfn-options label:hover {
-    background-color: #f3f4f6;
+    background-color: #f5f3ff;
+    border-color: #ede9fe;
+}
+
+.mcq-options label:has(input:checked),
+.tfn-options label:has(input:checked) {
+    background-color: #ede9fe;
+    border-color: #c4b5fd;
+    color: #5b21b6;
+    font-weight: 500;
 }
 
 .mcq-options input[type="radio"],
 .mcq-options input[type="checkbox"],
 .tfn-options input[type="radio"] {
-    margin-right: 10px;
+    margin: 0;
+    accent-color: #7c3aed;
 }
 
 .fill-in-blank-input,
 .fill-in-blank-select,
 .matching-select {
     border: 1px solid #d1d5db;
-    border-radius: 4px;
-    padding: 6px 8px;
-    font-size: 0.95rem;
-    margin: 0 4px;
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.9rem;
+    margin: 0 0.25rem;
+    min-width: 80px;
+    transition: all 0.2s ease;
+    background: #ffffff;
+}
+
+.fill-in-blank-input:hover,
+.fill-in-blank-select:hover,
+.matching-select:hover {
+    border-color: #a78bfa;
 }
 
 .fill-in-blank-input:focus,
 .fill-in-blank-select:focus,
 .matching-select:focus {
     outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+}
+
+.fill-in-blank-input::placeholder {
+    color: #9ca3af;
 }
 
 .question-text-interactive {
-    line-height: 2;
+    line-height: 1.9;
+    color: #374151;
+}
+
+/* Matching question container */
+.matching-question-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.matching-question-container p {
+    flex: 1;
+    min-width: 200px;
+    margin: 0;
+}
+
+.matching-question-container .matching-select {
+    min-width: 100px;
 }

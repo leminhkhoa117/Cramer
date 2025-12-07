@@ -1,94 +1,131 @@
+/* QuestionGroup.css - Beautified to match Review Pages */
+
 .question-group {
-    margin-bottom: 2.5rem;
-    padding: 1.5rem;
-    background-color: #f9fafb;
-    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    padding: 1.25rem;
+    background: #ffffff;
+    border-radius: 10px;
     border: 1px solid #e5e7eb;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 0.2s ease;
+}
+
+.question-group:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .group-instructions {
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.875rem;
     border-bottom: 1px solid #e5e7eb;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: #374151;
+    line-height: 1.6;
 }
 
 .group-instructions p {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+
+.group-instructions p:last-child {
+    margin-bottom: 0;
 }
 
 .matching-options-box {
-    background-color: #ffffff;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    padding: 1rem;
-    margin-top: 1rem;
-    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-top: 0.75rem;
+    margin-bottom: 1.25rem;
 }
 
 .matching-options-box h4 {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     margin-top: 0;
-    margin-bottom: 0.75rem;
-    color: #111827;
+    margin-bottom: 0.6rem;
+    color: #7c3aed;
+}
+
+.matching-options-box p {
+    margin: 0.3rem 0;
+    font-size: 0.9rem;
+    color: #374151;
+}
+
+.matching-options-box p strong {
+    color: #7c3aed;
+    margin-right: 0.35rem;
 }
 
 .question-diagram {
     max-width: 100%;
     height: auto;
-    margin-bottom: 1.5rem;
-    border-radius: 6px;
+    margin-bottom: 1.25rem;
+    border-radius: 8px;
     border: 1px solid #e5e7eb;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .table-completion-container table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
     font-size: 0.9rem;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .table-completion-container th,
 .table-completion-container td {
-    border: 1px solid #d1d5db;
+    border: 1px solid #e5e7eb;
     padding: 0.75rem;
     text-align: left;
 }
 
 .table-completion-container th {
-    background-color: #f3f4f6;
+    background: linear-gradient(135deg, #f8f9fa 0%, #f3f4f6 100%);
     font-weight: 600;
+    color: #374151;
 }
 
-/* New styles for Note Completion layout */
+/* Note Completion layout */
 .note-completion-wrapper {
-    background-color: #fff;
-    padding: 1.5rem;
-    border-radius: 6px;
+    background: #ffffff;
+    padding: 1.25rem;
+    border-radius: 8px;
     border: 1px solid #e5e7eb;
 }
 
 .note-completion-wrapper h3 {
     margin-top: 0;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 0.75rem;
+    color: #7c3aed;
+    border-bottom: 2px solid #ede9fe;
+    padding-bottom: 0.6rem;
     margin-bottom: 1rem;
 }
 
 .note-completion-wrapper h4 {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: #374151;
     margin-bottom: 0.5rem;
 }
 
+.note-section-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #7c3aed;
+    margin: 1rem 0 0.5rem 0;
+    padding-left: 0.5rem;
+    border-left: 3px solid #7c3aed;
+}
+
 .note-section {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
 }
 
 .note-section:last-child {
@@ -102,7 +139,7 @@
 }
 
 .note-section li {
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.6rem;
     display: flex;
     align-items: baseline;
     gap: 0.5rem;

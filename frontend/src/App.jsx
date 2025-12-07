@@ -75,8 +75,9 @@ function AppContent() {
   // Hide header/footer on test-taking pages and writing review page
   const isTestPage = /^\/test\/\w+\/\d+\/\w+$/.test(location.pathname) ||
                      /^\/test\/writing\/(?!review)\w+\/\d+$/.test(location.pathname);
-  // Hide footer (but keep header) on writing review page
-  const isWritingReviewPage = /^\/test\/writing\/review\/\d+$/.test(location.pathname);
+  // Hide footer (but keep header) on review pages (both reading/listening and writing)
+  const isReviewPage = /^\/test\/writing\/review\/\d+$/.test(location.pathname) ||
+                       /^\/test\/review\/\d+$/.test(location.pathname);
 
   return (
     <>
@@ -160,7 +161,7 @@ function AppContent() {
           </Routes>
         </AnimatePresence>
       </main>
-      {!isTestPage && !isWritingReviewPage && <Footer />}
+      {!isTestPage && !isReviewPage && <Footer />}
     </>
   );
 }

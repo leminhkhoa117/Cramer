@@ -1,0 +1,485 @@
+/* ===================================
+   SHARED MODAL STYLES - Cramer
+   
+   Unified modal styling following UI_GUIDELINES.md
+   Glassmorphic design with consistent animations
+   =================================== */
+
+/* === CSS Variables for Modals === */
+:root {
+  /* Modal Colors */
+  --modal-backdrop-bg: rgba(18, 10, 53, 0.65);
+  --modal-glass-bg: rgba(124, 120, 226, 0.88);
+  --modal-glass-border: rgba(255, 255, 255, 0.18);
+  --modal-text: #ffffff;
+  --modal-text-secondary: rgba(255, 255, 255, 0.9);
+  --modal-text-muted: rgba(255, 255, 255, 0.7);
+  
+  /* Modal Shadows */
+  --modal-shadow: 0 25px 50px rgba(15, 23, 42, 0.35);
+  
+  /* Modal Sizing */
+  --modal-border-radius: 28px;
+  --modal-padding: 2rem;
+  --modal-max-width-sm: 400px;
+  --modal-max-width-md: 480px;
+  --modal-max-width-lg: 560px;
+  
+  /* Modal Z-index (per UI_GUIDELINES) */
+  --modal-backdrop-z: 1000;
+  --modal-content-z: 1010;
+}
+
+/* === Modal Backdrop === */
+.cm-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: var(--modal-backdrop-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--modal-backdrop-z);
+  padding: 1.5rem;
+}
+
+/* === Modal Content Container === */
+.cm-content {
+  position: relative;
+  background: var(--modal-glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: var(--modal-text);
+  border-radius: var(--modal-border-radius);
+  padding: var(--modal-padding);
+  width: 100%;
+  max-width: var(--modal-max-width-md);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--modal-shadow);
+  border: 1px solid var(--modal-glass-border);
+  z-index: var(--modal-content-z);
+}
+
+/* Size Variants */
+.cm-content--sm {
+  max-width: var(--modal-max-width-sm);
+}
+
+.cm-content--lg {
+  max-width: var(--modal-max-width-lg);
+}
+
+/* === Modal Header === */
+.cm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--modal-glass-border);
+  gap: 1rem;
+}
+
+.cm-header--no-border {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.cm-title {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--modal-text);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.cm-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--modal-text);
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.cm-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.cm-close-btn:active {
+  transform: scale(0.98);
+}
+
+/* === Modal Body === */
+.cm-body {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--modal-text-secondary);
+}
+
+.cm-body p {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--modal-text);
+  font-weight: 400;
+}
+
+.cm-body p:first-child {
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+.cm-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* Description Text */
+.cm-description {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: #ffffff;
+  margin-bottom: 1.5rem;
+  font-weight: 400;
+}
+
+/* Info/Option Lists */
+.cm-info-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.cm-info-list li {
+  padding: 0.875rem 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  border-left: 3px solid rgba(167, 139, 250, 0.8);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--modal-text-secondary);
+}
+
+.cm-info-list li strong {
+  color: var(--modal-text);
+  font-weight: 600;
+}
+
+/* === Modal Footer === */
+.cm-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--modal-glass-border);
+}
+
+.cm-footer--no-border {
+  border-top: none;
+  padding-top: 0;
+}
+
+.cm-footer--spread {
+  justify-content: space-between;
+}
+
+/* === Modal Buttons === */
+.cm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  min-width: 100px;
+  border: none;
+  border-radius: 14px;
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+}
+
+.cm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Primary Button - Gradient */
+.cm-btn--primary {
+  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.35);
+}
+
+.cm-btn--primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.45);
+  filter: brightness(1.05);
+}
+
+.cm-btn--primary:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(1);
+}
+
+/* Secondary Button - Subtle */
+.cm-btn--secondary {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--modal-text);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.cm-btn--secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-2px);
+}
+
+.cm-btn--secondary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Danger Button */
+.cm-btn--danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.cm-btn--danger:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+  filter: brightness(1.05);
+}
+
+.cm-btn--danger:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Ghost Button (text only) */
+.cm-btn--ghost {
+  background: transparent;
+  color: var(--modal-text-secondary);
+  padding: 0.75rem 1rem;
+  min-width: auto;
+}
+
+.cm-btn--ghost:hover:not(:disabled) {
+  color: var(--modal-text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* === Modal Form Elements === */
+.cm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.cm-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cm-form-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--modal-text);
+  letter-spacing: 0.02em;
+}
+
+.cm-form-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  color: var(--modal-text);
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 1rem;
+  transition: all 0.25s ease;
+}
+
+.cm-form-input::placeholder {
+  color: var(--modal-text-muted);
+}
+
+.cm-form-input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.25);
+}
+
+.cm-form-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Form Grid (for score inputs, etc.) */
+.cm-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* Error Message */
+.cm-form-error {
+  color: #fca5a5;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 0.75rem;
+  background: rgba(239, 68, 68, 0.15);
+  border-radius: 10px;
+  margin-top: 0.5rem;
+}
+
+/* === Filter/Checkbox Options (for FilterModal) === */
+.cm-filter-group {
+  margin-bottom: 1.25rem;
+}
+
+.cm-filter-group:last-child {
+  margin-bottom: 0;
+}
+
+.cm-filter-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--modal-text);
+  margin-bottom: 0.75rem;
+}
+
+.cm-filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+
+.cm-filter-option {
+  display: flex;
+  align-items: center;
+}
+
+.cm-filter-option input[type="checkbox"] {
+  display: none;
+}
+
+.cm-filter-option label {
+  display: inline-block;
+  padding: 0.6rem 1.1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--modal-text);
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.cm-filter-option label:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.cm-filter-option input[type="checkbox"]:checked + label {
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: white;
+  font-weight: 600;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+}
+
+/* === Loading State === */
+.cm-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.cm-loading::after {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: cm-spin 0.8s linear infinite;
+}
+
+@keyframes cm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* === Responsive === */
+@media (max-width: 640px) {
+  .cm-backdrop {
+    padding: 1rem;
+    align-items: flex-end;
+  }
+
+  .cm-content {
+    border-radius: 24px 24px 0 0;
+    padding: 1.5rem;
+    max-height: 85vh;
+    margin-bottom: 0;
+  }
+
+  .cm-title {
+    font-size: 1.2rem;
+  }
+
+  .cm-footer {
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+
+  .cm-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cm-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .cm-content {
+    padding: 1.25rem;
+  }
+
+  .cm-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .cm-btn {
+    padding: 0.7rem 1.25rem;
+    font-size: 0.9rem;
+  }
+}

@@ -32,83 +32,131 @@
 }
 
 /* ============================================
-   Top Header Bar
+   Header - Purple Glassmorphism Style (Unified)
    ============================================ */
-.result-top-header {
+.writing-result-page .review-header {
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(102, 97, 241, 0.95), rgba(140, 82, 255, 0.95));
+    backdrop-filter: blur(16px);
+    color: white;
+    padding: 0.6rem 1.5rem;
+    box-shadow: 0 4px 20px rgba(102, 97, 241, 0.3);
+}
+
+.writing-result-page .review-header-top {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1.5rem;
-    background: #ffffff;
-    border-bottom: 1px solid #e5e7eb;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    gap: 1.5rem;
 }
 
-.result-top-header .header-left {
+.writing-result-page .review-header-left {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
+    flex-shrink: 0;
 }
 
-.result-top-header .back-btn {
+.writing-result-page .review-header-left .back-btn {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    background: transparent;
-    border: 1px solid #d1d5db;
-    color: #374151;
-    padding: 0.45rem 0.85rem;
+    gap: 0.35rem;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.4rem 0.75rem;
     border-radius: 6px;
     cursor: pointer;
     font-family: 'Be Vietnam Pro', sans-serif;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 500;
     transition: all 0.2s ease;
 }
 
-.result-top-header .back-btn:hover {
-    background-color: #f3f4f6;
-    border-color: #9ca3af;
+.writing-result-page .review-header-left .back-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
 }
 
-.result-top-header .back-btn svg {
+.writing-result-page .review-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    color: white;
+    white-space: nowrap;
+}
+
+.writing-result-page .review-header-center {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex: 1;
+    justify-content: center;
+}
+
+.writing-result-page .review-header-center .summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+}
+
+.writing-result-page .review-header-center .summary-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+}
+
+.writing-result-page .review-header-center .summary-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: white;
+}
+
+.writing-result-page .review-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     flex-shrink: 0;
 }
 
-.result-top-header h1 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin: 0;
-    color: #1f2937;
+.writing-result-page .header-actions {
+    display: flex;
+    gap: 0.5rem;
 }
 
-.result-top-header .header-right {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.regrade-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-    border: 1px solid #bae6fd;
+.writing-result-page .header-actions .btn {
+    border: none;
     border-radius: 8px;
-    color: #0369a1;
-    font-family: 'Be Vietnam Pro', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 500;
+    padding: 0.4rem 0.75rem;
+    font-weight: 600;
+    font-size: 0.8rem;
     cursor: pointer;
     transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
 }
 
-.regrade-btn svg {
-    flex-shrink: 0;
+.writing-result-page .header-actions .btn-regrade {
+    background: linear-gradient(135deg, rgba(224, 242, 254, 0.9), rgba(186, 230, 253, 0.9));
+    border: 1px solid rgba(125, 211, 252, 0.5);
+    color: #0369a1;
 }
 
-.regrade-btn svg.spinning {
+.writing-result-page .header-actions .btn-regrade:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(186, 230, 253, 0.95), rgba(125, 211, 252, 0.95));
+    box-shadow: 0 2px 8px rgba(3, 105, 161, 0.2);
+}
+
+.writing-result-page .header-actions .btn-regrade:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.writing-result-page .header-actions .btn-regrade svg.spinning {
     animation: spin 1s linear infinite;
 }
 
@@ -117,46 +165,52 @@
     to { transform: rotate(360deg); }
 }
 
-.regrade-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #e0f2fe, #bae6fd);
-    border-color: #7dd3fc;
-    box-shadow: 0 2px 8px rgba(3, 105, 161, 0.15);
+.writing-result-page .header-actions .btn-secondary {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.regrade-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+.writing-result-page .header-actions .btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.25);
 }
 
-.overall-band-badge {
+.writing-result-page .band-badge {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 1rem;
-    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
-    border-radius: 20px;
-    border: 1px solid #ddd6fe;
+    padding: 0.35rem 0.75rem;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.overall-band-badge .label {
-    font-size: 0.7rem;
-    color: #6b7280;
+.writing-result-page .band-badge .label {
+    font-size: 0.55rem;
+    color: rgba(255, 255, 255, 0.8);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-weight: 500;
+    font-weight: 600;
 }
 
-.overall-band-badge .value {
-    font-size: 1.25rem;
-    font-weight: 700;
+.writing-result-page .band-badge .value {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: white;
+    line-height: 1.2;
 }
 
-/* Band Color Coding */
-.band-9, .band-8 { color: #16a34a; }
-.band-7 { color: #22c55e; }
-.band-6 { color: #ca8a04; }
-.band-5 { color: #ea580c; }
-.band-4, .band-3, .band-2, .band-1, .band-0 { color: #dc2626; }
+/* Band Color Coding for Header */
+.writing-result-page .band-badge .band-9,
+.writing-result-page .band-badge .band-8 { color: #4ade80 !important; }
+.writing-result-page .band-badge .band-7 { color: #86efac !important; }
+.writing-result-page .band-badge .band-6 { color: #fbbf24 !important; }
+.writing-result-page .band-badge .band-5 { color: #fb923c !important; }
+.writing-result-page .band-badge .band-4,
+.writing-result-page .band-badge .band-3,
+.writing-result-page .band-badge .band-2,
+.writing-result-page .band-badge .band-1,
+.writing-result-page .band-badge .band-0 { color: #f87171 !important; }
 
 /* ============================================
    Task Tabs
@@ -172,15 +226,15 @@
 .result-task-tabs .task-tab {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1.25rem;
+    gap: 0.4rem;
+    padding: 0.55rem 1.1rem;
     background: transparent;
     border: none;
     border-bottom: 3px solid transparent;
     color: #6b7280;
     cursor: pointer;
     font-family: 'Be Vietnam Pro', sans-serif;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 500;
     transition: all 0.2s ease;
 }
@@ -207,6 +261,23 @@
 .result-task-tabs .task-tab.active .task-band {
     background: #ede9fe;
 }
+
+/* Band Color Coding for Task Tabs and Scores */
+.task-band.band-9, .task-band.band-8,
+.task-band-mini .value.band-9, .task-band-mini .value.band-8,
+.task-band-summary .value.band-9, .task-band-summary .value.band-8 { color: #16a34a; }
+.task-band.band-7,
+.task-band-mini .value.band-7,
+.task-band-summary .value.band-7 { color: #22c55e; }
+.task-band.band-6,
+.task-band-mini .value.band-6,
+.task-band-summary .value.band-6 { color: #ca8a04; }
+.task-band.band-5,
+.task-band-mini .value.band-5,
+.task-band-summary .value.band-5 { color: #ea580c; }
+.task-band.band-4, .task-band.band-3, .task-band.band-2, .task-band.band-1, .task-band.band-0,
+.task-band-mini .value.band-4, .task-band-mini .value.band-3, .task-band-mini .value.band-2, .task-band-mini .value.band-1, .task-band-mini .value.band-0,
+.task-band-summary .value.band-4, .task-band-summary .value.band-3, .task-band-summary .value.band-2, .task-band-summary .value.band-1, .task-band-summary .value.band-0 { color: #dc2626; }
 
 /* ============================================
    Scores Bar (Horizontal at top)
@@ -1416,14 +1487,25 @@
 }
 
 @media (max-width: 640px) {
-    .result-top-header {
-        flex-direction: column;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
+    .writing-result-page .review-header {
+        padding: 0.5rem 1rem;
     }
     
-    .result-top-header h1 {
-        font-size: 1rem;
+    .writing-result-page .review-header-top {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    
+    .writing-result-page .review-header-center {
+        order: 3;
+        width: 100%;
+        justify-content: space-around;
+        padding-top: 0.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .writing-result-page .review-title {
+        font-size: 0.9rem;
     }
     
     .score-criterion {

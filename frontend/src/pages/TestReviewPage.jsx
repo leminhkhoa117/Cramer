@@ -5,11 +5,13 @@ import { testAttemptApi } from '../api/backendApi';
 import { IeltsScoreConverter } from '../utils/IeltsScoreConverter';
 import {
     FiArrowLeft, FiRefreshCw, FiChevronDown,
-    FiFileText, FiEdit3, FiCheckCircle, FiXCircle, FiHelpCircle
+    FiFileText, FiEdit3, FiCheckCircle, FiXCircle, FiHelpCircle, FiRotateCw,
+    FiHeadphones, FiImage
 } from 'react-icons/fi';
 import { AnimatePresence, motion } from 'framer-motion';
 import '../css/TestReviewPage.css';
 import FullPageLoader from '../components/FullPageLoader';
+import ReviewAnswerColumn from '../components/review/ReviewAnswerColumn';
 
 const TestReviewPage = () => {
     const { attemptId } = useParams();
@@ -20,6 +22,7 @@ const TestReviewPage = () => {
     const [isSummaryExpanded, setIsSummaryExpanded] = useState(true);
     const [activePartIndex, setActivePartIndex] = useState(0);
     const [selectedQuestionId, setSelectedQuestionId] = useState(null);
+    const [isRegrading, setIsRegrading] = useState(false);
 
     // Refs for scroll sync
     const answersColumnRef = useRef(null);
@@ -44,6 +47,16 @@ const TestReviewPage = () => {
 
     const handleRetake = () => {
         if (!reviewData) return;
+        navigate(`/test/${reviewData.examSource}/${reviewData.testNumber}/${reviewData.skill}`, {
+            state: { forceNew: true }
+        });
+    };
+
+    const handleRegrade = async () => {
+        if (isRegrading || !reviewData) return;
+        setIsRegrading(true);
+        // For Reading/Listening, re-grading means re-taking the test
+        // Navigate with forceNew to start fresh
         navigate(`/test/${reviewData.examSource}/${reviewData.testNumber}/${reviewData.skill}`, {
             state: { forceNew: true }
         });
@@ -95,6 +108,16 @@ const TestReviewPage = () => {
         return reviewData.sections[activePartIndex] || reviewData.sections[0];
     }, [reviewData, activePartIndex]);
 
+    // Determine if this is a listening test
+    const isListeningTest = useMemo(() => {
+        return reviewData?.skill?.toLowerCase() === 'listening';
+    }, [reviewData]);
+
+    // Check if current section has an image to display
+    const hasImage = useMemo(() => {
+        return !!currentSection?.displayContentUrl;
+    }, [currentSection]);
+
     // Compute stats for current section
     const sectionStats = useMemo(() => {
         if (!currentSection?.questions) return { correct: 0, total: 0 };
@@ -102,8 +125,8 @@ const TestReviewPage = () => {
         return { correct, total: currentSection.questions.length };
     }, [currentSection]);
 
-    // Scroll to question in answers panel
-    const scrollToAnswer = (questionId) => {
+    // Scroll to explanation in the rightmost column
+    const scrollToExplanation = (questionId) => {
         setSelectedQuestionId(questionId);
         const element = questionRefs.current[questionId];
         if (element && answersColumnRef.current) {
@@ -115,10 +138,12 @@ const TestReviewPage = () => {
 
     // Get user answer display text
     const getUserAnswerText = (question) => {
-        if (!question.userAnswer) return 'Không trả lời';
-        if (typeof question.userAnswer === 'string') return question.userAnswer;
-        if (question.userAnswer.value) return question.userAnswer.value;
-        return JSON.stringify(question.userAnswer);
+        const answer = question.userAnswerContent;
+        if (!answer) return 'Không trả lời';
+        if (typeof answer === 'string') return answer;
+        if (answer.value) return answer.value;
+        if (Array.isArray(answer)) return answer.join(', ');
+        return JSON.stringify(answer);
     };
 
     // Get correct answer display text
@@ -184,11 +209,18 @@ const TestReviewPage = () => {
                             </div>
                             <div className="review-header-right">
                                 <div className="header-actions">
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); handleRegrade(); }} 
+                                        className="btn btn-regrade"
+                                        disabled={isRegrading}
+                                    >
+                                        <FiRotateCw size={14} className={isRegrading ? 'spinning' : ''} /> Chấm lại
+                                    </button>
                                     <button onClick={(e) => { e.stopPropagation(); handleRetake(); }} className="btn btn-primary">
-                                        <FiRefreshCw size={14} /> Làm bài lại
+                                        <FiRefreshCw size={14} /> Làm lại
                                     </button>
                                     <Link to="/dashboard" className="btn btn-secondary" onClick={(e) => e.stopPropagation()}>
-                                        Về Bảng điều khiển
+                                        Dashboard
                                     </Link>
                                 </div>
                                 <div className="band-badge">
@@ -219,14 +251,21 @@ const TestReviewPage = () => {
                         </div>
                     )}
 
-                    {/* Main Content - THREE COLUMN LAYOUT */}
+                    {/* Main Content - FLEXIBLE COLUMN LAYOUT */}
                     <main className="review-main-content">
                         <PanelGroup direction="horizontal" className="review-panel-group">
-                            {/* Left Column - Passage/Đề thi */}
-                            <Panel defaultSize={30} minSize={20} maxSize={45}>
+                            {/* LISTENING: Column 1 - Transcript (always shown) */}
+                            {/* READING: Column 1 - Passage */}
+                            <Panel defaultSize={isListeningTest ? 25 : 30} minSize={15} maxSize={40}>
                                 <div className="review-column passage-column">
                                     <div className="column-header">
-                                        <h3><FiFileText size={16} /> Bài đọc</h3>
+                                        <h3>
+                                            {isListeningTest ? (
+                                                <><FiHeadphones size={16} /> Transcript</>
+                                            ) : (
+                                                <><FiFileText size={16} /> Bài đọc</>
+                                            )}
+                                        </h3>
                                         <span className="part-badge">Part {currentSection?.partNumber || 1}</span>
                                     </div>
                                     <div className="column-content">
@@ -235,12 +274,12 @@ const TestReviewPage = () => {
                                                 className="passage-text"
                                                 dangerouslySetInnerHTML={{ __html: currentSection.passageText }}
                                             />
-                                        ) : currentSection?.displayContentUrl ? (
-                                            <div className="passage-image">
-                                                <img src={currentSection.displayContentUrl} alt="Test content" />
-                                            </div>
                                         ) : (
-                                            <p className="no-content">Không có nội dung passage cho phần này.</p>
+                                            <p className="no-content">
+                                                {isListeningTest 
+                                                    ? 'Không có transcript cho phần này.' 
+                                                    : 'Không có nội dung bài đọc cho phần này.'}
+                                            </p>
                                         )}
                                     </div>
                                 </div>
@@ -252,8 +291,33 @@ const TestReviewPage = () => {
                                 </div>
                             </PanelResizeHandle>
 
-                            {/* Middle Column - Bài làm (User Answers) */}
-                            <Panel defaultSize={35} minSize={25}>
+                            {/* LISTENING ONLY: Column 2 - Part Image (conditional) */}
+                            {isListeningTest && hasImage && (
+                                <>
+                                    <Panel defaultSize={20} minSize={15} maxSize={35}>
+                                        <div className="review-column image-column">
+                                            <div className="column-header">
+                                                <h3><FiImage size={16} /> Hình ảnh</h3>
+                                                <span className="part-badge">Part {currentSection?.partNumber || 1}</span>
+                                            </div>
+                                            <div className="column-content">
+                                                <div className="passage-image">
+                                                    <img src={currentSection.displayContentUrl} alt="Test content" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </Panel>
+
+                                    <PanelResizeHandle className="resize-handle">
+                                        <div className="resize-handle-icon-container">
+                                            <span className="resize-handle-icon">↔</span>
+                                        </div>
+                                    </PanelResizeHandle>
+                                </>
+                            )}
+
+                            {/* Column: Answer Field (test-taking style with highlights) */}
+                            <Panel defaultSize={isListeningTest ? (hasImage ? 25 : 35) : 35} minSize={20}>
                                 <div className="review-column answers-column">
                                     <div className="column-header">
                                         <h3><FiEdit3 size={16} /> Bài làm của bạn</h3>
@@ -264,40 +328,12 @@ const TestReviewPage = () => {
                                         </div>
                                     </div>
                                     <div className="column-content">
-                                        <div className="user-answers-list">
-                                            {currentSection?.questions?.map((q, idx) => (
-                                                <div
-                                                    key={q.questionUid || idx}
-                                                    className={`user-answer-card ${q.isCorrect === true ? 'correct' : q.isCorrect === false ? 'incorrect' : 'unanswered'} ${selectedQuestionId === q.questionUid ? 'selected' : ''}`}
-                                                    onClick={() => scrollToAnswer(q.questionUid)}
-                                                >
-                                                    <div className="answer-header">
-                                                        <span className="question-number">Câu {q.questionNumber}</span>
-                                                        <span className="answer-status">
-                                                            {q.isCorrect === true ? (
-                                                                <FiCheckCircle className="status-icon correct" />
-                                                            ) : q.isCorrect === false ? (
-                                                                <FiXCircle className="status-icon incorrect" />
-                                                            ) : (
-                                                                <FiHelpCircle className="status-icon unanswered" />
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                    <div className="answer-content">
-                                                        <span className="answer-label">Trả lời:</span>
-                                                        <span className={`answer-text ${q.isCorrect === true ? 'correct' : q.isCorrect === false ? 'incorrect' : ''}`}>
-                                                            {getUserAnswerText(q)}
-                                                        </span>
-                                                    </div>
-                                                    {q.isCorrect === false && (
-                                                        <div className="correct-answer-hint">
-                                                            <span className="hint-label">Đáp án đúng:</span>
-                                                            <span className="hint-text">{getCorrectAnswerText(q)}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
+                                        <ReviewAnswerColumn
+                                            section={currentSection}
+                                            onQuestionClick={scrollToExplanation}
+                                            selectedQuestionId={selectedQuestionId}
+                                            skill={reviewData?.skill}
+                                        />
                                     </div>
                                 </div>
                             </Panel>
@@ -308,8 +344,8 @@ const TestReviewPage = () => {
                                 </div>
                             </PanelResizeHandle>
 
-                            {/* Right Column - Đáp án & Giải thích */}
-                            <Panel defaultSize={35} minSize={25}>
+                            {/* Last Column - Đáp án & Giải thích */}
+                            <Panel defaultSize={isListeningTest ? (hasImage ? 30 : 40) : 35} minSize={20}>
                                 <div className="review-column explanation-column" ref={answersColumnRef}>
                                     <div className="column-header">
                                         <h3><FiCheckCircle size={16} /> Đáp án & Giải thích</h3>

@@ -1,0 +1,98 @@
+/* ============================================
+   ReviewQuestionGroup.css
+   Styles for grouped questions in review mode
+   ============================================ */
+
+.review-question-group {
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: #f9fafb;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+}
+
+.review-question-group:last-child {
+    margin-bottom: 0;
+}
+
+/* Group Instructions */
+.review-group-instructions {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.9rem;
+    color: #374151;
+    line-height: 1.6;
+}
+
+.review-group-instructions p {
+    margin: 0 0 0.4rem 0;
+}
+
+.review-group-instructions p:last-child {
+    margin-bottom: 0;
+}
+
+/* Main Title (Note Completion) */
+.review-group-main-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #d1d5db;
+}
+
+/* Group Image */
+.review-group-image {
+    margin-bottom: 1rem;
+}
+
+.review-group-image img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Options Box */
+.review-options-box {
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.review-options-box h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: #1f2937;
+}
+
+.review-options-box p {
+    margin: 0.25rem 0;
+    color: #374151;
+}
+
+.review-options-box p strong {
+    color: #7c3aed;
+    margin-right: 0.35rem;
+}
+
+/* Questions List */
+.review-questions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .review-question-group {
+        padding: 0.75rem 1rem;
+    }
+}

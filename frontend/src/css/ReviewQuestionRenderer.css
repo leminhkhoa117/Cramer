@@ -1,0 +1,210 @@
+/* ============================================
+   ReviewQuestionRenderer.css
+   Styles for review mode question display
+   Mimics test-taking UI with answer highlighting
+   ============================================ */
+
+/* Question Block Container */
+.review-question-block {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.review-question-block:hover {
+    border-color: #c7d2fe;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+}
+
+.review-question-block.selected {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+}
+
+/* Status-based border colors */
+.review-question-block.correct {
+    border-left: 4px solid #22c55e;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.review-question-block.incorrect {
+    border-left: 4px solid #ef4444;
+    background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+}
+
+.review-question-block.unanswered {
+    border-left: 4px solid #9ca3af;
+    background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+}
+
+/* Question Content Layout */
+.review-question-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem;
+    line-height: 1.8;
+}
+
+.review-question-content .question-number {
+    font-weight: 700;
+    color: #374151;
+    min-width: 2rem;
+    flex-shrink: 0;
+}
+
+.review-question-content .question-text {
+    flex: 1;
+    color: #374151;
+    font-size: 0.95rem;
+}
+
+.review-question-content .question-stem {
+    width: 100%;
+    margin: 0 0 0.5rem 0;
+    color: #374151;
+    font-size: 0.95rem;
+}
+
+.review-question-content .question-stem .question-number {
+    margin-right: 0.5rem;
+}
+
+/* Answer Input Highlight */
+.review-answer-input,
+.review-answer-select {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 600;
+    min-width: 60px;
+    text-align: center;
+}
+
+.review-answer-input.correct,
+.review-answer-select.correct {
+    background: #dcfce7;
+    color: #16a34a;
+    border: 1px solid #86efac;
+}
+
+.review-answer-input.incorrect,
+.review-answer-select.incorrect {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+    text-decoration: line-through;
+}
+
+.review-answer-input.unanswered,
+.review-answer-select.unanswered {
+    background: #f3f4f6;
+    color: #9ca3af;
+    border: 1px solid #d1d5db;
+}
+
+.no-answer {
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* Correct Answer Inline Display */
+.correct-answer-inline {
+    margin-left: 0.5rem;
+    font-size: 0.85rem;
+    color: #16a34a;
+}
+
+.correct-answer-inline strong {
+    color: #15803d;
+}
+
+/* MCQ Options */
+.review-mcq-options,
+.review-tfn-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-left: 2rem;
+}
+
+.review-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #374151;
+    transition: background 0.2s ease;
+    cursor: default;
+}
+
+.review-option input[type="radio"],
+.review-option input[type="checkbox"] {
+    margin: 0;
+    pointer-events: none;
+}
+
+/* Option highlighting */
+.review-option.correct {
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    color: #16a34a;
+    font-weight: 500;
+}
+
+.review-option.incorrect {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #dc2626;
+    text-decoration: line-through;
+}
+
+.review-option.show-correct {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #16a34a;
+}
+
+.review-option.show-correct::after {
+    content: '✓';
+    margin-left: auto;
+    font-weight: bold;
+}
+
+/* Disabled inputs styling */
+.review-option input:disabled {
+    opacity: 0.7;
+}
+
+/* Highlight flash animation */
+@keyframes reviewHighlightFlash {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2); }
+    50% { box-shadow: 0 0 0 5px rgba(129, 140, 248, 0.4); }
+}
+
+.review-question-block.highlight-flash {
+    animation: reviewHighlightFlash 0.5s ease 3;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .review-question-block {
+        padding: 0.6rem 0.75rem;
+    }
+    
+    .review-mcq-options,
+    .review-tfn-options {
+        margin-left: 0;
+    }
+    
+    .review-question-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

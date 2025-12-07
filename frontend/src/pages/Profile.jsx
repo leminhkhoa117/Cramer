@@ -30,6 +30,7 @@ import {
   FiEyeOff
 } from 'react-icons/fi';
 import { FaGoogle, FaFacebook } from 'react-icons/fa';
+import '../css/common/SidebarLayout.css';
 import '../css/ProfilePage.css';
 import FullPageLoader from '../components/FullPageLoader';
 import { supabase } from '../api/supabaseClient';

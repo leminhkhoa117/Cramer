@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { writingApi } from '../api/backendApi';
 import { 
     FiArrowLeft, FiRefreshCw, FiChevronDown, FiChevronRight,
     FiFileText, FiEdit3, FiBarChart2, FiCheckCircle, FiXCircle,
     FiAlertCircle, FiZap, FiTrendingUp, FiAward, FiBook,
-    FiTarget, FiThumbsUp, FiAlertTriangle, FiEdit, FiInfo
+    FiTarget, FiThumbsUp, FiAlertTriangle, FiEdit, FiInfo, FiRotateCw
 } from 'react-icons/fi';
 
 import '../css/WritingResultPage.css';
@@ -356,31 +356,52 @@ const WritingResultPage = () => {
 
     return (
         <div className="writing-result-page">
-            {/* Top Header Bar */}
-            <div className="result-top-header">
-                <div className="header-left">
-                    <button className="back-btn" onClick={() => navigate('/dashboard')}>
-                        <FiArrowLeft size={16} /> Quay lại
-                    </button>
-                    <h1>{review?.examSource?.toUpperCase()} Test {review?.testNumber} - Writing Review</h1>
-                </div>
-                <div className="header-right">
-                    <button 
-                        className="regrade-btn"
-                        onClick={handleRegrade}
-                        disabled={isRegrading}
-                        title="Chấm lại bài viết với AI"
-                    >
-                        <FiRefreshCw size={14} className={isRegrading ? 'spinning' : ''} /> Chấm lại
-                    </button>
-                    <div className="overall-band-badge">
-                        <span className="label">Overall</span>
-                        <span className={`value band-${Math.floor(review?.overallBand || 0)}`}>
-                            {review?.overallBand ? Number(review.overallBand).toFixed(1) : 'N/A'}
-                        </span>
+            {/* Purple Header - Unified Design */}
+            <header className="review-header">
+                <div className="review-header-top">
+                    <div className="review-header-left">
+                        <button className="back-btn" onClick={() => navigate('/dashboard')}>
+                            <FiArrowLeft size={14} /> Quay lại
+                        </button>
+                        <h1 className="review-title">{review?.examSource?.toUpperCase()} · Test {review?.testNumber} · Writing</h1>
+                    </div>
+                    <div className="review-header-center">
+                        <div className="summary-item">
+                            <span className="summary-label">THỜI GIAN LÀM</span>
+                            <span className="summary-value">
+                                {review?.completedAt ? new Date(review.completedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                            </span>
+                        </div>
+                        <div className="summary-item">
+                            <span className="summary-label">NGÀY LÀM</span>
+                            <span className="summary-value">
+                                {review?.completedAt ? new Date(review.completedAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="review-header-right">
+                        <div className="header-actions">
+                            <button 
+                                className="btn btn-regrade"
+                                onClick={handleRegrade}
+                                disabled={isRegrading}
+                                title="Chấm lại bài viết với AI"
+                            >
+                                <FiRotateCw size={14} className={isRegrading ? 'spinning' : ''} /> Chấm lại
+                            </button>
+                            <Link to="/dashboard" className="btn btn-secondary">
+                                Dashboard
+                            </Link>
+                        </div>
+                        <div className="band-badge">
+                            <span className="label">BAND</span>
+                            <span className={`value band-${Math.floor(review?.overallBand || 0)}`}>
+                                {review?.overallBand ? Number(review.overallBand).toFixed(1) : 'N/A'}
+                            </span>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </header>
 
             {/* Task Tabs */}
             <div className="result-task-tabs">

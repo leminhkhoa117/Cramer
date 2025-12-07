@@ -1,40 +1,28 @@
 /* ===================================
    PROFILE PAGE STYLES - Cramer
-   Sidebar Layout with Glassmorphism
+   
+   Profile-specific styles.
+   Imports shared SidebarLayout.css for common patterns.
+   Uses sl- CSS variables from SidebarLayout.css
    =================================== */
 
-:root {
-  --profile-bg: #f5f3ff;
-  --primary-accent: #7c3aed;
-  --primary-accent-hover: #6d28d9;
-  --text-light: #ffffff;
-  --text-dark: #1f2937;
-  --text-muted: #6b7280;
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(124, 58, 237, 0.15);
-  --glass-dark-bg: rgba(255, 255, 255, 0.85);
-  --glass-xl-shadow: 0 25px 50px rgba(124, 58, 237, 0.1);
-  --success-color: #10b981;
-  --warning-color: #f59e0b;
-  --danger-color: #ef4444;
-}
-
-/* === Base Page Styles === */
+/* === Base Page Styles (Profile-specific overrides) === */
 .profile-page {
-  background: #f8f5ff;
+  background: var(--sl-page-bg);
   min-height: 100vh;
   position: relative;
   padding: 2rem 0;
+  font-family: 'Be Vietnam Pro', sans-serif;
+  color: var(--sl-text);
 }
 
-/* Overlay when page background is set */
 .profile-page__overlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--sl-overlay-bg);
   z-index: 0;
   pointer-events: none;
 }
@@ -47,7 +35,7 @@
   z-index: 1;
 }
 
-/* === Main Layout: Sidebar + Content === */
+/* === Main Layout === */
 .profile-layout {
   display: flex;
   gap: 2rem;
@@ -56,25 +44,25 @@
 
 /* === Sidebar === */
 .profile-sidebar {
-  width: 280px;
-  min-width: 280px;
+  width: 300px;
+  min-width: 300px;
   position: sticky;
   top: 100px;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--sl-glass-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(124, 58, 237, 0.12);
+  border: 1px solid var(--sl-glass-border);
   border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.08);
+  box-shadow: var(--sl-glass-shadow);
 }
 
 /* Sidebar Cover Image */
 .profile-sidebar__cover {
   position: relative;
   width: 100%;
-  height: 100px;
-  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #818cf8 100%);
+  height: 120px;
+  background: linear-gradient(135deg, var(--sl-primary) 0%, var(--sl-primary-light) 50%, var(--sl-primary-lighter) 100%);
   overflow: hidden;
 }
 
@@ -101,9 +89,9 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   border: none;
-  color: var(--primary-accent);
+  color: var(--sl-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -123,7 +111,7 @@
 .profile-sidebar__header {
   text-align: center;
   padding: 1.5rem 1.5rem 1.25rem;
-  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+  border-bottom: 1px solid var(--sl-glass-border);
 }
 
 .profile-sidebar__avatar-container {
@@ -311,20 +299,20 @@
 
 /* === Cards === */
 .profile-card {
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--sl-glass-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(124, 58, 237, 0.12);
+  border: 1px solid var(--sl-glass-border);
   border-radius: 20px;
   padding: 1.75rem;
   margin-bottom: 1.25rem;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.06);
+  box-shadow: var(--sl-glass-shadow);
 }
 
 .profile-card:hover {
   border-color: rgba(124, 58, 237, 0.2);
-  box-shadow: 0 15px 35px rgba(124, 58, 237, 0.1);
+  box-shadow: var(--sl-glass-shadow-hover);
 }
 
 .profile-card:last-child {
@@ -339,7 +327,7 @@
   gap: 1rem;
   margin-bottom: 1.25rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+  border-bottom: 1px solid var(--sl-glass-border);
 }
 
 .profile-card__header-left {
@@ -349,7 +337,7 @@
 .profile-card__title {
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--text-dark);
+  color: var(--sl-text);
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -357,7 +345,7 @@
 }
 
 .profile-card__title svg {
-  color: var(--primary-accent);
+  color: var(--sl-primary);
   font-size: 1.1rem;
 }
 
@@ -402,7 +390,7 @@
 .profile-form-input {
   width: 100%;
   padding: 0.875rem 1rem;
-  background: rgba(255, 255, 255, 0.9);
+  background: #ffffff;
   border: 1px solid rgba(124, 58, 237, 0.15);
   border-radius: 10px;
   color: var(--text-dark);
@@ -506,7 +494,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(124, 58, 237, 0.1);
   border-radius: 14px;
   margin-bottom: 0.6rem;
@@ -515,7 +503,7 @@
 }
 
 .security-item:hover {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.98);
   border-color: rgba(124, 58, 237, 0.2);
   transform: translateX(4px);
 }
@@ -620,14 +608,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(124, 58, 237, 0.1);
   border-radius: 14px;
   transition: all 0.3s ease;
 }
 
 .session-item:hover {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.98);
 }
 
 .session-item.current {
@@ -773,7 +761,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.875rem 1rem;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(124, 58, 237, 0.1);
   border-radius: 12px;
   margin-bottom: 0.6rem;

@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
-import { FiEdit3, FiClock, FiTrendingUp, FiPieChart } from 'react-icons/fi';
+import { FiEdit3, FiClock, FiTrendingUp, FiPieChart, FiTarget, FiChevronRight } from 'react-icons/fi';
 import { Link, useLocation } from 'react-router-dom';
 import { dashboardApi } from '../api/backendApi';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,9 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import GoalModal from '../components/GoalModal';
 import FilterModal from '../components/FilterModal';
 
+import '../css/common/SidebarLayout.css';
 import '../css/Dashboard.css';
-import '../css/FilterModal.css';
-import TabSwitcher from '../components/common/TabSwitcher';
 import ProgressChart from '../components/ProgressChart';
 import SkillAnalysis from '../components/SkillAnalysis';
 import '../css/ProgressChart.css';
@@ -49,6 +48,13 @@ const itemVariants = {
     opacity: 1
   }
 };
+
+// Tab definitions for sidebar navigation
+const dashboardTabs = [
+  { id: 'courses', label: 'Lịch sử làm bài', icon: FiClock },
+  { id: 'progress', label: 'Biểu đồ tiến độ', icon: FiTrendingUp },
+  { id: 'analysis', label: 'Phân tích Kỹ năng', icon: FiPieChart },
+];
 
 export default function Dashboard() {
   const { profile, profileLoading, user } = useAuth();
@@ -102,8 +108,8 @@ export default function Dashboard() {
     try {
       console.log('📥 Fetching dashboard summary for:', profile.id);
       setLoading(true);
-      // Pass pagination and search params
-      const response = await dashboardApi.getSummary(profile.id, page, 3, debouncedSearch);
+      // Pass pagination and search params - 4 items per page for 2x2 grid
+      const response = await dashboardApi.getSummary(profile.id, page, 4, debouncedSearch);
       setSummary(response.data);
 
       // Update pagination info from response
@@ -254,8 +260,8 @@ export default function Dashboard() {
 
   if (!user && !profileLoading) {
     return (
-      <div className="dash">
-        <div className="dash-empty-state">Vui lòng đăng nhập để xem dashboard.</div>
+      <div className="sl-page">
+        <div className="sl-empty" style={{ margin: '4rem auto', maxWidth: '480px' }}>Vui lòng đăng nhập để xem dashboard.</div>
       </div>
     );
   }
@@ -264,8 +270,8 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="dash">
-        <div className="dash-error">{error}</div>
+      <div className="sl-page">
+        <div className="sl-error">{error}</div>
       </div>
     );
   }
@@ -282,274 +288,352 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
       {summary && (
-        <div className="dash">
-          {/* Hero */}
-          <section className="dash-hero" style={{ backgroundImage: 'url("https://thumbs.dreamstime.com/b/diverse-group-adult-students-having-conversations-english-speaking-club-diverse-group-people-talking-to-each-other-251584879.jpg")' }}>
-            <div className="dash-hero__overlay" aria-hidden="true" />
-            <div className="container">
-              <h1 className="dash-hero__title">{heroData.welcomeMessage}</h1>
+        <div
+          className="sl-page dashboard-page"
+          style={profile?.pageBackgroundUrl ? {
+            backgroundImage: `url(${profile.pageBackgroundUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundAttachment: 'fixed'
+          } : undefined}
+        >
+          {/* Overlay for readability when background image is set */}
+          {profile?.pageBackgroundUrl && (
+            <div className="sl-page__overlay" />
+          )}
 
-              <div className="dash-hero__subtitle-row">
-                <h2 className="dash-hero__subtitle">{heroData.tagline}</h2>
-                <button type="button" className="goal-edit-btn" aria-label="Chỉnh sửa mục tiêu" onClick={() => setIsGoalModalOpen(true)}>
-                  <FiEdit3 aria-hidden="true" />
-                </button>
+          {/* Main Layout: Sidebar + Content */}
+          <div className="sl-layout container">
+            {/* Left Sidebar */}
+            <aside className="sl-sidebar">
+              {/* Cover Image Banner */}
+              <div className="sl-sidebar__cover">
+                {profile?.heroBackgroundUrl ? (
+                  <img
+                    src={profile.heroBackgroundUrl}
+                    alt="Ảnh bìa"
+                    className="sl-sidebar__cover-img"
+                  />
+                ) : (
+                  <div className="sl-sidebar__cover-placeholder" />
+                )}
               </div>
 
-              {/* Glass pill */}
-              <motion.div
-                className="goals-pill"
-                initial="hidden"
-                animate="visible"
-                variants={containerVariants}
-              >
-                {(!overallTarget && skillTargets.length === 0) && formattedSkills.length === 0 ? (
-                  <div className="goals-pill-empty">
-                    Chưa có mục tiêu hay dữ liệu kỹ năng để hiển thị.
+              {/* Sidebar Header */}
+              <div className="sl-sidebar__header">
+                <h1 className="sl-sidebar__title">{heroData.welcomeMessage}</h1>
+                <p className="sl-sidebar__subtitle">Bảng điều khiển học tập</p>
+              </div>
+
+              {/* Sidebar Navigation */}
+              <nav className="sl-sidebar__nav">
+                {dashboardTabs.map(tab => {
+                  const IconComponent = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      className={`sl-sidebar__nav-btn ${activeView === tab.id ? 'active' : ''}`}
+                      onClick={() => setActiveView(tab.id)}
+                    >
+                      <IconComponent />
+                      <span>{tab.label}</span>
+                      <FiChevronRight className="sl-sidebar__nav-arrow" />
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {/* Goals Section */}
+              <div className="sl-sidebar__section dashboard-goals">
+                <div className="sl-sidebar__section-header">
+                  <div className="sl-sidebar__section-title">
+                    <FiTarget />
+                    <span>Mục tiêu của tôi</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="sl-edit-btn"
+                    aria-label="Chỉnh sửa mục tiêu"
+                    onClick={() => setIsGoalModalOpen(true)}
+                  >
+                    <FiEdit3 />
+                  </button>
+                </div>
+
+                {(!overallTarget && skillTargets.length === 0) ? (
+                  <div className="sl-empty dashboard-goals__empty">
+                    Chưa có mục tiêu. Nhấn nút chỉnh sửa để đặt mục tiêu.
                   </div>
                 ) : (
-                  <>
-                    {/* Left Group: Exam Info & Overall */}
-                    <motion.div className="goals-group" variants={containerVariants}>
-                      <motion.div className="goal-meta-row" variants={containerVariants}>
-                        <motion.div className="goal-meta-card" variants={itemVariants}>
-                          <p className="goal-meta-card__label">Kì thi sắp tới</p>
-                          <p className="goal-meta-card__value" title={targetExamName}>{targetExamName}</p>
-                        </motion.div>
-                        <motion.div className="goal-meta-card" variants={itemVariants}>
-                          <p className="goal-meta-card__label">Ngày thi</p>
-                          <p className="goal-meta-card__value">{examDateDisplay}</p>
-                        </motion.div>
-                        <motion.div className="goal-meta-card goal-meta-card--overall" variants={itemVariants}>
-                          <p className="goal-meta-card__label">Mục tiêu chung</p>
-                          <p className="goal-meta-card__value goal-meta-card__value--badge">
-                            {overallTarget?.value ?? '--'}
-                          </p>
-                        </motion.div>
-                      </motion.div>
-                    </motion.div>
-
-                    {/* Divider */}
-                    <div className="goal-divider">
-                      <span>MỤC TIÊU</span>
-                    </div>
-
-                    {/* Right Group: Skill Targets */}
-                    <motion.div className="goal-skills-group" variants={containerVariants}>
-                      {skillTargets.length > 0 ? (
-                        skillTargets.map((target) => (
-                          <motion.div key={target.id} className="goal-card" variants={itemVariants}>
-                            <div className="goal-card__badge">{target.shortLabel || target.label}</div>
-                            <div className="goal-card__value">{target.value}</div>
-                          </motion.div>
-                        ))
-                      ) : (
-                        <motion.div className="goal-empty goal-empty--inline" variants={itemVariants}>
-                          Chưa có điểm mục tiêu.
-                        </motion.div>
-                      )}
-                    </motion.div>
-                  </>
-                )}
-              </motion.div>
-            </div>
-          </section>
-
-          <div className="container">
-            <TabSwitcher
-              tabs={[
-                { id: 'courses', label: 'Lịch sử làm bài', icon: FiClock },
-                { id: 'progress', label: 'Biểu đồ tiến độ', icon: FiTrendingUp },
-                { id: 'analysis', label: 'Phân tích Kỹ năng', icon: FiPieChart },
-              ]}
-              activeTab={activeView}
-              onTabChange={setActiveView}
-            />
-          </div>
-
-          <main className="dash-main-content">
-            {activeView === 'courses' && (
-              <section className="dash-courses">
-                <div className="container">
-                  <div className="dash-courses__header">
-                    <h2>Khoá học của tôi</h2>
-                    <div className="dash-courses__controls">
-                      <div className="dash-search-container">
-                        <input
-                          type="text"
-                          placeholder="Tìm kiếm khoá học..."
-                          value={search}
-                          onChange={(e) => setSearch(e.target.value)}
-                          className="dash-search-input"
-                        />
+                  <motion.div
+                    className="dashboard-goals__content"
+                    initial="hidden"
+                    animate="visible"
+                    variants={containerVariants}
+                  >
+                    {/* Exam Info */}
+                    <motion.div className="dashboard-goal-meta" variants={itemVariants}>
+                      <div className="dashboard-goal-meta__item">
+                        <span className="dashboard-goal-meta__label">Kì thi</span>
+                        <span className="dashboard-goal-meta__value" title={targetExamName}>{targetExamName}</span>
                       </div>
-                      <button type="button" className="btn-filter" onClick={() => setIsFilterModalOpen(true)}>Lọc</button>
-                    </div>
-                  </div>
+                      <div className="dashboard-goal-meta__item">
+                        <span className="dashboard-goal-meta__label">Ngày thi</span>
+                        <span className="dashboard-goal-meta__value">{examDateDisplay}</span>
+                      </div>
+                    </motion.div>
 
-                  <div className="course-list-container">
-                    <AnimatePresence>
-                      {loading && (
-                        <motion.div
-                          className="course-loading-overlay"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <span>Đang tải...</span>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    {/* Overall Target */}
+                    <motion.div className="dashboard-goal-overall" variants={itemVariants}>
+                      <span className="dashboard-goal-overall__label">Mục tiêu chung</span>
+                      <span className="dashboard-goal-overall__value">{overallTarget?.value ?? '--'}</span>
+                    </motion.div>
 
-                    {filteredCourses.length === 0 && !loading ? (
-                      <div className="course-empty">Không tìm thấy khoá học nào khớp với bộ lọc.</div>
-                    ) : (
-                      <>
-                        <div className="course-grid">
-                          {filteredCourses.map((course) => {
-                            const completion = Math.min(
-                              100,
-                              Math.max(0, Math.round((course.completionRate ?? 0) * 100))
-                            );
+                    {/* Skill Targets - 2x2 Grid */}
+                    {skillTargets.length > 0 && (
+                      <motion.div className="dashboard-goal-skills" variants={containerVariants}>
+                        {skillTargets.map((target) => (
+                          <motion.div key={target.id} className="dashboard-goal-skill" variants={itemVariants}>
+                            <span className="dashboard-goal-skill__label">{target.shortLabel}</span>
+                            <span className="dashboard-goal-skill__value">{target.value}</span>
+                          </motion.div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </motion.div>
+                )}
+              </div>
+            </aside>
 
-                            return (
-                              <article
-                                key={`${course.examSource}-${course.testNumber}-${course.skill}`}
-                                className="dash-course-card"
-                                onMouseMove={(e) => {
-                                  const card = e.currentTarget;
-                                  const rect = card.getBoundingClientRect();
-                                  const x = e.clientX - rect.left;
-                                  const y = e.clientY - rect.top;
-                                  card.style.setProperty('--mouse-x', `${x}px`);
-                                  card.style.setProperty('--mouse-y', `${y}px`);
-                                }}
-                              >
-                                <div className="dash-course-card__image-container">
-                                  <div className="dash-course-card__image-placeholder" />
-                                </div>
-                                <div className="dash-course-card__content">
-                                  <h3 className="dash-course-card__title">{formatCourseSeries(course)}</h3>
+            {/* Right Content Area */}
+            <main className="sl-content">
+              <AnimatePresence mode="wait">
+                {activeView === 'courses' && (
+                  <motion.div
+                    key="courses"
+                    className="sl-tab-panel"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {/* Courses Card */}
+                    <div className="sl-card">
+                      <div className="sl-card__header">
+                        <h2 className="sl-card__title">
+                          <FiClock />
+                          Lịch sử làm bài
+                        </h2>
+                        <div className="sl-card__controls">
+                          <div className="sl-search-container">
+                            <input
+                              type="text"
+                              placeholder="Tìm kiếm khoá học..."
+                              value={search}
+                              onChange={(e) => setSearch(e.target.value)}
+                              className="sl-search-input"
+                            />
+                          </div>
+                          <button type="button" className="sl-btn sl-btn--secondary" onClick={() => setIsFilterModalOpen(true)}>Lọc</button>
+                        </div>
+                      </div>
 
-                                  <div className="dash-course-card__meta">
-                                    <p>
-                                      <strong>Kỹ năng</strong>
-                                      <span>{formatSkillName(course.skill)}</span>
-                                    </p>
-                                    <p>
-                                      <strong>Trạng thái</strong>
-                                      <span>{course.status}</span>
-                                    </p>
-                                    <p>
-                                      <strong>Đã làm</strong>
-                                      <span>{course.answersAttempted}/{course.totalQuestions || '?'} câu</span>
-                                    </p>
-                                    <p>
-                                      <strong>Đúng</strong>
-                                      <span>{course.correctAnswers} câu</span>
-                                    </p>
-                                    <p style={{ gridColumn: '1 / -1' }}>
-                                      <strong>Lần làm gần nhất</strong>
-                                      <span>{formatDate(course.lastAttempt)}</span>
-                                    </p>
-                                  </div>
+                      <div className="dashboard-course-list">
+                        <AnimatePresence>
+                          {loading && (
+                            <motion.div
+                              className="sl-loading-overlay"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <span>Đang tải...</span>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
 
-                                  <div className="dash-course-card__footer">
-                                    <div className="dash-course-card__score-status">
-                                      <span className="dash-course-card__status-badge">Kết quả</span>
-                                      {course.bandScore != null ? (
-                                        <span className="dash-course-card__progress-text">
-                                          Band {course.bandScore.toFixed(1)}
-                                        </span>
-                                      ) : (
-                                        <span className="dash-course-card__progress-text">{completion}%</span>
-                                      )}
+                        {filteredCourses.length === 0 && !loading ? (
+                          <div className="sl-empty">Không tìm thấy khoá học nào khớp với bộ lọc.</div>
+                        ) : (
+                          <>
+                            <div className="dashboard-course-grid">
+                              {filteredCourses.map((course) => {
+                                const completion = Math.min(
+                                  100,
+                                  Math.max(0, Math.round((course.completionRate ?? 0) * 100))
+                                );
+
+                                return (
+                                  <article
+                                    key={`${course.examSource}-${course.testNumber}-${course.skill}`}
+                                    className="dash-course-card"
+                                    onMouseMove={(e) => {
+                                      const card = e.currentTarget;
+                                      const rect = card.getBoundingClientRect();
+                                      const x = e.clientX - rect.left;
+                                      const y = e.clientY - rect.top;
+                                      card.style.setProperty('--mouse-x', `${x}px`);
+                                      card.style.setProperty('--mouse-y', `${y}px`);
+                                    }}
+                                  >
+                                    <div className="dash-course-card__image-container">
+                                      <div className="dash-course-card__image-placeholder" />
                                     </div>
-                                    <div className="dash-course-card__actions">
-                                      {course.status === 'COMPLETED' && (
-                                        <>
-                                          {course.attemptId && (
+                                    <div className="dash-course-card__content">
+                                      <h3 className="dash-course-card__title">{formatCourseSeries(course)}</h3>
+
+                                      <div className="dash-course-card__meta">
+                                        <p>
+                                          <strong>Kỹ năng</strong>
+                                          <span>{formatSkillName(course.skill)}</span>
+                                        </p>
+                                        <p>
+                                          <strong>Trạng thái</strong>
+                                          <span>{course.status}</span>
+                                        </p>
+                                        <p>
+                                          <strong>Đã làm</strong>
+                                          <span>{course.answersAttempted}/{course.totalQuestions || '?'} câu</span>
+                                        </p>
+                                        <p>
+                                          <strong>Đúng</strong>
+                                          <span>{course.correctAnswers} câu</span>
+                                        </p>
+                                        <p style={{ gridColumn: '1 / -1' }}>
+                                          <strong>Lần làm gần nhất</strong>
+                                          <span>{formatDate(course.lastAttempt)}</span>
+                                        </p>
+                                      </div>
+
+                                      <div className="dash-course-card__footer">
+                                        <div className="dash-course-card__score-status">
+                                          <span className="dash-course-card__status-badge">Kết quả</span>
+                                          {course.bandScore != null ? (
+                                            <span className="dash-course-card__progress-text">
+                                              Band {course.bandScore.toFixed(1)}
+                                            </span>
+                                          ) : (
+                                            <span className="dash-course-card__progress-text">{completion}%</span>
+                                          )}
+                                        </div>
+                                        <div className="dash-course-card__actions">
+                                          {course.status === 'COMPLETED' && (
+                                            <>
+                                              {course.attemptId && (
+                                                <Link
+                                                  to={course.skill === 'writing'
+                                                    ? `/test/writing/review/${course.attemptId}`
+                                                    : `/test/review/${course.attemptId}`
+                                                  }
+                                                  className="btn-action-dashboard btn-action-dashboard--outline"
+                                                >
+                                                  Xem lại
+                                                </Link>
+                                              )}
+                                              <Link
+                                                to={course.skill === 'writing'
+                                                  ? `/test/writing/${course.examSource}/${course.testNumber}`
+                                                  : `/test/${course.examSource}/${course.testNumber}/${course.skill}`
+                                                }
+                                                state={{ forceNew: true }}
+                                                className="btn-action-dashboard"
+                                              >
+                                                Làm lại
+                                              </Link>
+                                            </>
+                                          )}
+                                          {course.status === 'IN_PROGRESS' && (
                                             <Link
                                               to={course.skill === 'writing'
-                                                ? `/test/writing/review/${course.attemptId}`
-                                                : `/test/review/${course.attemptId}`
+                                                ? `/test/writing/${course.examSource}/${course.testNumber}`
+                                                : `/test/${course.examSource}/${course.testNumber}/${course.skill}`
                                               }
-                                              className="btn-action-dashboard btn-action-dashboard--outline"
+                                              className="btn-action-dashboard"
                                             >
-                                              Xem lại
+                                              Tiếp tục
                                             </Link>
                                           )}
-                                          <Link
-                                            to={course.skill === 'writing'
-                                              ? `/test/writing/${course.examSource}/${course.testNumber}`
-                                              : `/test/${course.examSource}/${course.testNumber}/${course.skill}`
-                                            }
-                                            state={{ forceNew: true }}
-                                            className="btn-action-dashboard"
-                                          >
-                                            Làm lại
-                                          </Link>
-                                        </>
-                                      )}
-                                      {course.status === 'IN_PROGRESS' && (
-                                        <Link
-                                          to={course.skill === 'writing'
-                                            ? `/test/writing/${course.examSource}/${course.testNumber}`
-                                            : `/test/${course.examSource}/${course.testNumber}/${course.skill}`
-                                          }
-                                          className="btn-action-dashboard"
-                                        >
-                                          Tiếp tục
-                                        </Link>
-                                      )}
-                                      {course.status !== 'COMPLETED' && course.status !== 'IN_PROGRESS' && (
-                                        <Link
-                                          to={`/test/${course.examSource}/${course.testNumber}/${course.skill}`}
-                                          className="btn-action-dashboard"
-                                        >
-                                          Bắt đầu
-                                        </Link>
-                                      )}
+                                          {course.status !== 'COMPLETED' && course.status !== 'IN_PROGRESS' && (
+                                            <Link
+                                              to={`/test/${course.examSource}/${course.testNumber}/${course.skill}`}
+                                              className="btn-action-dashboard"
+                                            >
+                                              Bắt đầu
+                                            </Link>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <AttemptHistoryDropdown
+                                        history={course.history}
+                                        examSource={course.examSource}
+                                        testNumber={course.testNumber}
+                                        skill={course.skill}
+                                        onAttemptDeleted={fetchDashboardData}
+                                      />
                                     </div>
-                                  </div>
+                                  </article>
+                                );
+                              })}
+                            </div>
+                            <Pagination
+                              currentPage={page}
+                              totalPages={totalPages}
+                              onPageChange={setPage}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
 
-                                  <AttemptHistoryDropdown
-                                    history={course.history}
-                                    examSource={course.examSource}
-                                    testNumber={course.testNumber}
-                                    skill={course.skill}
-                                    onAttemptDeleted={fetchDashboardData}
-                                  />
-                                </div>
-                              </article>
-                            );
-                          })}
-                        </div>
-                        <Pagination
-                          currentPage={page}
-                          totalPages={totalPages}
-                          onPageChange={setPage}
-                        />
-                      </>
-                    )}
-                  </div>
-                </div>
-              </section>
-            )}
+                {activeView === 'progress' && (
+                  <motion.div
+                    key="progress"
+                    className="sl-tab-panel"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="sl-card">
+                      <div className="sl-card__header">
+                        <h2 className="sl-card__title">
+                          <FiTrendingUp />
+                          Biểu đồ tiến độ
+                        </h2>
+                      </div>
+                      <ProgressChart data={courses} />
+                    </div>
+                  </motion.div>
+                )}
 
-            {activeView === 'progress' && (
-              <div className="container">
-                <ProgressChart data={courses} />
-              </div>
-            )}
-
-            {activeView === 'analysis' && (
-              <div className="container">
-                <SkillAnalysis courseData={courses} targets={skillTargets} />
-              </div>
-            )}
-          </main>
+                {activeView === 'analysis' && (
+                  <motion.div
+                    key="analysis"
+                    className="sl-tab-panel"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="sl-card">
+                      <div className="sl-card__header">
+                        <h2 className="sl-card__title">
+                          <FiPieChart />
+                          Phân tích Kỹ năng
+                        </h2>
+                      </div>
+                      <SkillAnalysis courseData={courses} targets={skillTargets} />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </main>
+          </div>
 
           <GoalModal
             isOpen={isGoalModalOpen}

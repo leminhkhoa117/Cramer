@@ -21,17 +21,17 @@ import java.util.*;
  * Service for grading IELTS Writing essays using Gemini AI API.
  * Provides detailed feedback including band scores, corrections, and sample essays.
  * 
- * Uses Gemini 2.5 Pro for accurate IELTS grading with multimodal support for Task 1 images.
- * Rate limits (Free Tier): 2 RPM for 2.5-pro, 10 RPM for 2.5-flash
+ * Uses Gemini 2.5 Flash for faster grading with higher rate limits.
+ * Rate limits (Free Tier): 10 RPM for 2.5-flash, 2 RPM for 2.5-pro
  */
 @Service
 public class GeminiGradingService {
 
     private static final Logger logger = LoggerFactory.getLogger(GeminiGradingService.class);
     
-    // Using Gemini 2.5 Pro for more accurate and nuanced IELTS grading
-    // Alternative: gemini-2.5-flash (faster, 10 RPM free tier but less accurate)
-    private static final String GEMINI_MODEL = "gemini-2.5-pro";
+    // Using Gemini 2.5 Flash for higher rate limits (10 RPM vs 2 RPM for Pro)
+    // Trade-off: Slightly less nuanced but still accurate for IELTS grading
+    private static final String GEMINI_MODEL = "gemini-2.5-flash";
     private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent";
     
     // Minimum word thresholds for IELTS Writing

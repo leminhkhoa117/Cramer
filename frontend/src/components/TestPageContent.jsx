@@ -20,8 +20,7 @@ import '../css/TestHeader.css';
 import '../css/TestFooter.css';
 import '../css/QuestionGroup.css';
 import '../css/ToggleSwitch.css';
-import '../css/StartTestModal.css';
-import '../css/HighlightPopup.css'; // Import the CSS for the popup
+import '../css/HighlightPopup.css';
 
 const containerVariants = {
     hidden: { opacity: 0 },
