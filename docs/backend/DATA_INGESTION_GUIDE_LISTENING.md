@@ -190,6 +190,32 @@ This is the core of the new model. The `section_layout` column in the `sections`
   ```
 - **`correct_answer` (for Q1):** `["litter"]`
 
+### 4.6. Handling Complex Layouts & Numbering (Best Practices)
+
+**1. Splitting Blocks for Layout Changes**
+If a single exam part contains multiple distinct sections with different instructions or layouts (e.g., Questions 1-7 are "Note Completion" and Questions 8-10 are "Table Completion"), you **must** split them into separate blocks within the `blocks` array.
+- **Example:**
+  ```json
+  "blocks": [
+    {
+      "block_type": "NOTE_COMPLETION",
+      "content": { "title": "Questions 1-7", ... },
+      "question_numbers": [1, 2, 3, 4, 5, 6, 7]
+    },
+    {
+      "block_type": "NOTE_COMPLETION", // or another type like TABLE_COMPLETION if it existed
+      "content": { "title": "Questions 8-10", ... },
+      "question_numbers": [8, 9, 10]
+    }
+  ]
+  ```
+
+**2. Question Numbering in Text**
+For `FILL_IN_BLANK` questions, the question number is **not** automatically rendered next to the input box in the text flow. You **must** include the question number explicitly in the `text` field of the `question_content` JSON.
+- **Convention:** Place the number immediately before the blank placeholder `____`.
+- **Example:** `"text": "• making sure the beach does not have 1 ____ on it"`
+- **Example:** `"text": "19 Oct 8 ____ – Village hall"`
+
 ---
 
 ## 5. Step-by-Step Workflow & SQL Generation
