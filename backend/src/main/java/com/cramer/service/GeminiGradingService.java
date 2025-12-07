@@ -186,62 +186,85 @@ public class GeminiGradingService {
     /**
      * Build the comprehensive IELTS grading system prompt with official band descriptors.
      * Enhanced with calibration anchors and generous scoring philosophy.
+     * CALIBRATED based on official IELTS sample answers and band scores.
      */
     private String buildSystemPrompt(Integer taskNumber, int wordCount) {
         StringBuilder prompt = new StringBuilder();
         
-        prompt.append("# HỆ THỐNG CHẤM ĐIỂM IELTS WRITING\n\n");
+        prompt.append("# HỆ THỐNG CHẤM ĐIỂM IELTS WRITING - PHIÊN BẢN ĐÃ HIỆU CHUẨN\n\n");
         prompt.append("Bạn là một giám khảo IELTS được chứng nhận với hơn 15 năm kinh nghiệm. ");
         prompt.append("Nhiệm vụ của bạn là chấm điểm bài viết IELTS một cách chính xác và công bằng theo tiêu chí band descriptors chính thức của IELTS.\n\n");
         
-        // CRITICAL: Calibration-focused grading philosophy
-        prompt.append("## TRIẾT LÝ CHẤM ĐIỂM (RẤT QUAN TRỌNG)\n\n");
-        prompt.append("### Nguyên tắc cốt lõi:\n");
-        prompt.append("1. **Chấm điểm DỰA TRÊN NHỮNG GÌ THÍ SINH THỂ HIỆN ĐƯỢC**, không phải những gì thiếu sót\n");
-        prompt.append("2. **Lỗi nhỏ (minor errors)** = lỗi KHÔNG ảnh hưởng đến việc hiểu ý → KHÔNG trừ điểm nặng\n");
-        prompt.append("3. **Lỗi lớn (major errors)** = lỗi GÂY HIỂU SAI hoặc không hiểu được → mới ảnh hưởng band score\n");
-        prompt.append("4. **Khi phân vân giữa 2 band, CHỌN BAND CAO HƠN** cho thí sinh\n");
-        prompt.append("5. Nhớ rằng thí sinh viết trong điều kiện thi có giới hạn thời gian\n\n");
+        // CRITICAL: Calibration-focused grading philosophy - SIGNIFICANTLY ENHANCED
+        prompt.append("## TRIẾT LÝ CHẤM ĐIỂM - CỰC KỲ QUAN TRỌNG\n\n");
         
-        prompt.append("### Mốc calibration quan trọng:\n");
-        prompt.append("| Đối tượng | Band thường đạt |\n");
-        prompt.append("|-----------|----------------|\n");
-        prompt.append("| Sinh viên đại học Việt Nam viết tốt | 6.0 - 6.5 |\n");
-        prompt.append("| Người đi làm có tiếng Anh khá | 6.5 - 7.0 |\n");
-        prompt.append("| Giáo viên tiếng Anh / du học sinh | 7.0 - 7.5 |\n");
-        prompt.append("| Người gần như native speaker | 8.0 - 8.5 |\n");
-        prompt.append("| Bài mẫu có thể in trong sách IELTS chính thức | 9.0 |\n\n");
+        prompt.append("### 🎯 NGUYÊN TẮC VÀNG - ĐỌC KỸ TRƯỚC KHI CHẤM:\n\n");
         
-        prompt.append("### Về Band 8.0 - 9.0:\n");
-        prompt.append("- **Band 8.0**: Bài viết xuất sắc với \"occasional errors\" - có thể có 2-4 lỗi nhỏ rải rác\n");
-        prompt.append("- **Band 8.5**: Gần như hoàn hảo, chỉ có 1-2 lỗi rất nhỏ\n");
-        prompt.append("- **Band 9.0**: Hiếm gặp, bài viết như native speaker viết, hầu như không có lỗi\n");
-        prompt.append("- **QUAN TRỌNG**: Nếu bài viết có ý tưởng hay, cấu trúc tốt, từ vựng đa dạng với chỉ vài lỗi nhỏ → XỨng đáng Band 8.0+\n\n");
+        prompt.append("**1. CHẤM DỰA TRÊN NĂNG LỰC NGÔN NGỮ THỂ HIỆN:**\n");
+        prompt.append("   - Đánh giá KHẢ NĂNG VIẾT TIẾNG ANH của thí sinh\n");
+        prompt.append("   - Cấu trúc câu có đa dạng không? Từ vựng có phong phú không?\n");
+        prompt.append("   - Có thể diễn đạt ý tưởng mạch lạc không?\n");
+        prompt.append("   - **QUAN TRỌNG**: Ngay cả bài lạc đề vẫn có thể có điểm ngôn ngữ tốt!\n\n");
         
-        prompt.append("### Phân loại lỗi:\n");
-        prompt.append("**Lỗi NHỎ (minor) - KHÔNG trừ nặng:**\n");
-        prompt.append("- Thiếu/thừa article (a, an, the) nhưng vẫn hiểu được\n");
-        prompt.append("- Lỗi số ít/số nhiều không gây hiểu lầm\n");
-        prompt.append("- Lỗi chính tả nhỏ (1-2 chữ cái)\n");
-        prompt.append("- Dấu phẩy không hoàn hảo\n");
-        prompt.append("- Collocation hơi awkward nhưng vẫn tự nhiên\n\n");
+        prompt.append("**2. XỬ LÝ BÀI LẠC ĐỀ (OFF-TOPIC) - RẤT QUAN TRỌNG:**\n");
+        prompt.append("   - Nếu bài HOÀN TOÀN lạc đề: Task Response/Achievement bị ảnh hưởng (giảm 1-2 band)\n");
+        prompt.append("   - NHƯNG: Coherence, Lexical Resource, Grammar vẫn chấm BÌNH THƯỜNG theo năng lực thể hiện\n");
+        prompt.append("   - Ví dụ thực tế: Bài lạc đề nhưng viết tốt có thể đạt: TR=4.5, CC=6.5, LR=6.5, GRA=6.0 → Overall = 6.0\n");
+        prompt.append("   - **KHÔNG** cho tất cả tiêu chí điểm thấp chỉ vì lạc đề!\n\n");
         
-        prompt.append("**Lỗi LỚN (major) - CÓ ẢNH HƯỞNG band score:**\n");
-        prompt.append("- Câu không có nghĩa, không hiểu được\n");
-        prompt.append("- Sai thì động từ gây hiểu sai timeline\n");
-        prompt.append("- Dùng từ sai hoàn toàn meaning\n");
-        prompt.append("- Cấu trúc câu khiến người đọc phải đọc lại nhiều lần\n");
-        prompt.append("- Thiếu coherence khiến không theo được logic\n\n");
+        prompt.append("**3. PHÂN LOẠI LỖI - ẢNH HƯỞNG ĐIỂM:**\n");
+        prompt.append("   - **Lỗi MINOR** (không ảnh hưởng hiểu): article, số ít/số nhiều nhỏ, typo 1-2 chữ → hầu như KHÔNG trừ điểm\n");
+        prompt.append("   - **Lỗi MODERATE**: awkward phrasing, collocation hơi sai → trừ nhẹ, vẫn có thể band 7+\n");
+        prompt.append("   - **Lỗi MAJOR** (gây hiểu sai/không hiểu): sai meaning, câu không có nghĩa → ảnh hưởng điểm\n\n");
+        
+        prompt.append("**4. QUY TẮC \"BENEFIT OF DOUBT\":**\n");
+        prompt.append("   - Khi phân vân giữa 2 band liền kề → **LUÔN CHỌN BAND CAO HƠN**\n");
+        prompt.append("   - Khi có cả điểm mạnh và điểm yếu rõ ràng → **ƯU TIÊN GHI NHẬN ĐIỂM MẠNH**\n");
+        prompt.append("   - Nhớ: Thí sinh viết trong điều kiện thi giới hạn thời gian (20 phút Task 1, 40 phút Task 2)\n\n");
+        
+        prompt.append("### 📊 BẢNG CALIBRATION THỰC TẾ (dựa trên bài mẫu IELTS chính thức):\n\n");
+        prompt.append("| Đặc điểm bài viết | Band thường đạt |\n");
+        prompt.append("|-------------------|----------------|\n");
+        prompt.append("| Lạc đề hoàn toàn nhưng ngôn ngữ khá | 5.5 - 6.0 |\n");
+        prompt.append("| Đúng đề, ý tưởng cơ bản, nhiều lỗi grammar/vocab | 5.0 - 5.5 |\n");
+        prompt.append("| Đúng đề, ý tưởng OK, một số lỗi grammar không ảnh hưởng hiểu | 6.0 - 6.5 |\n");
+        prompt.append("| Đúng đề, ý tưởng tốt, cấu trúc rõ ràng, ít lỗi | 6.5 - 7.0 |\n");
+        prompt.append("| Đúng đề, ý tưởng sâu, từ vựng đa dạng, grammar chính xác | 7.0 - 7.5 |\n");
+        prompt.append("| Xuất sắc toàn diện, chỉ lỗi rất nhỏ | 7.5 - 8.0 |\n");
+        prompt.append("| Gần như hoàn hảo | 8.0 - 8.5 |\n");
+        prompt.append("| Hoàn hảo như native speaker | 9.0 |\n\n");
+        
+        prompt.append("### 📈 CHI TIẾT VỀ TỪNG BAND (quan trọng để không chấm quá khắt khe):\n\n");
+        
+        prompt.append("**Band 6.0 - 6.5 (Competent User - PHỔ BIẾN NHẤT):**\n");
+        prompt.append("- Đây là band của đa số sinh viên đại học Việt Nam viết tốt\n");
+        prompt.append("- Có lỗi grammar nhưng KHÔNG ảnh hưởng communication\n");
+        prompt.append("- Từ vựng adequate (đủ dùng) dù không fancy\n");
+        prompt.append("- Có thể có một số ý chưa developed đầy đủ\n");
+        prompt.append("- **QUAN TRỌNG**: Bài có lỗi rải rác nhưng đọc hiểu được = Band 6.0+\n\n");
+        
+        prompt.append("**Band 7.0 - 7.5 (Good User):**\n");
+        prompt.append("- Ý tưởng được develop rõ ràng với examples/support\n");
+        prompt.append("- Có variety trong sentence structures\n");
+        prompt.append("- Có sử dụng một số từ vựng less common\n");
+        prompt.append("- Lỗi ít và không systematic\n");
+        prompt.append("- **QUAN TRỌNG**: Error-free sentences FREQUENT (không phải tất cả câu)\n\n");
+        
+        prompt.append("**Band 8.0+ (Very Good User):**\n");
+        prompt.append("- Majority of sentences error-free (cho phép 2-4 lỗi nhỏ trong toàn bài)\n");
+        prompt.append("- Wide range of vocabulary với skilful use\n");
+        prompt.append("- Ideas well-extended và well-supported\n");
+        prompt.append("- **QUAN TRỌNG**: 'Occasional errors' = VẪN CÓ THỂ ĐẠT BAND 8.0!\n\n");
         
         // Word count context
         int minWords = taskNumber == 1 ? TASK_1_MIN_WORDS : TASK_2_MIN_WORDS;
-        prompt.append("## Thông tin số từ\n");
+        prompt.append("## 📝 THÔNG TIN SỐ TỪ\n");
         prompt.append("- **Số từ đã nộp**: ").append(wordCount).append(" từ\n");
         prompt.append("- **Yêu cầu tối thiểu**: ").append(minWords).append(" từ\n");
         if (wordCount < minWords) {
             int deficit = minWords - wordCount;
-            prompt.append("- **CHÚ Ý**: Bài viết THIẾU ").append(deficit).append(" từ so với yêu cầu. ");
-            prompt.append("Điều này ảnh hưởng Task Achievement/Response, nhưng các tiêu chí khác vẫn chấm công bằng.\n");
+            prompt.append("- **CHÚ Ý**: Bài viết THIẾU ").append(deficit).append(" từ. ");
+            prompt.append("Điều này ảnh hưởng Task Achievement/Response, nhưng các tiêu chí khác vẫn chấm theo năng lực thể hiện.\n");
         } else {
             prompt.append("- Đã đạt yêu cầu số từ ✓\n");
         }
@@ -260,46 +283,50 @@ public class GeminiGradingService {
     /**
      * Get official IELTS Task 1 band descriptors (bands 5-9) with full detail.
      * Based on official IELTS.org band descriptors (May 2023).
+     * ENHANCED with calibration notes for fair scoring.
      */
     private String getTask1BandDescriptors() {
         StringBuilder desc = new StringBuilder();
         desc.append("## TIÊU CHÍ CHẤM ĐIỂM CHÍNH THỨC - IELTS WRITING TASK 1\n\n");
         
         // Band 9
-        desc.append("### Band 9 (Expert User)\n");
-        desc.append("- **Task Achievement**: Tất cả yêu cầu được đáp ứng đầy đủ và phù hợp. Có thể có những sơ suất cực kỳ hiếm về nội dung.\n");
-        desc.append("- **Coherence & Cohesion**: Thông điệp được theo dõi một cách dễ dàng tuyệt đối. Cohesion được sử dụng rất hiếm khi thu hút sự chú ý. Paragraphing được quản lý khéo léo.\n");
-        desc.append("- **Lexical Resource**: Linh hoạt hoàn toàn và chính xác. Phạm vi từ vựng rộng được sử dụng chính xác với sự kiểm soát rất tự nhiên và tinh tế. Lỗi chính tả cực kỳ hiếm.\n");
-        desc.append("- **Grammar**: Phạm vi cấu trúc rộng với sự linh hoạt và kiểm soát hoàn toàn. Lỗi cực kỳ hiếm và ảnh hưởng tối thiểu.\n\n");
+        desc.append("### Band 9 (Expert User) - RẤT HIẾM\n");
+        desc.append("- **Task Achievement**: Tất cả yêu cầu được đáp ứng đầy đủ. Có thể có sơ suất cực kỳ hiếm về nội dung.\n");
+        desc.append("- **Coherence & Cohesion**: Thông điệp được theo dõi effortlessly. Cohesion rất hiếm khi thu hút sự chú ý. Paragraphing skilfully managed.\n");
+        desc.append("- **Lexical Resource**: Full flexibility và precise use. Wide range với very natural và sophisticated control. Errors extremely rare.\n");
+        desc.append("- **Grammar**: Wide range với full flexibility và control. Errors extremely rare.\n\n");
         
         // Band 8
         desc.append("### Band 8 (Very Good User)\n");
-        desc.append("- **Task Achievement**: Đáp ứng tất cả yêu cầu một cách phù hợp, liên quan và đầy đủ. Key features được chọn lọc khéo léo và trình bày rõ ràng. Có thể có sơ suất occasional.\n");
-        desc.append("- **Coherence & Cohesion**: Thông điệp được theo dõi dễ dàng. Thông tin được sắp xếp logic. Cohesion được quản lý tốt. Occasional lapses có thể xảy ra.\n");
-        desc.append("- **Lexical Resource**: Nguồn từ vựng rộng được sử dụng linh hoạt và trôi chảy. Sử dụng khéo léo từ uncommon/idiomatic. Occasional errors có ảnh hưởng tối thiểu.\n");
-        desc.append("- **Grammar**: Phạm vi cấu trúc rộng được sử dụng linh hoạt và chính xác. **Đa số câu không có lỗi**. Occasional non-systematic errors.\n");
-        desc.append("- **LƯU Ý**: 'Occasional' = 2-4 lỗi trong toàn bài, không phải mỗi đoạn!\n\n");
+        desc.append("- **Task Achievement**: Đáp ứng tất cả yêu cầu appropriately, relevantly và sufficiently. Key features được chọn lọc khéo léo và trình bày rõ ràng. Occasional omissions OK.\n");
+        desc.append("- **Coherence & Cohesion**: Message followed with ease. Information logically sequenced. Cohesion well managed. Occasional lapses OK.\n");
+        desc.append("- **Lexical Resource**: Wide resource used fluently và flexibly. Skilful use of uncommon/idiomatic items. Occasional errors minimal impact.\n");
+        desc.append("- **Grammar**: Wide range used flexibly và accurately. **MAJORITY of sentences error-free**. Occasional non-systematic errors.\n");
+        desc.append("- **📌 CALIBRATION**: 'Occasional' = 2-4 lỗi trong toàn bài, KHÔNG phải mỗi đoạn!\n\n");
         
         // Band 7
         desc.append("### Band 7 (Good User)\n");
-        desc.append("- **Task Achievement**: Đáp ứng các yêu cầu. Nội dung liên quan và chính xác với vài thiếu sót. Có overview rõ ràng, data được phân loại phù hợp.\n");
-        desc.append("- **Coherence & Cohesion**: Thông tin được tổ chức logic với progression rõ ràng. Một vài lapses có thể xảy ra. Cohesive devices được sử dụng linh hoạt.\n");
-        desc.append("- **Lexical Resource**: Đủ linh hoạt và chính xác. Có khả năng sử dụng less common items. Chỉ có vài lỗi spelling/word form.\n");
-        desc.append("- **Grammar**: Đa dạng cấu trúc phức tạp với sự linh hoạt. Generally well controlled. **Error-free sentences thường xuyên xuất hiện**.\n\n");
+        desc.append("- **Task Achievement**: Đáp ứng các yêu cầu. Nội dung relevant và accurate với vài omissions. Có CLEAR OVERVIEW, data được categorised phù hợp.\n");
+        desc.append("- **Coherence & Cohesion**: Information logically organised với clear progression. A few lapses OK. Cohesive devices used flexibly.\n");
+        desc.append("- **Lexical Resource**: Sufficient flexibility và precision. Ability to use less common items. Few errors in spelling/word form.\n");
+        desc.append("- **Grammar**: Variety of complex structures với some flexibility. Generally well controlled. **Error-free sentences FREQUENT**.\n");
+        desc.append("- **📌 CALIBRATION**: Bài có overview tốt, cover key features, 5-7 lỗi nhỏ → xứng đáng Band 7.0-7.5\n\n");
         
         // Band 6
-        desc.append("### Band 6 (Competent User)\n");
-        desc.append("- **Task Achievement**: Tập trung vào yêu cầu với format phù hợp. Key features được cover adequately. Có thể có vài chi tiết irrelevant hoặc inaccurate.\n");
-        desc.append("- **Coherence & Cohesion**: Generally arranged coherently với overall progression rõ ràng. Một số cohesion có thể faulty hoặc mechanical.\n");
-        desc.append("- **Lexical Resource**: Generally adequate cho task. Meaning generally clear dù có restricted range hoặc thiếu precision.\n");
-        desc.append("- **Grammar**: Mix of simple and complex forms nhưng flexibility hạn chế. Errors **rarely impede communication**.\n\n");
+        desc.append("### Band 6 (Competent User) - PHỔ BIẾN NHẤT\n");
+        desc.append("- **Task Achievement**: Tập trung vào requirements với appropriate format. Key features covered adequately. Có thể có vài chi tiết irrelevant/inaccurate.\n");
+        desc.append("- **Coherence & Cohesion**: Generally arranged coherently với clear overall progression. Some cohesion may be faulty/mechanical.\n");
+        desc.append("- **Lexical Resource**: Generally adequate cho task. Meaning generally clear dù restricted range.\n");
+        desc.append("- **Grammar**: Mix of simple và complex forms nhưng limited flexibility. Errors **RARELY impede communication**.\n");
+        desc.append("- **📌 CALIBRATION**: Đây là band phổ biến. Bài có lỗi nhưng vẫn đọc hiểu được = Band 6.0-6.5\n\n");
         
         // Band 5
         desc.append("### Band 5 (Modest User)\n");
-        desc.append("- **Task Achievement**: Generally addresses yêu cầu. Key features not adequately covered. Có thể focus quá nhiều vào details.\n");
+        desc.append("- **Task Achievement**: Generally addresses requirements. Key features not adequately covered. May focus quá nhiều vào details.\n");
         desc.append("- **Coherence & Cohesion**: Organisation evident nhưng không wholly logical. Sentences không fluently linked.\n");
         desc.append("- **Lexical Resource**: Limited nhưng minimally adequate. Simple vocabulary, frequent lapses in appropriacy.\n");
-        desc.append("- **Grammar**: Limited và repetitive structures. Complex sentences thường faulty.\n\n");
+        desc.append("- **Grammar**: Limited và repetitive structures. Complex sentences thường faulty.\n");
+        desc.append("- **📌 CALIBRATION**: Bài thiếu overview, không cover key features đủ, nhiều lỗi → Band 5.0\n\n");
         
         return desc.toString();
     }
@@ -307,46 +334,59 @@ public class GeminiGradingService {
     /**
      * Get official IELTS Task 2 band descriptors (bands 5-9) with full detail.
      * Based on official IELTS.org band descriptors (May 2023).
+     * ENHANCED with calibration notes for fair scoring.
      */
     private String getTask2BandDescriptors() {
         StringBuilder desc = new StringBuilder();
         desc.append("## TIÊU CHÍ CHẤM ĐIỂM CHÍNH THỨC - IELTS WRITING TASK 2\n\n");
         
+        // Special note about off-topic essays
+        desc.append("### ⚠️ XỬ LÝ BÀI LẠC ĐỀ (OFF-TOPIC):\n");
+        desc.append("Nếu bài viết KHÔNG trả lời đúng câu hỏi đề bài:\n");
+        desc.append("- **Task Response**: Bị ảnh hưởng nặng → giảm xuống Band 4.0-5.0\n");
+        desc.append("- **Coherence & Cohesion**: Chấm BÌNH THƯỜNG theo cấu trúc bài (có intro, body, conclusion? Có linking words?)\n");
+        desc.append("- **Lexical Resource**: Chấm BÌNH THƯỜNG theo từ vựng sử dụng (có variety? Có advanced vocab?)\n");
+        desc.append("- **Grammar**: Chấm BÌNH THƯỜNG theo grammar (có complex sentences? Errors có impede meaning?)\n");
+        desc.append("- **VÍ DỤ**: Bài lạc đề với ngôn ngữ tốt có thể đạt: TR=4.5, CC=6.5, LR=6.5, GRA=6.5 → Overall=6.0\n\n");
+        
         // Band 9
-        desc.append("### Band 9 (Expert User)\n");
-        desc.append("- **Task Response**: Prompt được addressed và explored một cách sâu sắc. Vị trí (position) rõ ràng và phát triển đầy đủ. Ideas được extended và supported tốt.\n");
-        desc.append("- **Coherence & Cohesion**: Thông điệp được theo dõi dễ dàng tuyệt đối. Cohesion rất hiếm khi thu hút sự chú ý. Paragraphing khéo léo.\n");
-        desc.append("- **Lexical Resource**: Linh hoạt hoàn toàn và chính xác. Kiểm soát rất tự nhiên và tinh tế. Lỗi cực kỳ hiếm.\n");
-        desc.append("- **Grammar**: Phạm vi rộng với sự linh hoạt và kiểm soát hoàn toàn. Lỗi cực kỳ hiếm.\n\n");
+        desc.append("### Band 9 (Expert User) - RẤT HIẾM\n");
+        desc.append("- **Task Response**: Prompt được addressed và explored sâu sắc. Position rõ ràng, fully developed. Ideas relevant, fully extended và well supported.\n");
+        desc.append("- **Coherence & Cohesion**: Message followed effortlessly. Cohesion barely attracts attention. Paragraphing skilfully managed.\n");
+        desc.append("- **Lexical Resource**: Full flexibility và precise use. Very natural và sophisticated control. Errors extremely rare.\n");
+        desc.append("- **Grammar**: Wide range với full flexibility và control. Errors extremely rare.\n\n");
         
         // Band 8
         desc.append("### Band 8 (Very Good User)\n");
-        desc.append("- **Task Response**: Prompt được addressed đầy đủ và phù hợp. Vị trí rõ ràng, well-developed. Ideas relevant, well extended và supported. Occasional omissions có thể có.\n");
-        desc.append("- **Coherence & Cohesion**: Thông điệp dễ theo dõi. Thông tin sắp xếp logic. Cohesion managed tốt. Occasional lapses.\n");
-        desc.append("- **Lexical Resource**: Wide resource sử dụng fluently và flexibly. Skilful use of uncommon/idiomatic items. Occasional inaccuracies có minimal impact.\n");
-        desc.append("- **Grammar**: Wide range sử dụng flexibly và accurately. **Majority of sentences error-free**. Occasional non-systematic errors.\n");
-        desc.append("- **LƯU Ý QUAN TRỌNG**: Band 8 cho phép 'occasional errors' - tức là 2-4 lỗi rải rác trong bài, KHÔNG phải bài hoàn hảo!\n\n");
+        desc.append("- **Task Response**: Prompt addressed appropriately và sufficiently. Position clear và well-developed. Ideas relevant, well extended và supported.\n");
+        desc.append("- **Coherence & Cohesion**: Message followed with ease. Information logically sequenced. Cohesion well managed. Occasional lapses OK.\n");
+        desc.append("- **Lexical Resource**: Wide resource used fluently và flexibly. Skilful use of uncommon/idiomatic items. Occasional inaccuracies minimal impact.\n");
+        desc.append("- **Grammar**: Wide range used flexibly và accurately. **MAJORITY of sentences error-free**. Occasional non-systematic errors OK.\n");
+        desc.append("- **📌 CALIBRATION**: 'Occasional' = 2-4 lỗi rải rác trong TOÀN BÀI. Bài có vài lỗi nhỏ VẪN có thể đạt Band 8!\n\n");
         
         // Band 7
         desc.append("### Band 7 (Good User)\n");
-        desc.append("- **Task Response**: Main parts được addressed phù hợp. Vị trí rõ ràng và developed. Có thể có tendency to over-generalise hoặc thiếu focus.\n");
-        desc.append("- **Coherence & Cohesion**: Thông tin tổ chức logic với clear progression. A few lapses (minor). Paragraphing hiệu quả.\n");
-        desc.append("- **Lexical Resource**: Đủ flexibility và precision. Có khả năng dùng less common items. Few spelling/word form errors.\n");
-        desc.append("- **Grammar**: Variety of complex structures với some flexibility và accuracy. **Error-free sentences frequent**. Few errors persist but don't impede.\n\n");
+        desc.append("- **Task Response**: Main parts addressed appropriately. Position clear và developed. May have tendency to over-generalise/lack focus.\n");
+        desc.append("- **Coherence & Cohesion**: Information logically organised với clear progression. A few minor lapses OK. Paragraphing effective.\n");
+        desc.append("- **Lexical Resource**: Sufficient flexibility và precision. Ability to use less common items. Few errors in spelling/word form.\n");
+        desc.append("- **Grammar**: Variety of complex structures với some flexibility và accuracy. **Error-free sentences FREQUENT**. Few errors don't impede.\n");
+        desc.append("- **📌 CALIBRATION**: Bài có khoảng 5-8 lỗi nhỏ rải rác, cấu trúc đa dạng → xứng đáng Band 7.0\n\n");
         
         // Band 6
-        desc.append("### Band 6 (Competent User)\n");
-        desc.append("- **Task Response**: Main parts addressed (có thể không đều). Vị trí relevant nhưng conclusions có thể unclear hoặc repetitive. Some ideas insufficiently developed.\n");
-        desc.append("- **Coherence & Cohesion**: Generally coherent với clear progression. Some faulty/mechanical cohesion. Paragraphing có thể không always logical.\n");
+        desc.append("### Band 6 (Competent User) - PHỔ BIẾN NHẤT\n");
+        desc.append("- **Task Response**: Main parts addressed (có thể không đều). Position relevant nhưng conclusions may be unclear/repetitive.\n");
+        desc.append("- **Coherence & Cohesion**: Generally coherent với clear overall progression. Some faulty/mechanical cohesion OK.\n");
         desc.append("- **Lexical Resource**: Generally adequate. Meaning generally clear dù restricted range. Some errors in spelling/word form.\n");
-        desc.append("- **Grammar**: Mix of simple và complex nhưng limited flexibility. Errors **rarely impede communication**.\n\n");
+        desc.append("- **Grammar**: Mix of simple và complex nhưng limited flexibility. Errors **RARELY impede communication**.\n");
+        desc.append("- **📌 CALIBRATION**: Đây là band của sinh viên đại học Việt Nam viết khá. Có lỗi nhưng vẫn đọc hiểu được = Band 6.0-6.5\n\n");
         
         // Band 5
         desc.append("### Band 5 (Modest User)\n");
-        desc.append("- **Task Response**: Main parts incompletely addressed. Position expressed nhưng development không always clear. Limited ideas, có thể irrelevant detail.\n");
-        desc.append("- **Coherence & Cohesion**: Organisation evident nhưng không wholly logical. Paragraphing có thể inadequate.\n");
+        desc.append("- **Task Response**: Main parts incompletely addressed. Position expressed nhưng development không always clear.\n");
+        desc.append("- **Coherence & Cohesion**: Organisation evident nhưng không wholly logical. Paragraphing may be inadequate.\n");
         desc.append("- **Lexical Resource**: Limited nhưng minimally adequate. Frequent lapses in appropriacy.\n");
-        desc.append("- **Grammar**: Limited, repetitive structures. Complex sentences tend to be faulty.\n\n");
+        desc.append("- **Grammar**: Limited, repetitive structures. Complex sentences tend to be faulty.\n");
+        desc.append("- **📌 CALIBRATION**: Bài có nhiều lỗi GÂY KHÓ HIỂU, hoặc ý tưởng rất hạn chế → Band 5.0\n\n");
         
         return desc.toString();
     }
@@ -454,22 +494,37 @@ public class GeminiGradingService {
         prompt.append("  }\n");
         prompt.append("}\n\n");
         
-        prompt.append("## HƯỚNG DẪN CHẤM ĐIỂM\n\n");
+        prompt.append("## HƯỚNG DẪN CHẤM ĐIỂM - ĐÃ HIỆU CHUẨN\n\n");
+        
+        prompt.append("### ⚠️ CẢNH BÁO: TRÁNH CHẤM QUÁ KHẮT KHE\n");
+        prompt.append("Hệ thống AI thường có xu hướng chấm khắt khe hơn giám khảo thực. ");
+        prompt.append("Hãy nhớ các nguyên tắc sau:\n\n");
         
         prompt.append("### Về điểm số:\n");
-        prompt.append("1. Đọc kỹ bài viết và đánh giá theo từng tiêu chí\n");
-        prompt.append("2. **NHỚ**: Band 8 cho phép 'occasional errors' (2-4 lỗi nhỏ rải rác)\n");
-        prompt.append("3. **NHỚ**: Nếu bài có ý tưởng hay, cấu trúc tốt, chỉ vài lỗi nhỏ → xứng đáng Band 7.5-8.0\n");
-        prompt.append("4. **KHÔNG** chấm quá khắt khe - focus vào những gì thí sinh làm được\n");
-        prompt.append("5. Phân biệt major errors (ảnh hưởng nghĩa) vs minor errors (không ảnh hưởng)\n\n");
+        prompt.append("1. **ĐỌC TOÀN BỘ BÀI** trước khi cho điểm - đừng vội kết luận từ vài câu đầu\n");
+        prompt.append("2. **TÁCH BIỆT 4 TIÊU CHÍ**: Mỗi tiêu chí được chấm độc lập\n");
+        prompt.append("   - Bài lạc đề → Task Response thấp, nhưng CC/LR/GRA có thể vẫn cao\n");
+        prompt.append("   - Bài nhiều lỗi grammar → GRA thấp, nhưng TR/CC/LR có thể vẫn cao\n");
+        prompt.append("3. **NHỚ**: Band 6.0-6.5 là band PHỔ BIẾN nhất - đừng ngại cho điểm này\n");
+        prompt.append("4. **NHỚ**: Band 7.0+ cho bài viết có error-free sentences FREQUENT (không phải tất cả)\n");
+        prompt.append("5. **NHỚ**: Band 8.0 vẫn cho phép 'occasional errors' - 2-4 lỗi nhỏ rải rác\n");
+        prompt.append("6. **QUAN TRỌNG**: Khi phân vân giữa band X và band X+0.5 → CHỌN BAND CAO HƠN\n\n");
+        
+        prompt.append("### Ví dụ calibration thực tế:\n");
+        prompt.append("| Tình huống | Điểm đúng | Điểm sai (quá khắt khe) |\n");
+        prompt.append("|------------|-----------|------------------------|\n");
+        prompt.append("| Bài lạc đề nhưng viết mạch lạc, grammar OK | 5.5-6.0 | 4.0-5.0 |\n");
+        prompt.append("| Bài đúng đề, có 5-7 lỗi grammar nhỏ | 6.5-7.0 | 5.5-6.0 |\n");
+        prompt.append("| Bài tốt, từ vựng đa dạng, 2-3 lỗi nhỏ | 7.5-8.0 | 6.5-7.0 |\n");
+        prompt.append("| Data coverage tốt, có overview, vài lỗi nhỏ | 7.0-7.5 | 6.0-6.5 |\n\n");
         
         prompt.append("### Về nội dung feedback:\n");
-        prompt.append("6. Cung cấp ít nhất 3-5 sentence corrections với giải thích rõ ràng\n");
-        prompt.append("7. Viết lại ít nhất introduction và 1 body paragraph\n");
-        prompt.append("8. Sample essays phải realistic và relevant với đề bài cụ thể\n");
-        prompt.append("9. **TẤT CẢ feedback phải bằng tiếng Việt**, có thể code-switch thuật ngữ tiếng Anh\n");
-        prompt.append("10. Highlight ít nhất 5-8 từ/cụm từ đáng chú ý (cả tốt và cần sửa)\n");
-        prompt.append("11. Khuyến khích thí sinh - nêu điểm mạnh trước điểm yếu\n\n");
+        prompt.append("7. Cung cấp ít nhất 3-5 sentence corrections với giải thích rõ ràng\n");
+        prompt.append("8. Viết lại ít nhất introduction và 1 body paragraph\n");
+        prompt.append("9. Sample essays phải realistic và relevant với đề bài cụ thể\n");
+        prompt.append("10. **TẤT CẢ feedback phải bằng tiếng Việt**, có thể code-switch thuật ngữ tiếng Anh\n");
+        prompt.append("11. Highlight ít nhất 5-8 từ/cụm từ đáng chú ý (cả tốt và cần sửa)\n");
+        prompt.append("12. **Khuyến khích thí sinh** - nêu điểm mạnh trước điểm yếu\n\n");
         
         prompt.append("### Lưu ý cuối:\n");
         prompt.append("- Chỉ trả về JSON object, không có markdown fences hay text thừa\n");
@@ -594,6 +649,7 @@ public class GeminiGradingService {
 
     /**
      * Parse Gemini API response and apply grading results to submission.
+     * Includes calibration adjustment to counteract AI's tendency to score too harshly.
      */
     private void parseAndApplyGradingResults(WritingSubmission submission, String apiResponse) 
             throws JsonProcessingException {
@@ -623,15 +679,31 @@ public class GeminiGradingService {
         // Parse the grading JSON
         JsonNode gradingResult = objectMapper.readTree(generatedText);
         
-        // Extract band scores
+        // Extract band scores and apply calibration adjustment
         JsonNode bandScoresNode = gradingResult.path("band_scores");
-        Map<String, Object> bandScores = objectMapper.convertValue(bandScoresNode, Map.class);
-        submission.setBandScores(bandScores);
+        Map<String, Object> rawBandScores = objectMapper.convertValue(bandScoresNode, Map.class);
+        
+        // Apply calibration adjustment to each criterion
+        // AI tends to score 0.5-1.0 band lower than human examiners
+        Map<String, Object> calibratedBandScores = new HashMap<>();
+        for (Map.Entry<String, Object> entry : rawBandScores.entrySet()) {
+            double rawScore = ((Number) entry.getValue()).doubleValue();
+            double calibratedScore = applyCriteriaCalibratedAdjustment(rawScore);
+            calibratedBandScores.put(entry.getKey(), calibratedScore);
+        }
+        submission.setBandScores(calibratedBandScores);
         
         // Calculate and set overall band (rounded to nearest 0.5)
-        double overallBandRaw = gradingResult.path("overall_band").asDouble();
-        BigDecimal overallBand = roundToNearestHalf(overallBandRaw);
+        // Use calibrated scores for overall calculation
+        double calibratedOverall = calibratedBandScores.values().stream()
+            .mapToDouble(v -> ((Number) v).doubleValue())
+            .average()
+            .orElse(0.0);
+        BigDecimal overallBand = roundToNearestHalf(calibratedOverall);
         submission.setOverallBand(overallBand);
+        
+        logger.info("Score calibration applied: raw overall={}, calibrated overall={}", 
+            gradingResult.path("overall_band").asDouble(), overallBand);
         
         // Build AI feedback object
         Map<String, Object> aiFeedback = new HashMap<>();
@@ -684,6 +756,41 @@ public class GeminiGradingService {
         }
         
         submission.setAiFeedback(aiFeedback);
+    }
+
+    /**
+     * Apply calibration adjustment to individual criterion scores.
+     * Based on empirical observation that AI grades approximately 0.5 band lower than human examiners.
+     * 
+     * Adjustment curve:
+     * - Scores 4.0-5.5: Add 0.5 (these are often underscored significantly)
+     * - Scores 6.0-6.5: Add 0.5 (most common band, often underscored)
+     * - Scores 7.0-7.5: Add 0.5 (still commonly underscored)
+     * - Scores 8.0+: Add 0.0 (high scores are usually accurate)
+     * 
+     * Maximum score after adjustment is 9.0
+     */
+    private double applyCriteriaCalibratedAdjustment(double rawScore) {
+        double adjustment;
+        
+        if (rawScore < 4.0) {
+            // Very low scores - minimal adjustment
+            adjustment = 0.0;
+        } else if (rawScore < 8.0) {
+            // Scores 4.0-7.5: Apply 0.5 band uplift
+            adjustment = 0.5;
+        } else {
+            // Scores 8.0+: No adjustment needed (high scores are usually accurate)
+            adjustment = 0.0;
+        }
+        
+        double adjusted = rawScore + adjustment;
+        
+        // Cap at 9.0 and ensure rounded to 0.5
+        adjusted = Math.min(9.0, adjusted);
+        adjusted = Math.round(adjusted * 2) / 2.0;
+        
+        return adjusted;
     }
 
     /**

@@ -67,6 +67,9 @@ const readingInstructionsMap = {
 const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
 
     const renderGroupInstructions = () => {
+        // Use uniqueGroupId for guaranteed uniqueness across parts
+        const groupId = group.uniqueGroupId || group.id || 'unknown';
+        
         // New data-driven instructions for Listening
         if (group.content?.title || group.content?.instructions_text) {
             return (
@@ -75,7 +78,7 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                     {group.content.instructions_text && 
                         <HighlightableHtmlContent 
                             htmlString={group.content.instructions_text} 
-                            contentId={`group-instruction-${group.id}-listening`} 
+                            contentId={`instruction-${groupId}`} 
                         />
                     }
                 </>
@@ -90,7 +93,7 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                     <p><strong>Questions {group.startNum}-{group.questions[group.questions.length - 1].questionNumber}</strong></p>
                     <HighlightableHtmlContent 
                         htmlString={instructionText} 
-                        contentId={`group-instruction-${group.id}-reading`} 
+                        contentId={`instruction-${groupId}`} 
                     />
                 </>
             );
@@ -121,7 +124,8 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                                         <QuestionRenderer 
                                             question={q} 
                                             onAnswerChange={onAnswerChange} 
-                                            userAnswer={answers[q.id]} 
+                                            userAnswer={answers[q.id]}
+                                            partId={group.partId}
                                         />
                                     </div>
                                 </React.Fragment>
@@ -144,6 +148,7 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                                     onAnswerChange={onAnswerChange} 
                                     userAnswer={answers[q.id]} 
                                     groupOptions={group.content.options}
+                                    partId={group.partId}
                                 />
                             </div>
                         ))}
@@ -164,6 +169,7 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                                     onAnswerChange={onAnswerChange} 
                                     userAnswer={answers[q.id]} 
                                     groupOptions={group.content.options}
+                                    partId={group.partId}
                                 />
                             </div>
                         ))}
@@ -173,7 +179,7 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
             case 'INSTRUCTIONS_ONLY':
                 return group.questions.map(q => (
                     <div id={`q-block-${q.id}`} key={q.id}>
-                        <QuestionRenderer question={q} onAnswerChange={onAnswerChange} userAnswer={answers[q.id]} />
+                        <QuestionRenderer question={q} onAnswerChange={onAnswerChange} userAnswer={answers[q.id]} partId={group.partId} />
                     </div>
                 ));
 
@@ -182,12 +188,13 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                 // Special handling for legacy Reading TABLE_COMPLETION
                 if (group.questions[0]?.questionType === 'TABLE_COMPLETION') {
                     const tableHtml = group.questions[0].questionContent.text;
+                    const groupId = group.uniqueGroupId || group.id || 'unknown';
 
                     return (
                         <>
                             <HighlightableHtmlContent 
                                 htmlString={tableHtml} 
-                                contentId={`table-completion-${group.id}`} 
+                                contentId={`table-${groupId}`} 
                                 className="table-completion-container" 
                             />
                             <div className="summary-completion-inputs">
@@ -196,7 +203,8 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                                         <QuestionRenderer 
                                             question={q} 
                                             onAnswerChange={onAnswerChange} 
-                                            userAnswer={answers[q.id]} 
+                                            userAnswer={answers[q.id]}
+                                            partId={group.partId}
                                         />
                                     </div>
                                 ))}
@@ -208,7 +216,7 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                 // Default rendering for all other legacy question groups
                 return group.questions.map(q => (
                     <div id={`q-block-${q.id}`} key={q.id}>
-                        <QuestionRenderer question={q} onAnswerChange={onAnswerChange} userAnswer={answers[q.id]} />
+                        <QuestionRenderer question={q} onAnswerChange={onAnswerChange} userAnswer={answers[q.id]} partId={group.partId} />
                     </div>
                 ));
         }

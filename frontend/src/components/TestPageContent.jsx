@@ -36,7 +36,7 @@ const groupQuestionsFromLayout = (part) => {
 
     // New logic for Listening tests with sectionLayout
     if (part.sectionLayout && part.sectionLayout.blocks) {
-        return part.sectionLayout.blocks.map(block => {
+        return part.sectionLayout.blocks.map((block, blockIndex) => {
             const blockQuestions = block.question_numbers
                 .map(num => questionsMap.get(num))
                 .filter(Boolean); // Filter out any undefined questions
@@ -45,6 +45,9 @@ const groupQuestionsFromLayout = (part) => {
                 ...block, // Spread all properties from the block (block_type, content, etc.)
                 questions: blockQuestions,
                 startNum: blockQuestions[0]?.questionNumber,
+                // Ensure unique ID by combining part.id and block index
+                uniqueGroupId: `part${part.id}-block${blockIndex}-${block.id || blockIndex}`,
+                partId: part.id,
             };
         });
     }
@@ -54,11 +57,15 @@ const groupQuestionsFromLayout = (part) => {
     const groups = [];
     if (uniqueQuestions.length === 0) return groups;
 
+    let groupIndex = 0;
     let currentGroup = {
         type: uniqueQuestions[0].questionType,
         questions: [uniqueQuestions[0]],
         startNum: uniqueQuestions[0].questionNumber,
-        partNumber: part.partNumber
+        partNumber: part.partNumber,
+        // Ensure unique ID for reading groups
+        uniqueGroupId: `part${part.id}-group${groupIndex}`,
+        partId: part.id,
     };
     for (let i = 1; i < uniqueQuestions.length; i++) {
         const q = uniqueQuestions[i];
@@ -66,11 +73,14 @@ const groupQuestionsFromLayout = (part) => {
             currentGroup.questions.push(q);
         } else {
             groups.push(currentGroup);
+            groupIndex++;
             currentGroup = {
                 type: q.questionType,
                 questions: [q],
                 startNum: q.questionNumber,
-                partNumber: part.partNumber
+                partNumber: part.partNumber,
+                uniqueGroupId: `part${part.id}-group${groupIndex}`,
+                partId: part.id,
             };
         }
     }

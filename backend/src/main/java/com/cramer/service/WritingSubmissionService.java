@@ -73,6 +73,7 @@ public class WritingSubmissionService {
 
     /**
      * Submit essays for grading (async background grading).
+     * Also cleans up any stale IN_PROGRESS attempts for the same test.
      */
     @Transactional
     public Map<String, Object> submitForGrading(Long attemptId, Map<Integer, String> essays, UUID userId) {
@@ -83,6 +84,21 @@ public class WritingSubmissionService {
         
         if (!attempt.getUserId().equals(userId)) {
             throw new IllegalArgumentException("Unauthorized access to attempt");
+        }
+        
+        // IMPORTANT: Cancel any other IN_PROGRESS attempts for the same test
+        // This prevents "ghost" IN_PROGRESS attempts showing up in dashboard
+        List<TestAttempt> otherInProgressAttempts = testAttemptRepository
+            .findByUserIdAndExamSourceAndTestNumberAndSkillAndStatus(
+                userId, attempt.getExamSource(), attempt.getTestNumber(), attempt.getSkill(), "IN_PROGRESS"
+            );
+        
+        for (TestAttempt otherAttempt : otherInProgressAttempts) {
+            if (!otherAttempt.getId().equals(attemptId)) {
+                logger.info("Cancelling stale IN_PROGRESS attempt {} before submitting {}", otherAttempt.getId(), attemptId);
+                otherAttempt.setStatus("CANCELLED");
+                testAttemptRepository.save(otherAttempt);
+            }
         }
         
         // Update attempt status

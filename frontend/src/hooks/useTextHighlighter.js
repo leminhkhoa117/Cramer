@@ -20,7 +20,6 @@ const useTextHighlighter = (containerRef) => {
     const getSelectionInfo = useCallback(() => {
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0) {
-            console.log("No selection or empty range.");
             return null;
         }
 
@@ -36,7 +35,6 @@ const useTextHighlighter = (containerRef) => {
         }
 
         if (!currentHighlightableContainer || !containerRef.current || !containerRef.current.contains(currentHighlightableContainer)) {
-            console.log("Selection is outside the main highlightable area or not in a content block.");
             return null; // Selection is outside the main highlightable area or not in a content block
         }
 
@@ -54,9 +52,8 @@ const useTextHighlighter = (containerRef) => {
             startOffset,
             endOffset,
             contentId,
-            rect: range.getBoundingClientRect(),
+            rect: range.getBoundingClientRect(), // This gives viewport-relative coordinates
         };
-        console.log("Selection Info:", info);
         return info;
     }, [containerRef]);
 
@@ -71,22 +68,20 @@ const useTextHighlighter = (containerRef) => {
                 contentId: selectionInfo.contentId,
                 highlightId: null,
             });
+            // Use viewport coordinates directly for fixed positioning
             setPopupPosition({
-                x: selectionInfo.rect.left + window.scrollX,
-                y: selectionInfo.rect.top + window.scrollY - POPUP_OFFSET, // Position above selection
+                x: selectionInfo.rect.left,
+                y: selectionInfo.rect.top - POPUP_OFFSET,
                 visible: true,
             });
-            console.log("Popup visible with selection:", selectionInfo.text);
         } else {
             hidePopup();
-            console.log("No valid selection, hiding popup.");
         }
     }, [getSelectionInfo, hidePopup]);
 
     const handleHighlightClick = useCallback((event) => {
         const container = containerRef.current;
         if (!container) {
-            console.log("Container ref is null, cannot detect highlight clicks.");
             return;
         }
 
@@ -106,7 +101,6 @@ const useTextHighlighter = (containerRef) => {
         const targetHighlight = targetHighlights.find(h => h.id === highlightId);
 
         if (!targetHighlight) {
-            console.log("Clicked highlight not found in context.");
             return;
         }
 
@@ -120,16 +114,16 @@ const useTextHighlighter = (containerRef) => {
         });
 
         const rect = highlightElement.getBoundingClientRect();
+        // Use viewport coordinates directly for fixed positioning
         setPopupPosition({
-            x: rect.left + window.scrollX,
-            y: rect.top + window.scrollY - POPUP_OFFSET,
+            x: rect.left,
+            y: rect.top - POPUP_OFFSET,
             visible: true,
         });
 
         event.preventDefault();
         event.stopPropagation();
         window.getSelection().removeAllRanges();
-        console.log("Popup opened from highlight click:", targetHighlight.id);
     }, [containerRef, getHighlightsForContent]);
 
     useEffect(() => {
@@ -141,13 +135,10 @@ const useTextHighlighter = (containerRef) => {
                 container.removeEventListener('mouseup', handleMouseUp);
                 container.removeEventListener('click', handleHighlightClick);
             };
-        } else {
-            console.log("Container ref is null, cannot attach listeners.");
         }
     }, [containerRef, handleMouseUp, handleHighlightClick]);
 
     const applyHighlight = useCallback((style) => {
-        console.log("Attempting to apply highlight with style:", style, "for selection:", selectionRange);
         if (selectionRange && selectedText) {
             if (selectionRange.highlightId) {
                 removeHighlight(selectionRange.contentId, selectionRange.highlightId);
@@ -161,18 +152,13 @@ const useTextHighlighter = (containerRef) => {
             );
             window.getSelection().removeAllRanges(); // Clear selection after applying highlight
             hidePopup();
-            console.log("Highlight applied.");
-        } else {
-            console.log("No valid selection to apply highlight.");
         }
     }, [addHighlight, hidePopup, removeHighlight, selectionRange, selectedText]);
 
     const clearHighlight = useCallback(() => {
-        console.log("Attempting to clear highlight for selection:", selectionRange);
         if (selectionRange) {
             if (selectionRange.highlightId) {
                 removeHighlight(selectionRange.contentId, selectionRange.highlightId);
-                console.log("Removed highlight by id:", selectionRange.highlightId);
             } else {
                 // Find existing highlights that overlap with the selection
                 const existingHighlights = getHighlightsForContent(selectionRange.contentId);
@@ -180,15 +166,11 @@ const useTextHighlighter = (containerRef) => {
                     // Simple overlap check: if selection starts before highlight ends AND selection ends after highlight starts
                     if (selectionRange.startOffset < h.endOffset && selectionRange.endOffset > h.startOffset) {
                         removeHighlight(selectionRange.contentId, h.id);
-                        console.log("Removed highlight:", h.id);
                     }
                 });
             }
             window.getSelection().removeAllRanges();
             hidePopup();
-            console.log("Highlight cleared.");
-        } else {
-            console.log("No valid selection to clear highlight.");
         }
     }, [getHighlightsForContent, hidePopup, removeHighlight, selectionRange]);
 

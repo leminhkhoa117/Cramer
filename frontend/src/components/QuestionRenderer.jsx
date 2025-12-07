@@ -2,8 +2,11 @@ import React from 'react';
 import HighlightableHtmlContent from './HighlightableHtmlContent'; // Import the new component
 import '../css/QuestionRenderer.css';
 
-const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, groupOptions }) => {
+const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, groupOptions, partId }) => {
     const { id, questionType, questionContent, questionNumber } = question;
+    
+    // Create a unique content ID prefix that includes partId to prevent cross-part collisions
+    const contentIdPrefix = partId ? `p${partId}-q${id}` : `q${id}`;
 
     const handleSingleValueChange = (e) => {
         onAnswerChange(id, e.target.value);
@@ -19,11 +22,11 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
         }
     };
 
-    const renderTextWithInput = (text, qId) => {
+    const renderTextWithInput = (text) => {
         const parts = text.split(/____/g);
         return (
             <p className="question-text-interactive">
-                <HighlightableHtmlContent htmlString={parts[0].replace(/(\b\d+\b)/g, '<strong>$1</strong>')} contentId={`q-text-${qId}-part0`} />
+                <HighlightableHtmlContent htmlString={parts[0].replace(/(\b\d+\b)/g, '<strong>$1</strong>')} contentId={`${contentIdPrefix}-part0`} />
                 {parts.length > 1 && (
                     <input
                         type="text"
@@ -32,16 +35,16 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                         onChange={handleSingleValueChange}
                     />
                 )}
-                {parts.length > 1 && parts[1] && <HighlightableHtmlContent htmlString={parts[1]} contentId={`q-text-${qId}-part1`} />}
+                {parts.length > 1 && parts[1] && <HighlightableHtmlContent htmlString={parts[1]} contentId={`${contentIdPrefix}-part1`} />}
             </p>
         );
     };
 
-    const renderTextWithSelect = (text, options, qId) => {
+    const renderTextWithSelect = (text, options) => {
         const parts = text.split('____');
         return (
             <p className="question-text-interactive">
-                <HighlightableHtmlContent htmlString={parts[0].replace(/(\b\d+\b)/g, '<strong>$1</strong>')} contentId={`q-text-${qId}-part0`} />
+                <HighlightableHtmlContent htmlString={parts[0].replace(/(\b\d+\b)/g, '<strong>$1</strong>')} contentId={`${contentIdPrefix}-part0`} />
                 {parts.length > 1 && (
                     <select value={userAnswer || ''} onChange={handleSingleValueChange} className="fill-in-blank-select">
                         <option value="">Select...</option>
@@ -50,7 +53,7 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                         ))}
                     </select>
                 )}
-                {parts.length > 1 && parts[1] && <HighlightableHtmlContent htmlString={parts[1]} contentId={`q-text-${qId}-part1`} />}
+                {parts.length > 1 && parts[1] && <HighlightableHtmlContent htmlString={parts[1]} contentId={`${contentIdPrefix}-part1`} />}
             </p>
         );
     };
@@ -70,12 +73,12 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                 );
 
             case 'FILL_IN_BLANK':
-                return renderTextWithInput(questionContent.text, id);
+                return renderTextWithInput(questionContent.text);
 
             case 'MATCHING':
                 return (
                     <div className="matching-question-container">
-                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`q-text-${id}`} /></p>
+                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
                         <select value={userAnswer || ''} onChange={handleSingleValueChange} className="matching-select">
                             <option value="">Select...</option>
                             {groupOptions && groupOptions.map(opt => (
@@ -88,7 +91,7 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
             case 'MULTIPLE_CHOICE':
                 return (
                     <div>
-                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`q-text-${id}`} /></p>
+                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
                         <div className="mcq-options">
                             {questionContent.options.map((opt, index) => (
                                 <label key={index}>
@@ -104,7 +107,7 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                 const currentAnswers = userAnswer || [];
                 return (
                     <div>
-                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`q-text-${id}`} /></p>
+                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
                         <div className="mcq-options">
                             {questionContent.options.map((opt, index) => (
                                 <label key={index}>
@@ -122,7 +125,7 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                     case 'TRUE_FALSE_NOT_GIVEN':
                         return (
                             <div>
-                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`q-text-${id}`} /></p>
+                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
                                 <div className="tfn-options">
                                     <label><input type="radio" name={`q_${id}`} value="TRUE" checked={userAnswer === 'TRUE'} onChange={handleSingleValueChange} /> True</label>
                                     <label><input type="radio" name={`q_${id}`} value="FALSE" checked={userAnswer === 'FALSE'} onChange={handleSingleValueChange} /> False</label>
@@ -133,7 +136,7 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                     case 'YES_NO_NOT_GIVEN':
                          return (
                             <div>
-                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`q-text-${id}`} /></p>
+                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
                                 <div className="tfn-options">
                                     <label><input type="radio" name={`q_${id}`} value="YES" checked={userAnswer === 'YES'} onChange={handleSingleValueChange} /> Yes</label>
                                     <label><input type="radio" name={`q_${id}`} value="NO" checked={userAnswer === 'NO'} onChange={handleSingleValueChange} /> No</label>
@@ -142,14 +145,14 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                             </div>
                         );
                     case 'SUMMARY_COMPLETION':
-                        return renderTextWithInput(questionContent.text, id);
+                        return renderTextWithInput(questionContent.text);
                     case 'MATCHING_INFORMATION':
                     case 'MATCHING_FEATURES':
                     case 'MATCHING_HEADINGS':
                         const options = questionContent.options || [];
                         return (
                             <div>
-                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`q-text-${id}`} /></p>
+                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
                                 <select value={userAnswer || ''} onChange={handleSingleValueChange} className="matching-select">
                                     <option value="">Select...</option>
                                     {options.map((opt, index) => {
@@ -162,7 +165,7 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                             </div>
                         );
                     case 'SUMMARY_COMPLETION_OPTIONS':
-                        return renderTextWithSelect(questionContent.text, questionContent.options, id);
+                        return renderTextWithSelect(questionContent.text, questionContent.options);
                     case 'TABLE_COMPLETION':
                         return (
                             <p className="question-text-interactive">

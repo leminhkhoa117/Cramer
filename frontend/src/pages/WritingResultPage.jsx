@@ -56,38 +56,94 @@ const WritingResultPage = () => {
     const analysisColumnRef = useRef(null);
     const itemRefs = useRef({});
 
-    // Poll for grading status
+    // Poll for grading status with improved reliability
     useEffect(() => {
+        // Don't poll if we already have review data or there's an error
+        if (review || error) return;
+        
         let pollInterval;
+        let isMounted = true;
+        let consecutiveErrors = 0;
+        let currentPollCount = 0;
+        const MAX_CONSECUTIVE_ERRORS = 3;
+        const MAX_POLL_COUNT = 120; // Max 6 minutes of polling (120 * 3 seconds)
 
         const checkStatus = async () => {
+            if (!isMounted) return;
+            
             try {
                 const statusRes = await writingApi.getGradingStatus(attemptId);
                 const status = statusRes.data.status;
+                
+                if (!isMounted) return;
+                
+                consecutiveErrors = 0; // Reset error counter on success
                 setGradingStatus(status);
+                currentPollCount++;
 
                 if (status === 'COMPLETED' || status === 'PARTIAL_FAILURE') {
                     clearInterval(pollInterval);
-                    const reviewRes = await writingApi.getWritingReview(attemptId);
-                    setReview(reviewRes.data);
-                    setLoading(false);
+                    // Fetch review data
+                    try {
+                        const reviewRes = await writingApi.getWritingReview(attemptId);
+                        if (isMounted) {
+                            setReview(reviewRes.data);
+                            setLoading(false);
+                            setIsRegrading(false); // Reset regrading state
+                        }
+                    } catch (reviewErr) {
+                        console.error('Error fetching review:', reviewErr);
+                        if (isMounted) {
+                            setError('Không thể tải kết quả chấm điểm. Vui lòng tải lại trang.');
+                            setLoading(false);
+                            setIsRegrading(false);
+                        }
+                    }
                 } else if (status === 'FAILED') {
                     clearInterval(pollInterval);
-                    setError('Chấm điểm thất bại. Vui lòng thử lại.');
-                    setLoading(false);
+                    if (isMounted) {
+                        setError('Chấm điểm thất bại. Vui lòng thử chấm lại.');
+                        setLoading(false);
+                        setIsRegrading(false);
+                    }
                 }
             } catch (err) {
                 console.error('Error checking grading status:', err);
-                setError('Không thể kiểm tra trạng thái chấm điểm.');
-                setLoading(false);
-                clearInterval(pollInterval);
+                consecutiveErrors++;
+                
+                if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+                    clearInterval(pollInterval);
+                    if (isMounted) {
+                        setError('Không thể kiểm tra trạng thái chấm điểm. Vui lòng tải lại trang.');
+                        setLoading(false);
+                        setIsRegrading(false);
+                    }
+                }
             }
         };
 
+        // Initial check
         checkStatus();
-        pollInterval = setInterval(checkStatus, 3000);
-        return () => clearInterval(pollInterval);
-    }, [attemptId]);
+        
+        // Start polling - every 3 seconds
+        pollInterval = setInterval(() => {
+            if (currentPollCount < MAX_POLL_COUNT) {
+                checkStatus();
+            } else {
+                clearInterval(pollInterval);
+                if (isMounted && loading) {
+                    setError('Quá thời gian chờ. Vui lòng tải lại trang để xem kết quả.');
+                    setLoading(false);
+                    setIsRegrading(false);
+                }
+            }
+        }, 3000);
+        
+        return () => {
+            isMounted = false;
+            clearInterval(pollInterval);
+        };
+    }, [attemptId, review, error]); // Only re-run if attemptId changes or review/error is set
 
     // Helpers
     const getTaskReview = useCallback((taskNumber) => {
@@ -223,7 +279,8 @@ const WritingResultPage = () => {
             setIsRegrading(true);
             setLoading(true);
             setGradingStatus('PENDING');
-            setReview(null);
+            setReview(null); // Reset review to trigger polling
+            setError(null);  // Reset error to allow polling
             
             await writingApi.regradeAttempt(attemptId);
             // The useEffect polling will pick up the new grading status

@@ -1,6 +1,6 @@
 /* frontend/src/css/HighlightPopup.css */
 .highlight-popup {
-    position: absolute;
+    position: fixed; /* Changed from absolute to fixed for viewport-relative positioning */
     background-color: #333;
     border-radius: 8px;
     padding: 5px;
@@ -8,6 +8,7 @@
     gap: 5px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     z-index: 1000; /* Ensure it's above other content */
+    pointer-events: auto;
 }
 
 .highlight-button {
