@@ -636,4 +636,60 @@ public class TestAttemptService {
         testAttemptRepository.deleteById(attemptId);
         logger.info("✅ Successfully deleted test attempt: attemptId={}", attemptId);
     }
+
+    /**
+     * Re-grade a completed test attempt by re-scoring all existing user answers
+     * against the current correct answers in the database.
+     * Useful when answer keys have been updated.
+     */
+    @Transactional
+    public TestResultDTO regradeAttempt(Long attemptId, UUID userId) {
+        final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
+        logger.info("🔄 Re-grading test attempt: attemptId={}, userId={}", attemptId, userId);
+
+        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + attemptId));
+
+        if (!attempt.getUserId().equals(userId)) {
+            throw new AccessDeniedException("User does not have permission to re-grade this attempt.");
+        }
+
+        if (!"COMPLETED".equals(attempt.getStatus())) {
+            throw new IllegalStateException("Only completed attempts can be re-graded.");
+        }
+
+        // Fetch all user answers for this attempt
+        List<UserAnswer> userAnswers = userAnswerRepository.findByAttemptId(attemptId);
+        logger.info("   -> Found {} user answers to re-grade", userAnswers.size());
+
+        int correctCount = 0;
+
+        // Re-grade each answer against the current correct answer
+        for (UserAnswer userAnswer : userAnswers) {
+            Question question = userAnswer.getQuestion();
+            boolean isCorrect = compareAnswers(userAnswer.getAnswerContent(), question.getCorrectAnswer());
+            userAnswer.setCorrect(isCorrect);
+            if (isCorrect) {
+                correctCount++;
+            }
+        }
+
+        // Save all updated answers
+        userAnswerRepository.saveAll(userAnswers);
+        logger.info("   -> Re-graded answers: {} correct out of {}", correctCount, userAnswers.size());
+
+        // Update the attempt score
+        attempt.setScore(correctCount);
+        testAttemptRepository.save(attempt);
+
+        // Get total question count for the response
+        int totalQuestions = questionRepository.countBySection_ExamSourceAndSection_TestNumberAndSection_Skill(
+            attempt.getExamSource(),
+            Integer.valueOf(attempt.getTestNumber()),
+            attempt.getSkill()
+        );
+
+        logger.info("✅ Re-grading completed: score={}/{}", correctCount, totalQuestions);
+        return new TestResultDTO(attempt.getId(), correctCount, totalQuestions, attempt.getStatus());
+    }
 }

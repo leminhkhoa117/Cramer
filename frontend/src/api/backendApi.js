@@ -177,6 +177,9 @@ export const testAttemptApi = {
   deleteAttempt: (attemptId) => {
     return apiClient.delete(`/test-attempts/${attemptId}`);
   },
+  regradeAttempt: (attemptId) => {
+    return apiClient.post(`/test-attempts/${attemptId}/regrade`);
+  },
 };
 
 

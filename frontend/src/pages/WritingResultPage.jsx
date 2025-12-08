@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { writingApi } from '../api/backendApi';
-import { 
+import GradingLoader from '../components/common/GradingLoader';
+import {
     FiArrowLeft, FiRefreshCw, FiChevronDown, FiChevronRight,
     FiFileText, FiEdit3, FiBarChart2, FiCheckCircle, FiXCircle,
     FiAlertCircle, FiZap, FiTrendingUp, FiAward, FiBook,
@@ -10,18 +11,19 @@ import {
 } from 'react-icons/fi';
 
 import '../css/WritingResultPage.css';
+import '../css/common/Modal.css';
 
 // Error type colors with Vietnamese labels - consistent across essay highlights and analysis sections
 const ERROR_TYPE_COLORS = {
     grammar: { bg: '#fef2f2', border: '#ef4444', text: '#dc2626', label: 'Ngữ pháp' },
-    spelling: { bg: '#fff7ed', border: '#f97316', text: '#ea580c', label: 'Chính tả' },
+    spelling: { bg: '#fef3c7', border: '#f59e0b', text: '#d97706', label: 'Chính tả' },
     vocabulary: { bg: '#faf5ff', border: '#8b5cf6', text: '#7c3aed', label: 'Từ vựng' },
-    punctuation: { bg: '#ecfeff', border: '#06b6d4', text: '#0891b2', label: 'Dấu câu' },
-    coherence: { bg: '#f0fdf4', border: '#10b981', text: '#059669', label: 'Mạch lạc' },
+    punctuation: { bg: '#e0f2fe', border: '#0ea5e9', text: '#0284c7', label: 'Dấu câu' },
+    coherence: { bg: '#f0fdf4', border: '#22c55e', text: '#16a34a', label: 'Mạch lạc' },
     style: { bg: '#fefce8', border: '#eab308', text: '#ca8a04', label: 'Văn phong' },
-    // NEW: Vocabulary highlight types (for good/error vocabulary)
+    // Vocabulary highlight types (for good/error vocabulary)
     vocabulary_good: { bg: '#dcfce7', border: '#22c55e', text: '#15803d', label: 'Từ vựng tốt' },
-    vocabulary_error: { bg: '#fee2e2', border: '#f87171', text: '#dc2626', label: 'Từ vựng sai' },
+    vocabulary_error: { bg: '#fee2e2', border: '#ef4444', text: '#dc2626', label: 'Từ vựng sai' },
 };
 
 const getErrorStyle = (errorType) => {
@@ -39,7 +41,7 @@ const WritingResultPage = () => {
     const [error, setError] = useState(null);
     const [activeTask, setActiveTask] = useState(1);
     const [pollKey, setPollKey] = useState(0); // Used to force restart polling
-    
+
     // UI state
     const [expandedScores, setExpandedScores] = useState({});
     const [scoresBarCollapsed, setScoresBarCollapsed] = useState(false);
@@ -52,7 +54,8 @@ const WritingResultPage = () => {
     });
     const [selectedItemId, setSelectedItemId] = useState(null);
     const [isRegrading, setIsRegrading] = useState(false);
-    
+    const [showRegradeModal, setShowRegradeModal] = useState(false);
+
     // Refs for scroll-to functionality
     const analysisColumnRef = useRef(null);
     const itemRefs = useRef({});
@@ -61,26 +64,26 @@ const WritingResultPage = () => {
     useEffect(() => {
         // Don't poll if we already have review data or there's an error
         if (review || error) return;
-        
+
         let pollInterval;
         let isMounted = true;
         let consecutiveErrors = 0;
         let currentPollCount = 0;
         const MAX_CONSECUTIVE_ERRORS = 3;
         const MAX_POLL_COUNT = 120; // Max 6 minutes of polling (120 * 3 seconds)
-        
+
         // Add initial delay for regrade to let backend update status
         const initialDelay = isRegrading ? 2000 : 0;
 
         const checkStatus = async () => {
             if (!isMounted) return;
-            
+
             try {
                 const statusRes = await writingApi.getGradingStatus(attemptId);
                 const status = statusRes.data.status;
-                
+
                 if (!isMounted) return;
-                
+
                 consecutiveErrors = 0; // Reset error counter on success
                 setGradingStatus(status);
                 currentPollCount++;
@@ -114,7 +117,7 @@ const WritingResultPage = () => {
             } catch (err) {
                 console.error('Error checking grading status:', err);
                 consecutiveErrors++;
-                
+
                 if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
                     clearInterval(pollInterval);
                     if (isMounted) {
@@ -130,7 +133,7 @@ const WritingResultPage = () => {
         const startPolling = () => {
             // Initial check
             checkStatus();
-            
+
             // Start polling - every 3 seconds
             pollInterval = setInterval(() => {
                 if (currentPollCount < MAX_POLL_COUNT) {
@@ -175,7 +178,7 @@ const WritingResultPage = () => {
 
     const currentTaskReview = getTaskReview(activeTask);
     const currentTaskPrompt = getTaskPrompt(activeTask);
-    
+
     // Get AI feedback with proper key mapping
     const aiFeedback = useMemo(() => {
         if (!currentTaskReview?.aiFeedback) return {};
@@ -209,7 +212,7 @@ const WritingResultPage = () => {
     // Build highlight map for essay - enhanced with vocabulary and full paragraphs
     const highlightMap = useMemo(() => {
         const map = [];
-        
+
         // 1. Add sentence corrections (errors to fix)
         aiFeedback.sentenceCorrections?.forEach((corr, idx) => {
             if (corr.original) {
@@ -265,42 +268,80 @@ const WritingResultPage = () => {
             }
         });
 
+        // Note: Paragraph rewrites are NOT added to highlightMap
+        // They use a different visual mechanism (vertical left bar) - see renderHighlightedEssay
+
         return map;
     }, [aiFeedback]);
 
-    // Scroll to analysis item
+    // Build a map of paragraph indices that have rewrites
+    const paragraphRewriteMap = useMemo(() => {
+        const map = new Map();
+        aiFeedback.paragraphRewrites?.forEach((para, idx) => {
+            if (para.original) {
+                // Try to match by paragraph index if available
+                const paragraphIndex = para.paragraph_index ?? idx;
+                map.set(paragraphIndex, {
+                    id: `paragraph-${idx}`,
+                    original: para.original,
+                });
+            }
+        });
+        return map;
+    }, [aiFeedback]);
+
+    // Scroll to analysis item - improved reliability
     const scrollToItem = useCallback((itemId, category) => {
-        setSelectedItemId(itemId);
-        
+        // Handle vocab-* IDs by finding matching word in wordAnalysis
+        let targetId = itemId;
+        if (itemId.startsWith('vocab-')) {
+            // Find the word from vocabularyHighlights
+            const vocabIdx = parseInt(itemId.replace('vocab-', ''), 10);
+            const vocabWord = aiFeedback.vocabularyHighlights?.[vocabIdx]?.word;
+            if (vocabWord) {
+                // Find matching word in wordAnalysis array
+                const wordIdx = aiFeedback.wordAnalysis?.findIndex(
+                    w => w.word?.toLowerCase() === vocabWord.toLowerCase()
+                );
+                if (wordIdx !== -1) {
+                    targetId = `word-${wordIdx}`;
+                }
+            }
+        }
+
+        setSelectedItemId(targetId);
+
         // Expand the relevant section if collapsed
         if (!expandedSections[category]) {
             setExpandedSections(prev => ({ ...prev, [category]: true }));
         }
 
-        // Wait for expansion animation then scroll
-        setTimeout(() => {
-            const element = itemRefs.current[itemId];
-            if (element && analysisColumnRef.current) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                element.classList.add('highlight-flash');
-                setTimeout(() => element.classList.remove('highlight-flash'), 1500);
-            }
-        }, 100);
-    }, [expandedSections]);
+        // Use requestAnimationFrame + longer timeout for reliable DOM updates after expansion
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                const element = itemRefs.current[targetId];
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    element.classList.add('highlight-flash');
+                    setTimeout(() => element.classList.remove('highlight-flash'), 1500);
+                }
+            }, 250);  // Longer delay for section expansion animation
+        });
+    }, [expandedSections, aiFeedback.vocabularyHighlights, aiFeedback.wordAnalysis]);
 
     // Handle re-grade request
     const handleRegrade = async () => {
         if (isRegrading) return;
-        
+
         try {
             setIsRegrading(true);
             setLoading(true);
             setGradingStatus('PENDING');
             setReview(null); // Reset review to trigger polling
             setError(null);  // Reset error to allow polling
-            
+
             await writingApi.regradeAttempt(attemptId);
-            
+
             // Increment pollKey to force useEffect to restart with fresh state
             setPollKey(prev => prev + 1);
         } catch (err) {
@@ -321,14 +362,15 @@ const WritingResultPage = () => {
         setExpandedScores(prev => ({ ...prev, [criterionKey]: !prev[criterionKey] }));
     };
 
-    // Render essay with interactive highlights
+    // Render essay with interactive highlights and paragraph indicators
     const renderHighlightedEssay = () => {
         const essayText = currentTaskReview?.essayText || '';
         if (!essayText) return <p className="no-content">Không có nội dung bài viết.</p>;
 
         let result = essayText;
-        
+
         // Sort highlights by length (longest first) to avoid nested replacements
+        // Only use sentence/word highlights, not paragraphs (those use vertical bar)
         const sortedHighlights = [...highlightMap].sort((a, b) => b.text.length - a.text.length);
 
         // Create a working copy with markers
@@ -340,24 +382,105 @@ const WritingResultPage = () => {
             result = result.replace(regex, `<mark class="essay-highlight" data-id="${highlight.id}" data-category="${highlight.category}" data-type="${highlight.type}" style="background-color: ${style.bg}; border-bottom: 2px solid ${style.border}; cursor: pointer;">${highlight.text}</mark>`);
         });
 
-        // Split into paragraphs
-        const paragraphs = result.split('\n').filter(p => p.trim());
+        // Split into lines (each line becomes a paragraph)
+        const lines = result.split('\n').filter(p => p.trim());
+
+        // Function to check if a line is part of a paragraph rewrite
+        const findMatchingRewrite = (lineText) => {
+            const plainText = lineText.replace(/<[^>]*>/g, '').trim().toLowerCase();
+            for (const [, rewrite] of paragraphRewriteMap) {
+                // Check if this line's text appears in the rewrite's original text
+                const originalLower = rewrite.original.toLowerCase();
+                // Use first 30 chars of line to check containment
+                const lineStart = plainText.substring(0, 30);
+                if (lineStart && originalLower.includes(lineStart)) {
+                    return rewrite;
+                }
+            }
+            return null;
+        };
+
+        // Group consecutive lines that belong to the same rewrite
+        const groupedParagraphs = [];
+        let currentGroup = null;
+
+        lines.forEach((line, idx) => {
+            const rewrite = findMatchingRewrite(line);
+
+            if (rewrite) {
+                // This line belongs to a rewrite
+                if (currentGroup && currentGroup.rewriteId === rewrite.id) {
+                    // Continue existing group
+                    currentGroup.lines.push(line);
+                } else {
+                    // Start new group
+                    if (currentGroup) {
+                        groupedParagraphs.push(currentGroup);
+                    }
+                    currentGroup = {
+                        type: 'rewrite',
+                        rewriteId: rewrite.id,
+                        lines: [line],
+                    };
+                }
+            } else {
+                // Regular line - not part of any rewrite
+                if (currentGroup) {
+                    groupedParagraphs.push(currentGroup);
+                    currentGroup = null;
+                }
+                groupedParagraphs.push({
+                    type: 'normal',
+                    lines: [line],
+                });
+            }
+        });
+
+        // Don't forget the last group
+        if (currentGroup) {
+            groupedParagraphs.push(currentGroup);
+        }
 
         return (
-            <div 
+            <div
                 className="essay-content"
                 onClick={(e) => {
+                    // Handle inline highlight clicks
                     const mark = e.target.closest('mark.essay-highlight');
                     if (mark) {
                         const itemId = mark.dataset.id;
                         const category = mark.dataset.category;
                         scrollToItem(itemId, category);
+                        return;
+                    }
+                    // Handle paragraph indicator clicks
+                    const paraIndicator = e.target.closest('.essay-paragraph-rewrite');
+                    if (paraIndicator) {
+                        const itemId = paraIndicator.dataset.id;
+                        scrollToItem(itemId, 'paragraphs');
                     }
                 }}
             >
-                {paragraphs.map((para, idx) => (
-                    <p key={idx} dangerouslySetInnerHTML={{ __html: para }} />
-                ))}
+                {groupedParagraphs.map((group, idx) => {
+                    if (group.type === 'rewrite') {
+                        return (
+                            <div
+                                key={idx}
+                                className="essay-paragraph-rewrite"
+                                data-id={group.rewriteId}
+                                title="Đoạn này có bản viết lại - click để xem"
+                            >
+                                <div className="paragraph-rewrite-indicator" />
+                                {group.lines.map((line, lineIdx) => (
+                                    <p key={lineIdx} dangerouslySetInnerHTML={{ __html: line }} />
+                                ))}
+                            </div>
+                        );
+                    }
+                    return group.lines.map((line, lineIdx) => (
+                        <p key={`${idx}-${lineIdx}`} dangerouslySetInnerHTML={{ __html: line }} />
+                    ));
+                })}
             </div>
         );
     };
@@ -379,15 +502,15 @@ const WritingResultPage = () => {
 
         return (
             <div className={`score-criterion ${isExpanded ? 'expanded' : ''}`} key={key}>
-                <button 
+                <button
                     className="score-criterion-header"
                     onClick={() => toggleScoreDetail(key)}
                 >
                     <div className="criterion-info">
                         <span className="criterion-label">{label}</span>
                         <div className="criterion-bar-container">
-                            <div 
-                                className="criterion-bar" 
+                            <div
+                                className="criterion-bar"
                                 style={{ width: `${widthPercent}%`, backgroundColor: level.color }}
                             />
                         </div>
@@ -406,129 +529,13 @@ const WritingResultPage = () => {
         );
     };
 
-    // Loading state - Enhanced animated grading screen
+    // Loading state - Use reusable GradingLoader component
     if (loading) {
         return (
-            <div className="writing-result-loading">
-                {/* Animated background elements */}
-                <div className="loading-bg-effects">
-                    <div className="floating-shape shape-1" />
-                    <div className="floating-shape shape-2" />
-                    <div className="floating-shape shape-3" />
-                    <div className="floating-shape shape-4" />
-                    <div className="floating-shape shape-5" />
-                </div>
-
-                <div className="grading-animation-container">
-                    <div className="grading-animation">
-                        {/* Main AI animation orb */}
-                        <div className="ai-orb-container">
-                            <div className="ai-orb">
-                                <div className="orb-core" />
-                                <div className="orb-ring ring-1" />
-                                <div className="orb-ring ring-2" />
-                                <div className="orb-ring ring-3" />
-                                <div className="orb-particles">
-                                    {[...Array(8)].map((_, i) => (
-                                        <div key={i} className={`particle particle-${i + 1}`} />
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="ai-text-badge">
-                                <span className="ai-badge-icon">✨</span>
-                                <span>AI</span>
-                            </div>
-                        </div>
-
-                        {/* Main heading with typing effect */}
-                        <h2 className="grading-title">
-                            <span className="title-text">Cramer đang chấm điểm</span>
-                            <span className="typing-dots">
-                                <span className="dot" />
-                                <span className="dot" />
-                                <span className="dot" />
-                            </span>
-                        </h2>
-                        <p className="grading-subtitle">Quá trình này mất khoảng 1-2 phút</p>
-
-                        {/* Enhanced progress steps */}
-                        <div className="grading-steps-enhanced">
-                            <div className={`step-enhanced ${gradingStatus !== 'PENDING' ? 'done' : 'active'}`}>
-                                <div className="step-icon-wrapper">
-                                    <FiFileText size={20} className="step-icon" />
-                                    <div className="step-glow" />
-                                </div>
-                                <div className="step-content">
-                                    <span className="step-label">Nhận bài viết</span>
-                                    <span className="step-status">
-                                        {gradingStatus !== 'PENDING' ? '✓ Hoàn thành' : 'Đang xử lý...'}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <div className="step-connector">
-                                <div className={`connector-line ${gradingStatus !== 'PENDING' ? 'active' : ''}`} />
-                            </div>
-                            
-                            <div className={`step-enhanced ${gradingStatus === 'GRADING' ? 'active' : gradingStatus === 'COMPLETED' ? 'done' : ''}`}>
-                                <div className="step-icon-wrapper">
-                                    <FiTarget size={20} className="step-icon" />
-                                    <div className="step-glow" />
-                                </div>
-                                <div className="step-content">
-                                    <span className="step-label">Phân tích & Chấm điểm</span>
-                                    <span className="step-status">
-                                        {gradingStatus === 'GRADING' ? 'Đang phân tích...' : gradingStatus === 'COMPLETED' ? '✓ Hoàn thành' : 'Chờ xử lý'}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <div className="step-connector">
-                                <div className={`connector-line ${gradingStatus === 'GRADING' || gradingStatus === 'COMPLETED' ? 'active' : ''}`} />
-                            </div>
-                            
-                            <div className={`step-enhanced ${gradingStatus === 'COMPLETED' ? 'done' : ''}`}>
-                                <div className="step-icon-wrapper">
-                                    <FiCheckCircle size={20} className="step-icon" />
-                                    <div className="step-glow" />
-                                </div>
-                                <div className="step-content">
-                                    <span className="step-label">Tạo nhận xét</span>
-                                    <span className="step-status">
-                                        {gradingStatus === 'COMPLETED' ? '✓ Hoàn thành' : 'Chờ xử lý'}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Animated progress bar */}
-                        <div className="progress-bar-enhanced">
-                            <div className="progress-track">
-                                <div className={`progress-fill ${gradingStatus === 'GRADING' ? 'grading' : gradingStatus === 'COMPLETED' ? 'done' : 'pending'}`}>
-                                    <div className="progress-shimmer" />
-                                </div>
-                            </div>
-                            <div className="progress-percentage">
-                                {gradingStatus === 'PENDING' ? '10%' : gradingStatus === 'GRADING' ? '60%' : '100%'}
-                            </div>
-                        </div>
-
-                        {/* Fun facts carousel */}
-                        <div className="fun-facts-section">
-                            <div className="fun-fact-card">
-                                <FiInfo size={16} className="fact-icon" />
-                                <p>Bạn có thể đóng trang này và quay lại sau - kết quả sẽ được lưu tự động!</p>
-                            </div>
-                        </div>
-
-                        {/* Action button */}
-                        <button className="back-to-dashboard-btn" onClick={() => navigate('/dashboard')}>
-                            <FiArrowLeft size={16} />
-                            <span>Quay về Dashboard</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <GradingLoader
+                status={gradingStatus}
+                onBackClick={() => navigate('/dashboard')}
+            />
         );
     }
 
@@ -573,9 +580,9 @@ const WritingResultPage = () => {
                     </div>
                     <div className="review-header-right">
                         <div className="header-actions">
-                            <button 
+                            <button
                                 className="btn btn-regrade"
-                                onClick={handleRegrade}
+                                onClick={() => setShowRegradeModal(true)}
                                 disabled={isRegrading}
                                 title="Chấm lại bài viết với AI"
                             >
@@ -613,7 +620,7 @@ const WritingResultPage = () => {
 
             {/* Collapsible Score Bar */}
             <div className={`scores-bar-wrapper ${scoresBarCollapsed ? 'collapsed' : ''}`}>
-                <button 
+                <button
                     className="scores-bar-toggle"
                     onClick={() => setScoresBarCollapsed(!scoresBarCollapsed)}
                 >
@@ -638,7 +645,7 @@ const WritingResultPage = () => {
                             )}
                             {renderScoreBar(
                                 'Coherence & Cohesion',
-                                'coherenceCohesion', 
+                                'coherenceCohesion',
                                 bandScores.coherenceCohesion || 0,
                                 aiFeedback.criteriaComments?.coherence_cohesion
                             )}
@@ -676,7 +683,7 @@ const WritingResultPage = () => {
                             </div>
                             <div className="column-content">
                                 {currentTaskPrompt?.promptText && (
-                                    <div 
+                                    <div
                                         className="task-prompt-text"
                                         dangerouslySetInnerHTML={{ __html: currentTaskPrompt.promptText }}
                                     />
@@ -710,7 +717,7 @@ const WritingResultPage = () => {
                             <div className="column-content">
                                 {/* Legend */}
                                 <div className="highlight-legend">
-                                    <span className="legend-title">Click vào text được highlight để xem chi tiết:</span>
+                                    <span className="legend-title">Nhấn vào từ/cụm từ/câu/đoạn được highlight để xem chi tiết:</span>
                                     <div className="legend-items">
                                         {Object.entries(ERROR_TYPE_COLORS).map(([type, colors]) => (
                                             <span key={type} className="legend-item">
@@ -810,7 +817,7 @@ const WritingResultPage = () => {
                                 {/* Sentence Corrections */}
                                 {aiFeedback.sentenceCorrections?.length > 0 && (
                                     <div className={`expandable-section ${expandedSections.corrections ? 'open' : ''}`}>
-                                        <button 
+                                        <button
                                             className="section-toggle"
                                             onClick={() => toggleSection('corrections')}
                                         >
@@ -824,14 +831,14 @@ const WritingResultPage = () => {
                                                     const itemId = `correction-${idx}`;
                                                     const style = getErrorStyle(corr.error_type);
                                                     return (
-                                                        <div 
+                                                        <div
                                                             key={idx}
                                                             ref={el => itemRefs.current[itemId] = el}
                                                             className={`correction-item ${selectedItemId === itemId ? 'selected' : ''}`}
                                                             style={{ borderLeftColor: style.border }}
                                                         >
                                                             <div className="correction-header">
-                                                                <span 
+                                                                <span
                                                                     className="error-type-badge"
                                                                     style={{ backgroundColor: style.border }}
                                                                 >
@@ -862,7 +869,7 @@ const WritingResultPage = () => {
                                 {/* Paragraph Rewrites */}
                                 {aiFeedback.paragraphRewrites?.length > 0 && (
                                     <div className={`expandable-section ${expandedSections.paragraphs ? 'open' : ''}`}>
-                                        <button 
+                                        <button
                                             className="section-toggle"
                                             onClick={() => toggleSection('paragraphs')}
                                         >
@@ -875,7 +882,7 @@ const WritingResultPage = () => {
                                                 {aiFeedback.paragraphRewrites.map((para, idx) => {
                                                     const itemId = `paragraph-${idx}`;
                                                     return (
-                                                        <div 
+                                                        <div
                                                             key={idx}
                                                             ref={el => itemRefs.current[itemId] = el}
                                                             className={`paragraph-item ${selectedItemId === itemId ? 'selected' : ''}`}
@@ -910,7 +917,7 @@ const WritingResultPage = () => {
                                 {/* Sample Essays */}
                                 {aiFeedback.sampleEssayBandPlus && (
                                     <div className={`expandable-section ${expandedSections.sampleBandPlus ? 'open' : ''}`}>
-                                        <button 
+                                        <button
                                             className="section-toggle sample-toggle"
                                             onClick={() => toggleSection('sampleBandPlus')}
                                         >
@@ -937,7 +944,7 @@ const WritingResultPage = () => {
 
                                 {aiFeedback.sampleEssayBand9 && (
                                     <div className={`expandable-section ${expandedSections.sampleBand9 ? 'open' : ''}`}>
-                                        <button 
+                                        <button
                                             className="section-toggle sample-toggle band-9"
                                             onClick={() => toggleSection('sampleBand9')}
                                         >
@@ -963,7 +970,7 @@ const WritingResultPage = () => {
                                 {/* Word Analysis */}
                                 {aiFeedback.wordAnalysis?.length > 0 && (
                                     <div className={`expandable-section ${expandedSections.wordAnalysis ? 'open' : ''}`}>
-                                        <button 
+                                        <button
                                             className="section-toggle"
                                             onClick={() => toggleSection('wordAnalysis')}
                                         >
@@ -974,21 +981,50 @@ const WritingResultPage = () => {
                                         {expandedSections.wordAnalysis && (
                                             <div className="section-content">
                                                 <div className="word-analysis-list">
-                                                    {aiFeedback.wordAnalysis.map((word, idx) => (
-                                                        <div key={idx} className={`word-item usage-${word.usage_quality || 'acceptable'}`}>
-                                                            <div className="word-header">
-                                                                <span className="word-text">{word.word}</span>
-                                                                <span className={`usage-badge ${word.usage_quality || 'acceptable'}`}>
-                                                                    {word.usage_quality === 'good' ? '✓ Tốt' : 
-                                                                     word.usage_quality === 'incorrect' ? '✗ Sai' : '○ Được'}
-                                                                </span>
+                                                    {aiFeedback.wordAnalysis.map((word, idx) => {
+                                                        const itemId = `word-${idx}`;
+                                                        // Map English word types to Vietnamese
+                                                        const wordTypeLabels = {
+                                                            noun: 'danh từ',
+                                                            verb: 'động từ',
+                                                            adjective: 'tính từ',
+                                                            adverb: 'trạng từ',
+                                                            preposition: 'giới từ',
+                                                            conjunction: 'liên từ',
+                                                            phrase: 'cụm từ'
+                                                        };
+                                                        const wordTypeVi = wordTypeLabels[word.word_type?.toLowerCase()] || word.word_type;
+                                                        return (
+                                                            <div
+                                                                key={idx}
+                                                                ref={el => itemRefs.current[itemId] = el}
+                                                                className={`word-item usage-${word.usage_quality || 'acceptable'} ${selectedItemId === itemId ? 'selected' : ''}`}
+                                                            >
+                                                                <div className="word-header">
+                                                                    <div className="word-title">
+                                                                        <span className="word-text">{word.word}</span>
+                                                                        {word.correction && (
+                                                                            <span className="word-correction">
+                                                                                <span className="correction-arrow">→</span>
+                                                                                <span className="correction-text">{word.correction}</span>
+                                                                            </span>
+                                                                        )}
+                                                                        {wordTypeVi && (
+                                                                            <span className="word-type">({wordTypeVi})</span>
+                                                                        )}
+                                                                    </div>
+                                                                    <span className={`usage-badge ${word.usage_quality || 'acceptable'}`}>
+                                                                        {word.usage_quality === 'good' ? '✓ Tốt' :
+                                                                            word.usage_quality === 'incorrect' ? '✗ Sai' : '○ Được'}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="word-definition">{word.definition}</div>
+                                                                <div className="word-context">
+                                                                    <span className="context-label">Ngữ cảnh:</span> {word.context}
+                                                                </div>
                                                             </div>
-                                                            <div className="word-definition">{word.definition}</div>
-                                                            <div className="word-context">
-                                                                <span className="context-label">Ngữ cảnh:</span> {word.context}
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         )}
@@ -999,6 +1035,61 @@ const WritingResultPage = () => {
                     </Panel>
                 </PanelGroup>
             </div>
+
+            {/* Regrade Confirmation Modal */}
+            {showRegradeModal && (
+                <div
+                    className={`cm-backdrop ${showRegradeModal === 'closing' ? 'closing' : ''}`}
+                    onClick={() => {
+                        // Trigger closing animation
+                        setShowRegradeModal('closing');
+                        setTimeout(() => setShowRegradeModal(false), 400);
+                    }}
+                >
+                    <div
+                        className={`cm-content cm-content--sm ${showRegradeModal === 'closing' ? 'closing' : ''}`}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="cm-header cm-header--no-border">
+                            <h3 className="cm-title">Xác nhận chấm lại?</h3>
+                            <button
+                                className="cm-close-btn"
+                                onClick={() => {
+                                    setShowRegradeModal('closing');
+                                    setTimeout(() => setShowRegradeModal(false), 400);
+                                }}
+                            >×</button>
+                        </div>
+                        <div className="cm-body">
+                            <p>Bạn có chắc chắn muốn chấm lại bài viết này không?</p>
+                            <p>Quá trình chấm điểm sẽ được thực hiện lại từ đầu và có thể mất vài phút.</p>
+                        </div>
+                        <div className="cm-footer cm-footer--no-border">
+                            <button
+                                className="cm-btn cm-btn--secondary"
+                                onClick={() => {
+                                    setShowRegradeModal('closing');
+                                    setTimeout(() => setShowRegradeModal(false), 400);
+                                }}
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                className="cm-btn cm-btn--primary"
+                                onClick={() => {
+                                    setShowRegradeModal('closing');
+                                    setTimeout(() => {
+                                        setShowRegradeModal(false);
+                                        handleRegrade();
+                                    }, 400);
+                                }}
+                            >
+                                <FiRotateCw size={14} /> Chấm lại
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

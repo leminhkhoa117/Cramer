@@ -4,7 +4,7 @@
 
 Cramer is a full-stack web application designed as an English practice platform, specifically for IELTS-style tests. The application features a modern user interface for learners to take Reading and Listening tests, review their answers with detailed explanations, and track their progress through a personalized dashboard.
 
-## Current Status (as of 2025-12-05)
+## Current Status (as of 2025-12-08)
 
 - ✅ **Authentication**: JWT-based auth with Supabase tokens is fully functional.
 - ✅ **Test Taking**: Users can start, save progress, resume, submit, and cancel tests (Reading/Listening).
@@ -13,6 +13,7 @@ Cramer is a full-stack web application designed as an English practice platform,
 - ✅ **Profile Management**: Users can update profile info, avatar, and Gemini API key.
 - ✅ **Writing Test**: Full implementation with async AI grading using gemini-2.5-pro (Gemini 2.5 Pro).
 - ✅ **Writing Review**: Comprehensive review UI with resizable panels, highlighted essay, and detailed feedback.
+- ✅ **Regrade Feature**: Confirmation modal with glitchy animation for re-grading essays.
 
 ## Architecture
 
@@ -123,6 +124,11 @@ The Writing test has a special attempt lifecycle to prevent ghost attempts:
 
 ## Recent Fixes
 
+- **2025-12-08:** Enhanced Writing Result Page feedback:
+  - Added regrade confirmation modal with glitchy entrance/exit animations using shared `Modal.css`
+  - Improved AI prompt in `GeminiGradingService.java` to correctly mark misspelled words as 'incorrect' in vocabulary analysis
+  - Enhanced "Phân tích từ vựng" display to show word type (noun, verb, etc.) and correction suggestions
+  - Added minimalist glitch animation (`cm-glitchIn`/`cm-glitchOut`) to shared Modal.css for all modals
 - **2025-12-05:** Fixed ghost IN_PROGRESS attempts appearing after completing Writing test:
   - Backend now returns COMPLETED attempt when `forceNew=false` instead of auto-creating new
   - Frontend shows choice modal ("Xem kết quả" / "Làm bài mới") when COMPLETED attempt exists

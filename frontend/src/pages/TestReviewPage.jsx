@@ -55,11 +55,21 @@ const TestReviewPage = () => {
     const handleRegrade = async () => {
         if (isRegrading || !reviewData) return;
         setIsRegrading(true);
-        // For Reading/Listening, re-grading means re-taking the test
-        // Navigate with forceNew to start fresh
-        navigate(`/test/${reviewData.examSource}/${reviewData.testNumber}/${reviewData.skill}`, {
-            state: { forceNew: true }
-        });
+        
+        try {
+            // Call the regrade API to re-score existing answers
+            const response = await testAttemptApi.regradeAttempt(attemptId);
+            console.log('✅ Regrade completed:', response.data);
+            
+            // Refresh the review data to show updated scores
+            const reviewResponse = await testAttemptApi.getTestReview(attemptId);
+            setReviewData(reviewResponse.data);
+        } catch (err) {
+            console.error('❌ Failed to regrade:', err);
+            setError('Không thể chấm lại bài làm. Vui lòng thử lại sau.');
+        } finally {
+            setIsRegrading(false);
+        }
     };
 
     const { bandScore, duration, completionDate } = useMemo(() => {

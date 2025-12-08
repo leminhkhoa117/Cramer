@@ -186,4 +186,22 @@ public class TestAttemptController {
         logger.info("✅ Successfully deleted test attempt: attemptId={}", id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{id}/regrade")
+    public ResponseEntity<TestResultDTO> regradeAttempt(@PathVariable Long id, Authentication authentication) {
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptController.class);
+        logger.info("📥 POST /api/test-attempts/{}/regrade - Received request", id);
+
+        if (authentication == null || authentication.getName() == null) {
+            logger.error("❌ No authentication provided for regrade");
+            throw new IllegalArgumentException("Authentication required");
+        }
+
+        UUID userId = UUID.fromString(authentication.getName());
+        TestResultDTO result = testAttemptService.regradeAttempt(id, userId);
+        
+        logger.info("✅ Successfully re-graded test attempt: attemptId={}, newScore={}/{}", 
+                    id, result.getScore(), result.getTotalQuestions());
+        return ResponseEntity.ok(result);
+    }
 }
