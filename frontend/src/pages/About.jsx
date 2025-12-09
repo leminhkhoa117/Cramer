@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaGithub } from 'react-icons/fa';
+import { FaGithub, FaQuoteLeft, FaStar, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { 
   FiHeart, 
   FiTarget, 
@@ -231,29 +231,45 @@ const TimelineItem = ({ date, title, description, delay }) => {
 // --- Testimonial Data ---
 const testimonials = [
   {
-    content: "Cramer đã giúp mình cải thiện kỹ năng Listening đáng kể. Giao diện rất dễ sử dụng và các bài test rất sát với đề thi thật!",
+    quote: "Web rất tiện và có nhiều đề khác nhau để mình làm",
+    author: "Chí Phong",
+    role: "Học viên IELTS",
+    avatar: null,
+    rating: 5,
+  },
+  {
+    quote: "Mình thích nhất là tính năng AI writing, nó vô cùng hữu ích vì chỉ ra được điểm mạnh/yếu rõ ràng, mà điểm còn chính xác",
+    author: "Song Vũ",
+    role: "Học viên IELTS",
+    avatar: null,
+    rating: 5,
+  },
+  {
+    quote: "Thật sự ấn tượng với tính năng AI speaking lắm luôn. Bình thường thi thử speaking rất tốn kém, nay có Cramer thì chi phí phải chăng hơn rất nhiều mà còn giống với thi thật nữa",
+    author: "Hồng Em",
+    role: "Học viên IELTS",
+    avatar: null,
+    rating: 5,
+  },
+  {
+    quote: "Có rất nhiều tính năng miễn phí, nhưng vì những tính năng trả phí hay ho quá nên mình đã quyết định xuống tiền và thật sự là mình không hề hối hận",
     author: "Minh Anh",
-    role: "Sinh viên, Đại học Bách Khoa",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop"
+    role: "Học viên IELTS",
+    avatar: null,
+    rating: 5,
   },
-  {
-    content: "Mình đặc biệt thích tính năng review sau khi làm bài. Nó giúp mình hiểu rõ những lỗi sai và cải thiện nhanh hơn.",
-    author: "Hoàng Long",
-    role: "IELTS 7.5",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
-  },
-  {
-    content: "Từ khi dùng Cramer, mình thấy tự tin hơn nhiều khi luyện tập. Cảm ơn team đã tạo ra một nền tảng tuyệt vời như vậy!",
-    author: "Thu Hà",
-    role: "Giáo viên tiếng Anh",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop"
-  }
 ];
+
+// Helper to get initials from name
+const getInitials = (name) => {
+  return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+};
 
 // --- Main About Page Component ---
 const AboutPage = () => {
   const navigate = useNavigate();
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(true);
 
   // Section visibility tracking for performance optimization
   const [heroRef, heroInView] = useSectionInView({ rootMargin: '100px' });
@@ -261,13 +277,28 @@ const AboutPage = () => {
 
   // Auto-rotate testimonials only when section is in view
   useEffect(() => {
-    if (!testimonialsInView) return;
+    if (!testimonialsInView || !autoPlay) return;
     
     const interval = setInterval(() => {
       setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, [testimonialsInView]);
+  }, [testimonialsInView, autoPlay]);
+
+  const handlePrevTestimonial = () => {
+    setAutoPlay(false);
+    setActiveTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  };
+
+  const handleNextTestimonial = () => {
+    setAutoPlay(false);
+    setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
+  };
+
+  const handleDotClick = (index) => {
+    setAutoPlay(false);
+    setActiveTestimonial(index);
+  };
 
   const scrollToContent = () => {
     const visionSection = document.querySelector('.about-vision');
@@ -279,7 +310,7 @@ const AboutPage = () => {
   return (
     <main className="about-page">
       {/* Hero Section with 3D Background */}
-      <section className="about-hero" ref={heroRef}>
+      <section className="about-hero absorb-parent-padding" ref={heroRef}>
         <div className="about-hero__3d-background">
           <Suspense fallback={
             <div style={{ 
@@ -496,12 +527,10 @@ const AboutPage = () => {
       <section className="about-testimonials" ref={testimonialsRef}>
         <div className="container">
           <AnimatedItem>
-            <h2 className="section-title">Học viên nói gì về Cramer</h2>
-          </AnimatedItem>
-          <AnimatedItem delay={200}>
-            <p className="section-subtitle">
-              Những phản hồi chân thực từ cộng đồng người dùng
-            </p>
+            <span className="about-testimonials__label">Đánh giá từ học viên</span>
+            <h2 className="section-title">
+              Học viên nói gì về <span className="text-gradient">Cramer</span>
+            </h2>
           </AnimatedItem>
           
           <div className="testimonials-wrapper">
@@ -509,20 +538,42 @@ const AboutPage = () => {
               <motion.div
                 key={activeTestimonial}
                 className="testimonial-card"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.5 }}
+                initial={{ opacity: 0, x: 50, scale: 0.95 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -50, scale: 0.95 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
               >
+                {/* Quote icon */}
+                <div className="testimonial-quote-icon">
+                  <FaQuoteLeft />
+                </div>
+
+                {/* Quote text */}
                 <p className="testimonial-content">
-                  {testimonials[activeTestimonial].content}
+                  "{testimonials[activeTestimonial].quote}"
                 </p>
+
+                {/* Rating */}
+                <div className="testimonial-rating">
+                  {[...Array(testimonials[activeTestimonial].rating)].map((_, i) => (
+                    <FaStar key={i} className="star-icon" />
+                  ))}
+                </div>
+
+                {/* Author info */}
                 <div className="testimonial-author">
-                  <img 
-                    src={testimonials[activeTestimonial].avatar} 
-                    alt={testimonials[activeTestimonial].author}
-                    className="testimonial-avatar"
-                  />
+                  <div className="testimonial-avatar">
+                    {testimonials[activeTestimonial].avatar ? (
+                      <img 
+                        src={testimonials[activeTestimonial].avatar} 
+                        alt={testimonials[activeTestimonial].author}
+                      />
+                    ) : (
+                      <span className="avatar-initials">
+                        {getInitials(testimonials[activeTestimonial].author)}
+                      </span>
+                    )}
+                  </div>
                   <div className="testimonial-info">
                     <h4>{testimonials[activeTestimonial].author}</h4>
                     <p>{testimonials[activeTestimonial].role}</p>
@@ -530,13 +581,22 @@ const AboutPage = () => {
                 </div>
               </motion.div>
             </AnimatePresence>
+
+            {/* Navigation arrows */}
+            <button className="testimonial-nav-arrow testimonial-nav-arrow--prev" onClick={handlePrevTestimonial}>
+              <FaChevronLeft />
+            </button>
+            <button className="testimonial-nav-arrow testimonial-nav-arrow--next" onClick={handleNextTestimonial}>
+              <FaChevronRight />
+            </button>
             
-            <div className="testimonial-nav">
+            {/* Dots indicator */}
+            <div className="testimonial-dots">
               {testimonials.map((_, index) => (
                 <button
                   key={index}
                   className={`testimonial-dot ${index === activeTestimonial ? 'active' : ''}`}
-                  onClick={() => setActiveTestimonial(index)}
+                  onClick={() => handleDotClick(index)}
                   aria-label={`Xem phản hồi ${index + 1}`}
                 />
               ))}

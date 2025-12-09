@@ -72,17 +72,19 @@ function ProtectedRoute({ children }) {
 // This component contains the actual app layout and routes
 function AppContent() {
   const location = useLocation();
-  // Hide header/footer on test-taking pages and writing review page
+  // Hide header/footer on test-taking pages and review pages (they have their own header)
   const isTestPage = /^\/test\/\w+\/\d+\/\w+$/.test(location.pathname) ||
                      /^\/test\/writing\/(?!review)\w+\/\d+$/.test(location.pathname);
-  // Hide footer (but keep header) on review pages (both reading/listening and writing)
+  // Review pages have their own internal header, so hide the main header
   const isReviewPage = /^\/test\/writing\/review\/\d+$/.test(location.pathname) ||
                        /^\/test\/review\/\d+$/.test(location.pathname);
 
+  const showHeader = !isTestPage && !isReviewPage;
+
   return (
     <>
-      {!isTestPage && <Header />}
-      <main>
+      {showHeader && <Header />}
+      <main className={showHeader ? 'with-fixed-header' : ''}>
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />

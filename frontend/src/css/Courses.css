@@ -44,6 +44,7 @@
   margin: 0 0 1rem;
   text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   letter-spacing: -0.02em;
+  color: white;
 }
 
 .courses-main-banner__description {
@@ -83,6 +84,13 @@
   min-height: 100vh;
   /* Remove horizontal padding to allow banner to be full width */
   padding: 0 0 3rem;
+  padding-top: var(--header-clearance);
+}
+
+/* Utility class to make hero/banner sections absorb parent padding */
+.new-courses-page .absorb-parent-padding {
+  margin-top: calc(-1 * var(--header-clearance));
+  padding-top: calc(var(--header-clearance) + 3rem);
 }
 
 .new-courses-container {

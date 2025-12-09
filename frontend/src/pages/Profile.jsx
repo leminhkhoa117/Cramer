@@ -554,7 +554,7 @@ const ProfilePage = () => {
 
   return (
     <div
-      className="profile-page"
+      className="sl-page profile-page"
       style={profileData?.pageBackgroundUrl ? {
         backgroundImage: `url(${profileData.pageBackgroundUrl})`,
         backgroundSize: 'cover',

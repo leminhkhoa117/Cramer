@@ -41,48 +41,34 @@ export default function Header() {
   const avatarUrl = profile?.avatarUrl || profile?.avatar_url;
 
   return (
-    <Navbar sticky="top" expand="lg" className={`w-100 ${isScrolled ? 'scrolled' : ''}`}>
-      <Container fluid style={{ paddingLeft: '2rem', paddingRight: '2rem' }}>
-        <Navbar.Brand as={Link} to="/" className="font-bold text-2xl" style={{ marginLeft: 0, display: 'flex', alignItems: 'center' }}>
+    <Navbar expand="lg" className={`w-100 ${isScrolled ? 'scrolled' : ''}`}>
+      <Container fluid className="header-container">
+        <Navbar.Brand as={Link} to="/" className="header-brand">
           <img
             src="/pictures/logo/Icon.png"
             alt="Cramer Logo"
-            style={{ height: '40px', objectFit: 'contain' }}
+            className="header-logo"
           />
         </Navbar.Brand>
-        <Navbar.Toggle aria-controls="basic-navbar-nav" style={{ borderColor: 'rgba(255,255,255,0.5)' }} />
+        <Navbar.Toggle aria-controls="basic-navbar-nav" className="header-toggler" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto">
-            <Nav.Link as={NavLink} end to="/" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }} className="header-nav-link">Trang chủ</Nav.Link>
-            <Nav.Link as={NavLink} to="/courses" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }} className="header-nav-link">Khóa học</Nav.Link>
-            <Nav.Link as={NavLink} to="/about" style={{ color: 'white', fontWeight: '500', marginRight: '1.5rem' }} className="header-nav-link">Về chúng tôi</Nav.Link>
+            <Nav.Link as={NavLink} end to="/" className="header-nav-link">Trang chủ</Nav.Link>
+            <Nav.Link as={NavLink} to="/courses" className="header-nav-link">Khóa học</Nav.Link>
+            <Nav.Link as={NavLink} to="/about" className="header-nav-link">Về chúng tôi</Nav.Link>
 
             {user ? (
               <Dropdown align="end">
                 <Dropdown.Toggle
-                  variant="light"
+                  variant="link"
                   id="dropdown-user"
-                  style={{
-                    color: '#7c3aed',
-                    fontWeight: '600',
-                    fontSize: '0.95rem',
-                    marginRight: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}
+                  className="header-user-dropdown"
                 >
                   {avatarUrl ? (
                     <img
                       src={avatarUrl}
                       alt="Avatar"
-                      style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        border: '1px solid #e9d5ff'
-                      }}
+                      className="header-avatar"
                     />
                   ) : (
                     <FaUserCircle size={20} />
@@ -104,15 +90,7 @@ export default function Header() {
                 </Dropdown.Menu>
               </Dropdown>
             ) : (
-              <Button onClick={() => navigate('/login')}
-                variant="light"
-                style={{
-                  color: '#7c3aed',
-                  fontWeight: '600',
-                  fontSize: '0.95rem',
-                  marginRight: 0
-                }}
-              >
+              <Button onClick={() => navigate('/login')} className="header-login-btn">
                 Đăng nhập
               </Button>
             )}

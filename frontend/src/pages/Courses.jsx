@@ -113,7 +113,7 @@ export default function Courses() {
 
             <div className="new-courses-page">
                 <div
-                    className="courses-main-banner"
+                    className="courses-main-banner absorb-parent-padding"
                     style={{
                         backgroundImage: 'url("https://thumbs.dreamstime.com/b/diverse-group-adult-students-having-conversations-english-speaking-club-diverse-group-people-talking-to-each-other-251584879.jpg")',
                     }}

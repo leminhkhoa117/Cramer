@@ -42,7 +42,8 @@
   background: var(--sl-page-bg);
   min-height: 100vh;
   position: relative;
-  padding: 2rem 0;
+  padding: 0 0 2rem 0; /* Keep bottom padding, zero out others */
+  padding-top: 120px;
   font-family: 'Be Vietnam Pro', sans-serif;
   color: var(--sl-text);
 }
@@ -87,7 +88,7 @@
   width: 300px;
   min-width: 300px;
   position: sticky;
-  top: 100px;
+  top: 120px;
   background: var(--sl-glass-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
