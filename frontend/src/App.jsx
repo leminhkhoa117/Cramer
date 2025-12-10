@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useAuthStore, useProfileStore } from './stores';
 import { AnimatePresence } from 'framer-motion';
 
 import Header from './components/Header';
@@ -22,7 +22,19 @@ import Profile from './pages/Profile';
 
 // This component waits for the initial auth loading to complete
 function AuthInitializer({ children }) {
-  const { loading, error } = useAuth();
+  const { loading, error, initializeAuth } = useAuthStore();
+
+  // Initialize auth on mount
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
+  // Initialize profile store subscription by importing it
+  useEffect(() => {
+    // useProfileStore subscription is set up on import
+    // This ensures the module is loaded and subscription is active
+    void useProfileStore.getState();
+  }, []);
 
   if (loading) {
     return (
@@ -65,7 +77,7 @@ function AuthInitializer({ children }) {
 
 // Protected Route component remains the same, but now it runs *after* initial loading
 function ProtectedRoute({ children }) {
-  const { user } = useAuth();
+  const user = useAuthStore((state) => state.user);
   return user ? children : <Navigate to="/login" />;
 }
 
@@ -171,11 +183,9 @@ function AppContent() {
 export default function App() {
   return (
     <Router>
-      <AuthProvider>
-        <AuthInitializer>
-          <AppContent />
-        </AuthInitializer>
-      </AuthProvider>
+      <AuthInitializer>
+        <AppContent />
+      </AuthInitializer>
     </Router>
   );
 }

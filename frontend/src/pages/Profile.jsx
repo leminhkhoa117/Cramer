@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore, useProfileStore } from '../stores';
 import { profileApi } from '../api/backendApi';
 import { writingApi } from '../api/backendApi';
 import { showErrorToast, showSuccessToast } from '../utils/toast.js';
@@ -47,7 +47,11 @@ const tabContentVariants = {
 };
 
 const ProfilePage = () => {
-  const { user, profileLoading, updateProfileContext } = useAuth();
+  // Zustand store selectors
+  const user = useAuthStore(state => state.user);
+  const profile = useProfileStore(state => state.profile);
+  const updateProfile = useProfileStore(state => state.updateProfile);
+  const profileLoading = useProfileStore(state => state.loading);
 
   // State
   const [activeTab, setActiveTab] = useState('personal');
@@ -151,12 +155,23 @@ const ProfilePage = () => {
   }, []);
 
   const handleSave = useCallback(async (extraData = {}) => {
-    const profileToSave = { ...editedProfile, ...extraData };
+    // Determine what to save:
+    // - If extraData contains image URLs (avatar, hero, page background), only send those fields
+    // - Otherwise, send the full editedProfile merged with extraData
+    const imageFields = ['avatarUrl', 'heroBackgroundUrl', 'pageBackgroundUrl'];
+    const isImageUpdate = Object.keys(extraData).some(key => imageFields.includes(key));
+    
+    // For image updates, only send the specific field to avoid overwriting other data
+    const profileToSave = isImageUpdate ? extraData : { ...editedProfile, ...extraData };
+    
     try {
       const response = await profileApi.update(user.id, profileToSave);
       const updatedProfile = { ...response.data, email: user.email };
       setProfileData(updatedProfile);
-      updateProfileContext(response.data);
+      // Also update editedProfile to keep it in sync
+      setEditedProfile(prev => ({ ...prev, ...updatedProfile }));
+      // Update the profile in Zustand store
+      await updateProfile(profileToSave);
       showSuccessToast('Cập nhật thông tin thành công!');
       setIsEditing(false);
     } catch (err) {
@@ -165,7 +180,7 @@ const ProfilePage = () => {
     } finally {
       setIsUploading(false);
     }
-  }, [editedProfile, user?.id, user?.email, updateProfileContext]);
+  }, [editedProfile, user?.id, user?.email, updateProfile]);
 
   const parseSupabaseUrl = (url) => {
     try {
@@ -402,10 +417,8 @@ const ProfilePage = () => {
       setProfileData(prev => ({ ...prev, ...updateData }));
       setEditedProfile(prev => ({ ...prev, ...updateData }));
 
-      // Update context
-      if (updateProfileContext) {
-        await updateProfileContext();
-      }
+      // Update the profile in Zustand store
+      await updateProfile(updateData);
 
       showSuccessToast('Đã xoá ảnh thành công.');
       closeDeleteModal();

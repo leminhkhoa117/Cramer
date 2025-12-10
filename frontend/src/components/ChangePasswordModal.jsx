@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FiKey, FiEye, FiEyeOff } from 'react-icons/fi';
 import { supabase } from '../api/supabaseClient';
 import { showSuccessToast, showErrorToast } from '../utils/toast';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore } from '../stores';
 import BaseModal from './common/BaseModal';
 import '../css/ChangePasswordModal.css';
 
@@ -13,7 +13,7 @@ import '../css/ChangePasswordModal.css';
  * @param {function} onClose - Close handler
  */
 const ChangePasswordModal = ({ isOpen, onClose }) => {
-  const { user } = useAuth();
+  const user = useAuthStore(state => state.user);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar, Nav, Container, Button, Dropdown } from 'react-bootstrap';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore, useProfileStore } from '../stores';
 import { FaUserCircle } from 'react-icons/fa';
 import '../css/Header.css';
 
 export default function Header() {
   const navigate = useNavigate();
-  const { user, profile, profileLoading, signOut } = useAuth();
+  const user = useAuthStore(state => state.user);
+  const signOut = useAuthStore(state => state.signOut);
+  const profile = useProfileStore(state => state.profile);
+  const profileLoading = useProfileStore(state => state.loading);
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {

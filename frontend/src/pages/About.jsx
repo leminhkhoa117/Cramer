@@ -6,7 +6,7 @@ import {
   FiHeart, 
   FiTarget, 
   FiUsers, 
-  FiChevronDown, 
+  FiChevronDown,
   FiArrowRight,
   FiZap,
   FiAward,
@@ -53,10 +53,10 @@ const useAnimationInView = (options = {}) => {
 // --- Animated Component Wrapper ---
 const AnimatedItem = ({ children, delay = 0, className = '' }) => {
   const [ref, isInView] = useAnimationInView({ threshold: 0.1, triggerOnce: true });
-  
+
   return (
-    <div 
-      ref={ref} 
+    <div
+      ref={ref}
       className={`animated-item ${isInView ? 'in-view' : ''} ${className}`}
       style={{ transitionDelay: `${delay}ms` }}
     >
@@ -76,35 +76,35 @@ const FounderCard = ({ image, name, role, bio, hobby, github, delay }) => {
 
   const handleMouseMove = (e) => {
     if (!cardRef.current) return;
-    
+
     setIsHovering(true);
-    
+
     const rect = cardRef.current.getBoundingClientRect();
     const mouseX = Math.max(0, Math.min(rect.width, e.clientX - rect.left)) - rect.width / 2;
     const mouseY = Math.max(0, Math.min(rect.height, e.clientY - rect.top)) - rect.height / 2;
-    
+
     const targetRotateX = (mouseY / (rect.height / 2)) * -12;
     const targetRotateY = (mouseX / (rect.width / 2)) * 12;
-    
+
     // Cancel previous animation frame
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
-    
+
     // Smooth interpolation
     animationFrameRef.current = requestAnimationFrame(() => {
       const lerpFactor = 0.15;
       const smoothRotateX = currentRotationRef.current.x + (targetRotateX - currentRotationRef.current.x) * lerpFactor;
       const smoothRotateY = currentRotationRef.current.y + (targetRotateY - currentRotationRef.current.y) * lerpFactor;
-      
+
       currentRotationRef.current = { x: smoothRotateX, y: smoothRotateY };
-      
+
       const rotateXVal = Math.max(-12, Math.min(12, smoothRotateX));
       const rotateYVal = Math.max(-12, Math.min(12, smoothRotateY));
-      
+
       setTransform(`perspective(1000px) rotateX(${rotateXVal}deg) rotateY(${rotateYVal}deg) translateZ(15px) scale(1.02)`);
     });
-    
+
     const glareX = ((Math.max(0, Math.min(rect.width, e.clientX - rect.left)) / rect.width) * 100);
     const glareY = ((Math.max(0, Math.min(rect.height, e.clientY - rect.top)) / rect.height) * 100);
     setGlareStyle({
@@ -150,10 +150,10 @@ const FounderCard = ({ image, name, role, bio, hobby, github, delay }) => {
             <span className="founder-card__role">{role}</span>
             <p className="founder-card__bio">{bio}</p>
             <p className="founder-card__hobby"><strong>Sở thích:</strong> {hobby}</p>
-            <a 
-              href={github.url} 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href={github.url}
+              target="_blank"
+              rel="noopener noreferrer"
               className="founder-card__github"
             >
               <FaGithub /> {github.username}
@@ -173,16 +173,16 @@ const ValueCard = ({ icon: Icon, title, text, delay }) => {
 
   const handleMouseMove = (e) => {
     if (!cardRef.current) return;
-    
+
     const rect = cardRef.current.getBoundingClientRect();
     const mouseX = Math.max(0, Math.min(rect.width, e.clientX - rect.left)) - rect.width / 2;
     const mouseY = Math.max(0, Math.min(rect.height, e.clientY - rect.top)) - rect.height / 2;
-    
+
     const rotateXVal = Math.max(-15, Math.min(15, (mouseY / (rect.height / 2)) * -15));
     const rotateYVal = Math.max(-15, Math.min(15, (mouseX / (rect.width / 2)) * 15));
-    
+
     setTransform(`perspective(1000px) rotateX(${rotateXVal}deg) rotateY(${rotateYVal}deg) translateZ(20px) scale(1.03)`);
-    
+
     const glareX = ((Math.max(0, Math.min(rect.width, e.clientX - rect.left)) / rect.width) * 100);
     const glareY = ((Math.max(0, Math.min(rect.height, e.clientY - rect.top)) / rect.height) * 100);
     setGlareStyle({
@@ -278,7 +278,7 @@ const AboutPage = () => {
   // Auto-rotate testimonials only when section is in view
   useEffect(() => {
     if (!testimonialsInView || !autoPlay) return;
-    
+
     const interval = setInterval(() => {
       setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
     }, 5000);
@@ -313,19 +313,19 @@ const AboutPage = () => {
       <section className="about-hero absorb-parent-padding" ref={heroRef}>
         <div className="about-hero__3d-background">
           <Suspense fallback={
-            <div style={{ 
-              width: '100%', 
-              height: '100%', 
-              background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0a3e 50%, #2a1a5e 100%)' 
+            <div style={{
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0a3e 50%, #2a1a5e 100%)'
             }} />
           }>
-            <Scene3DAbout 
-              style={{ width: '100%', height: '100%' }} 
+            <Scene3DAbout
+              style={{ width: '100%', height: '100%' }}
               isActive={heroInView}
             />
           </Suspense>
         </div>
-        
+
         <div className="about-hero__content">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -336,8 +336,8 @@ const AboutPage = () => {
               <FiZap /> Được xây dựng bởi sinh viên, cho sinh viên
             </span>
           </motion.div>
-          
-          <motion.h1 
+
+          <motion.h1
             className="about-hero__title"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -345,8 +345,8 @@ const AboutPage = () => {
           >
             Hành trình chinh phục<br />IELTS bắt đầu từ đây
           </motion.h1>
-          
-          <motion.p 
+
+          <motion.p
             className="about-hero__subtitle"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -355,8 +355,8 @@ const AboutPage = () => {
             Cramer ra đời từ chính trải nghiệm của hai sinh viên đam mê công nghệ và mong muốn tạo ra một nơi luyện tập IELTS thật sự chất lượng — miễn phí và dành cho tất cả mọi người.
           </motion.p>
         </div>
-        
-        <motion.div 
+
+        <motion.div
           className="about-hero__scroll-indicator"
           onClick={scrollToContent}
           initial={{ opacity: 0 }}
@@ -401,9 +401,9 @@ const AboutPage = () => {
             <div className="vision-3d">
               {/* Placeholder for future 3D element or illustration */}
               <AnimatedItem delay={300}>
-                <div style={{ 
-                  width: '100%', 
-                  height: '100%', 
+                <div style={{
+                  width: '100%',
+                  height: '100%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -429,7 +429,7 @@ const AboutPage = () => {
               Một hành trình ngắn ngủi nhưng đầy ý nghĩa
             </p>
           </AnimatedItem>
-          
+
           <div className="timeline">
             <TimelineItem
               date="Tháng 10, 2025"
@@ -464,7 +464,7 @@ const AboutPage = () => {
               Hai sinh viên với một đam mê chung: làm việc học trở nên dễ dàng hơn
             </p>
           </AnimatedItem>
-          
+
           <div className="founders-grid">
             <FounderCard
               image="/pictures/about/HuynhQuocHuu.png"
@@ -499,7 +499,7 @@ const AboutPage = () => {
               Những điều chúng mình luôn tin tưởng và theo đuổi
             </p>
           </AnimatedItem>
-          
+
           <div className="values-grid">
             <ValueCard
               icon={FiTarget}
@@ -532,7 +532,7 @@ const AboutPage = () => {
               Học viên nói gì về <span className="text-gradient">Cramer</span>
             </h2>
           </AnimatedItem>
-          
+
           <div className="testimonials-wrapper">
             <AnimatePresence mode="wait">
               <motion.div
@@ -564,8 +564,8 @@ const AboutPage = () => {
                 <div className="testimonial-author">
                   <div className="testimonial-avatar">
                     {testimonials[activeTestimonial].avatar ? (
-                      <img 
-                        src={testimonials[activeTestimonial].avatar} 
+                      <img
+                        src={testimonials[activeTestimonial].avatar}
                         alt={testimonials[activeTestimonial].author}
                       />
                     ) : (
@@ -589,7 +589,7 @@ const AboutPage = () => {
             <button className="testimonial-nav-arrow testimonial-nav-arrow--next" onClick={handleNextTestimonial}>
               <FaChevronRight />
             </button>
-            
+
             {/* Dots indicator */}
             <div className="testimonial-dots">
               {testimonials.map((_, index) => (

@@ -77,6 +77,23 @@ Keep changes small, well-scoped and documented. If you modify DB schema, update 
 ## Recent Changes (2025-12-05)
 When adding new features, especially those that touch both the backend and frontend, please document the changes in the repo docs and update `GEMINI.md`/`AGENTS.md` accordingly.
 
+- **State Management Migration to Zustand (2025-12-10):**
+  - Migrated from React Context to Zustand for all global state management
+  - New stores in `frontend/src/stores/`:
+    - `useAuthStore.js` — Auth user, session, login/logout/OAuth actions
+    - `useProfileStore.js` — User profile with auto-sync to auth changes
+    - `useTestStore.js` — Test-taking UI state (answers, timer, modals, navigation)
+    - `useTestSessionStore.js` — Test API operations with 5-min caching TTL
+    - `useDashboardStore.js` — Dashboard data with pagination (sessionStorage persisted)
+    - `useCourseStore.js` — Courses list with caching + pagination
+    - `index.js` — Clean re-exports for convenient imports
+  - `AuthContext.jsx` is **deprecated** (kept for reference only, not imported anywhere)
+  - **Import pattern**: `import { useAuthStore, useProfileStore } from '../stores'`
+  - **Selector pattern**: `const user = useAuthStore(state => state.user)` — use selectors for granular subscriptions
+  - **Benefits**: data caching prevents refetch on navigation, reduced re-renders, DevTools integration
+  - **Props drilling eliminated**: `TestPageContent` reduced from 24 props to 5 props
+  - **Code duplication removed**: `TestPage.jsx` and `WritingTestPage.jsx` share stores (~200 lines consolidated)
+
 - **Writing feature + AI Grading (2025-12-05):**
   - Backend: `WritingController`, `WritingSubmission` entity, `WritingSubmissionRepository`, DTOs (`WritingSubmitDTO`, `WritingSubmissionDTO`, `WritingReviewDTO`), services (`AsyncGradingService`, `GeminiGradingService`, `WritingSubmissionService`).
   - Frontend: `WritingTestPage.jsx`, `WritingResultPage.jsx`, `WritingTestPage.css`, `WritingResultPage.css`, `ResumeConfirmationModal.jsx` and `TestPageContent.jsx` updates.
@@ -122,7 +139,6 @@ To utilize specific expert personas, you (the Main Model) are authorized to auto
 **Trigger:** "plan feature", "design", "how to build"
 **Focus:** System design, API contracts, Schem changes, File structure.
 **Protocol:** Check `docs/` -> Draft SQL -> Define API Contract -> List Files -> Handoff to Builder.
-
 ### 3. `executionAgent` (The Builder)
 **Trigger:** "implement", "fix", "code this"
 **Focus:** Writing working Java/React code, small PRs, updating Docs.

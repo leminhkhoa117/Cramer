@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { courseApi } from '../api/backendApi';
+import { useCourseStore } from '../stores';
 import FilterModal from '../components/FilterModal';
 import './../css/Courses.css';
 
@@ -18,53 +18,37 @@ const formatCourseName = (source) => {
 };
 
 export default function Courses() {
-    const [courses, setCourses] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [debouncedSearch, setDebouncedSearch] = useState('');
+    // Zustand store state
+    const {
+        courses,
+        loading,
+        error,
+        currentPage,
+        totalPages,
+        searchQuery,
+        debouncedSearchQuery,
+        fetchCourses,
+        setPage,
+        setSearchQuery,
+        setDebouncedSearchQuery,
+    } = useCourseStore();
+
+    // Local UI state (doesn't need to persist)
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [activeFilters, setActiveFilters] = useState({});
 
-    // Pagination states
-    const [page, setPage] = useState(0);
-    const [totalPages, setTotalPages] = useState(0);
-
-    // Debounce search
+    // Debounce search - updates store's debounced value
     useEffect(() => {
         const timer = setTimeout(() => {
-            setDebouncedSearch(searchTerm);
-            setPage(0); // Reset to first page on search change
+            setDebouncedSearchQuery(searchQuery);
         }, 500);
         return () => clearTimeout(timer);
-    }, [searchTerm]);
+    }, [searchQuery, setDebouncedSearchQuery]);
 
+    // Fetch courses when pagination or debounced search changes
     useEffect(() => {
-        const fetchCourses = async () => {
-            try {
-                setLoading(true);
-                // Pass pagination and search params
-                const response = await courseApi.getAll(page, 6, debouncedSearch);
-
-                if (response.data && response.data.content) {
-                    setCourses(response.data.content);
-                    setTotalPages(response.data.totalPages);
-                } else {
-                    // Fallback for backward compatibility or empty response
-                    setCourses([]);
-                    setTotalPages(0);
-                }
-
-                setError(null);
-            } catch (err) {
-                setError('Không thể tải danh sách khóa học.');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchCourses();
-    }, [page, debouncedSearch]);
+        fetchCourses(currentPage, 6, debouncedSearchQuery);
+    }, [currentPage, debouncedSearchQuery, fetchCourses]);
 
     const availableFilters = useMemo(() => {
         const examSources = courses.map(name => ({ value: name, label: formatCourseName(name) }));
@@ -131,8 +115,8 @@ export default function Courses() {
                             <input
                                 type="text"
                                 placeholder="Tìm kiếm theo tên bộ đề..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 className="courses-search-input"
                             />
                         </div>
@@ -180,7 +164,7 @@ export default function Courses() {
                             )}
 
                             <Pagination
-                                currentPage={page}
+                                currentPage={currentPage}
                                 totalPages={totalPages}
                                 onPageChange={setPage}
                             />

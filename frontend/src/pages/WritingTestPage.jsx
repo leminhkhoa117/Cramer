@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { shallow } from 'zustand/shallow';
 import { sanitizeHtml } from '../utils/sanitize';
-import { AnimatePresence, motion } from 'framer-motion';
-import { testApi, testAttemptApi, writingApi } from '../api/backendApi';
+import { AnimatePresence } from 'framer-motion';
+import { useTestStore, useTestSessionStore } from '../stores';
 import TestHeader from '../components/TestHeader';
 import TestFooter from '../components/TestFooter';
 import FullPageLoader from '../components/FullPageLoader';
@@ -28,62 +29,129 @@ const WritingTestPage = () => {
     // Check if navigating from "Làm lại" button (forceNew flag)
     const forceNew = location.state?.forceNew || false;
 
-    // --- Core State ---
-    const [testStatus, setTestStatus] = useState('running');
-    const [testData, setTestData] = useState([]);
-    const [attempt, setAttempt] = useState(null);
-    const [essays, setEssays] = useState({ 1: '', 2: '' });
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    // --- Zustand Store Selectors ---
+    const {
+        testStatus,
+        testData,
+        attempt,
+        essays,
+        loading,
+        error,
+        isSubmitting,
+        isConfirmModalOpen,
+        isResumeModalOpen,
+        isExitModalOpen,
+        inProgressAttempt,
+        isStartingNew,
+        isSavingProgress,
+        activeTask,
+        timeLeft,
+        // Actions
+        setTestStatus,
+        setTestData,
+        setAttempt,
+        setEssay,
+        setEssays,
+        setLoading,
+        setError,
+        setIsSubmitting,
+        setActiveTask,
+        setTimeLeft,
+        decrementTime,
+        openConfirmModal,
+        closeConfirmModal,
+        openResumeModal,
+        closeResumeModal,
+        openExitModal,
+        closeExitModal,
+        setIsStartingNew,
+        setIsSavingProgress,
+        getWordCount,
+        resetTestState,
+    } = useTestStore(
+        (state) => ({
+            testStatus: state.testStatus,
+            testData: state.testData,
+            attempt: state.attempt,
+            essays: state.essays,
+            loading: state.loading,
+            error: state.error,
+            isSubmitting: state.isSubmitting,
+            isConfirmModalOpen: state.isConfirmModalOpen,
+            isResumeModalOpen: state.isResumeModalOpen,
+            isExitModalOpen: state.isExitModalOpen,
+            inProgressAttempt: state.inProgressAttempt,
+            isStartingNew: state.isStartingNew,
+            isSavingProgress: state.isSavingProgress,
+            activeTask: state.activeTask,
+            timeLeft: state.timeLeft,
+            setTestStatus: state.setTestStatus,
+            setTestData: state.setTestData,
+            setAttempt: state.setAttempt,
+            setEssay: state.setEssay,
+            setEssays: state.setEssays,
+            setLoading: state.setLoading,
+            setError: state.setError,
+            setIsSubmitting: state.setIsSubmitting,
+            setActiveTask: state.setActiveTask,
+            setTimeLeft: state.setTimeLeft,
+            decrementTime: state.decrementTime,
+            openConfirmModal: state.openConfirmModal,
+            closeConfirmModal: state.closeConfirmModal,
+            openResumeModal: state.openResumeModal,
+            closeResumeModal: state.closeResumeModal,
+            openExitModal: state.openExitModal,
+            closeExitModal: state.closeExitModal,
+            setIsStartingNew: state.setIsStartingNew,
+            setIsSavingProgress: state.setIsSavingProgress,
+            getWordCount: state.getWordCount,
+            resetTestState: state.resetTestState,
+        }),
+        shallow
+    );
 
-    // --- Resume Modal State ---
-    const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
-    const [inProgressAttempt, setInProgressAttempt] = useState(null);
-    const [isStartingNew, setIsStartingNew] = useState(false);
+    // --- Session Store Actions ---
+    const { startOrResumeAttempt, loadTestData, loadEssays, saveProgress, submitWriting, cancelAttempt } =
+        useTestSessionStore(
+            (state) => ({
+                startOrResumeAttempt: state.startOrResumeAttempt,
+                loadTestData: state.loadTestData,
+                loadEssays: state.loadEssays,
+                saveProgress: state.saveProgress,
+                submitWriting: state.submitWriting,
+                cancelAttempt: state.cancelAttempt,
+            }),
+            shallow
+        );
 
-    // --- Exit Modal State ---
-    const [isExitModalOpen, setIsExitModalOpen] = useState(false);
-    const [isSavingProgress, setIsSavingProgress] = useState(false);
-
-    // --- UI State ---
-    const [activeTask, setActiveTask] = useState(1); // 1 or 2
-    const [timeLeft, setTimeLeft] = useState(INITIAL_WRITING_TIME);
-
+    // --- Refs (minimal local state) ---
     const isSubmittingRef = useRef(false);
     const hasFetchedRef = useRef(false);
-
-    // Ref to fix stale closure in timer
     const handleFinalSubmitRef = useRef(null);
 
-    // --- Word Count ---
-    const wordCount = useMemo(() => {
-        const text = essays[activeTask] || '';
-        if (!text.trim()) return 0;
-        return text.trim().split(/\s+/).length;
-    }, [essays, activeTask]);
-
+    // --- Computed Values ---
+    const wordCount = getWordCount(activeTask);
     const minWords = activeTask === 1 ? 150 : 250;
 
-    // Computed word counts for TestFooter
     const wordCounts = useMemo(() => ({
-        1: {
-            current: essays[1]?.trim().split(/\s+/).filter(Boolean).length || 0,
-            min: 150
-        },
-        2: {
-            current: essays[2]?.trim().split(/\s+/).filter(Boolean).length || 0,
-            min: 250
-        }
-    }), [essays]);
+        1: { current: getWordCount(1), min: 150 },
+        2: { current: getWordCount(2), min: 250 },
+    }), [essays]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Reset hasFetchedRef on unmount
+    // --- Reset store on unmount ---
     useEffect(() => {
+        // Initialize with proper state
+        setLoading(true);
+        setTestStatus('running');
+        setTimeLeft(INITIAL_WRITING_TIME);
+        setActiveTask(1);
+        setEssays({ 1: '', 2: '' });
+
         return () => {
             hasFetchedRef.current = false;
+            resetTestState();
         };
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // --- Data Loading and Setup ---
     const setupTestState = useCallback(async (attemptData, fullTestData, abortSignal) => {
@@ -95,16 +163,16 @@ const WritingTestPage = () => {
         // Load essays if resuming an in-progress attempt
         if (attemptData.status === 'IN_PROGRESS' && attemptData.id) {
             try {
-                const submissionsRes = await writingApi.getSubmissions(attemptData.id);
+                const submissions = await loadEssays(attemptData.id);
                 if (abortSignal?.aborted) return;
                 const loadedEssays = { 1: '', 2: '' };
-                submissionsRes.data.forEach(sub => {
+                submissions.forEach(sub => {
                     loadedEssays[sub.taskNumber] = sub.essayText || '';
                 });
                 setEssays(loadedEssays);
-            } catch (error) {
+            } catch (err) {
                 if (abortSignal?.aborted) return;
-                console.error("Failed to load previous essays:", error);
+                console.error("Failed to load previous essays:", err);
             }
         } else {
             setEssays({ 1: '', 2: '' });
@@ -115,11 +183,11 @@ const WritingTestPage = () => {
         }
 
         setLoading(false);
-        setIsResumeModalOpen(false);
-    }, []);
+        closeResumeModal();
+    }, [setAttempt, setTestData, setEssays, setTimeLeft, setLoading, closeResumeModal, loadEssays]);
 
+    // --- Initial Load Effect ---
     useEffect(() => {
-        // Prevent duplicate calls in React StrictMode
         if (hasFetchedRef.current) return;
         hasFetchedRef.current = true;
 
@@ -128,46 +196,38 @@ const WritingTestPage = () => {
         const fetchAndStartTest = async () => {
             try {
                 setLoading(true);
-                // Pass forceNew to cancel old IN_PROGRESS attempts and start fresh
-                const attemptRes = await testAttemptApi.startAttempt(source, testNum, 'writing', forceNew);
+                const attemptData = await startOrResumeAttempt(source, testNum, 'writing', forceNew);
                 
                 if (abortController.signal.aborted) return;
-                
-                const attemptData = attemptRes.data;
 
-                // If backend returned a COMPLETED attempt (forceNew was false), show choice modal
+                // If backend returned a COMPLETED attempt, show choice modal
                 if (attemptData.status === 'COMPLETED') {
-                    setInProgressAttempt(attemptData);
-                    setIsResumeModalOpen(true);
+                    openResumeModal(attemptData);
                     return;
                 }
 
-                // If forceNew is true, skip the resume modal since we're starting fresh
+                // If forceNew is true, skip the resume modal
                 if (!forceNew) {
-                    // Only consider an attempt "dirty" if time has been consumed
-                    // A fresh new attempt will have timeLeft === null or timeLeft === INITIAL_WRITING_TIME
                     const isDirty = attemptData.timeLeft !== null && attemptData.timeLeft < INITIAL_WRITING_TIME;
 
                     if (attemptData.status === 'IN_PROGRESS' && isDirty) {
-                        // Check if there are any saved essays
                         try {
-                            const submissionsRes = await writingApi.getSubmissions(attemptData.id);
+                            const submissions = await loadEssays(attemptData.id);
                             if (abortController.signal.aborted) return;
-                            const hasEssays = submissionsRes.data.some(sub => sub.essayText && sub.essayText.trim());
+                            const hasEssays = submissions.some(sub => sub.essayText && sub.essayText.trim());
                             if (hasEssays || attemptData.timeLeft < INITIAL_WRITING_TIME) {
-                                setInProgressAttempt(attemptData);
-                                setIsResumeModalOpen(true);
+                                openResumeModal(attemptData);
                                 return;
                             }
                         } catch (e) {
-                            // Continue with normal flow if can't check submissions
+                            // Continue with normal flow
                         }
                     }
                 }
 
                 if (abortController.signal.aborted) return;
 
-                const fullTestData = await testApi.getFullTest(source, testNum, 'writing');
+                const fullTestData = await loadTestData(source, testNum, 'writing');
                 if (abortController.signal.aborted) return;
                 setupTestState(attemptData, fullTestData, abortController.signal);
             } catch (err) {
@@ -183,62 +243,56 @@ const WritingTestPage = () => {
             abortController.abort();
             hasFetchedRef.current = false;
         };
-    }, [source, testNum, setupTestState, forceNew]);
+    }, [source, testNum, forceNew, setupTestState, startOrResumeAttempt, loadTestData, loadEssays, openResumeModal, setError, setLoading]);
 
     // --- Modal Handlers ---
-    const handleResume = async () => {
-        // If the attempt is COMPLETED, redirect to result page
+    const handleResume = useCallback(async () => {
         if (inProgressAttempt?.status === 'COMPLETED') {
             navigate(`/test/writing/review/${inProgressAttempt.id}`, { replace: true });
             return;
         }
 
-        // Otherwise, resume IN_PROGRESS attempt
         try {
             setLoading(true);
-            const fullTestData = await testApi.getFullTest(source, testNum, 'writing');
+            const fullTestData = await loadTestData(source, testNum, 'writing');
             await setupTestState(inProgressAttempt, fullTestData);
         } catch (err) {
             setError('Không thể tải dữ liệu bài làm trước đó.');
             setLoading(false);
         }
-    };
+    }, [inProgressAttempt, navigate, setLoading, loadTestData, setupTestState, source, testNum, setError]);
 
-    const handleStartNew = async () => {
+    const handleStartNew = useCallback(async () => {
         try {
             setIsStartingNew(true);
 
             // Use forceNew=true to cancel all IN_PROGRESS and create new attempt
-            const newAttemptRes = await testAttemptApi.startAttempt(source, testNum, 'writing', true);
-            const fullTestData = await testApi.getFullTest(source, testNum, 'writing');
+            const newAttemptData = await startOrResumeAttempt(source, testNum, 'writing', true);
+            const fullTestData = await loadTestData(source, testNum, 'writing');
 
             setEssays({ 1: '', 2: '' });
             setTimeLeft(INITIAL_WRITING_TIME);
             setActiveTask(1);
 
-            await setupTestState(newAttemptRes.data, fullTestData);
+            await setupTestState(newAttemptData, fullTestData);
         } catch (err) {
             setError('Không thể bắt đầu bài làm mới. Vui lòng thử lại.');
             setLoading(false);
         } finally {
             setIsStartingNew(false);
-            setIsResumeModalOpen(false);
+            closeResumeModal();
         }
-    };
+    }, [source, testNum, startOrResumeAttempt, loadTestData, setupTestState, setEssays, setTimeLeft, setActiveTask, setError, setLoading, setIsStartingNew, closeResumeModal]);
 
     // --- Submission Logic ---
     const handleFinalSubmit = useCallback(async () => {
         if (!attempt || isSubmittingRef.current) return;
         isSubmittingRef.current = true;
-        setIsConfirmModalOpen(false);
+        closeConfirmModal();
 
         try {
             setIsSubmitting(true);
-
-            // Submit essays for grading
-            await writingApi.submitForGrading(attempt.id, essays);
-
-            // Navigate to review page
+            await submitWriting(attempt.id, essays);
             navigate(`/test/writing/review/${attempt.id}`);
         } catch (err) {
             console.error('Error submitting writing test:', err);
@@ -247,7 +301,7 @@ const WritingTestPage = () => {
             setIsSubmitting(false);
             isSubmittingRef.current = false;
         }
-    }, [attempt, essays, navigate]);
+    }, [attempt, essays, navigate, closeConfirmModal, setIsSubmitting, submitWriting, setError]);
 
     // Keep handleFinalSubmitRef updated
     useEffect(() => {
@@ -259,39 +313,37 @@ const WritingTestPage = () => {
         if (testStatus !== 'running' || loading) return;
 
         const timer = setInterval(() => {
-            setTimeLeft(prevTime => {
-                if (prevTime <= 1) {
-                    clearInterval(timer);
-                    // Use ref to avoid stale closure
-                    handleFinalSubmitRef.current?.();
-                    return 0;
-                }
-                return prevTime - 1;
-            });
+            const currentTime = useTestStore.getState().timeLeft;
+            if (currentTime <= 1) {
+                clearInterval(timer);
+                handleFinalSubmitRef.current?.();
+                return;
+            }
+            decrementTime();
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [testStatus, loading]); // Removed handleFinalSubmit from deps
+    }, [testStatus, loading, decrementTime]);
 
     // --- Essay Change Handler ---
     const handleEssayChange = useCallback((taskNumber, text) => {
-        setEssays(prev => ({ ...prev, [taskNumber]: text }));
-    }, []);
+        setEssay(taskNumber, text);
+    }, [setEssay]);
 
     // --- Exit Handlers ---
-    const handleExitRequest = useCallback(() => setIsExitModalOpen(true), []);
+    const handleExitRequest = useCallback(() => openExitModal(), [openExitModal]);
 
     const handleAbort = useCallback(async () => {
         if (!attempt) return;
         try {
             setIsSavingProgress(true);
-            await testAttemptApi.cancelAttempt(attempt.id);
-            setIsExitModalOpen(false);
+            await cancelAttempt(attempt.id);
+            closeExitModal();
             navigate('/dashboard', { state: { refreshData: true } });
-        } catch (error) {
-            console.error('Failed to cancel attempt:', error);
-            if (error.response?.status === 404) {
-                setIsExitModalOpen(false);
+        } catch (err) {
+            console.error('Failed to cancel attempt:', err);
+            if (err.response?.status === 404) {
+                closeExitModal();
                 navigate('/dashboard', { state: { refreshData: true } });
             } else {
                 alert('Không thể huỷ lần làm bài. Vui lòng thử lại.');
@@ -299,45 +351,34 @@ const WritingTestPage = () => {
         } finally {
             setIsSavingProgress(false);
         }
-    }, [attempt, navigate]);
+    }, [attempt, navigate, cancelAttempt, closeExitModal, setIsSavingProgress]);
 
     const handleSaveAndExit = useCallback(async () => {
         if (!attempt) return;
 
         try {
             setIsSavingProgress(true);
-
-            // Save essays as drafts
-            for (const [taskNum, essayText] of Object.entries(essays)) {
-                if (essayText.trim()) {
-                    await writingApi.saveDraft(attempt.id, parseInt(taskNum), essayText);
-                }
-            }
-
-            // Save progress
-            await testAttemptApi.saveProgress(attempt.id, {
+            await saveProgress(attempt.id, {
+                essays,
                 timeLeft,
                 currentPart: activeTask,
-                answers: {}
+                answers: {},
             });
-
-            setIsExitModalOpen(false);
+            closeExitModal();
             navigate('/dashboard');
-        } catch (error) {
-            console.error('Failed to save progress:', error);
+        } catch (err) {
+            console.error('Failed to save progress:', err);
             alert('Không thể lưu tiến trình. Vui lòng thử lại.');
         } finally {
             setIsSavingProgress(false);
         }
-    }, [attempt, essays, timeLeft, activeTask, navigate]);
+    }, [attempt, essays, timeLeft, activeTask, navigate, saveProgress, closeExitModal, setIsSavingProgress]);
 
     // --- Get Task Data ---
-    const getTaskData = useCallback((taskNumber) => {
+    const currentTask = useMemo(() => {
         if (!testData || testData.length === 0) return null;
-        return testData.find(section => section.partNumber === taskNumber);
-    }, [testData]);
-
-    const currentTask = useMemo(() => getTaskData(activeTask), [getTaskData, activeTask]);
+        return testData.find(section => section.partNumber === activeTask);
+    }, [testData, activeTask]);
 
     // --- Render Logic ---
     if (loading && !isResumeModalOpen) {
@@ -374,7 +415,7 @@ const WritingTestPage = () => {
 
             <ExitTestModal
                 isOpen={isExitModalOpen}
-                onClose={() => setIsExitModalOpen(false)}
+                onClose={closeExitModal}
                 onSaveAndExit={handleSaveAndExit}
                 onAbort={handleAbort}
                 isSaving={isSavingProgress}
@@ -382,7 +423,7 @@ const WritingTestPage = () => {
 
             <ConfirmationModal
                 isOpen={isConfirmModalOpen}
-                onClose={() => setIsConfirmModalOpen(false)}
+                onClose={closeConfirmModal}
                 onConfirm={handleFinalSubmit}
                 title="Xác nhận nộp bài"
                 confirmText="Nộp bài"
@@ -391,11 +432,11 @@ const WritingTestPage = () => {
                 <div className="submit-summary">
                     <div className="submit-summary-item">
                         <span>Task 1:</span>
-                        <span>{essays[1]?.trim().split(/\s+/).filter(Boolean).length || 0} từ</span>
+                        <span>{getWordCount(1)} từ</span>
                     </div>
                     <div className="submit-summary-item">
                         <span>Task 2:</span>
-                        <span>{essays[2]?.trim().split(/\s+/).filter(Boolean).length || 0} từ</span>
+                        <span>{getWordCount(2)} từ</span>
                     </div>
                 </div>
                 <p className="submit-warning">
@@ -408,7 +449,7 @@ const WritingTestPage = () => {
                     <TestHeader
                         testName={`${source.toUpperCase()} Test ${testNum} - Writing`}
                         timeLeft={timeLeft}
-                        onSubmit={() => setIsConfirmModalOpen(true)}
+                        onSubmit={openConfirmModal}
                         onExit={handleExitRequest}
                         isSubmitting={isSubmitting}
                     />

@@ -570,14 +570,17 @@ public class TestAttemptService {
 
         // First delete all associated user answers to avoid FK constraint violations
         userAnswerRepository.deleteByAttemptId(attemptId);
+        entityManager.flush(); // Ensure user answers are deleted before proceeding
         logger.info("   -> Deleted all user answers for attemptId={}", attemptId);
 
         // Delete all associated writing submissions (for writing skill tests)
         writingSubmissionRepository.deleteByAttemptId(attemptId);
+        entityManager.flush(); // Ensure writing submissions are deleted before deleting attempt
         logger.info("   -> Deleted all writing submissions for attemptId={}", attemptId);
 
         // Then delete the attempt itself using explicit JPQL query
         testAttemptRepository.deleteAttemptById(attemptId);
+        entityManager.flush(); // Ensure the delete is executed immediately
         logger.info("✅ Successfully cancelled and deleted test attempt: attemptId={}", attemptId);
     }
 

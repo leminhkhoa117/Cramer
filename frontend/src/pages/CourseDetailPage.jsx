@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { courseApi } from '../api/backendApi';
+import { useCourseStore } from '../stores';
 import './../css/CourseDetail.css';
 import FullPageLoader from '../components/FullPageLoader';
 import { FaBookOpen, FaHeadphones, FaPen, FaMicrophone, FaArrowLeft } from 'react-icons/fa';
@@ -22,26 +22,33 @@ const skills = [
 
 export default function CourseDetailPage() {
     const { courseName } = useParams();
-    const [tests, setTests] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    
+    // Zustand store for course tests caching
+    const { 
+        courseTests, 
+        fetchCourseTests, 
+        getCachedTests,
+        loading,
+        error 
+    } = useCourseStore();
+
+    // Get tests from cache or fetch
+    const tests = courseTests[courseName] || [];
 
     useEffect(() => {
-        const fetchTests = async () => {
-            try {
-                setLoading(true);
-                const response = await courseApi.getTestsByCourse(courseName);
-                setTests(response.data);
-                setError(null);
-            } catch (err) {
-                setError('Không thể tải danh sách bài test.');
-                console.error(err);
-            } finally {
-                setLoading(false);
+        const loadTests = async () => {
+            // Check if already cached
+            const cached = getCachedTests(courseName);
+            if (!cached) {
+                try {
+                    await fetchCourseTests(courseName);
+                } catch (err) {
+                    console.error('Failed to fetch course tests:', err);
+                }
             }
         };
-        fetchTests();
-    }, [courseName]);
+        loadTests();
+    }, [courseName, getCachedTests, fetchCourseTests]);
 
     const showLoader = loading && !error && tests.length === 0;
 

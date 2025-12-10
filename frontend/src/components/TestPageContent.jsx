@@ -1,19 +1,18 @@
 import ExitTestModal from './ExitTestModal';
-import React, { useMemo, useRef, useCallback, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useMemo, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTestStore, useTestSessionStore } from '../stores';
 import TestHeader from './TestHeader';
 import HighlightableText from './HighlightableText';
 import TestFooter from './TestFooter';
 import { motion } from 'framer-motion';
 import QuestionGroupRenderer from './QuestionGroupRenderer';
 import ConfirmationModal from './ConfirmationModal';
-import StartTestModal from './StartTestModal'; // This might not be needed here, TestPage handles it
 import AudioPlayer from './AudioPlayer';
 import ToggleSwitch from './ToggleSwitch';
 import TestLayout from './TestLayout';
 import useTextHighlighter from '../hooks/useTextHighlighter';
 import HighlightPopup from './HighlightPopup';
-import { testAttemptApi } from '../api/backendApi';
 
 import '../css/TestPage.css';
 import '../css/TestHeader.css';
@@ -90,14 +89,47 @@ const groupQuestionsFromLayout = (part) => {
 
 
 const TestPageContent = ({
-    testStatus, setTestStatus, testData, attempt, answers, setAnswers,
-    loading, error, isConfirmModalOpen, setIsConfirmModalOpen,
-    displayPartIndex, setDisplayPartIndex, readingTimeLeft,
-    audioPlayerRefs, isAutoplay, setIsAutoplay, setActiveAudioIndex,
-    source, testNum, skill, navigate, handleFinalSubmit, isSubmitting
+    source,
+    testNum,
+    skill,
+    audioPlayerRefs,
+    handleFinalSubmit,
 }) => {
-    const [isExitModalOpen, setIsExitModalOpen] = useState(false);
-    const [isSavingProgress, setIsSavingProgress] = useState(false);
+    // Navigation hook
+    const navigate = useNavigate();
+
+    // ============ ZUSTAND STORE STATE ============
+    const {
+        testStatus,
+        testData,
+        attempt,
+        answers,
+        loading,
+        error,
+        isSubmitting,
+        isConfirmModalOpen,
+        displayPartIndex,
+        timeLeft,
+        isAutoplay,
+        isSavingProgress,
+        // Actions
+        setAnswer,
+        setDisplayPartIndex,
+        setIsAutoplay,
+        openConfirmModal,
+        closeConfirmModal,
+        openExitModal,
+        closeExitModal,
+        isExitModalOpen,
+        setIsSavingProgress,
+    } = useTestStore();
+
+    // Session store for API operations
+    const { saveProgress, cancelAttempt } = useTestSessionStore();
+
+    // Get activeAudioIndex and setActiveAudioIndex from store
+    const activeAudioIndex = useTestStore(state => state.activeAudioIndex);
+    const setActiveAudioIndex = useTestStore(state => state.setActiveAudioIndex);
 
     // --- Highlighting State ---
     const highlightContainerRef = useRef(null); // Create ref for highlightable area
@@ -146,11 +178,11 @@ const TestPageContent = ({
     }, [isListeningTest, displayedPart]);
 
     // --- Handlers ---
-    const handleAnswerChange = (questionId, answerValue) => {
-        setAnswers(prev => ({ ...prev, [questionId]: answerValue }));
-    };
+    const handleAnswerChange = useCallback((questionId, answerValue) => {
+        setAnswer(questionId, answerValue);
+    }, [setAnswer]);
 
-    const handleQuestionSelect = (questionNumber) => {
+    const handleQuestionSelect = useCallback((questionNumber) => {
         const question = allQuestions.find(q => q.questionNumber === questionNumber);
         if (!question) return;
         const partIndex = testData.findIndex(part => part.id === question.sectionId);
@@ -161,24 +193,24 @@ const TestPageContent = ({
             const element = document.getElementById(`q-block-${question.id}`);
             if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
-    };
+    }, [allQuestions, testData, displayPartIndex, setDisplayPartIndex]);
 
     // --- Exit Handlers ---
-    const handleExitRequest = useCallback(() => setIsExitModalOpen(true), []);
+    const handleExitRequest = useCallback(() => openExitModal(), [openExitModal]);
 
     const handleAbort = useCallback(async () => {
         if (!attempt) return;
         try {
             setIsSavingProgress(true);
-            await testAttemptApi.cancelAttempt(attempt.id);
-            setIsExitModalOpen(false);
+            await cancelAttempt(attempt.id);
+            closeExitModal();
             // Pass state to trigger dashboard refresh
             navigate('/dashboard', { state: { refreshData: true } });
-        } catch (error) {
-            console.error('Failed to cancel attempt:', error);
+        } catch (err) {
+            console.error('Failed to cancel attempt:', err);
             // If the attempt was already deleted (404), still navigate away
-            if (error.response?.status === 404) {
-                setIsExitModalOpen(false);
+            if (err.response?.status === 404) {
+                closeExitModal();
                 navigate('/dashboard', { state: { refreshData: true } });
             } else {
                 alert('Không thể huỷ lần làm bài. Vui lòng thử lại.');
@@ -186,7 +218,7 @@ const TestPageContent = ({
         } finally {
             setIsSavingProgress(false);
         }
-    }, [attempt, navigate]);
+    }, [attempt, navigate, cancelAttempt, closeExitModal, setIsSavingProgress]);
 
     const handleSaveAndExit = useCallback(async () => {
         if (!attempt) return;
@@ -195,33 +227,22 @@ const TestPageContent = ({
             setIsSavingProgress(true);
 
             // Determine what to save based on skill
-            const timeLeft = skill === 'reading' ? readingTimeLeft : null;
+            const currentTimeLeft = skill === 'reading' ? timeLeft : null;
             const currentPart = skill === 'listening' ? displayPartIndex : null;
 
-            await testAttemptApi.saveProgress(attempt.id, { timeLeft, currentPart, answers });
+            await saveProgress(attempt.id, { timeLeft: currentTimeLeft, currentPart, answers });
 
-            setIsExitModalOpen(false);
+            closeExitModal();
             navigate('/dashboard');
-        } catch (error) {
-            console.error('Failed to save progress:', error);
+        } catch (err) {
+            console.error('Failed to save progress:', err);
             alert('Không thể lưu tiến trình. Vui lòng thử lại.');
         } finally {
             setIsSavingProgress(false);
         }
-    }, [attempt, skill, readingTimeLeft, displayPartIndex, navigate]);
+    }, [attempt, skill, timeLeft, displayPartIndex, answers, navigate, saveProgress, closeExitModal, setIsSavingProgress]);
 
     // --- Render Logic ---
-    if (testStatus === 'pending') {
-        return (
-            <StartTestModal
-                isOpen={true}
-                onConfirm={() => setTestStatus('running')}
-                onClose={() => navigate('/courses')}
-                skill={skill}
-            />
-        );
-    }
-
     if (loading && !attempt) return <div className="loading-screen">Loading test...</div>;
     if (error) return <div className="error-message">{error}</div>;
     if (!displayedPart) return <div className="loading-screen">No test data found.</div>;
@@ -230,8 +251,8 @@ const TestPageContent = ({
         <div className={`test-page-wrapper ${isListeningTest ? 'listening-test-active' : ''}`}>
             <TestHeader
                 testName={`IELTS ${skill.charAt(0).toUpperCase() + skill.slice(1)} Test - ${source.toUpperCase()} Test ${testNum}`}
-                timeLeft={isListeningTest ? null : readingTimeLeft}
-                onSubmit={() => setIsConfirmModalOpen(true)}
+                timeLeft={isListeningTest ? null : timeLeft}
+                onSubmit={openConfirmModal}
                 onExit={handleExitRequest}
                 isSubmitting={isSubmitting}
             />
@@ -289,7 +310,7 @@ const TestPageContent = ({
 
             <ConfirmationModal
                 isOpen={isConfirmModalOpen}
-                onClose={() => setIsConfirmModalOpen(false)}
+                onClose={closeConfirmModal}
                 onConfirm={handleFinalSubmit}
                 title="Xác nhận nộp bài"
             >
@@ -298,7 +319,7 @@ const TestPageContent = ({
 
             <ExitTestModal
                 isOpen={isExitModalOpen}
-                onClose={() => setIsExitModalOpen(false)}
+                onClose={closeExitModal}
                 onAbort={handleAbort}
                 onSaveAndExit={handleSaveAndExit}
                 isSaving={isSavingProgress}

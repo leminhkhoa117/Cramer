@@ -1,8 +1,7 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState, useCallback } from 'react';
 import { FiEdit3, FiClock, FiTrendingUp, FiPieChart, FiTarget, FiChevronRight } from 'react-icons/fi';
 import { Link, useLocation } from 'react-router-dom';
-import { dashboardApi } from '../api/backendApi';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore, useProfileStore, useDashboardStore } from '../stores';
 import { motion, AnimatePresence } from 'framer-motion';
 import GoalModal from '../components/GoalModal';
 import FilterModal from '../components/FilterModal';
@@ -57,27 +56,33 @@ const dashboardTabs = [
 ];
 
 export default function Dashboard() {
-  const { profile, profileLoading, user } = useAuth();
+  // Auth & Profile from Zustand stores
+  const user = useAuthStore(state => state.user);
+  const profile = useProfileStore(state => state.profile);
+  const profileLoading = useProfileStore(state => state.loading);
+
+  // Dashboard store for summary data, loading, error, and pagination
+  const {
+    summary,
+    loading,
+    error,
+    currentPage,
+    totalPages,
+    searchQuery,
+    debouncedSearchQuery,
+    fetchSummary,
+    refreshSummary,
+    setPage,
+    setSearchQuery,
+    setDebouncedSearchQuery,
+    updateSummary,
+  } = useDashboardStore();
+
   const location = useLocation();
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState({});
   const [activeView, setActiveView] = useState('courses');
-
-  // Pagination and Search states
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-
-  // Track the last profile ID we fetched for to avoid unnecessary refetches
-  const [lastFetchedProfileId, setLastFetchedProfileId] = useState(null);
-
-  // Used to trigger manual refresh (e.g., after cancelling test)
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Handle refresh request from navigation (e.g., after cancelling test)
   useEffect(() => {
@@ -86,51 +91,34 @@ export default function Dashboard() {
       console.log('🔄 Refresh triggered from navigation state!');
       // Clear the navigation state to prevent re-refresh on subsequent renders
       window.history.replaceState({}, document.title);
-      // Increment trigger to force re-fetch
-      setRefreshTrigger(prev => prev + 1);
+      // Force refresh using store action
+      refreshSummary();
     }
-  }, [location.state]);
+  }, [location.state, refreshSummary]);
 
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(0); // Reset to first page on search change
+      setDebouncedSearchQuery(searchQuery);
     }, 500);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [searchQuery, setDebouncedSearchQuery]);
 
-  const fetchDashboardData = async () => {
+  // Fetch dashboard data using store action
+  useEffect(() => {
     if (!profile?.id) {
       return;
     }
-
-    try {
-      console.log('📥 Fetching dashboard summary');
-      setLoading(true);
-      // Pass pagination and search params - 4 items per page for 2x2 grid
-      // Note: userId is now extracted from JWT on the backend (security fix)
-      const response = await dashboardApi.getSummary(page, 4, debouncedSearch);
-      setSummary(response.data);
-
-      // Update pagination info from response
-      if (response.data.courseProgress && response.data.courseProgress.totalPages !== undefined) {
-        setTotalPages(response.data.courseProgress.totalPages);
-      }
-
-      setLastFetchedProfileId(profile.id);
-      setError(null);
-    } catch (err) {
+    console.log('📥 Fetching dashboard summary via store');
+    fetchSummary(currentPage, 4, debouncedSearchQuery).catch(err => {
       console.error('Failed to load dashboard summary:', err);
-      setError('Không thể tải dữ liệu dashboard.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    });
+  }, [profile?.id, currentPage, debouncedSearchQuery, fetchSummary]);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, [profile?.id, page, debouncedSearch, refreshTrigger]);
+  // Callback for refreshing data (used by child components)
+  const handleRefreshData = useCallback(() => {
+    refreshSummary();
+  }, [refreshSummary]);
 
   const { overallTarget, skillTargets } = useMemo(() => {
     if (!summary?.target) {
@@ -431,8 +419,8 @@ export default function Dashboard() {
                             <input
                               type="text"
                               placeholder="Tìm kiếm khoá học..."
-                              value={search}
-                              onChange={(e) => setSearch(e.target.value)}
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
                               className="sl-search-input"
                             />
                           </div>
@@ -572,7 +560,7 @@ export default function Dashboard() {
                                         examSource={course.examSource}
                                         testNumber={course.testNumber}
                                         skill={course.skill}
-                                        onAttemptDeleted={fetchDashboardData}
+                                        onAttemptDeleted={handleRefreshData}
                                       />
                                     </div>
                                   </article>
@@ -580,7 +568,7 @@ export default function Dashboard() {
                               })}
                             </div>
                             <Pagination
-                              currentPage={page}
+                              currentPage={currentPage}
                               totalPages={totalPages}
                               onPageChange={setPage}
                             />
@@ -642,10 +630,16 @@ export default function Dashboard() {
             currentTarget={summary?.target}
             onSave={(newTargetData) => {
               setIsGoalModalOpen(false);
-              setSummary(prevSummary => ({
-                ...prevSummary,
-                target: newTargetData,
-              }));
+              // Safely update summary with null check to prevent TypeError
+              updateSummary(prevSummary => {
+                if (!prevSummary) {
+                  return { target: newTargetData };
+                }
+                return {
+                  ...prevSummary,
+                  target: newTargetData,
+                };
+              });
             }}
           />
 

@@ -58,6 +58,19 @@
 - `TestPage.jsx` uses `hasFetchedRef` to prevent duplicate API calls in React StrictMode.
 - `WritingResultPage.jsx` uses `react-resizable-panels` for 3-column layout with collapsible scores bar.
 
+### State Management (Zustand)
+
+- **All global state now managed by Zustand stores** in `frontend/src/stores/`:
+  - `useAuthStore` — Auth user, session, login/logout actions
+  - `useProfileStore` — User profile with auto-sync to auth changes
+  - `useTestStore` — Test-taking UI state (answers, timer, modals)
+  - `useTestSessionStore` — Test API operations with caching
+  - `useDashboardStore` — Dashboard data with pagination (sessionStorage persisted)
+  - `useCourseStore` — Courses list with caching
+- **Import pattern**: `import { useAuthStore, useProfileStore } from '../stores'`
+- **Selector pattern**: `const user = useAuthStore(state => state.user)` for granular subscriptions
+- **HighlightContext** — Kept as React Context (scoped to TestPage only)
+
 ## Database Notes
 
 - **RLS (Row Level Security)** is enabled on `test_attempts`, `user_answers`, `writing_submissions`, `profiles`, and `target` tables.
@@ -66,6 +79,36 @@
 
 ## Recent Agent Notes
 
+- 2025-12-10: **Major State Management Migration: React Context → Zustand** — Complete refactoring of frontend state management:
+  - **New Stores Created** (`frontend/src/stores/`):
+    - `useAuthStore.js` — Authentication state (user, session, signIn, signOut, OAuth)
+    - `useProfileStore.js` — User profile with auto-load on auth changes
+    - `useTestStore.js` — ALL test-taking state (20+ properties, 25+ actions, computed getters)
+    - `useTestSessionStore.js` — Test API operations with data caching (5-min TTL)
+    - `useDashboardStore.js` — Dashboard summary with caching + pagination (persisted to sessionStorage)
+    - `useCourseStore.js` — Courses list with caching + pagination
+  - **Props Drilling Eliminated**:
+    - `TestPageContent` reduced from 24 props to 5 props
+    - Components now access store directly via hooks
+  - **Code Duplication Removed**:
+    - `TestPage.jsx` and `WritingTestPage.jsx` now share `useTestStore` and `useTestSessionStore`
+    - ~200 lines of duplicate logic consolidated
+  - **Files Refactored**:
+    - `App.jsx` — Removed AuthProvider wrapper, uses stores directly
+    - `TestPage.jsx` — 14 useState → Zustand selectors
+    - `WritingTestPage.jsx` — 14 useState → Zustand selectors
+    - `TestPageContent.jsx` — Receives 5 props instead of 24
+    - `Dashboard.jsx` — Uses `useDashboardStore` for caching
+    - `Courses.jsx` — Uses `useCourseStore` for caching
+    - `CourseDetailPage.jsx` — Uses cached course tests
+    - `Login.jsx`, `Profile.jsx`, `Header.jsx` — Use auth/profile stores
+    - `ChangePasswordModal.jsx` — Uses `useAuthStore`
+  - **AuthContext.jsx** — Kept for reference but no longer imported by any component
+  - **Benefits**:
+    - Data caching prevents refetching on navigation
+    - Granular subscriptions prevent unnecessary re-renders
+    - DevTools integration for debugging
+    - Cleaner, more maintainable components
 - 2025-12-10: **Major Security Audit & Fixes** — Comprehensive security hardening:
   - **IDOR Fixes (CRITICAL)**: `ProfileController` and `DashboardController` now validate ownership via JWT authentication. Dashboard endpoint changed from `/summary/{userId}` to `/summary`.
   - **XSS Prevention (CRITICAL)**: Installed DOMPurify and created `src/utils/sanitize.js`. All 18 `dangerouslySetInnerHTML` usages now sanitized.

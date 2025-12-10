@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore, useProfileStore } from '../stores';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaGoogle, FaEnvelope, FaLock, FaUser, FaArrowLeft, FaEye, FaEyeSlash } from 'react-icons/fa';
 import OTPVerification from '../components/OTPVerification';
-import { profileApi, authApi } from '../api/backendApi';
+import { authApi } from '../api/backendApi';
 import { authHelpers } from '../api/supabaseClient';
 import logoImage from '../../pictures/logo/Icon.png';
 import '../css/Login.css';
@@ -205,7 +205,16 @@ export default function Login() {
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
 
-  const { user, loading: authLoading, signOut, signIn, signUp, verifyOtp, resendOtp, signInWithGoogle } = useAuth();
+  // Zustand store selectors
+  const user = useAuthStore(state => state.user);
+  const authLoading = useAuthStore(state => state.loading);
+  const signOut = useAuthStore(state => state.signOut);
+  const signIn = useAuthStore(state => state.signIn);
+  const signUp = useAuthStore(state => state.signUp);
+  const verifyOtp = useAuthStore(state => state.verifyOtp);
+  const resendOtp = useAuthStore(state => state.resendOtp);
+  const signInWithGoogle = useAuthStore(state => state.signInWithGoogle);
+  const createProfileForUser = useProfileStore(state => state.createProfileForUser);
   const navigate = useNavigate();
 
   // Scroll to top on mount
@@ -303,7 +312,7 @@ export default function Login() {
             setShowOtpPopup(true);
             setSuccess('Mã xác thực đã được gửi! Kiểm tra email của bạn.');
           } else {
-            await profileApi.create({ id: data.user.id, username: username || email.split('@')[0] });
+            await createProfileForUser(data.user.id, username || email.split('@')[0]);
             setSuccess('Tạo tài khoản thành công! Bạn có thể đăng nhập ngay.');
             setTimeout(() => {
               clearForm();
@@ -348,7 +357,7 @@ export default function Login() {
       const userId = sessionStorage.getItem('pendingUserId');
 
       if (userId && storedUsername) {
-        await profileApi.create({ id: userId, username: storedUsername });
+        await createProfileForUser(userId, storedUsername);
         sessionStorage.removeItem('pendingUsername');
         sessionStorage.removeItem('pendingUserId');
       }
