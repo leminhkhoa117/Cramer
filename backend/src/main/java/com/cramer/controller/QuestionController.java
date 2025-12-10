@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/questions")
-@CrossOrigin(origins = "*")
 public class QuestionController {
 
     private static final Logger logger = LoggerFactory.getLogger(QuestionController.class);

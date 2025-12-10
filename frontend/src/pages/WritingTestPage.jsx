@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { sanitizeHtml } from '../utils/sanitize';
 import { AnimatePresence, motion } from 'framer-motion';
 import { testApi, testAttemptApi, writingApi } from '../api/backendApi';
 import TestHeader from '../components/TestHeader';
@@ -53,6 +54,9 @@ const WritingTestPage = () => {
     const isSubmittingRef = useRef(false);
     const hasFetchedRef = useRef(false);
 
+    // Ref to fix stale closure in timer
+    const handleFinalSubmitRef = useRef(null);
+
     // --- Word Count ---
     const wordCount = useMemo(() => {
         const text = essays[activeTask] || '';
@@ -74,8 +78,17 @@ const WritingTestPage = () => {
         }
     }), [essays]);
 
+    // Reset hasFetchedRef on unmount
+    useEffect(() => {
+        return () => {
+            hasFetchedRef.current = false;
+        };
+    }, []);
+
     // --- Data Loading and Setup ---
-    const setupTestState = useCallback(async (attemptData, fullTestData) => {
+    const setupTestState = useCallback(async (attemptData, fullTestData, abortSignal) => {
+        if (abortSignal?.aborted) return;
+        
         setAttempt(attemptData);
         setTestData(fullTestData);
 
@@ -83,12 +96,14 @@ const WritingTestPage = () => {
         if (attemptData.status === 'IN_PROGRESS' && attemptData.id) {
             try {
                 const submissionsRes = await writingApi.getSubmissions(attemptData.id);
+                if (abortSignal?.aborted) return;
                 const loadedEssays = { 1: '', 2: '' };
                 submissionsRes.data.forEach(sub => {
                     loadedEssays[sub.taskNumber] = sub.essayText || '';
                 });
                 setEssays(loadedEssays);
             } catch (error) {
+                if (abortSignal?.aborted) return;
                 console.error("Failed to load previous essays:", error);
             }
         } else {
@@ -108,11 +123,16 @@ const WritingTestPage = () => {
         if (hasFetchedRef.current) return;
         hasFetchedRef.current = true;
 
+        const abortController = new AbortController();
+
         const fetchAndStartTest = async () => {
             try {
                 setLoading(true);
                 // Pass forceNew to cancel old IN_PROGRESS attempts and start fresh
                 const attemptRes = await testAttemptApi.startAttempt(source, testNum, 'writing', forceNew);
+                
+                if (abortController.signal.aborted) return;
+                
                 const attemptData = attemptRes.data;
 
                 // If backend returned a COMPLETED attempt (forceNew was false), show choice modal
@@ -132,6 +152,7 @@ const WritingTestPage = () => {
                         // Check if there are any saved essays
                         try {
                             const submissionsRes = await writingApi.getSubmissions(attemptData.id);
+                            if (abortController.signal.aborted) return;
                             const hasEssays = submissionsRes.data.some(sub => sub.essayText && sub.essayText.trim());
                             if (hasEssays || attemptData.timeLeft < INITIAL_WRITING_TIME) {
                                 setInProgressAttempt(attemptData);
@@ -144,15 +165,24 @@ const WritingTestPage = () => {
                     }
                 }
 
+                if (abortController.signal.aborted) return;
+
                 const fullTestData = await testApi.getFullTest(source, testNum, 'writing');
-                setupTestState(attemptData, fullTestData);
+                if (abortController.signal.aborted) return;
+                setupTestState(attemptData, fullTestData, abortController.signal);
             } catch (err) {
+                if (abortController.signal.aborted) return;
                 console.error('Error starting writing test:', err);
                 setError('Không thể tải đề Writing. Vui lòng thử lại sau.');
                 setLoading(false);
             }
         };
         fetchAndStartTest();
+
+        return () => {
+            abortController.abort();
+            hasFetchedRef.current = false;
+        };
     }, [source, testNum, setupTestState, forceNew]);
 
     // --- Modal Handlers ---
@@ -219,6 +249,11 @@ const WritingTestPage = () => {
         }
     }, [attempt, essays, navigate]);
 
+    // Keep handleFinalSubmitRef updated
+    useEffect(() => {
+        handleFinalSubmitRef.current = handleFinalSubmit;
+    }, [handleFinalSubmit]);
+
     // --- Timer ---
     useEffect(() => {
         if (testStatus !== 'running' || loading) return;
@@ -227,7 +262,8 @@ const WritingTestPage = () => {
             setTimeLeft(prevTime => {
                 if (prevTime <= 1) {
                     clearInterval(timer);
-                    handleFinalSubmit();
+                    // Use ref to avoid stale closure
+                    handleFinalSubmitRef.current?.();
                     return 0;
                 }
                 return prevTime - 1;
@@ -235,7 +271,7 @@ const WritingTestPage = () => {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [testStatus, loading, handleFinalSubmit]);
+    }, [testStatus, loading]); // Removed handleFinalSubmit from deps
 
     // --- Essay Change Handler ---
     const handleEssayChange = useCallback((taskNumber, text) => {
@@ -374,6 +410,7 @@ const WritingTestPage = () => {
                         timeLeft={timeLeft}
                         onSubmit={() => setIsConfirmModalOpen(true)}
                         onExit={handleExitRequest}
+                        isSubmitting={isSubmitting}
                     />
 
                     {/* Main Content - Reusing test-page-container structure */}
@@ -395,7 +432,7 @@ const WritingTestPage = () => {
                                         {currentTask?.passageText && (
                                             <div
                                                 className="prompt-text"
-                                                dangerouslySetInnerHTML={{ __html: currentTask.passageText }}
+                                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(currentTask.passageText) }}
                                             />
                                         )}
                                     </div>

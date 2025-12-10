@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/sections")
-@CrossOrigin(origins = "*")
 public class SectionController {
 
     private static final Logger logger = LoggerFactory.getLogger(SectionController.class);

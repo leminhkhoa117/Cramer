@@ -8,7 +8,7 @@ const formatTime = (seconds) => {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 };
 
-export default function TestHeader({ testName, timeLeft, onSubmit, onExit }) {
+export default function TestHeader({ testName, timeLeft, onSubmit, onExit, isSubmitting = false }) {
     const [isFullscreen, setIsFullscreen] = useState(false);
 
     const toggleFullscreen = () => {
@@ -41,15 +41,19 @@ export default function TestHeader({ testName, timeLeft, onSubmit, onExit }) {
             </div>
             <div className="test-header-right">
                 {onExit && (
-                    <button onClick={onExit} className="test-header-btn exit-btn">
+                    <button onClick={onExit} className="test-header-btn exit-btn" disabled={isSubmitting}>
                         Thoát
                     </button>
                 )}
                 <button onClick={toggleFullscreen} className="test-header-btn fullscreen-btn">
                     {isFullscreen ? <FiMinimize /> : <FiMaximize />}
                 </button>
-                <button onClick={onSubmit} className="test-header-btn submit-btn">
-                    Nộp bài
+                <button 
+                    onClick={onSubmit} 
+                    className="test-header-btn submit-btn"
+                    disabled={isSubmitting}
+                >
+                    {isSubmitting ? 'Đang nộp...' : 'Nộp bài'}
                 </button>
             </div>
         </header>

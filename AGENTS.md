@@ -60,12 +60,21 @@
 
 ## Database Notes
 
-- **RLS (Row Level Security)** is enabled on `test_attempts` and `user_answers` tables.
+- **RLS (Row Level Security)** is enabled on `test_attempts`, `user_answers`, `writing_submissions`, `profiles`, and `target` tables.
 - Service role policies have been added to allow backend DELETE operations.
 - When adding new tables with RLS, ensure service_role policies are created for backend operations.
 
 ## Recent Agent Notes
 
+- 2025-12-10: **Major Security Audit & Fixes** — Comprehensive security hardening:
+  - **IDOR Fixes (CRITICAL)**: `ProfileController` and `DashboardController` now validate ownership via JWT authentication. Dashboard endpoint changed from `/summary/{userId}` to `/summary`.
+  - **XSS Prevention (CRITICAL)**: Installed DOMPurify and created `src/utils/sanitize.js`. All 18 `dangerouslySetInnerHTML` usages now sanitized.
+  - **Race Condition Fix**: `TestAttemptService.startOrGetAttempt` now uses pessimistic locking via `findAndLockByUserIdAndExamSourceAndTestNumberAndSkill`.
+  - **Null Check Fix**: `GeminiGradingService.parseAndApplyGradingResults` validates Gemini API response structure before accessing arrays.
+  - **Transaction Fix**: `WritingSubmissionService` async grading now uses `TransactionSynchronizationManager.afterCommit()` to prevent reading uncommitted data.
+  - **RLS Enabled**: `profiles` and `target` tables now have RLS with user-scoped and service_role policies.
+  - **GlobalExceptionHandler**: Added `AccessDeniedException` handler returning HTTP 403.
+  - **Frontend API Update**: `dashboardApi.getSummary()` no longer takes userId parameter.
 - 2025-12-05: **Fixed ghost IN_PROGRESS attempts for Writing tests** — when user completes a Writing test and navigates back, the system no longer creates phantom IN_PROGRESS attempts. Changes:
   - `TestAttemptService.java`: When `forceNew=false` and latest attempt is COMPLETED, return the COMPLETED attempt instead of creating new
   - `WritingTestPage.jsx`: Detect COMPLETED status and show choice modal

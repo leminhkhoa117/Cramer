@@ -739,12 +739,40 @@ public class GeminiGradingService {
 
                 JsonNode root = objectMapper.readTree(apiResponse);
 
+                // Validate Gemini API response structure with null checks
+                JsonNode candidates = root.path("candidates");
+                if (candidates.isMissingNode() || !candidates.isArray() || candidates.size() == 0) {
+                        logger.error("Invalid Gemini API response: missing candidates array. Response: {}", 
+                                        apiResponse.length() > 500 ? apiResponse.substring(0, 500) + "..." : apiResponse);
+                        throw new RuntimeException("Invalid Gemini API response: missing candidates array");
+                }
+
+                JsonNode firstCandidate = candidates.get(0);
+                if (firstCandidate == null) {
+                        logger.error("Invalid Gemini API response: empty candidates array");
+                        throw new RuntimeException("Invalid Gemini API response: empty candidates");
+                }
+
+                JsonNode parts = firstCandidate.path("content").path("parts");
+                if (parts.isMissingNode() || !parts.isArray() || parts.size() == 0) {
+                        logger.error("Invalid Gemini API response: missing parts array. First candidate: {}", firstCandidate);
+                        throw new RuntimeException("Invalid Gemini API response: missing parts array");
+                }
+
+                JsonNode firstPart = parts.get(0);
+                if (firstPart == null) {
+                        logger.error("Invalid Gemini API response: empty parts array");
+                        throw new RuntimeException("Invalid Gemini API response: empty parts");
+                }
+
+                JsonNode textNode = firstPart.path("text");
+                if (textNode.isMissingNode()) {
+                        logger.error("Invalid Gemini API response: missing text in response. First part: {}", firstPart);
+                        throw new RuntimeException("Invalid Gemini API response: missing text in response");
+                }
+
                 // Extract the generated text from Gemini response
-                String generatedText = root
-                                .path("candidates").get(0)
-                                .path("content")
-                                .path("parts").get(0)
-                                .path("text").asText();
+                String generatedText = textNode.asText();
 
                 // Clean up the response - remove markdown code blocks if present
                 generatedText = generatedText.trim();

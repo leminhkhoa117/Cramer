@@ -228,8 +228,9 @@ export const userAnswerApi = {
 // DASHBOARD APIs
 // ============================================
 export const dashboardApi = {
-  getSummary: (profileId, page = 0, size = 3, search = '') => {
-        return apiClient.get(`/dashboard/summary/${profileId}`, {
+  // Note: userId is now extracted from JWT on the backend (security fix)
+  getSummary: (page = 0, size = 3, search = '') => {
+        return apiClient.get('/dashboard/summary', {
             params: {
                 page,
                 size,

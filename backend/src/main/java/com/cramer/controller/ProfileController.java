@@ -17,7 +17,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.UUID;
@@ -29,7 +33,6 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/profiles")
-@CrossOrigin(origins = "*")
 @Tag(name = "Profile Management", description = "APIs for managing user profiles")
 public class ProfileController {
 
@@ -53,8 +56,17 @@ public class ProfileController {
     @GetMapping("/{id}")
     public ResponseEntity<ProfileDTO> getProfileById(
             @Parameter(description = "UUID of the profile to retrieve") 
-            @PathVariable UUID id) {
+            @PathVariable UUID id,
+            Authentication authentication) {
         logger.info("📥 GET /api/profiles/{} - Fetching profile", id);
+        
+        // IDOR protection: validate user owns this profile
+        UUID currentUserId = UUID.fromString(authentication.getName());
+        if (!currentUserId.equals(id)) {
+            logger.warn("🚨 IDOR attempt: User {} tried to access profile {}", currentUserId, id);
+            throw new AccessDeniedException("You can only access your own profile");
+        }
+        
         ProfileDTO profileDTO = profileService.getProfileById(id);
         return ResponseEntity.ok(profileDTO);
     }
@@ -62,8 +74,17 @@ public class ProfileController {
     @PutMapping("/{id}")
     public ResponseEntity<ProfileDTO> updateProfile(
             @PathVariable UUID id,
-            @RequestBody ProfileDTO profileDTO) {
+            @Valid @RequestBody ProfileDTO profileDTO,
+            Authentication authentication) {
         logger.info("REST request to update profile: {}", id);
+        
+        // IDOR protection: validate user owns this profile
+        UUID currentUserId = UUID.fromString(authentication.getName());
+        if (!currentUserId.equals(id)) {
+            logger.warn("🚨 IDOR attempt: User {} tried to update profile {}", currentUserId, id);
+            throw new AccessDeniedException("You can only update your own profile");
+        }
+        
         ProfileDTO updatedProfile = profileService.updateProfile(id, profileDTO);
         return ResponseEntity.ok(updatedProfile);
     }

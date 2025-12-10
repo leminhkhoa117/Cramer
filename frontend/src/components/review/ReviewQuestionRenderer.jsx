@@ -1,4 +1,5 @@
 import React from 'react';
+import { sanitizeHtml } from '../../utils/sanitize';
 import '../../css/ReviewQuestionRenderer.css';
 
 /**
@@ -106,11 +107,11 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
             <div className="review-question-content">
                 <span className="question-number">{questionNumber}.</span>
                 <span className="question-text">
-                    {parts[0] && <span dangerouslySetInnerHTML={{ __html: parts[0] }} />}
+                    {parts[0] && <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(parts[0]) }} />}
                     <span className={`review-answer-input ${statusClass}`}>
                         {userAnswer || <em className="no-answer">—</em>}
                     </span>
-                    {parts[1] && <span dangerouslySetInnerHTML={{ __html: parts[1] }} />}
+                    {parts[1] && <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(parts[1]) }} />}
                 </span>
                 {isCorrect === false && (
                     <span className="correct-answer-inline">
@@ -127,7 +128,7 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
             <div className="review-question-content">
                 <p className="question-stem">
                     <span className="question-number">{questionNumber}.</span>
-                    <span dangerouslySetInnerHTML={{ __html: text }} />
+                    <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(text) }} />
                 </p>
                 <div className="review-mcq-options">
                     {options.map((opt, index) => {
@@ -167,7 +168,7 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
             <div className="review-question-content">
                 <p className="question-stem">
                     <span className="question-number">{questionNumber}.</span>
-                    <span dangerouslySetInnerHTML={{ __html: text }} />
+                    <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(text) }} />
                 </p>
                 <div className="review-mcq-options">
                     {options.map((opt, index) => {
@@ -206,7 +207,7 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
             <div className="review-question-content">
                 <p className="question-stem">
                     <span className="question-number">{questionNumber}.</span>
-                    <span dangerouslySetInnerHTML={{ __html: text }} />
+                    <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(text) }} />
                 </p>
                 <div className="review-tfn-options">
                     {tfnOptions.map(opt => {
@@ -238,7 +239,7 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
             <div className="review-question-content">
                 <p className="question-stem">
                     <span className="question-number">{questionNumber}.</span>
-                    <span dangerouslySetInnerHTML={{ __html: text }} />
+                    <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(text) }} />
                 </p>
                 <div className="review-tfn-options">
                     {ynnOptions.map(opt => {
@@ -267,7 +268,7 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
         return (
             <div className="review-question-content">
                 <span className="question-number">{questionNumber}.</span>
-                <span className="question-text" dangerouslySetInnerHTML={{ __html: text }} />
+                <span className="question-text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(text) }} />
                 <span className={`review-answer-select ${statusClass}`}>
                     {userAnswer || <em className="no-answer">—</em>}
                 </span>

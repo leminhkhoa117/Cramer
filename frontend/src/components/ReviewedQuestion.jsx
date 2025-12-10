@@ -1,5 +1,6 @@
 import React from 'react';
 import { FaCheck, FaTimes } from 'react-icons/fa';
+import { sanitizeHtml } from '../utils/sanitize';
 import '../css/ReviewedQuestion.css';
 
 const getUserAnswerText = (answerContent) => {
@@ -48,7 +49,7 @@ const ReviewedQuestion = ({ questionReview }) => {
                 </span>
             </div>
             <div className="reviewed-question-body">
-                <p className="question-text" dangerouslySetInnerHTML={{ __html: questionContent.text }} />
+                <p className="question-text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(questionContent.text) }} />
                 
                 <div className="answers-comparison">
                     <div className="answer-item your-answer">

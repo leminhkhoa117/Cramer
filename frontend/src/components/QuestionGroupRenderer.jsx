@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { sanitizeHtml } from '../utils/sanitize';
 import QuestionRenderer from './QuestionRenderer';
 import HighlightableHtmlContent from './HighlightableHtmlContent'; // Import the new component
 import '../css/QuestionGroup.css';
@@ -32,7 +33,7 @@ const renderHtmlWithQuestions = (html, questions, onAnswerChange, answers) => {
             }
         }
         // Use dangerouslySetInnerHTML for non-placeholder parts
-        return <span key={index} dangerouslySetInnerHTML={{ __html: part }} />;
+        return <span key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(part) }} />;
     });
 };
 

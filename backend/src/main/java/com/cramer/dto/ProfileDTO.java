@@ -1,5 +1,7 @@
 package com.cramer.dto;
 
+import jakarta.validation.constraints.Size;
+
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -8,16 +10,36 @@ import java.util.UUID;
  */
 public class ProfileDTO {
     private UUID id;
+    
+    @Size(max = 100, message = "Username must be at most 100 characters")
     private String username;
+    
+    @Size(max = 255, message = "Full name must be at most 255 characters")
     private String fullName;
+    
+    @Size(max = 20, message = "Phone number must be at most 20 characters")
     private String phoneNumber;
+    
+    @Size(max = 500, message = "Address must be at most 500 characters")
     private String address;
+    
+    @Size(max = 2048, message = "Avatar URL must be at most 2048 characters")
     private String avatarUrl;
+    
+    @Size(max = 2048, message = "Hero background URL must be at most 2048 characters")
     private String heroBackgroundUrl;
+    
+    @Size(max = 2048, message = "Page background URL must be at most 2048 characters")
     private String pageBackgroundUrl;
+    
+    @Size(max = 500, message = "Gemini API key must be at most 500 characters")
     private String geminiApiKey;
+    
     private boolean hasGeminiApiKey;
+    
+    @Size(max = 100, message = "Gemini model must be at most 100 characters")
     private String geminiModel;
+    
     private OffsetDateTime createdAt;
 
     public ProfileDTO() {

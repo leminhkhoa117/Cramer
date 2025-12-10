@@ -46,8 +46,25 @@ const TestPage = () => {
     const isSubmittingRef = useRef(false);
     const hasFetchedRef = useRef(false);
 
+    // Refs to fix stale closure in timer
+    const answersRef = useRef(answers);
+    useEffect(() => {
+        answersRef.current = answers;
+    }, [answers]);
+
+    const handleFinalSubmitRef = useRef(null);
+
+    // Reset hasFetchedRef on unmount
+    useEffect(() => {
+        return () => {
+            hasFetchedRef.current = false;
+        };
+    }, []);
+
     // --- Data Loading and Setup ---
-    const setupTestState = useCallback(async (attemptData, fullTestData) => {
+    const setupTestState = useCallback(async (attemptData, fullTestData, abortSignal) => {
+        if (abortSignal?.aborted) return;
+        
         setAttempt(attemptData);
         setTestData(fullTestData);
 
@@ -55,6 +72,7 @@ const TestPage = () => {
         if (attemptData.status === 'IN_PROGRESS' && attemptData.id) {
             try {
                 const answersRes = await testAttemptApi.getAttemptAnswers(attemptData.id);
+                if (abortSignal?.aborted) return;
                 const loadedAnswers = answersRes.data.reduce((acc, answer) => {
                     // Assuming userAnswer is the plain text answer
                     acc[answer.questionId] = answer.userAnswer;
@@ -62,6 +80,7 @@ const TestPage = () => {
                 }, {});
                 setAnswers(loadedAnswers);
             } catch (error) {
+                if (abortSignal?.aborted) return;
                 console.error("Failed to load previous answers:", error);
                 // Continue without answers, or show an error to the user
             }
@@ -88,11 +107,16 @@ const TestPage = () => {
         if (hasFetchedRef.current) return;
         hasFetchedRef.current = true;
 
+        const abortController = new AbortController();
+
         const fetchAndStartTest = async () => {
             try {
                 setLoading(true);
                 // Pass forceNew to handle retake scenarios
                 const attemptRes = await testAttemptApi.startAttempt(source, testNum, skill, forceNew);
+                
+                if (abortController.signal.aborted) return;
+                
                 const attemptData = attemptRes.data;
 
                 // If backend returned a COMPLETED attempt (forceNew was false), show choice modal
@@ -106,19 +130,28 @@ const TestPage = () => {
                     (attemptData.currentPart !== null && attemptData.currentPart > 0) ||
                     (attemptData.status === 'IN_PROGRESS' && attemptData.id && (await testAttemptApi.getAttemptAnswers(attemptData.id)).data.length > 0); // Check if answers exist
 
+                if (abortController.signal.aborted) return;
+
                 if (attemptData.status === 'IN_PROGRESS' && isDirty) {
                     setInProgressAttempt(attemptData);
                     setIsResumeModalOpen(true);
                 } else {
                     const fullTestData = await testApi.getFullTest(source, testNum, skill);
-                    setupTestState(attemptData, fullTestData);
+                    if (abortController.signal.aborted) return;
+                    setupTestState(attemptData, fullTestData, abortController.signal);
                 }
             } catch (err) {
+                if (abortController.signal.aborted) return;
                 setError('Failed to load test data. Please try again later.');
                 setLoading(false);
             }
         };
         fetchAndStartTest();
+
+        return () => {
+            abortController.abort();
+            hasFetchedRef.current = false;
+        };
     }, [source, testNum, skill, setupTestState, forceNew]);
 
 
@@ -185,7 +218,9 @@ const TestPage = () => {
         setIsConfirmModalOpen(false);
         try {
             setIsSubmitting(true);
-            const normalizedAnswers = Object.entries(answers || {}).reduce((acc, [questionId, value]) => {
+            // Use ref to get latest answers to avoid stale closure
+            const currentAnswers = answersRef.current;
+            const normalizedAnswers = Object.entries(currentAnswers || {}).reduce((acc, [questionId, value]) => {
                 acc[questionId] = Array.isArray(value) ? (value[0] || '') : value;
                 return acc;
             }, {});
@@ -198,7 +233,12 @@ const TestPage = () => {
             setIsSubmitting(false);
             isSubmittingRef.current = false;
         }
-    }, [attempt, answers, navigate]);
+    }, [attempt, navigate]);
+
+    // Keep handleFinalSubmitRef updated
+    useEffect(() => {
+        handleFinalSubmitRef.current = handleFinalSubmit;
+    }, [handleFinalSubmit]);
 
     // --- Timer for Reading Test ---
     useEffect(() => {
@@ -207,14 +247,15 @@ const TestPage = () => {
             setReadingTimeLeft(prevTime => {
                 if (prevTime <= 1) {
                     clearInterval(timer);
-                    handleFinalSubmit();
+                    // Use ref to avoid stale closure
+                    handleFinalSubmitRef.current?.();
                     return 0;
                 }
                 return prevTime - 1;
             });
         }, 1000);
         return () => clearInterval(timer);
-    }, [testStatus, skill, loading, handleFinalSubmit]);
+    }, [testStatus, skill, loading]); // Removed handleFinalSubmit from deps
 
     // --- Audio Logic ---
     useEffect(() => {

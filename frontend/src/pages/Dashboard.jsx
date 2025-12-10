@@ -106,10 +106,11 @@ export default function Dashboard() {
     }
 
     try {
-      console.log('📥 Fetching dashboard summary for:', profile.id);
+      console.log('📥 Fetching dashboard summary');
       setLoading(true);
       // Pass pagination and search params - 4 items per page for 2x2 grid
-      const response = await dashboardApi.getSummary(profile.id, page, 4, debouncedSearch);
+      // Note: userId is now extracted from JWT on the backend (security fix)
+      const response = await dashboardApi.getSummary(page, 4, debouncedSearch);
       setSummary(response.data);
 
       // Update pagination info from response

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { sanitizeHtml } from '../utils/sanitize';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { writingApi } from '../api/backendApi';
 import GradingLoader from '../components/common/GradingLoader';
@@ -65,6 +66,7 @@ const WritingResultPage = () => {
         // Don't poll if we already have review data or there's an error
         if (review || error) return;
 
+        const abortController = new AbortController();
         let pollInterval;
         let isMounted = true;
         let consecutiveErrors = 0;
@@ -76,13 +78,13 @@ const WritingResultPage = () => {
         const initialDelay = isRegrading ? 2000 : 0;
 
         const checkStatus = async () => {
-            if (!isMounted) return;
+            if (!isMounted || abortController.signal.aborted) return;
 
             try {
                 const statusRes = await writingApi.getGradingStatus(attemptId);
                 const status = statusRes.data.status;
 
-                if (!isMounted) return;
+                if (!isMounted || abortController.signal.aborted) return;
 
                 consecutiveErrors = 0; // Reset error counter on success
                 setGradingStatus(status);
@@ -93,14 +95,14 @@ const WritingResultPage = () => {
                     // Fetch review data
                     try {
                         const reviewRes = await writingApi.getWritingReview(attemptId);
-                        if (isMounted) {
+                        if (isMounted && !abortController.signal.aborted) {
                             setReview(reviewRes.data);
                             setLoading(false);
                             setIsRegrading(false); // Reset regrading state
                         }
                     } catch (reviewErr) {
                         console.error('Error fetching review:', reviewErr);
-                        if (isMounted) {
+                        if (isMounted && !abortController.signal.aborted) {
                             setError('Không thể tải kết quả chấm điểm. Vui lòng tải lại trang.');
                             setLoading(false);
                             setIsRegrading(false);
@@ -108,7 +110,7 @@ const WritingResultPage = () => {
                     }
                 } else if (status === 'FAILED') {
                     clearInterval(pollInterval);
-                    if (isMounted) {
+                    if (isMounted && !abortController.signal.aborted) {
                         setError('Chấm điểm thất bại. Vui lòng thử chấm lại.');
                         setLoading(false);
                         setIsRegrading(false);
@@ -120,7 +122,7 @@ const WritingResultPage = () => {
 
                 if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
                     clearInterval(pollInterval);
-                    if (isMounted) {
+                    if (isMounted && !abortController.signal.aborted) {
                         setError('Không thể kiểm tra trạng thái chấm điểm. Vui lòng tải lại trang.');
                         setLoading(false);
                         setIsRegrading(false);
@@ -140,7 +142,7 @@ const WritingResultPage = () => {
                     checkStatus();
                 } else {
                     clearInterval(pollInterval);
-                    if (isMounted) {
+                    if (isMounted && !abortController.signal.aborted) {
                         setError('Quá thời gian chờ. Vui lòng tải lại trang để xem kết quả.');
                         setLoading(false);
                         setIsRegrading(false);
@@ -153,6 +155,7 @@ const WritingResultPage = () => {
             const delayTimeout = setTimeout(startPolling, initialDelay);
             return () => {
                 isMounted = false;
+                abortController.abort();
                 clearTimeout(delayTimeout);
                 clearInterval(pollInterval);
             };
@@ -160,6 +163,7 @@ const WritingResultPage = () => {
             startPolling();
             return () => {
                 isMounted = false;
+                abortController.abort();
                 clearInterval(pollInterval);
             };
         }
@@ -472,13 +476,13 @@ const WritingResultPage = () => {
                             >
                                 <div className="paragraph-rewrite-indicator" />
                                 {group.lines.map((line, lineIdx) => (
-                                    <p key={lineIdx} dangerouslySetInnerHTML={{ __html: line }} />
+                                    <p key={lineIdx} dangerouslySetInnerHTML={{ __html: sanitizeHtml(line) }} />
                                 ))}
                             </div>
                         );
                     }
                     return group.lines.map((line, lineIdx) => (
-                        <p key={`${idx}-${lineIdx}`} dangerouslySetInnerHTML={{ __html: line }} />
+                        <p key={`${idx}-${lineIdx}`} dangerouslySetInnerHTML={{ __html: sanitizeHtml(line) }} />
                     ));
                 })}
             </div>
@@ -685,7 +689,7 @@ const WritingResultPage = () => {
                                 {currentTaskPrompt?.promptText && (
                                     <div
                                         className="task-prompt-text"
-                                        dangerouslySetInnerHTML={{ __html: currentTaskPrompt.promptText }}
+                                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(currentTaskPrompt.promptText) }}
                                     />
                                 )}
                                 {currentTaskPrompt?.imageUrl && (

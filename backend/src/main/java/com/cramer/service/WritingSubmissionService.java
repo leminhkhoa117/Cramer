@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -123,8 +125,25 @@ public class WritingSubmissionService {
             submissions.add(writingSubmissionRepository.save(submission));
         }
         
-        // Start async grading via separate bean (required for @Async to work)
-        asyncGradingService.gradeSubmissionsAsync(submissions, attempt, userId);
+        // Start async grading AFTER transaction commits to ensure data is visible to async thread
+        // This prevents the async thread from reading uncommitted/stale data
+        final List<WritingSubmission> submissionsToGrade = new ArrayList<>(submissions);
+        final TestAttempt attemptToGrade = attempt;
+        final UUID userIdForGrading = userId;
+        
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    logger.info("Transaction committed. Starting async grading for attempt {}", attemptId);
+                    asyncGradingService.gradeSubmissionsAsync(submissionsToGrade, attemptToGrade, userIdForGrading);
+                }
+            });
+        } else {
+            // Fallback: no active transaction synchronization (shouldn't happen in normal flow)
+            logger.warn("No active transaction synchronization. Starting async grading immediately for attempt {}", attemptId);
+            asyncGradingService.gradeSubmissionsAsync(submissionsToGrade, attemptToGrade, userIdForGrading);
+        }
         
         Map<String, Object> result = new HashMap<>();
         result.put("attemptId", attemptId);
@@ -362,8 +381,25 @@ public class WritingSubmissionService {
         // Force flush to ensure database is updated before async call
         writingSubmissionRepository.flush();
         
-        // Trigger async grading (runs after transaction commits due to @Async proxy)
-        asyncGradingService.gradeSubmissionsAsync(savedSubmissions, attempt, userId);
+        // Trigger async grading AFTER transaction commits to ensure data is visible to async thread
+        final List<WritingSubmission> submissionsToRegrade = new ArrayList<>(savedSubmissions);
+        final TestAttempt attemptToRegrade = attempt;
+        final UUID userIdForRegrading = userId;
+        final Long attemptIdForLog = attemptId;
+        
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    logger.info("Transaction committed. Starting async re-grading for attempt {}", attemptIdForLog);
+                    asyncGradingService.gradeSubmissionsAsync(submissionsToRegrade, attemptToRegrade, userIdForRegrading);
+                }
+            });
+        } else {
+            // Fallback: no active transaction synchronization (shouldn't happen in normal flow)
+            logger.warn("No active transaction synchronization. Starting async re-grading immediately for attempt {}", attemptIdForLog);
+            asyncGradingService.gradeSubmissionsAsync(submissionsToRegrade, attemptToRegrade, userIdForRegrading);
+        }
         
         Map<String, Object> result = new HashMap<>();
         result.put("attemptId", attemptId);

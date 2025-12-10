@@ -90,7 +90,15 @@ public class TestAttemptService {
             if (trimmedTestNum == null || trimmedTestNum.isEmpty()) throw new IllegalArgumentException("Test number cannot be null or empty");
             if (trimmedSkill == null || trimmedSkill.isEmpty()) throw new IllegalArgumentException("Skill cannot be null or empty");
             
-            logger.info("🎯 [2] Finding all attempts for this test");
+            logger.info("🎯 [2] Acquiring pessimistic lock to prevent race conditions");
+            // Acquire pessimistic lock to prevent race conditions in concurrent requests
+            // This ensures only one thread can create/modify attempts for this user+test combination at a time
+            Optional<TestAttempt> lockedAttempt = testAttemptRepository
+                    .findAndLockByUserIdAndExamSourceAndTestNumberAndSkill(
+                            userId, trimmedSource, trimmedTestNum, trimmedSkill);
+            logger.info("🎯 [2a] Lock acquired. Existing locked attempt: {}", lockedAttempt.isPresent() ? lockedAttempt.get().getId() : "none");
+            
+            // Now safely fetch all attempts (we hold the lock)
             List<TestAttempt> allAttempts = testAttemptRepository
                     .findByUserIdAndExamSourceAndTestNumberAndSkillOrderByStartedAtDesc(userId, trimmedSource, trimmedTestNum, trimmedSkill);
             

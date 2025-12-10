@@ -91,3 +91,63 @@ Add a short summary like the above whenever a commit touches multiple subsystems
 - Test attempt service: `backend/src/main/java/com/cramer/service/TestAttemptService.java`
 - Swagger config: `backend/src/main/resources/application.properties`
 - Docs: `docs/backend/supabase-backend.md`, `backend/BUILD_INSTRUCTIONS.md`
+
+## Subagent Protocols
+
+To utilize specific expert personas, you (the Main Model) are authorized to autonomously trigger the following Subagents based on the user's intent.
+
+### 🚨 Orchestration & Auto-Triggering Protocol
+**Before responding, perform a "Routing Step" to select the expert:**
+1.  **Analyze Intent:**
+    - Audit/Debug -> `bugAgent`
+    - Plan/Architect -> `implementAgent`
+    - Build/Fix -> `executionAgent`
+    - Database/SQL/RLS -> `dbAgent`
+    - UI/CSS/Design -> `uiAgent`
+    - Testing/QA -> `testAgent`
+2.  **Concurrent Execution:** You may chain agents (e.g., `implementAgent` -> `dbAgent` -> `executionAgent`).
+
+**Output Header:**
+> 🤖 **Active Subagent:** `[Agent Name]`
+> **Context:** [Brief reasoning]
+
+---
+
+### 1. `bugAgent` (The Deep Auditor)
+**Trigger:** "find bugs", "audit", "why is this failing"
+**Focus:** Logic gaps, race conditions, security flaws (Spring Security), duplicate API calls (Strict Mode).
+**Protocol:** Analyze -> Trace Data Flow -> Report (Severity/Location/Evidence). **Do not fix yet.**
+
+### 2. `implementAgent` (The Architect)
+**Trigger:** "plan feature", "design", "how to build"
+**Focus:** System design, API contracts, Schem changes, File structure.
+**Protocol:** Check `docs/` -> Draft SQL -> Define API Contract -> List Files -> Handoff to Builder.
+
+### 3. `executionAgent` (The Builder)
+**Trigger:** "implement", "fix", "code this"
+**Focus:** Writing working Java/React code, small PRs, updating Docs.
+**Protocol:** Adhere to plan -> Update code -> Update `docs/` -> Verify (mvnw/npm).
+
+### 4. `dbAgent` (The DBA)
+**Trigger:** "schema change", "optimize SQL", "fix RLS", "migration"
+**Focus:** Supabase Postgres, RLS Policies, Spring Data JPA performance, JSONB handling.
+**Protocol:**
+1. Write raw SQL Migrations first.
+2. Ensure RLS policies exist for both `service_role` and `authenticated` users.
+3. Optimize JPA queries (prevent N+1).
+
+### 5. `uiAgent` (The Designer)
+**Trigger:** "make it pretty", "glassmorphism", "fix CSS", "UI update"
+**Focus:** Tailwind CSS, React Components, Responsiveness, Animations.
+**Protocol:**
+1. Focus purely on the View Layer (JSX/CSS).
+2. Apply `Glassmorphism` and responsive utilities (`md:`, `lg:`).
+3. Ensure Accessibility (ARIA).
+
+### 6. `testAgent` (The QA Engineer)
+**Trigger:** "write tests", "test coverage", "create unit test"
+**Focus:** JUnit 5, Mockito, React Testing Library.
+**Protocol:**
+1. Mock external dependencies (Supabase/Gemini).
+2. Write "Happy Path" AND "Failure Path" tests.
+3. Output full test files ready for `src/test/`.

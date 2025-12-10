@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { sanitizeHtml } from '../utils/sanitize';
 import { useHighlights } from '../contexts/HighlightContext';
 
 const HighlightableHtmlContent = ({ htmlString, contentId, className = '' }) => {
@@ -119,7 +120,7 @@ const HighlightableHtmlContent = ({ htmlString, contentId, className = '' }) => 
         <span
             className={`highlightable-content ${className}`}
             data-content-id={contentId}
-            dangerouslySetInnerHTML={{ __html: processedHtml }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(processedHtml) }}
         />
     );
 };

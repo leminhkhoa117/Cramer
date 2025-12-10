@@ -1,11 +1,14 @@
 package com.cramer.controller;
 
+import com.cramer.config.RateLimitConfig;
 import com.cramer.dto.WritingReviewDTO;
 import com.cramer.dto.WritingSubmissionDTO;
 import com.cramer.dto.WritingSubmitDTO;
+import com.cramer.exception.RateLimitExceededException;
 import com.cramer.service.WritingSubmissionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,10 +31,13 @@ public class WritingController {
     private static final Logger logger = LoggerFactory.getLogger(WritingController.class);
 
     private final WritingSubmissionService writingSubmissionService;
+    private final RateLimitConfig rateLimitConfig;
 
     @Autowired
-    public WritingController(WritingSubmissionService writingSubmissionService) {
+    public WritingController(WritingSubmissionService writingSubmissionService, 
+                            RateLimitConfig rateLimitConfig) {
         this.writingSubmissionService = writingSubmissionService;
+        this.rateLimitConfig = rateLimitConfig;
     }
 
     /**
@@ -61,13 +67,19 @@ public class WritingController {
     @Operation(summary = "Submit essays for grading", description = "Submit essays and start background AI grading")
     public ResponseEntity<Map<String, Object>> submitForGrading(
             @PathVariable Long attemptId,
-            @RequestBody WritingSubmitDTO submitDTO,
+            @Valid @RequestBody WritingSubmitDTO submitDTO,
             Authentication authentication) {
         
         logger.info("📥 POST /api/writing/submit/{} - essays count: {}", 
                    attemptId, submitDTO.getEssays() != null ? submitDTO.getEssays().size() : 0);
         
         UUID userId = UUID.fromString(authentication.getName());
+        
+        // Rate limit check for grading
+        if (!rateLimitConfig.tryConsume(userId.toString(), "grading")) {
+            throw new RateLimitExceededException("Grading rate limit exceeded. Max 5 requests per minute.");
+        }
+        
         Map<String, Object> result = writingSubmissionService.submitForGrading(
             attemptId, submitDTO.getEssays(), userId);
         
@@ -161,6 +173,12 @@ public class WritingController {
         logger.info("📥 POST /api/writing/regrade/{}", attemptId);
         
         UUID userId = UUID.fromString(authentication.getName());
+        
+        // Rate limit check for grading
+        if (!rateLimitConfig.tryConsume(userId.toString(), "grading")) {
+            throw new RateLimitExceededException("Grading rate limit exceeded. Max 5 requests per minute.");
+        }
+        
         Map<String, Object> result = writingSubmissionService.regradeAttempt(attemptId, userId);
         
         logger.info("✅ Re-grading started for attempt {}", attemptId);

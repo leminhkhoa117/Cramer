@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { sanitizeHtml } from '../../utils/sanitize';
 import ReviewQuestionRenderer from './ReviewQuestionRenderer';
 import '../../css/ReviewQuestionGroup.css';
 
@@ -23,7 +24,7 @@ const ReviewQuestionGroup = ({ group, onQuestionClick, selectedQuestionId, skill
                 <div className="review-group-instructions">
                     {content.title && <p><strong>{content.title}</strong></p>}
                     {content.instructions_text && (
-                        <div dangerouslySetInnerHTML={{ __html: content.instructions_text }} />
+                        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(content.instructions_text) }} />
                     )}
                 </div>
             );

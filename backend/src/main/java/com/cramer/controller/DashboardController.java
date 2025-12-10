@@ -3,6 +3,7 @@ package com.cramer.controller;
 import com.cramer.dto.DashboardSummaryDTO;
 import com.cramer.dto.TargetDTO;
 import com.cramer.service.DashboardService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -12,7 +13,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/dashboard")
-@CrossOrigin(origins = "*")
 public class DashboardController {
 
     private final DashboardService dashboardService;
@@ -21,19 +21,21 @@ public class DashboardController {
         this.dashboardService = dashboardService;
     }
 
-    @GetMapping("/summary/{userId}")
+    @GetMapping("/summary")
     public ResponseEntity<DashboardSummaryDTO> getSummary(
-            @PathVariable UUID userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "3") int size,
-            @RequestParam(required = false) String search
+            @RequestParam(required = false) String search,
+            Authentication authentication
     ) {
+        // Extract userId from authenticated user - no IDOR possible
+        UUID userId = UUID.fromString(authentication.getName());
         return ResponseEntity.ok(dashboardService.buildDashboardSummary(userId, page, size, search));
     }
 
     @PostMapping("/target")
     public ResponseEntity<TargetDTO> saveTarget(
-            @RequestBody TargetDTO targetDTO,
+            @Valid @RequestBody TargetDTO targetDTO,
             Authentication authentication
     ) {
         if (authentication == null || !authentication.isAuthenticated()) {

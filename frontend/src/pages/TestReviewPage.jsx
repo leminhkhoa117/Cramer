@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { sanitizeHtml } from '../utils/sanitize';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { testAttemptApi } from '../api/backendApi';
 import { IeltsScoreConverter } from '../utils/IeltsScoreConverter';
@@ -282,7 +283,7 @@ const TestReviewPage = () => {
                                         {currentSection?.passageText ? (
                                             <div
                                                 className="passage-text"
-                                                dangerouslySetInnerHTML={{ __html: currentSection.passageText }}
+                                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(currentSection.passageText) }}
                                             />
                                         ) : (
                                             <p className="no-content">
@@ -381,9 +382,9 @@ const TestReviewPage = () => {
                                                             <div
                                                                 className="question-text"
                                                                 dangerouslySetInnerHTML={{
-                                                                    __html: typeof q.questionContent === 'string'
+                                                                    __html: sanitizeHtml(typeof q.questionContent === 'string'
                                                                         ? q.questionContent
-                                                                        : q.questionContent.text || q.questionContent.prompt || ''
+                                                                        : q.questionContent.text || q.questionContent.prompt || '')
                                                                 }}
                                                             />
                                                         </div>

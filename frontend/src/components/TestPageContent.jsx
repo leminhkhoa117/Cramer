@@ -233,6 +233,7 @@ const TestPageContent = ({
                 timeLeft={isListeningTest ? null : readingTimeLeft}
                 onSubmit={() => setIsConfirmModalOpen(true)}
                 onExit={handleExitRequest}
+                isSubmitting={isSubmitting}
             />
 
             {isListeningTest && (
