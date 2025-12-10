@@ -94,7 +94,7 @@ const TestPageContent = ({
     loading, error, isConfirmModalOpen, setIsConfirmModalOpen,
     displayPartIndex, setDisplayPartIndex, readingTimeLeft,
     audioPlayerRefs, isAutoplay, setIsAutoplay, setActiveAudioIndex,
-    source, testNum, skill, navigate, handleFinalSubmit
+    source, testNum, skill, navigate, handleFinalSubmit, isSubmitting
 }) => {
     const [isExitModalOpen, setIsExitModalOpen] = useState(false);
     const [isSavingProgress, setIsSavingProgress] = useState(false);

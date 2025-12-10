@@ -20,9 +20,17 @@ public interface TestAttemptRepository extends JpaRepository<TestAttempt, Long> 
             UUID userId, String examSource, String testNumber, String skill
     );
 
+    /**
+     * Find all attempts with pessimistic write lock to prevent race conditions.
+     * Returns a List to handle cases where multiple attempts exist.
+     */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<TestAttempt> findAndLockByUserIdAndExamSourceAndTestNumberAndSkill(
-            UUID userId, String examSource, String testNumber, String skill
+    @Query("SELECT ta FROM TestAttempt ta WHERE ta.userId = :userId AND ta.examSource = :examSource AND ta.testNumber = :testNumber AND ta.skill = :skill ORDER BY ta.startedAt DESC")
+    List<TestAttempt> findAndLockByUserIdAndExamSourceAndTestNumberAndSkill(
+            @Param("userId") UUID userId, 
+            @Param("examSource") String examSource, 
+            @Param("testNumber") String testNumber, 
+            @Param("skill") String skill
     );
 
     List<TestAttempt> findByUserId(UUID userId);

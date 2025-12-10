@@ -93,14 +93,14 @@ public class TestAttemptService {
             logger.info("🎯 [2] Acquiring pessimistic lock to prevent race conditions");
             // Acquire pessimistic lock to prevent race conditions in concurrent requests
             // This ensures only one thread can create/modify attempts for this user+test combination at a time
-            Optional<TestAttempt> lockedAttempt = testAttemptRepository
+            // Returns a List to handle cases where multiple attempts exist (which shouldn't happen but can due to race conditions)
+            List<TestAttempt> lockedAttempts = testAttemptRepository
                     .findAndLockByUserIdAndExamSourceAndTestNumberAndSkill(
                             userId, trimmedSource, trimmedTestNum, trimmedSkill);
-            logger.info("🎯 [2a] Lock acquired. Existing locked attempt: {}", lockedAttempt.isPresent() ? lockedAttempt.get().getId() : "none");
+            logger.info("🎯 [2a] Lock acquired. Found {} locked attempts", lockedAttempts.size());
             
-            // Now safely fetch all attempts (we hold the lock)
-            List<TestAttempt> allAttempts = testAttemptRepository
-                    .findByUserIdAndExamSourceAndTestNumberAndSkillOrderByStartedAtDesc(userId, trimmedSource, trimmedTestNum, trimmedSkill);
+            // Use the locked attempts directly (they're already sorted by startedAt DESC)
+            List<TestAttempt> allAttempts = lockedAttempts;
             
             // Find the latest attempt and all IN_PROGRESS attempts
             TestAttempt latestAttempt = allAttempts.isEmpty() ? null : allAttempts.get(0);
