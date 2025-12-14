@@ -2,12 +2,12 @@ import React from 'react';
 import { FiStar, FiEdit3, FiTrash2, FiVolume2, FiBookOpen } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 
-const VocabularyCard = ({ 
-  vocabulary, 
-  onEdit, 
-  onDelete, 
+const VocabularyCard = ({
+  vocabulary,
+  onEdit,
+  onDelete,
   onToggleMastered,
-  isDeleting = false 
+  isDeleting = false
 }) => {
   const {
     id,
@@ -52,11 +52,11 @@ const VocabularyCard = ({
       exit={{ opacity: 0, scale: 0.9 }}
       className={`vocabulary-card ${mastered ? 'vocabulary-card--mastered' : ''} ${isDeleting ? 'vocabulary-card--deleting' : ''}`}
     >
-      {/* Header with word and actions */}
+      {/* Header with word and star button */}
       <div className="vocabulary-card__header">
         <div className="vocabulary-card__word-section">
           <h3 className="vocabulary-card__word">{word}</h3>
-          <button 
+          <button
             className="vocabulary-card__speak-btn"
             onClick={handleSpeak}
             title="Phát âm"
@@ -64,66 +64,68 @@ const VocabularyCard = ({
           >
             <FiVolume2 />
           </button>
-        </div>
-        
-        <button
-          className={`vocabulary-card__star-btn ${mastered ? 'vocabulary-card__star-btn--active' : ''}`}
-          onClick={() => onToggleMastered(id)}
-          title={mastered ? 'Bỏ đánh dấu đã thuộc' : 'Đánh dấu đã thuộc'}
-          aria-label={mastered ? 'Bỏ đánh dấu đã thuộc' : 'Đánh dấu đã thuộc'}
-        >
-          <FiStar />
-        </button>
-      </div>
-
-      {/* Phonetic and Part of Speech */}
-      <div className="vocabulary-card__meta">
-        {phonetic && (
-          <span className="vocabulary-card__phonetic">/{phonetic}/</span>
-        )}
-        {posInfo && (
-          <span 
-            className="vocabulary-card__pos"
-            style={{ '--pos-color': posInfo.color }}
+          <button
+            className={`vocabulary-card__star-btn ${mastered ? 'vocabulary-card__star-btn--active' : ''}`}
+            onClick={() => onToggleMastered(id)}
+            title={mastered ? 'Bỏ đánh dấu đã thuộc' : 'Đánh dấu đã thuộc'}
+            aria-label={mastered ? 'Bỏ đánh dấu đã thuộc' : 'Đánh dấu đã thuộc'}
           >
-            {posInfo.label}
-          </span>
-        )}
+            <FiStar />
+          </button>
+        </div>
+
+        {/* Phonetic and Part of Speech */}
+        <div className="vocabulary-card__meta">
+          {phonetic && (
+            <span className="vocabulary-card__phonetic">/{phonetic}/</span>
+          )}
+          {posInfo && (
+            <span
+              className="vocabulary-card__pos"
+              style={{ '--pos-color': posInfo.color }}
+            >
+              {posInfo.label}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Translation */}
-      {translation && (
-        <div className="vocabulary-card__translation">
-          <span className="vocabulary-card__label">Nghĩa:</span>
-          <span className="vocabulary-card__value">{translation}</span>
-        </div>
-      )}
+      {/* Content Section - Groups all content for better list view layout */}
+      <div className="vocabulary-card__content">
+        {/* Translation */}
+        {translation && (
+          <div className="vocabulary-card__translation">
+            <span className="vocabulary-card__label">NGHĨA TIẾNG VIỆT:</span>
+            <span className="vocabulary-card__value">{translation}</span>
+          </div>
+        )}
 
-      {/* Definition */}
-      {definition && (
-        <div className="vocabulary-card__definition">
-          <span className="vocabulary-card__label">Định nghĩa:</span>
-          <p className="vocabulary-card__value">{definition}</p>
-        </div>
-      )}
+        {/* Definition (English) */}
+        {definition && (
+          <div className="vocabulary-card__definition">
+            <span className="vocabulary-card__label">NGHĨA TIẾNG ANH:</span>
+            <p className="vocabulary-card__value">{definition}</p>
+          </div>
+        )}
 
-      {/* Example Sentence */}
-      {exampleSentence && (
-        <div className="vocabulary-card__example">
-          <span className="vocabulary-card__label">Ví dụ:</span>
-          <p className="vocabulary-card__value vocabulary-card__value--italic">
-            "{exampleSentence}"
-          </p>
-        </div>
-      )}
+        {/* Example Sentence */}
+        {exampleSentence && (
+          <div className="vocabulary-card__example">
+            <span className="vocabulary-card__label">VÍ DỤ:</span>
+            <p className="vocabulary-card__value vocabulary-card__value--italic">
+              "{exampleSentence}"
+            </p>
+          </div>
+        )}
 
-      {/* Source Context */}
-      {sourceContext && (
-        <div className="vocabulary-card__source">
-          <FiBookOpen className="vocabulary-card__source-icon" />
-          <span className="vocabulary-card__source-text">{sourceContext}</span>
-        </div>
-      )}
+        {/* Source Context */}
+        {sourceContext && (
+          <div className="vocabulary-card__source">
+            <FiBookOpen className="vocabulary-card__source-icon" />
+            <span className="vocabulary-card__source-text">{sourceContext}</span>
+          </div>
+        )}
+      </div>
 
       {/* Actions */}
       <div className="vocabulary-card__actions">
