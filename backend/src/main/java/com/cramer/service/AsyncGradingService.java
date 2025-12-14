@@ -2,16 +2,15 @@ package com.cramer.service;
 
 import com.cramer.dto.GradingStatusDTO;
 import com.cramer.entity.CreditTransaction;
-import com.cramer.entity.Profile;
 import com.cramer.entity.Section;
 import com.cramer.entity.TestAttempt;
 import com.cramer.entity.WritingSubmission;
-import com.cramer.repository.ProfileRepository;
 import com.cramer.repository.SectionRepository;
 import com.cramer.repository.WritingSubmissionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +23,8 @@ import java.util.stream.Collectors;
 /**
  * Separate service for async grading operations.
  * This ensures @Async works correctly via Spring proxy.
+ * 
+ * Uses server-side DeepSeek API key for all grading operations.
  */
 @Service
 public class AsyncGradingService {
@@ -35,21 +36,25 @@ public class AsyncGradingService {
 
     private final WritingSubmissionRepository writingSubmissionRepository;
     private final SectionRepository sectionRepository;
-    private final ProfileRepository profileRepository;
     private final LLMGradingService llmGradingService;
     private final SubscriptionService subscriptionService;
     private final CreditService creditService;
+    
+    // Server's DeepSeek API key (required)
+    @Value("${DEEPSEEK_API_KEY:}")
+    private String deepSeekApiKey;
+    
+    @Value("${DEEPSEEK_MODEL:deepseek-chat}")
+    private String deepSeekModel;
 
     @Autowired
     public AsyncGradingService(WritingSubmissionRepository writingSubmissionRepository,
                                SectionRepository sectionRepository,
-                               ProfileRepository profileRepository,
                                LLMGradingService llmGradingService,
                                SubscriptionService subscriptionService,
                                CreditService creditService) {
         this.writingSubmissionRepository = writingSubmissionRepository;
         this.sectionRepository = sectionRepository;
-        this.profileRepository = profileRepository;
         this.llmGradingService = llmGradingService;
         this.subscriptionService = subscriptionService;
         this.creditService = creditService;
@@ -66,6 +71,19 @@ public class AsyncGradingService {
                    submissions.size(), Thread.currentThread().getName());
         
         try {
+            // Validate server API key is configured
+            if (deepSeekApiKey == null || deepSeekApiKey.trim().isEmpty()) {
+                logger.error("❌ DEEPSEEK_API_KEY not configured on server!");
+                for (WritingSubmission submission : submissions) {
+                    submission.setGradingStatus("FAILED");
+                    Map<String, Object> errorFeedback = new HashMap<>();
+                    errorFeedback.put("error", "Hệ thống chấm điểm AI đang bảo trì. Vui lòng thử lại sau.");
+                    submission.setAiFeedback(errorFeedback);
+                    writingSubmissionRepository.save(submission);
+                }
+                return;
+            }
+            
             // Check if user has AI grading available (subscription or Lúa)
             GradingStatusDTO gradingStatus = subscriptionService.checkAIGradingAllowed(userId);
             boolean usingLua = false;
@@ -89,25 +107,7 @@ public class AsyncGradingService {
                 }
             }
             
-            // Get user's API key
-            Profile profile = profileRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Profile not found"));
-            
-            String apiKey = profile.getLlmApiKey();
-            String model = profile.getLlmModel();
-            if (apiKey == null || apiKey.trim().isEmpty()) {
-                logger.warn("❌ No DeepSeek API key found for user {}", userId);
-                for (WritingSubmission submission : submissions) {
-                    submission.setGradingStatus("FAILED");
-                    Map<String, Object> errorFeedback = new HashMap<>();
-                    errorFeedback.put("error", "Vui lòng thêm DeepSeek API key trong phần Cài đặt Hồ sơ để sử dụng tính năng chấm điểm AI.");
-                    submission.setAiFeedback(errorFeedback);
-                    writingSubmissionRepository.save(submission);
-                }
-                return;
-            }
-            
-            logger.info("✅ Found API key for user, starting grading...");
+            logger.info("✅ Using server's DeepSeek API key for grading (model: {})", deepSeekModel);
             
             // Track if we need to deduct Lúa (set before grading loop)
             final boolean shouldUseLua = usingLua;
@@ -134,7 +134,7 @@ public class AsyncGradingService {
                     String imageUrl = section != null ? section.getDisplayContentUrl() : null;
                     String imageDescription = section != null ? section.getImageDescription() : null;
 
-                    llmGradingService.gradeSubmission(submission, taskPrompt, imageUrl, imageDescription, apiKey, model);
+                    llmGradingService.gradeSubmission(submission, taskPrompt, imageUrl, imageDescription, deepSeekApiKey, deepSeekModel);
                     writingSubmissionRepository.save(submission);
                     
                     logger.info("✅ Graded submission {} with band {}", 

@@ -9,6 +9,7 @@ import com.cramer.service.QuotaService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -69,7 +71,7 @@ public class QuotaServiceImpl implements QuotaService {
         LocalDate currentMonth = getFirstDayOfCurrentMonth();
         SkillQuota.Skill skillEnum = SkillQuota.Skill.valueOf(skill.toUpperCase());
         
-        // Ensure quota rows exist
+        // Ensure quota rows exist (with race condition handling)
         getOrCreateUserQuota(userId, currentMonth);
         getOrCreateSkillQuota(userId, skillEnum, currentMonth);
         
@@ -133,37 +135,64 @@ public class QuotaServiceImpl implements QuotaService {
 
     /**
      * Get or create UserQuota for current month.
+     * Handles race condition by catching DataIntegrityViolationException and retrying find.
      */
     private UserQuota getOrCreateUserQuota(UUID userId, LocalDate quotaMonth) {
-        return userQuotaRepository.findByUserIdAndQuotaMonth(userId, quotaMonth)
-                .orElseGet(() -> {
-                    logger.info("🆕 Creating new UserQuota for user {} month {}", userId, quotaMonth);
-                    UserQuota newQuota = UserQuota.builder()
-                            .userId(userId)
-                            .quotaMonth(quotaMonth)
-                            .attemptCount(0)
-                            .attemptAiCount(0)
-                            .build();
-                    return userQuotaRepository.save(newQuota);
-                });
+        Optional<UserQuota> existing = userQuotaRepository.findByUserIdAndQuotaMonth(userId, quotaMonth);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+        
+        // Try to create new quota
+        try {
+            logger.info("🆕 Creating new UserQuota for user {} month {}", userId, quotaMonth);
+            UserQuota newQuota = UserQuota.builder()
+                    .userId(userId)
+                    .quotaMonth(quotaMonth)
+                    .attemptCount(0)
+                    .attemptAiCount(0)
+                    .build();
+            return userQuotaRepository.save(newQuota);
+        } catch (DataIntegrityViolationException e) {
+            // Race condition: another thread created it first, just fetch it
+            logger.info("🔄 UserQuota already created by concurrent request, fetching existing for user {} month {}", 
+                    userId, quotaMonth);
+            return userQuotaRepository.findByUserIdAndQuotaMonth(userId, quotaMonth)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "UserQuota should exist after DataIntegrityViolationException"));
+        }
     }
 
     /**
      * Get or create SkillQuota for current month.
+     * Handles race condition by catching DataIntegrityViolationException and retrying find.
      */
     private SkillQuota getOrCreateSkillQuota(UUID userId, SkillQuota.Skill skill, LocalDate quotaMonth) {
-        return skillQuotaRepository.findByUserIdAndSkillAndQuotaMonth(userId, skill, quotaMonth)
-                .orElseGet(() -> {
-                    logger.info("🆕 Creating new SkillQuota for user {} skill {} month {}", 
-                            userId, skill, quotaMonth);
-                    SkillQuota newQuota = SkillQuota.builder()
-                            .userId(userId)
-                            .skill(skill)
-                            .quotaMonth(quotaMonth)
-                            .attemptCount(0)
-                            .attemptAiCount(0)
-                            .build();
-                    return skillQuotaRepository.save(newQuota);
-                });
+        Optional<SkillQuota> existing = skillQuotaRepository.findByUserIdAndSkillAndQuotaMonth(userId, skill, quotaMonth);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+        
+        // Try to create new quota
+        try {
+            logger.info("🆕 Creating new SkillQuota for user {} skill {} month {}", 
+                    userId, skill, quotaMonth);
+            SkillQuota newQuota = SkillQuota.builder()
+                    .userId(userId)
+                    .skill(skill)
+                    .quotaMonth(quotaMonth)
+                    .attemptCount(0)
+                    .attemptAiCount(0)
+                    .build();
+            return skillQuotaRepository.save(newQuota);
+        } catch (DataIntegrityViolationException e) {
+            // Race condition: another thread created it first, just fetch it
+            logger.info("🔄 SkillQuota already created by concurrent request, fetching existing for user {} skill {} month {}", 
+                    userId, skill, quotaMonth);
+            return skillQuotaRepository.findByUserIdAndSkillAndQuotaMonth(userId, skill, quotaMonth)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "SkillQuota should exist after DataIntegrityViolationException"));
+        }
     }
 }
+

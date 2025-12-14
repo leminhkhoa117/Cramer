@@ -50,13 +50,22 @@ public class LLMGradingService {
         private static final int TASK_1_MIN_WORDS = 150;
         private static final int TASK_2_MIN_WORDS = 250;
         private static final int MINIMUM_ESSAY_WORDS = 20; // Below this = band 0-1
+        
+        // Timeout for DeepSeek API calls (10 minutes - reasoner model can take long under high traffic)
+        private static final int API_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 
         private final RestTemplate restTemplate;
         private final ObjectMapper objectMapper;
         private final LLMConfig llmConfig;
 
         public LLMGradingService(LLMConfig llmConfig) {
-                this.restTemplate = new RestTemplate();
+                // Configure RestTemplate with timeout
+                org.springframework.http.client.SimpleClientHttpRequestFactory factory = 
+                        new org.springframework.http.client.SimpleClientHttpRequestFactory();
+                factory.setConnectTimeout(30000); // 30 seconds to connect
+                factory.setReadTimeout(API_TIMEOUT_MS); // 10 minutes for response
+                
+                this.restTemplate = new RestTemplate(factory);
                 this.objectMapper = new ObjectMapper();
                 this.llmConfig = llmConfig;
         }

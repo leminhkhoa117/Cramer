@@ -11,7 +11,6 @@ import {
   FiSave,
   FiX,
   FiShield,
-  FiSliders,
   FiSmartphone,
   FiMonitor,
   FiLock,
@@ -22,8 +21,7 @@ import {
   FiLogOut,
   FiGlobe,
   FiClock,
-  FiLink,
-  FiCpu
+  FiLink
 } from 'react-icons/fi';
 import { FaGoogle, FaFacebook } from 'react-icons/fa';
 import '../css/common/SidebarLayout.css';
@@ -62,14 +60,7 @@ const ProfilePage = () => {
   const [deleteImageModal, setDeleteImageModal] = useState({ isOpen: false, type: null });
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // AI Settings states (model selection only - API key managed by server)
-  const [llmModel, setLlmModel] = useState('deepseek-chat');
 
-  // Available DeepSeek models (for reference only - server controls model selection)
-  const LLM_MODELS = [
-    { value: 'deepseek-chat', label: 'DeepSeek V3.2 (Non-thinking)', description: 'Dùng cho dịch từ vựng, chatbot (nhanh, rẻ)' },
-    { value: 'deepseek-reasoner', label: 'DeepSeek V3.2 (Thinking)', description: 'Dùng cho chấm Writing (chính xác hơn)' }
-  ];
 
   // Security states (mock data for now - will be replaced with API calls)
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -144,10 +135,10 @@ const ProfilePage = () => {
     // - Otherwise, send the full editedProfile merged with extraData
     const imageFields = ['avatarUrl', 'heroBackgroundUrl', 'pageBackgroundUrl'];
     const isImageUpdate = Object.keys(extraData).some(key => imageFields.includes(key));
-    
+
     // For image updates, only send the specific field to avoid overwriting other data
     const profileToSave = isImageUpdate ? extraData : { ...editedProfile, ...extraData };
-    
+
     try {
       const response = await profileApi.update(user.id, profileToSave);
       const updatedProfile = { ...response.data, email: user.email };
@@ -424,17 +415,7 @@ const ProfilePage = () => {
     showSuccessToast('Đã đăng xuất tất cả các phiên khác.');
   }, []);
 
-  // AI Settings Handler - Model preference only (informational, server handles actual model selection)
-  const handleSaveModel = useCallback(async (newModel) => {
-    try {
-      await profileApi.update(user.id, { llmModel: newModel });
-      setLlmModel(newModel);
-      showSuccessToast('Đã cập nhật model AI!');
-    } catch (err) {
-      console.error('Error saving model:', err);
-      showErrorToast('Không thể cập nhật model');
-    }
-  }, [user?.id]);
+
 
   const getInitials = useCallback((name) => {
     if (!name) return '';
@@ -468,8 +449,7 @@ const ProfilePage = () => {
   // Tab definitions
   const tabs = [
     { id: 'personal', label: 'Thông tin chung', icon: FiUser },
-    { id: 'security', label: 'Bảo mật', icon: FiShield },
-    { id: 'ai-settings', label: 'Cài đặt AI', icon: FiCpu }
+    { id: 'security', label: 'Bảo mật', icon: FiShield }
   ];
 
   return (
@@ -925,112 +905,7 @@ const ProfilePage = () => {
               </motion.div>
             )}
 
-            {activeTab === 'ai-settings' && (
-              <motion.div
-                key="ai-settings"
-                className="profile-tab-panel"
-                variants={tabContentVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-              >
-                {/* AI Configuration Info */}
-                <div className="profile-card">
-                  <div className="profile-card__header">
-                    <h3 className="profile-card__title">
-                      <FiCpu />
-                      Cấu hình AI
-                    </h3>
-                  </div>
 
-                  <div className="ai-settings-info">
-                    <p className="ai-settings-description">
-                      Cramer sử dụng DeepSeek AI để chấm điểm bài Writing và dịch từ vựng. 
-                      API được quản lý bởi máy chủ, bạn không cần cung cấp API key.
-                    </p>
-                  </div>
-
-                  <div className="ai-status-card">
-                    <div className="ai-status-item">
-                      <FiCheck className="ai-status-icon success" />
-                      <span>Chấm Writing: <strong>deepseek-reasoner</strong> (Thinking mode - chính xác)</span>
-                    </div>
-                    <div className="ai-status-item">
-                      <FiCheck className="ai-status-icon success" />
-                      <span>Dịch từ vựng: <strong>deepseek-chat</strong> (Non-thinking - nhanh)</span>
-                    </div>
-                    <div className="ai-status-item">
-                      <FiCheck className="ai-status-icon success" />
-                      <span>Trợ lý chat: <strong>deepseek-chat</strong> (Non-thinking - nhanh)</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Model Info Section */}
-                <div className="profile-card">
-                  <div className="profile-card__header">
-                    <h3 className="profile-card__title">
-                      <FiSliders />
-                      Các Model AI đang sử dụng
-                    </h3>
-                  </div>
-
-                  <div className="ai-settings-info">
-                    <p className="ai-settings-description">
-                      Hệ thống tự động chọn model phù hợp cho từng tác vụ để đảm bảo chất lượng và tốc độ tối ưu.
-                    </p>
-                  </div>
-
-                  <div className="model-selector">
-                    {LLM_MODELS.map((model) => (
-                      <div
-                        key={model.value}
-                        className={`model-option ${model.value === 'deepseek-reasoner' ? 'selected' : ''}`}
-                      >
-                        <div className="model-option__radio">
-                          {model.value === 'deepseek-reasoner' ? <FiCheck /> : null}
-                        </div>
-                        <div className="model-option__info">
-                          <h4 className="model-option__name">{model.label}</h4>
-                          <p className="model-option__description">{model.description}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* AI Usage Info */}
-                <div className="profile-card">
-                  <div className="profile-card__header">
-                    <h3 className="profile-card__title">
-                      <FiAlertTriangle />
-                      Lưu ý khi sử dụng
-                    </h3>
-                  </div>
-
-                  <div className="ai-usage-notes">
-                    <ul>
-                      <li>
-                        <strong>Chấm Writing:</strong> Sử dụng DeepSeek V3.2 Thinking mode để đảm bảo độ chính xác cao nhất.
-                        Mỗi lần chấm có thể mất 30-60 giây.
-                      </li>
-                      <li>
-                        <strong>Dịch từ vựng:</strong> Sử dụng Non-thinking mode cho tốc độ nhanh.
-                        Bao gồm phiên âm IPA tiếng Anh chuẩn.
-                      </li>
-                      <li>
-                        <strong>Giới hạn:</strong> Số lượt chấm AI phụ thuộc vào gói đăng ký của bạn.
-                        Kiểm tra trang Pricing để biết thêm chi tiết.
-                      </li>
-                      <li>
-                        <strong>Lưu ý Task 1:</strong> DeepSeek hiện chưa hỗ trợ phân tích hình ảnh.
-                        Với Task 1 có biểu đồ, hệ thống sẽ chấm dựa trên mô tả text.
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </motion.div>
-            )}
           </AnimatePresence>
         </main>
       </div>
