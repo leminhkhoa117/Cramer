@@ -1,10 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  FiCheck, 
-  FiX, 
-  FiArrowRight, 
-  FiMessageCircle, 
+import {
+  FiCheck,
+  FiX,
+  FiArrowRight,
+  FiMessageCircle,
   FiInfo,
   FiAward,
   FiBook,
@@ -13,15 +13,15 @@ import {
 } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores';
-import { 
-  TIERS, 
-  TIER_INFO, 
-  FEATURE_CATEGORIES, 
+import {
+  TIERS,
+  TIER_INFO,
+  FEATURE_CATEGORIES,
   ATTEMPT_COSTS,
   LIMITS,
   TERMINOLOGY,
   formatVnd,
-  formatNumber 
+  formatNumber
 } from '../constants/subscription';
 import FAQ from '../components/common/FAQ';
 import '../css/PricingPage.css';
@@ -55,11 +55,11 @@ const fadeInUp = {
 const FAQ_ITEMS = [
   {
     question: `${TERMINOLOGY.ATTEMPT} và ${TERMINOLOGY.ATTEMPT_AI} là gì?`,
-    answer: `${TERMINOLOGY.ATTEMPT} là lượt làm bài với chấm điểm tự động cơ bản cho Reading và Listening. ${TERMINOLOGY.ATTEMPT_AI} là lượt làm bài có sự hỗ trợ của AI, bao gồm chấm điểm chi tiết và nhận xét cá nhân hóa cho bài Writing của bạn. Gói Cramerich bao gồm 60 ${TERMINOLOGY.ATTEMPT} và 30 ${TERMINOLOGY.ATTEMPT_AI} mỗi tháng.`,
+    answer: `${TERMINOLOGY.ATTEMPT} là lượt làm bài với chấm điểm tự động cơ bản cho Reading và Listening. ${TERMINOLOGY.ATTEMPT_AI} là lượt làm bài có sự hỗ trợ của AI, bao gồm chấm điểm chi tiết và nhận xét cá nhân hóa cho bài Writing của bạn. Gói Cramerich bao gồm ${LIMITS.cramerich.monthlyAttempts} ${TERMINOLOGY.ATTEMPT} và ${LIMITS.cramerich.monthlyAttemptAis} ${TERMINOLOGY.ATTEMPT_AI} mỗi tháng.`,
   },
   {
     question: 'Lúa là gì và dùng để làm gì?',
-    answer: `Lúa là tiền ảo trong Cramer, dùng để mua thêm ${TERMINOLOGY.ATTEMPT} hoặc ${TERMINOLOGY.ATTEMPT_AI} khi vượt quá hạn mức hàng tháng. 1 ${TERMINOLOGY.ATTEMPT} thêm = ${ATTEMPT_COSTS.ATTEMPT} Lúa, 1 ${TERMINOLOGY.ATTEMPT_AI} thêm = ${ATTEMPT_COSTS.ATTEMPT_AI} Lúa. Bạn cũng có thể dùng Lúa để sử dụng các tính năng AI khác như dịch từ vựng.`,
+    answer: `Lúa là tiền ảo trong Cramer, dùng để mua thêm ${TERMINOLOGY.ATTEMPT} hoặc ${TERMINOLOGY.ATTEMPT_AI} khi vượt quá hạn mức hàng tháng. 1 ${TERMINOLOGY.ATTEMPT} thêm = ${ATTEMPT_COSTS.ATTEMPT} Lúa, 1 ${TERMINOLOGY.ATTEMPT_AI} thêm = ${ATTEMPT_COSTS.ATTEMPT_AI} Lúa. Bạn cũng có thể dùng Lúa để dịch từ vựng (1 Lúa/lần) hoặc hỏi chatbot (2 Lúa/lần) khi vượt hạn mức.`,
   },
   {
     question: 'Tôi có thể hủy đăng ký không?',
@@ -71,15 +71,15 @@ const FAQ_ITEMS = [
   },
   {
     question: 'Chấm bài Writing bằng AI hoạt động như thế nào?',
-    answer: 'Hệ thống AI của Cramer (DeepSeek V3.2) phân tích bài viết của bạn dựa trên 4 tiêu chí IELTS: Task Achievement, Coherence & Cohesion, Lexical Resource, và Grammatical Range & Accuracy. Bạn sẽ nhận được điểm band score cho từng tiêu chí cùng nhận xét chi tiết và gợi ý cải thiện.',
+    answer: 'Hệ thống AI của Cramer (DeepSeek V3) phân tích bài viết của bạn dựa trên 4 tiêu chí IELTS: Task Achievement, Coherence & Cohesion, Lexical Resource, và Grammatical Range & Accuracy. Bạn sẽ nhận được điểm band score cho từng tiêu chí cùng nhận xét chi tiết và gợi ý cải thiện.',
   },
   {
     question: 'Gói Cramerie (miễn phí) có thể làm gì?',
-    answer: `Gói Cramerie miễn phí cho phép bạn truy cập một số đề thi mẫu, sử dụng Sổ tay từ vựng (${LIMITS.cramerie.maxVocabulary} từ), và Trợ lý Cramer (${LIMITS.cramerie.chatbotMonthly} câu/tháng). Để truy cập toàn bộ kho đề và sử dụng tính năng chấm bài AI, bạn cần nâng cấp lên Cramerich.`,
+    answer: `Gói Cramerie miễn phí cho phép bạn có ${LIMITS.cramerie.monthlyAttempts} ${TERMINOLOGY.ATTEMPT} và ${LIMITS.cramerie.monthlyAttemptAis} ${TERMINOLOGY.ATTEMPT_AI}/tháng, sử dụng Sổ tay từ vựng (${formatNumber(LIMITS.cramerie.maxVocabulary)} từ), dịch từ vựng AI (${LIMITS.cramerie.monthlyTranslations} lần/tháng), và Trợ lý Cramer (${LIMITS.cramerie.chatbotMonthly} câu/tháng). Khi vượt hạn mức, bạn có thể dùng Lúa để tiếp tục.`,
   },
   {
     question: 'Hạn mức có reset mỗi tháng không?',
-    answer: `Có! Mỗi tháng, gói Cramerich của bạn sẽ được reset về: 60 ${TERMINOLOGY.ATTEMPT} (20/kỹ năng) và 30 ${TERMINOLOGY.ATTEMPT_AI} (3/kỹ năng). Bạn cũng nhận thêm 20 Lúa thưởng mỗi tháng.`,
+    answer: `Có! Mỗi tháng, hạn mức của bạn sẽ được reset về: ${LIMITS.cramerich.monthlyAttempts} ${TERMINOLOGY.ATTEMPT} và ${LIMITS.cramerich.monthlyAttemptAis} ${TERMINOLOGY.ATTEMPT_AI} cho Cramerich (${LIMITS.cramerie.monthlyAttempts}/${LIMITS.cramerie.monthlyAttemptAis} cho Cramerie). Cramerich còn nhận thêm 20 Lúa thưởng mỗi tháng.`,
   },
 ];
 
@@ -98,7 +98,7 @@ export default function PricingPage() {
         <div className="pricing-hero__orb pricing-hero__orb--1" />
         <div className="pricing-hero__orb pricing-hero__orb--2" />
         <div className="pricing-hero__orb pricing-hero__orb--3" />
-        
+
         <div className="pricing-hero__content">
           <motion.span
             className="pricing-hero__badge"
@@ -108,7 +108,7 @@ export default function PricingPage() {
           >
             🎯 Luyện thi IELTS thông minh
           </motion.span>
-          
+
           <motion.h1
             className="pricing-hero__title"
             initial={{ y: -20, opacity: 0 }}
@@ -117,14 +117,14 @@ export default function PricingPage() {
           >
             Chọn gói phù hợp với bạn
           </motion.h1>
-          
+
           <motion.p
             className="pricing-hero__subtitle"
             initial={{ y: -10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            Nâng cấp lên <span className="text-highlight-gold">Cramerich</span> để 
+            Nâng cấp lên <span className="text-highlight-gold">Cramerich</span> để
             truy cập toàn bộ kho đề thi Cambridge và tính năng chấm bài AI cá nhân hóa
           </motion.p>
 
@@ -179,7 +179,7 @@ export default function PricingPage() {
       {/* ===================== DEMO COMPARISON ===================== */}
       <section className="demo-comparison">
         <div className="pricing-container">
-          <motion.div 
+          <motion.div
             className="pricing-section__header"
             variants={fadeInUp}
             initial="hidden"
@@ -192,7 +192,7 @@ export default function PricingPage() {
             </p>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             className="demo-comparison__grid"
             variants={containerVariants}
             initial="hidden"
@@ -253,7 +253,7 @@ export default function PricingPage() {
       {/* ===================== HOW IT WORKS ===================== */}
       <section className="how-it-works">
         <div className="pricing-container">
-          <motion.div 
+          <motion.div
             className="pricing-section__header"
             variants={fadeInUp}
             initial="hidden"
@@ -266,7 +266,7 @@ export default function PricingPage() {
             </p>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             className="how-it-works__grid"
             variants={containerVariants}
             initial="hidden"
@@ -280,12 +280,16 @@ export default function PricingPage() {
               </div>
               <h3 className="how-card__title">{TERMINOLOGY.ATTEMPT}</h3>
               <p className="how-card__description">
-                Làm bài Reading hoặc Listening với chấm điểm tự động. 
+                Làm bài Reading hoặc Listening với chấm điểm tự động.
                 Nhận điểm số và xem đáp án đúng ngay lập tức.
               </p>
               <div className="how-card__limit">
+                <span className="how-card__limit-label">Cramerie:</span>
+                <span className="how-card__limit-value">{LIMITS.cramerie.monthlyAttempts}/tháng</span>
+              </div>
+              <div className="how-card__limit">
                 <span className="how-card__limit-label">Cramerich:</span>
-                <span className="how-card__limit-value">60/tháng (20/kỹ năng)</span>
+                <span className="how-card__limit-value">{LIMITS.cramerich.monthlyAttempts}/tháng</span>
               </div>
             </motion.div>
 
@@ -296,12 +300,16 @@ export default function PricingPage() {
               </div>
               <h3 className="how-card__title">{TERMINOLOGY.ATTEMPT_AI}</h3>
               <p className="how-card__description">
-                Làm bài Writing và nhận phản hồi chi tiết từ AI. 
+                Làm bài Writing và nhận phản hồi chi tiết từ AI.
                 Điểm số theo 4 tiêu chí + nhận xét cá nhân hóa.
               </p>
               <div className="how-card__limit">
+                <span className="how-card__limit-label">Cramerie:</span>
+                <span className="how-card__limit-value">{LIMITS.cramerie.monthlyAttemptAis}/tháng</span>
+              </div>
+              <div className="how-card__limit">
                 <span className="how-card__limit-label">Cramerich:</span>
-                <span className="how-card__limit-value">30/tháng (3/kỹ năng)</span>
+                <span className="how-card__limit-value">{LIMITS.cramerich.monthlyAttemptAis}/tháng</span>
               </div>
             </motion.div>
 
@@ -312,7 +320,7 @@ export default function PricingPage() {
               </div>
               <h3 className="how-card__title">Tiền ảo Lúa</h3>
               <p className="how-card__description">
-                Vượt hạn mức? Dùng Lúa để mua thêm lượt chấm. 
+                Vượt hạn mức? Dùng Lúa để mua thêm lượt chấm.
                 Lúa không hết hạn và có thể mua thêm bất cứ lúc nào.
               </p>
               <div className="how-card__limit">
@@ -330,7 +338,7 @@ export default function PricingPage() {
               </div>
               <h3 className="how-card__title">Reset hàng tháng</h3>
               <p className="how-card__description">
-                Mỗi tháng, hạn mức của bạn sẽ được reset về mức ban đầu. 
+                Mỗi tháng, hạn mức của bạn sẽ được reset về mức ban đầu.
                 Cramerich còn nhận thêm 20 Lúa thưởng mỗi tháng!
               </p>
               <div className="how-card__limit">
@@ -345,7 +353,7 @@ export default function PricingPage() {
       {/* ===================== FEATURE COMPARISON TABLE ===================== */}
       <section className="comparison-section">
         <div className="pricing-container">
-          <motion.div 
+          <motion.div
             className="pricing-section__header"
             variants={fadeInUp}
             initial="hidden"
@@ -438,7 +446,7 @@ export default function PricingPage() {
             <p className="pricing-cta__text">
               Nâng cấp lên Cramerich để trải nghiệm đầy đủ kho đề thi và tính năng chấm bài AI
             </p>
-            
+
             {user ? (
               <Link to="/subscription" className="pricing-cta__btn">
                 Quản lý gói đăng ký
@@ -496,29 +504,29 @@ function TierCard({ tierCode, isPopular }) {
   const tier = TIER_INFO[tierCode];
   const limits = LIMITS[tierCode];
   const user = useAuthStore(state => state.user);
-  
+
   const features = tierCode === TIERS.CRAMERICH ? [
     'Toàn bộ kho đề thi Cambridge (Reading, Listening, Writing)',
-    `${limits.monthlyAttempts} ${TERMINOLOGY.ATTEMPT}/tháng (${limits.perSkillAttempts}/kỹ năng)`,
-    `${limits.monthlyAttemptAis} ${TERMINOLOGY.ATTEMPT_AI}/tháng (${limits.perSkillAttemptAis}/kỹ năng)`,
+    `${limits.monthlyAttempts} ${TERMINOLOGY.ATTEMPT}/tháng`,
+    `${limits.monthlyAttemptAis} ${TERMINOLOGY.ATTEMPT_AI}/tháng`,
     'Chấm bài Writing bằng AI với nhận xét cá nhân hóa',
     `Sổ tay từ vựng: ${formatNumber(limits.maxVocabulary)} từ`,
-    `Dịch từ vựng AI: ${limits.dailyTranslations} lần/ngày`,
+    `Dịch từ vựng AI: ${limits.monthlyTranslations} lần/tháng`,
     `Trợ lý Cramer: ${limits.chatbotMonthly} câu/tháng`,
     `${limits.initialLua} Lúa ban đầu + ${limits.monthlyLuaBonus} Lúa thưởng/tháng`,
   ] : [
     'Một số đề thi mẫu miễn phí',
-    `Không có ${TERMINOLOGY.ATTEMPT} miễn phí`,
-    `Không có ${TERMINOLOGY.ATTEMPT_AI}`,
-    `Sổ tay từ vựng: ${limits.maxVocabulary} từ`,
-    `Dịch từ vựng AI: ${limits.dailyTranslations} lần/ngày`,
+    `${limits.monthlyAttempts} ${TERMINOLOGY.ATTEMPT}/tháng`,
+    `${limits.monthlyAttemptAis} ${TERMINOLOGY.ATTEMPT_AI}/tháng`,
+    `Sổ tay từ vựng: ${formatNumber(limits.maxVocabulary)} từ`,
+    `Dịch từ vựng AI: ${limits.monthlyTranslations} lần/tháng`,
     `Trợ lý Cramer: ${limits.chatbotMonthly} câu/tháng`,
     `${limits.initialLua} Lúa ban đầu`,
   ];
 
   // Determine CTA link and text
   const isFree = tier.priceVnd === 0;
-  const ctaLink = user 
+  const ctaLink = user
     ? (isFree ? '/courses' : '/subscription?upgrade=cramerich')
     : '/login';
   const ctaText = user
@@ -528,7 +536,7 @@ function TierCard({ tierCode, isPopular }) {
   return (
     <div className={`tier-card ${isPopular ? 'tier-card--popular' : ''}`}>
       {isPopular && <div className="tier-card__badge">Phổ biến nhất</div>}
-      
+
       <div className="tier-card__header">
         <span className="tier-card__emoji">{tier.emoji}</span>
         <h3 className="tier-card__name">{tier.name}</h3>

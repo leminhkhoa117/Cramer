@@ -404,7 +404,7 @@ const TierUpgradeCard = ({ onUpgrade, isProcessing }) => {
               </div>
               <div className="sub-upgrade-feature">
                 <FaCheckCircle className="sub-upgrade-feature__icon" />
-                <span>{cramerichLimits.dailyTranslations} lượt dịch/ngày</span>
+                <span>{cramerichLimits.monthlyTranslations} lượt dịch/tháng</span>
               </div>
               <div className="sub-upgrade-feature">
                 <FaCheckCircle className="sub-upgrade-feature__icon" />

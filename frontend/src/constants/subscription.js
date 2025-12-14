@@ -73,19 +73,19 @@ export const FEATURE_CATEGORIES = [
     features: [
       {
         name: 'Lượt chấm thường',
-        cramerie: '60/tháng (20/kỹ năng)',
-        cramerich: '60/tháng (20/kỹ năng)',
-        tooltip: 'Lượt chấm thường: Làm bài với chấm điểm tự động cơ bản cho Reading/Listening. Giới hạn giống nhau cho cả hai gói.',
+        cramerie: '20/tháng',
+        cramerich: '40/tháng',
+        tooltip: 'Lượt chấm thường: Làm bài với chấm điểm tự động cơ bản cho Reading/Listening.',
       },
       {
         name: 'Lượt chấm nâng cao',
-        cramerie: 'Không có',
-        cramerich: '30/tháng (3/kỹ năng)',
-        tooltip: 'Lượt chấm nâng cao: AI chấm điểm và nhận xét cá nhân hóa (Writing). Chỉ dành cho Cramerich.',
+        cramerie: '3/tháng',
+        cramerich: '20/tháng',
+        tooltip: 'Lượt chấm nâng cao: AI chấm điểm và nhận xét cá nhân hóa (Writing).',
       },
       {
         name: 'Chi phí vượt hạn mức',
-        cramerie: '10 Lúa/lượt thường',
+        cramerie: '10 Lúa/lượt thường, 20 Lúa/lượt nâng cao',
         cramerich: '10 Lúa/lượt thường, 20 Lúa/lượt nâng cao',
         tooltip: 'Khi hết lượt miễn phí, bạn có thể dùng Lúa để mua thêm.',
       },
@@ -113,13 +113,15 @@ export const FEATURE_CATEGORIES = [
     features: [
       {
         name: 'Số từ vựng tối đa',
-        cramerie: '250 từ',
+        cramerie: '1,000 từ',
         cramerich: '1,000 từ',
+        tooltip: 'Cả hai gói đều có thể lưu tối đa 1000 từ.',
       },
       {
         name: 'Dịch tự động bằng AI',
-        cramerie: '10 lần/ngày',
-        cramerich: '50 lần/ngày',
+        cramerie: '150 lần/tháng + 1 Lúa/lần vượt',
+        cramerich: '500 lần/tháng + 1 Lúa/lần vượt',
+        tooltip: 'Khi vượt hạn mức, mỗi lần dịch tiếp theo tiêu hao 1 Lúa.',
       },
     ],
   },
@@ -128,8 +130,9 @@ export const FEATURE_CATEGORIES = [
     features: [
       {
         name: 'Số câu hỏi',
-        cramerie: '50 lần/tháng',
-        cramerich: '500 lần/tháng',
+        cramerie: '50 lần/tháng + 2 Lúa/lần vượt',
+        cramerich: '500 lần/tháng + 2 Lúa/lần vượt',
+        tooltip: 'Khi vượt hạn mức, mỗi lần hỏi tiếp theo tiêu hao 2 Lúa.',
       },
     ],
   },
@@ -157,30 +160,30 @@ export const FEATURE_CATEGORIES = [
 export const LUA_PACKS = [
   {
     code: 'lua_100',
-    name: 'Túi Lúa Nhỏ',
+    name: 'Túi Lúa',
     emoji: '🌾',
     luaAmount: 100,
     priceVnd: 10000,
     discountPercent: 0,
     pricePer100: 10000,
-    description: 'Gói khởi đầu hoàn hảo',
+    description: 'Gói khởi đầu hoàn hảo - 100 Lúa',
     color: '#22c55e',
   },
   {
     code: 'lua_500',
-    name: 'Túi Lúa Vừa',
+    name: 'Bao Lúa',
     emoji: '🌻',
     luaAmount: 500,
     priceVnd: 45000,
     discountPercent: 10,
     pricePer100: 9000,
-    description: 'Tiết kiệm 10% - Phổ biến nhất!',
+    description: 'Tiết kiệm 10% - 500 Lúa',
     popular: true,
     color: '#eab308',
   },
   {
     code: 'lua_2000',
-    name: 'Bao Lúa Lớn',
+    name: 'Xe Lúa',
     emoji: '🌟',
     luaAmount: 2000,
     priceVnd: 150000,
@@ -222,25 +225,31 @@ export const TERMINOLOGY = {
 
 export const LIMITS = {
   cramerie: {
-    monthlyAttempts: 60,      // Same as Cramerich
-    monthlyAttemptAis: 0,     // No AI grading
-    perSkillAttempts: 20,     // Same as Cramerich
-    perSkillAttemptAis: 0,    // No AI grading
-    dailyTranslations: 10,
-    maxVocabulary: 250,
+    monthlyAttempts: 20,
+    monthlyAttemptAis: 3,
+    monthlyTranslations: 150,
+    maxVocabulary: 1000,
     chatbotMonthly: 50,
     initialLua: 50,
+    // Overage costs
+    attemptOverageCost: 10,
+    attemptAiOverageCost: 20,
+    translationOverageCost: 1,
+    chatbotOverageCost: 2,
   },
   cramerich: {
-    monthlyAttempts: 60,
-    monthlyAttemptAis: 30,
-    perSkillAttempts: 20,
-    perSkillAttemptAis: 3,
-    dailyTranslations: 50,
+    monthlyAttempts: 40,
+    monthlyAttemptAis: 20,
+    monthlyTranslations: 500,
     maxVocabulary: 1000,
     chatbotMonthly: 500,
     initialLua: 100,
     monthlyLuaBonus: 20,
+    // Overage costs
+    attemptOverageCost: 10,
+    attemptAiOverageCost: 20,
+    translationOverageCost: 1,
+    chatbotOverageCost: 2,
   },
 };
 

@@ -88,9 +88,19 @@ public class SubscriptionTier {
     @Builder.Default
     private Integer chatbotMonthlyLimit = 0; // Monthly chatbot messages, -1 for unlimited
 
-    @Column(name = "daily_translation_limit", nullable = false)
+    @Column(name = "monthly_translation_limit", nullable = false)
     @Builder.Default
-    private Integer dailyTranslationLimit = 0; // Daily vocabulary translations
+    private Integer monthlyTranslationLimit = 0; // Monthly vocabulary translations
+
+    // ==================== OVERAGE COSTS ====================
+
+    @Column(name = "chatbot_overage_cost", nullable = false)
+    @Builder.Default
+    private Integer chatbotOverageCost = 2; // Lúa cost per chatbot message after limit
+
+    @Column(name = "translation_overage_cost", nullable = false)
+    @Builder.Default
+    private Integer translationOverageCost = 1; // Lúa cost per translation after limit
 
     // ==================== VOCABULARY LIMITS ====================
 

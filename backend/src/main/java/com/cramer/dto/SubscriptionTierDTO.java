@@ -22,7 +22,7 @@ public class SubscriptionTierDTO {
     private String nameVi;
     private String nameEn;
     private Integer priceVnd;
-    
+
     // ATTEMPT system fields
     private Integer monthlyAttemptLimit;
     private Integer monthlyAttemptAiLimit;
@@ -30,23 +30,25 @@ public class SubscriptionTierDTO {
     private Integer perSkillAttemptAiLimit;
     private Integer attemptOverageCost;
     private Integer attemptAiOverageCost;
-    
+
     // Legacy AI gradings (kept for compatibility)
     private Integer includedAiGradings;
-    
+
     // Chat/Translation limits
     private Integer dailyChatLimit;
     private Integer chatbotMonthlyLimit;
-    private Integer dailyTranslationLimit;
-    
+    private Integer monthlyTranslationLimit;
+    private Integer chatbotOverageCost;
+    private Integer translationOverageCost;
+
     // Vocabulary limits
     private Integer vocabAiDailyLimit;
     private Integer maxVocabularyEntries;
-    
+
     // Lúa bonuses
     private Integer monthlyLuaBonus;
     private Integer initialLua;
-    
+
     // Features
     private List<String> features;
     private Integer displayOrder;
@@ -57,7 +59,8 @@ public class SubscriptionTierDTO {
      * Create a DTO from an entity.
      */
     public static SubscriptionTierDTO fromEntity(SubscriptionTier entity) {
-        if (entity == null) return null;
+        if (entity == null)
+            return null;
 
         List<String> featureList = parseFeatures(entity.getFeatures());
 
@@ -79,7 +82,9 @@ public class SubscriptionTierDTO {
                 // Chat/Translation
                 .dailyChatLimit(entity.getDailyChatLimit())
                 .chatbotMonthlyLimit(entity.getChatbotMonthlyLimit())
-                .dailyTranslationLimit(entity.getDailyTranslationLimit())
+                .monthlyTranslationLimit(entity.getMonthlyTranslationLimit())
+                .chatbotOverageCost(entity.getChatbotOverageCost())
+                .translationOverageCost(entity.getTranslationOverageCost())
                 // Vocabulary
                 .vocabAiDailyLimit(entity.getVocabAiDailyLimit())
                 .maxVocabularyEntries(entity.getMaxVocabularyEntries())
@@ -99,16 +104,18 @@ public class SubscriptionTierDTO {
         if (featuresJson == null || featuresJson.isEmpty()) {
             return List.of();
         }
-        
+
         try {
             String trimmed = featuresJson.trim();
             if (trimmed.startsWith("[")) {
                 // Parse as array of strings
-                return objectMapper.readValue(trimmed, new TypeReference<List<String>>() {});
+                return objectMapper.readValue(trimmed, new TypeReference<List<String>>() {
+                });
             } else if (trimmed.startsWith("{")) {
                 // Parse as object and extract keys with true values
                 java.util.Map<String, Object> featuresMap = objectMapper.readValue(trimmed,
-                    new TypeReference<java.util.Map<String, Object>>() {});
+                        new TypeReference<java.util.Map<String, Object>>() {
+                        });
                 java.util.List<String> result = new java.util.ArrayList<>();
                 for (java.util.Map.Entry<String, Object> entry : featuresMap.entrySet()) {
                     if (Boolean.TRUE.equals(entry.getValue())) {

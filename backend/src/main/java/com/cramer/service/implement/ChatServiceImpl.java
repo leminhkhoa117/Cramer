@@ -7,6 +7,7 @@ import com.cramer.entity.ChatMessage;
 import com.cramer.entity.ChatbotUsage;
 import com.cramer.repository.ChatMessageRepository;
 import com.cramer.repository.ChatbotUsageRepository;
+import com.cramer.service.ChatBillingService;
 import com.cramer.service.ChatService;
 import com.cramer.service.SubscriptionService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -42,24 +43,25 @@ public class ChatServiceImpl implements ChatService {
 
     // System prompt for the assistant
     private static final String SYSTEM_PROMPT = """
-        Bạn là Cramer, trợ lý học IELTS thông minh của ứng dụng Cramer. Bạn:
-        - Trả lời bằng tiếng Việt (trừ khi được hỏi bằng tiếng Anh)
-        - Nhiệt tình, động viên, không phán xét
-        - Giúp giải thích từ vựng, ngữ pháp tiếng Anh
-        - Đưa ra lời khuyên học tập IELTS
-        - Hướng dẫn sử dụng các tính năng của app
-        - Trả lời ngắn gọn, súc tích (tối đa 200 từ)
-        - Có thể dùng emoji để thân thiện hơn 🌻
-        
-        Một số tính năng của app Cramer:
-        - Luyện thi Reading, Listening, Writing với đề thi Cambridge IELTS thực
-        - Chấm bài Writing bằng AI với phản hồi chi tiết
-        - Sổ tay từ vựng để lưu và ôn từ mới
-        - Hệ thống Lúa (credit) để sử dụng các tính năng premium
-        """;
+            Bạn là Cramer, trợ lý học IELTS thông minh của ứng dụng Cramer. Bạn:
+            - Trả lời bằng tiếng Việt (trừ khi được hỏi bằng tiếng Anh)
+            - Nhiệt tình, động viên, không phán xét
+            - Giúp giải thích từ vựng, ngữ pháp tiếng Anh
+            - Đưa ra lời khuyên học tập IELTS
+            - Hướng dẫn sử dụng các tính năng của app
+            - Trả lời ngắn gọn, súc tích (tối đa 200 từ)
+            - Có thể dùng emoji để thân thiện hơn 🌻
+
+            Một số tính năng của app Cramer:
+            - Luyện thi Reading, Listening, Writing với đề thi Cambridge IELTS thực
+            - Chấm bài Writing bằng AI với phản hồi chi tiết
+            - Sổ tay từ vựng để lưu và ôn từ mới
+            - Hệ thống Lúa (credit) để sử dụng các tính năng premium
+            """;
 
     private final ChatMessageRepository messageRepository;
     private final ChatbotUsageRepository usageRepository;
+    private final ChatBillingService chatBillingService;
     private final SubscriptionService subscriptionService;
     private final LLMConfig llmConfig;
     private final RestTemplate restTemplate;
@@ -68,10 +70,12 @@ public class ChatServiceImpl implements ChatService {
     public ChatServiceImpl(
             ChatMessageRepository messageRepository,
             ChatbotUsageRepository usageRepository,
+            ChatBillingService chatBillingService,
             SubscriptionService subscriptionService,
             LLMConfig llmConfig) {
         this.messageRepository = messageRepository;
         this.usageRepository = usageRepository;
+        this.chatBillingService = chatBillingService;
         this.subscriptionService = subscriptionService;
         this.llmConfig = llmConfig;
         this.restTemplate = new RestTemplate();
@@ -82,12 +86,16 @@ public class ChatServiceImpl implements ChatService {
     public ChatResponseDTO sendMessage(UUID userId, String message) {
         logger.info("💬 Processing chat message from user: {}", userId);
 
-        // Step 1: Check monthly limit (using the new monthly tracking)
-        int remaining = getRemainingQuestions(userId);
+        // Step 1: Process billing (check quota, charge Lúa if needed)
+        ChatBillingService.ChatBillingResult billingResult = chatBillingService.processChatBilling(userId);
 
-        if (remaining == 0) {
-            logger.info("⛔ User {} has exceeded monthly chat limit", userId);
+        if (!billingResult.allowed()) {
+            logger.info("⛔ User {} blocked from chat: {}", userId, billingResult.message());
             return ChatResponseDTO.rateLimitExceeded();
+        }
+
+        if (billingResult.charged()) {
+            logger.info("💰 Charged {} Lúa for chat message", billingResult.luaCost());
         }
 
         // Step 2: Check if API key is available
@@ -95,8 +103,7 @@ public class ChatServiceImpl implements ChatService {
             logger.error("❌ No DeepSeek API key configured for chat service");
             return ChatResponseDTO.error(
                     "Dịch vụ chat tạm thời không khả dụng. Vui lòng thử lại sau.",
-                    remaining
-            );
+                    billingResult.remaining());
         }
 
         try {
@@ -114,23 +121,17 @@ public class ChatServiceImpl implements ChatService {
             ChatMessage assistantMessage = ChatMessage.assistantMessage(userId, response, 0);
             messageRepository.save(assistantMessage);
 
-            // Step 7: Increment usage (monthly tracking in UserSubscription)
-            subscriptionService.incrementChatUsage(userId);
-            // Also keep daily tracking for analytics
+            // Step 7: Keep daily tracking for analytics (billing already done in step 1)
             incrementUsage(userId);
 
-            // Step 8: Calculate new remaining
-            int newRemaining = remaining < 0 ? -1 : remaining - 1;
-
             logger.info("✅ Chat response sent successfully to user: {}", userId);
-            return ChatResponseDTO.success(response, newRemaining);
+            return ChatResponseDTO.success(response, billingResult.remaining());
 
         } catch (Exception e) {
             logger.error("❌ Failed to process chat message for user {}: {}", userId, e.getMessage(), e);
             return ChatResponseDTO.error(
                     "Xin lỗi, mình đang gặp trục trặc. Bạn thử lại sau nhé! 🙏",
-                    remaining
-            );
+                    billingResult.remaining());
         }
     }
 
@@ -165,9 +166,8 @@ public class ChatServiceImpl implements ChatService {
      */
     private List<Map<String, String>> buildConversationContext(UUID userId) {
         List<ChatMessage> recentMessages = messageRepository.findRecentByUserId(
-                userId, 
-                PageRequest.of(0, CONTEXT_MESSAGE_LIMIT)
-        );
+                userId,
+                PageRequest.of(0, CONTEXT_MESSAGE_LIMIT));
 
         // Reverse to get chronological order (oldest first)
         Collections.reverse(recentMessages);
@@ -223,8 +223,7 @@ public class ChatServiceImpl implements ChatService {
                     apiUrl,
                     HttpMethod.POST,
                     request,
-                    String.class
-            );
+                    String.class);
 
             if (!response.getStatusCode().is2xxSuccessful()) {
                 logger.error("DeepSeek API returned error status: {}", response.getStatusCode());

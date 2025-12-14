@@ -7,6 +7,7 @@ import com.cramer.entity.Profile;
 import com.cramer.entity.Vocabulary;
 import com.cramer.repository.ProfileRepository;
 import com.cramer.repository.VocabularyRepository;
+import com.cramer.service.TranslationBillingService;
 import com.cramer.service.VocabularyService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,6 +34,7 @@ public class VocabularyServiceImpl implements VocabularyService {
 
     private final VocabularyRepository vocabularyRepository;
     private final ProfileRepository profileRepository;
+    private final TranslationBillingService translationBillingService;
     private final LLMConfig llmConfig;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
@@ -40,9 +42,11 @@ public class VocabularyServiceImpl implements VocabularyService {
     public VocabularyServiceImpl(
             VocabularyRepository vocabularyRepository,
             ProfileRepository profileRepository,
+            TranslationBillingService translationBillingService,
             LLMConfig llmConfig) {
         this.vocabularyRepository = vocabularyRepository;
         this.profileRepository = profileRepository;
+        this.translationBillingService = translationBillingService;
         this.llmConfig = llmConfig;
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
@@ -107,9 +111,8 @@ public class VocabularyServiceImpl implements VocabularyService {
                 Map<String, String> translation = translateWord(
                         createDTO.getWord(),
                         createDTO.getSourceContext(),
-                        userId
-                );
-                
+                        userId);
+
                 // Only fill in empty fields
                 if (vocabulary.getTranslation() == null || vocabulary.getTranslation().isEmpty()) {
                     vocabulary.setTranslation(translation.get("translation"));
@@ -150,7 +153,7 @@ public class VocabularyServiceImpl implements VocabularyService {
         if (updateDTO.getWord() != null) {
             // Check for duplicates if word is changing
             if (!vocabulary.getWord().equalsIgnoreCase(updateDTO.getWord()) &&
-                vocabularyRepository.existsByUserIdAndWordIgnoreCase(userId, updateDTO.getWord())) {
+                    vocabularyRepository.existsByUserIdAndWordIgnoreCase(userId, updateDTO.getWord())) {
                 throw new RuntimeException("Word '" + updateDTO.getWord() + "' already exists in your vocabulary");
             }
             vocabulary.setWord(updateDTO.getWord().trim());
@@ -210,10 +213,24 @@ public class VocabularyServiceImpl implements VocabularyService {
     }
 
     @Override
+    @Transactional
     public Map<String, String> translateWord(String word, String context, UUID userId) {
-        logger.info("Translating word: '{}' with context", word);
+        logger.info("Translating word: '{}' with context for user: {}", word, userId);
 
-        // Resolve API key: user's key > server key
+        // Step 1: Check translation quota and process billing
+        TranslationBillingService.TranslationBillingResult billingResult = translationBillingService
+                .processTranslationBilling(userId);
+
+        if (!billingResult.allowed()) {
+            logger.warn("❌ Translation blocked for user {}: {}", userId, billingResult.message());
+            throw new RuntimeException(billingResult.message());
+        }
+
+        if (billingResult.charged()) {
+            logger.info("💰 Charged {} Lúa for translation (overage)", billingResult.luaCost());
+        }
+
+        // Step 2: Resolve API key
         String apiKey = resolveApiKey(userId);
         if (apiKey == null || apiKey.isEmpty()) {
             throw new RuntimeException("No DeepSeek API key available. " +
@@ -237,13 +254,13 @@ public class VocabularyServiceImpl implements VocabularyService {
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", chatModel);
-        
+
         List<Map<String, Object>> messages = new ArrayList<>();
         Map<String, Object> userMessage = new HashMap<>();
         userMessage.put("role", "user");
         userMessage.put("content", prompt);
         messages.add(userMessage);
-        
+
         requestBody.put("messages", messages);
         requestBody.put("temperature", 0.3);
         requestBody.put("max_tokens", 500);
@@ -296,7 +313,8 @@ public class VocabularyServiceImpl implements VocabularyService {
     @Override
     @Transactional(readOnly = true)
     public Page<VocabularyDTO> searchWithFilter(UUID userId, String searchTerm, Boolean isMastered, Pageable pageable) {
-        logger.debug("Searching vocabulary for user: {} with term: {} and mastered: {}", userId, searchTerm, isMastered);
+        logger.debug("Searching vocabulary for user: {} with term: {} and mastered: {}", userId, searchTerm,
+                isMastered);
         return vocabularyRepository.searchByWordAndMastered(userId, searchTerm, isMastered, pageable)
                 .map(VocabularyDTO::fromEntity);
     }
@@ -317,7 +335,7 @@ public class VocabularyServiceImpl implements VocabularyService {
     private String resolveApiKey(UUID userId) {
         // First try user's personal API key
         Optional<Profile> profile = profileRepository.findById(userId);
-        if (profile.isPresent() && profile.get().getLlmApiKey() != null 
+        if (profile.isPresent() && profile.get().getLlmApiKey() != null
                 && !profile.get().getLlmApiKey().isEmpty()) {
             logger.debug("Using user's personal API key for translation");
             return profile.get().getLlmApiKey();
@@ -339,7 +357,7 @@ public class VocabularyServiceImpl implements VocabularyService {
         StringBuilder prompt = new StringBuilder();
         prompt.append("You are a professional English-Vietnamese dictionary assistant. ");
         prompt.append("Your task is to translate English words and provide ENGLISH IPA phonetic transcription.\n\n");
-        
+
         prompt.append("Translate the English word \"").append(word).append("\" to Vietnamese.\n\n");
 
         if (context != null && !context.isEmpty()) {
@@ -354,19 +372,21 @@ public class VocabularyServiceImpl implements VocabularyService {
         prompt.append("  \"definition\": \"Brief English definition\",\n");
         prompt.append("  \"exampleSentence\": \"An example sentence using the word\"\n");
         prompt.append("}\n\n");
-        
+
         prompt.append("CRITICAL RULES FOR PHONETIC:\n");
         prompt.append("1. Use ONLY International Phonetic Alphabet (IPA) for English pronunciation\n");
         prompt.append("2. Format: Enclose in forward slashes, e.g., /wɜːd/, /ˈvəʊkæb.jʊ.lər.i/, /ɪɡˈzæm.pəl/\n");
         prompt.append("3. Use proper IPA symbols: ˈ (primary stress), ˌ (secondary stress), ː (long vowel)\n");
         prompt.append("4. Common IPA vowels: /æ/ (cat), /ɑː/ (car), /ɒ/ (lot), /ɔː/ (law), /ʊ/ (put), /uː/ (too)\n");
         prompt.append("5. Common IPA vowels: /ɪ/ (kit), /iː/ (see), /e/ (bed), /ɜː/ (bird), /ə/ (about), /ʌ/ (cup)\n");
-        prompt.append("6. Common IPA consonants: /θ/ (think), /ð/ (this), /ʃ/ (she), /ʒ/ (vision), /ŋ/ (sing), /tʃ/ (church), /dʒ/ (judge)\n");
+        prompt.append(
+                "6. Common IPA consonants: /θ/ (think), /ð/ (this), /ʃ/ (she), /ʒ/ (vision), /ŋ/ (sing), /tʃ/ (church), /dʒ/ (judge)\n");
         prompt.append("7. ❌ NEVER use Vietnamese phonetic like \"ê-dăm-pồ\" or \"vô-kép-biu-lơ-ri\"\n");
         prompt.append("8. ❌ NEVER use simplified pronunciations like \"ig-ZAM-pul\" or \"voh-KAB-yuh-lair-ee\"\n\n");
-        
+
         prompt.append("OTHER RULES:\n");
-        prompt.append("- Part of speech: noun, verb, adjective, adverb, preposition, conjunction, pronoun, or interjection\n");
+        prompt.append(
+                "- Part of speech: noun, verb, adjective, adverb, preposition, conjunction, pronoun, or interjection\n");
         prompt.append("- Definition: concise, under 100 words, in English\n");
         prompt.append("- Example sentence: natural usage demonstrating the word's meaning\n");
 
@@ -379,7 +399,7 @@ public class VocabularyServiceImpl implements VocabularyService {
     private Map<String, String> parseTranslationResponse(String responseBody) {
         try {
             JsonNode root = objectMapper.readTree(responseBody);
-            
+
             // Navigate to the content: choices[0].message.content
             JsonNode choices = root.get("choices");
             if (choices == null || !choices.isArray() || choices.isEmpty()) {
