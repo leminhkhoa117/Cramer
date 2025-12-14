@@ -324,8 +324,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                                                 subscription.getAiGradingEnabled() != null
                                                                 ? subscription.getAiGradingEnabled()
                                                                 : true)
-                                .canEnableAiGrading(!tier.getCode().equals("cramerie")) // Only non-Cramerie users can
-                                                                                        // enable AI grading
+                                .canEnableAiGrading(true) // All users can enable AI grading (Cramerie uses Lúa)
                                 .build();
 
                 // Build ATTEMPT usage info (regular test attempts)
@@ -488,13 +487,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
                 String tierCode = subscription.getTier().getCode();
 
-                // Cramerie users cannot enable AI grading
-                if (enabled && "cramerie".equals(tierCode)) {
-                        logger.warn("⚠️ Cramerie user {} tried to enable AI grading", userId);
-                        throw new IllegalStateException(
-                                        "Tùy chọn Lượt chấm nâng cao chỉ dành cho người dùng gói Cramerich. " +
-                                                        "Hãy nâng cấp lên gói Cramerich để mở khóa tính năng này!");
-                }
+                // All users can enable/disable AI grading
+                // Cramerie users will use Lúa when grading (they have 0 free AI gradings)
 
                 subscription.setAiGradingEnabled(enabled);
                 subscriptionRepository.save(subscription);

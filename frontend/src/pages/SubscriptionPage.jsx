@@ -179,47 +179,30 @@ const StatusBadge = ({ status }) => {
 // AI Grading Toggle Card Component
 const AiGradingToggleCard = ({
   isEnabled,
-  canEnable,
   isProcessing,
-  onToggle,
-  onShowUpgradeModal
+  onToggle
 }) => {
-  const handleClick = () => {
-    // If trying to enable but cannot (Cramerie user)
-    if (!isEnabled && !canEnable) {
-      onShowUpgradeModal();
-      return;
-    }
-    onToggle(!isEnabled);
-  };
-
   return (
     <div className="sl-card sub-ai-toggle-card">
       <div className="sub-ai-toggle-card__content">
         <div className="sub-ai-toggle-card__info">
           <div className="sub-ai-toggle-card__header">
             <FaRobot className="sub-ai-toggle-card__icon" />
-            <h3 className="sub-ai-toggle-card__title">Chấm bài bằng AI</h3>
+            <h3 className="sub-ai-toggle-card__title">Lượt chấm nâng cao</h3>
           </div>
           <p className="sub-ai-toggle-card__description">
             {isEnabled ? (
-              <>Bài Writing sẽ được chấm bởi AI DeepSeek với phản hồi chi tiết theo tiêu chí IELTS.</>
+              <>Các lượt chấm sẽ có thêm sự hỗ trợ của AI với phản hồi chi tiết và band điểm ước tính, bám sát các tiêu chí chấm bài của IELTS.</>
             ) : (
               <>Bài Writing sẽ chỉ được lưu lại, không có nhận xét và điểm số từ AI.</>
             )}
           </p>
-          {!canEnable && (
-            <div className="sub-ai-toggle-card__locked">
-              <FaExclamationTriangle />
-              <span>Tính năng này chỉ dành cho gói Cramerich</span>
-            </div>
-          )}
         </div>
 
         <button
           type="button"
-          className={`sub-ai-toggle-btn ${isEnabled ? 'sub-ai-toggle-btn--on' : 'sub-ai-toggle-btn--off'} ${!canEnable ? 'sub-ai-toggle-btn--locked' : ''}`}
-          onClick={handleClick}
+          className={`sub-ai-toggle-btn ${isEnabled ? 'sub-ai-toggle-btn--on' : 'sub-ai-toggle-btn--off'}`}
+          onClick={() => onToggle(!isEnabled)}
           disabled={isProcessing}
           aria-label={isEnabled ? 'Tắt chấm bài AI' : 'Bật chấm bài AI'}
         >
@@ -240,28 +223,15 @@ const AiGradingToggleCard = ({
       <div className="sub-ai-toggle-card__info-box">
         <FaInfoCircle />
         <span>
-          Mỗi bài chấm AI tiêu tốn <strong>1 {TERMINOLOGY.ATTEMPT_AI}</strong>.
-          Khi hết hạn mức, mỗi bài sẽ tốn <strong>{ATTEMPT_COSTS.ATTEMPT_AI} Lúa</strong>.
+          Khi công tắc được bật, mỗi lần chấm bài sẽ tiêu hao <strong>1 {TERMINOLOGY.ATTEMPT_AI}</strong>.
+          Khi hết số {TERMINOLOGY.ATTEMPT_AI} trong tháng, mỗi lượt chấm tiếp theo với trạng thái công tắc được bật sẽ tiêu hao <strong>{ATTEMPT_COSTS.ATTEMPT_AI} Lúa</strong>.
         </span>
       </div>
     </div>
   );
 };
 
-// AI Grading Upgrade Modal Content Component
-const AiGradingUpgradeModalContent = () => (
-  <div className="sub-upgrade-modal-content">
-    <div className="sub-upgrade-modal-content__emoji">🌻</div>
-    <p>Tính năng <strong>Chấm bài bằng AI</strong> chỉ dành cho người dùng gói <strong>Cramerich</strong>.</p>
-    <p style={{ marginTop: '0.75rem' }}>Nâng cấp để nhận:</p>
-    <ul className="sub-upgrade-modal-content__list">
-      <li><FaCheckCircle /> Chấm bài Writing với AI DeepSeek</li>
-      <li><FaCheckCircle /> {LIMITS.cramerich.monthlyAttemptAis} lượt chấm AI mỗi tháng</li>
-      <li><FaCheckCircle /> Phản hồi chi tiết theo 4 tiêu chí IELTS</li>
-      <li><FaCheckCircle /> Gợi ý cải thiện và bài mẫu</li>
-    </ul>
-  </div>
-);
+
 
 // Lúa Pack Card Component
 const LuaPackCard = ({ pack, isProcessing, onPurchase }) => {
@@ -460,7 +430,6 @@ export default function SubscriptionPage() {
   // AI Grading Toggle state
   const [aiGradingEnabled, setAiGradingEnabled] = useState(true);
   const [aiGradingProcessing, setAiGradingProcessing] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Mock sessions data - will be replaced with API calls
   const [sessions] = useState([
@@ -771,10 +740,8 @@ export default function SubscriptionPage() {
                 {/* AI Grading Toggle Card */}
                 <AiGradingToggleCard
                   isEnabled={aiGradingEnabled}
-                  canEnable={status?.subscription?.canEnableAiGrading ?? false}
                   isProcessing={aiGradingProcessing}
                   onToggle={handleAiGradingToggle}
-                  onShowUpgradeModal={() => setShowUpgradeModal(true)}
                 />
 
                 {/* Usage Stats Card */}
@@ -1094,20 +1061,7 @@ export default function SubscriptionPage() {
         />
       )}
 
-      {/* AI Grading Upgrade Modal (for Cramerie users) */}
-      <ConfirmationModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        onConfirm={() => {
-          setShowUpgradeModal(false);
-          handleUpgrade(TIERS.CRAMERICH);
-        }}
-        title="Mở khóa chấm bài AI"
-        confirmText={`Nâng cấp ${TIER_INFO[TIERS.CRAMERICH].priceLabel}`}
-        isConfirming={processingPayment === `tier-${TIERS.CRAMERICH}`}
-      >
-        <AiGradingUpgradeModalContent />
-      </ConfirmationModal>
+
     </div>
   );
 }

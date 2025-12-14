@@ -24,6 +24,7 @@ import {
   formatNumber
 } from '../constants/subscription';
 import FAQ from '../components/common/FAQ';
+import InteractiveGradingDemo from '../components/pricing/InteractiveGradingDemo';
 import '../css/PricingPage.css';
 
 // =============================================================================
@@ -177,78 +178,7 @@ export default function PricingPage() {
       </section>
 
       {/* ===================== DEMO COMPARISON ===================== */}
-      <section className="demo-comparison">
-        <div className="pricing-container">
-          <motion.div
-            className="pricing-section__header"
-            variants={fadeInUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            <h2 className="pricing-section__title">Trải nghiệm sự khác biệt</h2>
-            <p className="pricing-section__subtitle">
-              So sánh giữa {TERMINOLOGY.ATTEMPT} và {TERMINOLOGY.ATTEMPT_AI}
-            </p>
-          </motion.div>
-
-          <motion.div
-            className="demo-comparison__grid"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-          >
-            {/* Lượt chấm thường */}
-            <motion.div className="demo-card" variants={itemVariants}>
-              <div className="demo-card__header demo-card__header--normal">
-                <span className="demo-card__badge demo-card__badge--normal">Cơ bản</span>
-                <h3 className="demo-card__title">{TERMINOLOGY.ATTEMPT}</h3>
-              </div>
-              <div className="demo-card__content">
-                <div className="demo-card__score-section">
-                  <div className="demo-card__score">7.0</div>
-                  <span className="demo-card__score-label">Band Score</span>
-                </div>
-                <ul className="demo-card__features">
-                  <li><FiCheck /> Điểm tổng và điểm từng phần</li>
-                  <li><FiCheck /> Đáp án đúng/sai cho R/L</li>
-                  <li><FiCheck /> Kết quả ngay lập tức</li>
-                  <li><FiCheck /> Lưu lịch sử làm bài</li>
-                  <li><FiCheck /> Xem giải thích đáp án</li>
-                </ul>
-                <p className="demo-card__note">
-                  Phù hợp cho: Luyện tập nhanh, kiểm tra tiến độ
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Lượt chấm nâng cao */}
-            <motion.div className="demo-card demo-card--highlighted" variants={itemVariants}>
-              <div className="demo-card__header demo-card__header--ai">
-                <span className="demo-card__badge demo-card__badge--ai">AI Powered</span>
-                <h3 className="demo-card__title">{TERMINOLOGY.ATTEMPT_AI}</h3>
-              </div>
-              <div className="demo-card__content">
-                <div className="demo-card__score-section">
-                  <div className="demo-card__score demo-card__score--ai">7.0</div>
-                  <span className="demo-card__score-label">Band Score</span>
-                </div>
-                <ul className="demo-card__features">
-                  <li><FiCheck /> Điểm chi tiết 4 tiêu chí IELTS</li>
-                  <li><FiCheck /> Nhận xét cá nhân hóa bằng AI</li>
-                  <li><FiCheck /> Phân tích điểm mạnh & điểm yếu</li>
-                  <li><FiCheck /> Gợi ý cải thiện cụ thể</li>
-                  <li><FiCheck /> Mẫu câu hay & từ vựng nâng cao</li>
-                </ul>
-                <p className="demo-card__note demo-card__note--highlighted">
-                  Phù hợp cho: Writing, cần phản hồi chi tiết để cải thiện
-                </p>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
+      <InteractiveGradingDemo />
 
       {/* ===================== HOW IT WORKS ===================== */}
       <section className="how-it-works">
