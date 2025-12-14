@@ -39,11 +39,14 @@ public class Profile {
     @Column(name = "page_background_url")
     private String pageBackgroundUrl;
 
-    @Column(name = "gemini_api_key")
-    private String geminiApiKey;
+    @Column(name = "llm_api_key")
+    private String llmApiKey;
 
-    @Column(name = "gemini_model")
-    private String geminiModel;
+    @Column(name = "llm_model")
+    private String llmModel;
+
+    @Column(name = "llm_provider")
+    private String llmProvider = "deepseek";
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -123,20 +126,28 @@ public class Profile {
         this.pageBackgroundUrl = pageBackgroundUrl;
     }
 
-    public String getGeminiApiKey() {
-        return geminiApiKey;
+    public String getLlmApiKey() {
+        return llmApiKey;
     }
 
-    public void setGeminiApiKey(String geminiApiKey) {
-        this.geminiApiKey = geminiApiKey;
+    public void setLlmApiKey(String llmApiKey) {
+        this.llmApiKey = llmApiKey;
     }
 
-    public String getGeminiModel() {
-        return geminiModel;
+    public String getLlmModel() {
+        return llmModel;
     }
 
-    public void setGeminiModel(String geminiModel) {
-        this.geminiModel = geminiModel;
+    public void setLlmModel(String llmModel) {
+        this.llmModel = llmModel;
+    }
+
+    public String getLlmProvider() {
+        return llmProvider;
+    }
+
+    public void setLlmProvider(String llmProvider) {
+        this.llmProvider = llmProvider;
     }
 
     public OffsetDateTime getCreatedAt() {

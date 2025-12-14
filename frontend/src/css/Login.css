@@ -17,7 +17,7 @@
   position: relative;
   overflow: hidden;
   padding: 2rem;
-  padding-top: calc(160px + 2rem); /* 80px under header + 80px content space + original padding */
+  padding-top: calc(var(--header-clearance, 90px) + 5rem); /* header clearance + content space */
 }
 
 /* Background orbs */

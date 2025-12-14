@@ -208,8 +208,11 @@ const TestPageContent = ({
             navigate('/dashboard', { state: { refreshData: true } });
         } catch (err) {
             console.error('Failed to cancel attempt:', err);
-            // If the attempt was already deleted (404), still navigate away
-            if (err.response?.status === 404) {
+            // Handle already deleted (404) or already completed/cancelled (400) gracefully
+            const status = err.response?.status;
+            if (status === 404 || status === 400) {
+                // Attempt was already deleted, cancelled, or completed - just navigate away
+                console.log('Attempt already processed, navigating to dashboard');
                 closeExitModal();
                 navigate('/dashboard', { state: { refreshData: true } });
             } else {
@@ -314,7 +317,13 @@ const TestPageContent = ({
                 onConfirm={handleFinalSubmit}
                 title="Xác nhận nộp bài"
             >
-                <p>Bạn có chắc chắn muốn nộp bài không? Hành động này không thể hoàn tác.</p>
+                <p>Bạn có chắc chắn muốn nộp bài không?</p>
+                <div className="submit-info">
+                    <p className="submit-info__billing">
+                        💡 <strong>Lưu ý:</strong> Bạn chỉ bị trừ lượt chấm khi hệ thống 
+                        trả về kết quả thành công. Nếu có lỗi xảy ra, lượt chấm sẽ được hoàn lại.
+                    </p>
+                </div>
             </ConfirmationModal>
 
             <ExitTestModal

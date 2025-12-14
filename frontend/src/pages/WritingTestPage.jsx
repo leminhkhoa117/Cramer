@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { shallow } from 'zustand/shallow';
+// Note: shallow import removed - using direct destructuring pattern for stable references
 import { sanitizeHtml } from '../utils/sanitize';
 import { AnimatePresence } from 'framer-motion';
 import { useTestStore, useTestSessionStore } from '../stores';
@@ -29,8 +29,9 @@ const WritingTestPage = () => {
     // Check if navigating from "Làm lại" button (forceNew flag)
     const forceNew = location.state?.forceNew || false;
 
-    // --- Zustand Store Selectors ---
+    // --- Zustand Store (direct destructuring for stable references) ---
     const {
+        // State
         testStatus,
         testData,
         attempt,
@@ -68,61 +69,17 @@ const WritingTestPage = () => {
         setIsSavingProgress,
         getWordCount,
         resetTestState,
-    } = useTestStore(
-        (state) => ({
-            testStatus: state.testStatus,
-            testData: state.testData,
-            attempt: state.attempt,
-            essays: state.essays,
-            loading: state.loading,
-            error: state.error,
-            isSubmitting: state.isSubmitting,
-            isConfirmModalOpen: state.isConfirmModalOpen,
-            isResumeModalOpen: state.isResumeModalOpen,
-            isExitModalOpen: state.isExitModalOpen,
-            inProgressAttempt: state.inProgressAttempt,
-            isStartingNew: state.isStartingNew,
-            isSavingProgress: state.isSavingProgress,
-            activeTask: state.activeTask,
-            timeLeft: state.timeLeft,
-            setTestStatus: state.setTestStatus,
-            setTestData: state.setTestData,
-            setAttempt: state.setAttempt,
-            setEssay: state.setEssay,
-            setEssays: state.setEssays,
-            setLoading: state.setLoading,
-            setError: state.setError,
-            setIsSubmitting: state.setIsSubmitting,
-            setActiveTask: state.setActiveTask,
-            setTimeLeft: state.setTimeLeft,
-            decrementTime: state.decrementTime,
-            openConfirmModal: state.openConfirmModal,
-            closeConfirmModal: state.closeConfirmModal,
-            openResumeModal: state.openResumeModal,
-            closeResumeModal: state.closeResumeModal,
-            openExitModal: state.openExitModal,
-            closeExitModal: state.closeExitModal,
-            setIsStartingNew: state.setIsStartingNew,
-            setIsSavingProgress: state.setIsSavingProgress,
-            getWordCount: state.getWordCount,
-            resetTestState: state.resetTestState,
-        }),
-        shallow
-    );
+    } = useTestStore();
 
-    // --- Session Store Actions ---
-    const { startOrResumeAttempt, loadTestData, loadEssays, saveProgress, submitWriting, cancelAttempt } =
-        useTestSessionStore(
-            (state) => ({
-                startOrResumeAttempt: state.startOrResumeAttempt,
-                loadTestData: state.loadTestData,
-                loadEssays: state.loadEssays,
-                saveProgress: state.saveProgress,
-                submitWriting: state.submitWriting,
-                cancelAttempt: state.cancelAttempt,
-            }),
-            shallow
-        );
+    // --- Session Store Actions (direct destructuring for stable references) ---
+    const { 
+        startOrResumeAttempt, 
+        loadTestData, 
+        loadEssays, 
+        saveProgress, 
+        submitWriting, 
+        cancelAttempt 
+    } = useTestSessionStore();
 
     // --- Refs (minimal local state) ---
     const isSubmittingRef = useRef(false);
@@ -133,10 +90,17 @@ const WritingTestPage = () => {
     const wordCount = getWordCount(activeTask);
     const minWords = activeTask === 1 ? 150 : 250;
 
-    const wordCounts = useMemo(() => ({
-        1: { current: getWordCount(1), min: 150 },
-        2: { current: getWordCount(2), min: 250 },
-    }), [essays]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Compute word counts directly from essays with stable primitive dependencies
+    const wordCounts = useMemo(() => {
+        const countWords = (text) => {
+            if (!text || !text.trim()) return 0;
+            return text.trim().split(/\s+/).filter(Boolean).length;
+        };
+        return {
+            1: { current: countWords(essays?.[1] || ''), min: 150 },
+            2: { current: countWords(essays?.[2] || ''), min: 250 },
+        };
+    }, [essays?.[1], essays?.[2]]);
 
     // --- Reset store on unmount ---
     useEffect(() => {
@@ -342,7 +306,11 @@ const WritingTestPage = () => {
             navigate('/dashboard', { state: { refreshData: true } });
         } catch (err) {
             console.error('Failed to cancel attempt:', err);
-            if (err.response?.status === 404) {
+            // Handle already deleted (404) or already completed/cancelled (400) gracefully
+            const status = err.response?.status;
+            if (status === 404 || status === 400) {
+                // Attempt was already deleted, cancelled, or completed - just navigate away
+                console.log('Attempt already processed, navigating to dashboard');
                 closeExitModal();
                 navigate('/dashboard', { state: { refreshData: true } });
             } else {
@@ -439,9 +407,15 @@ const WritingTestPage = () => {
                         <span>{getWordCount(2)} từ</span>
                     </div>
                 </div>
-                <p className="submit-warning">
-                    Sau khi nộp, bài làm sẽ được chấm điểm bởi AI. Bạn sẽ nhận kết quả trong vài phút.
-                </p>
+                <div className="submit-info">
+                    <p className="submit-info__ai">
+                        🤖 Bài làm sẽ được chấm điểm chi tiết bởi AI theo 4 tiêu chí IELTS.
+                    </p>
+                    <p className="submit-info__billing">
+                        💡 <strong>Lưu ý:</strong> Bạn chỉ bị trừ lượt chấm nâng cao khi AI 
+                        trả về kết quả thành công. Nếu có lỗi xảy ra, lượt chấm sẽ được hoàn lại.
+                    </p>
+                </div>
             </ConfirmationModal>
 
             {attempt && testData.length > 0 && (

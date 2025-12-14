@@ -4,11 +4,13 @@ import { sanitizeHtml } from '../utils/sanitize';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { writingApi } from '../api/backendApi';
 import GradingLoader from '../components/common/GradingLoader';
+import EssayComparison from '../components/EssayComparison';
 import {
     FiArrowLeft, FiRefreshCw, FiChevronDown, FiChevronRight,
     FiFileText, FiEdit3, FiBarChart2, FiCheckCircle, FiXCircle,
     FiAlertCircle, FiZap, FiTrendingUp, FiAward, FiBook,
-    FiTarget, FiThumbsUp, FiAlertTriangle, FiEdit, FiInfo, FiRotateCw
+    FiTarget, FiThumbsUp, FiAlertTriangle, FiEdit, FiInfo, FiRotateCw,
+    FiColumns, FiEye
 } from 'react-icons/fi';
 
 import '../css/WritingResultPage.css';
@@ -56,6 +58,18 @@ const WritingResultPage = () => {
     const [selectedItemId, setSelectedItemId] = useState(null);
     const [isRegrading, setIsRegrading] = useState(false);
     const [showRegradeModal, setShowRegradeModal] = useState(false);
+    
+    // View mode for essay column: 'original' or 'compare'
+    const [essayViewMode, setEssayViewMode] = useState(() => {
+        // Restore from localStorage if available
+        const saved = localStorage.getItem('writingResult_essayViewMode');
+        return saved === 'compare' ? 'compare' : 'original';
+    });
+
+    // Save view mode preference to localStorage
+    useEffect(() => {
+        localStorage.setItem('writingResult_essayViewMode', essayViewMode);
+    }, [essayViewMode]);
 
     // Refs for scroll-to functionality
     const analysisColumnRef = useRef(null);
@@ -716,33 +730,64 @@ const WritingResultPage = () => {
                         <div className="result-column essay-column">
                             <div className="column-header">
                                 <h3><FiEdit3 size={16} /> Bài viết của bạn</h3>
-                                <div className="word-count">{currentTaskReview?.wordCount || 0} từ</div>
+                                <div className="column-header-right">
+                                    {/* View Mode Toggle */}
+                                    <div className="view-mode-toggle">
+                                        <button
+                                            className={`view-mode-btn ${essayViewMode === 'original' ? 'active' : ''}`}
+                                            onClick={() => setEssayViewMode('original')}
+                                            title="Xem bài viết gốc"
+                                        >
+                                            <FiEye size={14} />
+                                            <span>Bài gốc</span>
+                                        </button>
+                                        <button
+                                            className={`view-mode-btn ${essayViewMode === 'compare' ? 'active' : ''}`}
+                                            onClick={() => setEssayViewMode('compare')}
+                                            title="So sánh với bài cải thiện"
+                                        >
+                                            <FiColumns size={14} />
+                                            <span>So sánh</span>
+                                        </button>
+                                    </div>
+                                    <div className="word-count">{currentTaskReview?.wordCount || 0} từ</div>
+                                </div>
                             </div>
                             <div className="column-content">
-                                {/* Legend */}
-                                <div className="highlight-legend">
-                                    <span className="legend-title">Nhấn vào từ/cụm từ/câu/đoạn được highlight để xem chi tiết:</span>
-                                    <div className="legend-items">
-                                        {Object.entries(ERROR_TYPE_COLORS).map(([type, colors]) => (
-                                            <span key={type} className="legend-item">
-                                                <span className="dot" style={{ backgroundColor: colors.border }} />
-                                                {colors.label}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
+                                {essayViewMode === 'original' ? (
+                                    <>
+                                        {/* Legend */}
+                                        <div className="highlight-legend">
+                                            <span className="legend-title">Nhấn vào từ/cụm từ/câu/đoạn được highlight để xem chi tiết:</span>
+                                            <div className="legend-items">
+                                                {Object.entries(ERROR_TYPE_COLORS).map(([type, colors]) => (
+                                                    <span key={type} className="legend-item">
+                                                        <span className="dot" style={{ backgroundColor: colors.border }} />
+                                                        {colors.label}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
 
-                                {/* Essay with highlights */}
-                                <div className="essay-text-container">
-                                    {renderHighlightedEssay()}
-                                </div>
+                                        {/* Essay with highlights */}
+                                        <div className="essay-text-container">
+                                            {renderHighlightedEssay()}
+                                        </div>
 
-                                {/* Error notice */}
-                                {aiFeedback.error && (
-                                    <div className="grading-error-notice">
-                                        <FiAlertTriangle size={18} className="error-icon" />
-                                        <p>{aiFeedback.error}</p>
-                                    </div>
+                                        {/* Error notice */}
+                                        {aiFeedback.error && (
+                                            <div className="grading-error-notice">
+                                                <FiAlertTriangle size={18} className="error-icon" />
+                                                <p>{aiFeedback.error}</p>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    /* Comparison View */
+                                    <EssayComparison
+                                        originalEssay={currentTaskReview?.essayText || ''}
+                                        paragraphRewrites={aiFeedback.paragraphRewrites}
+                                    />
                                 )}
                             </div>
                         </div>

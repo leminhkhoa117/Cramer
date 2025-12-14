@@ -1,5 +1,7 @@
 package com.cramer.service;
 
+import com.cramer.dto.GradingStatusDTO;
+import com.cramer.entity.CreditTransaction;
 import com.cramer.entity.Profile;
 import com.cramer.entity.Section;
 import com.cramer.entity.TestAttempt;
@@ -27,21 +29,30 @@ import java.util.stream.Collectors;
 public class AsyncGradingService {
 
     private static final Logger logger = LoggerFactory.getLogger(AsyncGradingService.class);
+    
+    // Cost of AI grading in Lúa when subscription limit is exceeded
+    private static final int AI_GRADING_LUA_COST = 10;
 
     private final WritingSubmissionRepository writingSubmissionRepository;
     private final SectionRepository sectionRepository;
     private final ProfileRepository profileRepository;
-    private final GeminiGradingService geminiGradingService;
+    private final LLMGradingService llmGradingService;
+    private final SubscriptionService subscriptionService;
+    private final CreditService creditService;
 
     @Autowired
     public AsyncGradingService(WritingSubmissionRepository writingSubmissionRepository,
                                SectionRepository sectionRepository,
                                ProfileRepository profileRepository,
-                               GeminiGradingService geminiGradingService) {
+                               LLMGradingService llmGradingService,
+                               SubscriptionService subscriptionService,
+                               CreditService creditService) {
         this.writingSubmissionRepository = writingSubmissionRepository;
         this.sectionRepository = sectionRepository;
         this.profileRepository = profileRepository;
-        this.geminiGradingService = geminiGradingService;
+        this.llmGradingService = llmGradingService;
+        this.subscriptionService = subscriptionService;
+        this.creditService = creditService;
     }
 
     /**
@@ -55,18 +66,41 @@ public class AsyncGradingService {
                    submissions.size(), Thread.currentThread().getName());
         
         try {
+            // Check if user has AI grading available (subscription or Lúa)
+            GradingStatusDTO gradingStatus = subscriptionService.checkAIGradingAllowed(userId);
+            boolean usingLua = false;
+            
+            if (!Boolean.TRUE.equals(gradingStatus.getAllowed())) {
+                // Not allowed via subscription, check if can pay with Lúa
+                if (Boolean.TRUE.equals(gradingStatus.getCanUseExtraWithLua()) && gradingStatus.getLuaBalance() >= AI_GRADING_LUA_COST) {
+                    logger.info("📊 User {} exceeded subscription limit, will use Lúa for grading", userId);
+                    usingLua = true;
+                } else {
+                    logger.warn("❌ User {} has no AI grading available (limit: {}, used: {}, lua: {})",
+                            userId, gradingStatus.getLimit(), gradingStatus.getUsed(), gradingStatus.getLuaBalance());
+                    for (WritingSubmission submission : submissions) {
+                        submission.setGradingStatus("FAILED");
+                        Map<String, Object> errorFeedback = new HashMap<>();
+                        errorFeedback.put("error", "Bạn đã hết lượt chấm AI trong tháng. Vui lòng nâng cấp gói hoặc mua thêm Lúa để tiếp tục.");
+                        submission.setAiFeedback(errorFeedback);
+                        writingSubmissionRepository.save(submission);
+                    }
+                    return;
+                }
+            }
+            
             // Get user's API key
             Profile profile = profileRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Profile not found"));
             
-            String apiKey = profile.getGeminiApiKey();
-            String model = profile.getGeminiModel();
+            String apiKey = profile.getLlmApiKey();
+            String model = profile.getLlmModel();
             if (apiKey == null || apiKey.trim().isEmpty()) {
-                logger.warn("❌ No Gemini API key found for user {}", userId);
+                logger.warn("❌ No DeepSeek API key found for user {}", userId);
                 for (WritingSubmission submission : submissions) {
                     submission.setGradingStatus("FAILED");
                     Map<String, Object> errorFeedback = new HashMap<>();
-                    errorFeedback.put("error", "Vui lòng thêm Gemini API key trong phần Cài đặt Hồ sơ để sử dụng tính năng chấm điểm AI.");
+                    errorFeedback.put("error", "Vui lòng thêm DeepSeek API key trong phần Cài đặt Hồ sơ để sử dụng tính năng chấm điểm AI.");
                     submission.setAiFeedback(errorFeedback);
                     writingSubmissionRepository.save(submission);
                 }
@@ -74,6 +108,9 @@ public class AsyncGradingService {
             }
             
             logger.info("✅ Found API key for user, starting grading...");
+            
+            // Track if we need to deduct Lúa (set before grading loop)
+            final boolean shouldUseLua = usingLua;
             
             // Get task prompts
             List<Section> sections = sectionRepository.findByExamSourceAndTestNumberAndSkill(
@@ -86,6 +123,7 @@ public class AsyncGradingService {
                 .collect(Collectors.toMap(Section::getPartNumber, s -> s));
             
             // Grade each submission
+            boolean hasSuccessfulGrading = false;
             for (WritingSubmission submission : submissions) {
                 try {
                     logger.info("📝 Grading Task {} for attempt {}...", 
@@ -94,12 +132,18 @@ public class AsyncGradingService {
                     Section section = sectionMap.get(submission.getTaskNumber());
                     String taskPrompt = section != null ? section.getPassageText() : "";
                     String imageUrl = section != null ? section.getDisplayContentUrl() : null;
-                    
-                    geminiGradingService.gradeSubmission(submission, taskPrompt, imageUrl, apiKey, model);
+                    String imageDescription = section != null ? section.getImageDescription() : null;
+
+                    llmGradingService.gradeSubmission(submission, taskPrompt, imageUrl, imageDescription, apiKey, model);
                     writingSubmissionRepository.save(submission);
                     
                     logger.info("✅ Graded submission {} with band {}", 
                                submission.getId(), submission.getOverallBand());
+                    
+                    // Mark that we have at least one successful grading
+                    if ("COMPLETED".equals(submission.getGradingStatus())) {
+                        hasSuccessfulGrading = true;
+                    }
                     
                 } catch (Exception e) {
                     logger.error("❌ Failed to grade submission {}: {}", submission.getId(), e.getMessage());
@@ -109,6 +153,30 @@ public class AsyncGradingService {
                     submission.setAiFeedback(errorFeedback);
                     writingSubmissionRepository.save(submission);
                 }
+            }
+            
+            // Track AI grading usage ONLY if at least one grading was successful
+            // This ensures users are not charged for failed gradings
+            if (hasSuccessfulGrading) {
+                try {
+                    if (shouldUseLua) {
+                        // Deduct Lúa for AI grading
+                        creditService.spendCredits(userId, AI_GRADING_LUA_COST, 
+                                CreditTransaction.Category.AI_GRADING,
+                                "Chấm điểm AI bài viết - " + attempt.getExamSource() + " Test " + attempt.getTestNumber(),
+                                "attempt_" + attempt.getId());
+                        logger.info("💰 Deducted {} Lúa for AI grading from user {}", AI_GRADING_LUA_COST, userId);
+                    } else {
+                        // Increment subscription usage counter
+                        subscriptionService.incrementAIGradingUsage(userId);
+                        logger.info("📊 Incremented AI grading usage for user {}", userId);
+                    }
+                } catch (Exception usageEx) {
+                    logger.error("⚠️ Failed to track AI grading usage for user {}: {}", userId, usageEx.getMessage());
+                    // Don't fail the grading because of usage tracking error
+                }
+            } else {
+                logger.warn("⚠️ No successful gradings - skipping billing for user {}", userId);
             }
             
             logger.info("🎉 Completed async grading for attempt {}", attempt.getId());

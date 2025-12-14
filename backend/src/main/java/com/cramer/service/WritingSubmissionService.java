@@ -34,19 +34,19 @@ public class WritingSubmissionService {
     private final WritingSubmissionRepository writingSubmissionRepository;
     private final TestAttemptRepository testAttemptRepository;
     private final SectionRepository sectionRepository;
-    private final GeminiGradingService geminiGradingService;
+    private final LLMGradingService llmGradingService;
     private final AsyncGradingService asyncGradingService;
 
     @Autowired
     public WritingSubmissionService(WritingSubmissionRepository writingSubmissionRepository,
                                     TestAttemptRepository testAttemptRepository,
                                     SectionRepository sectionRepository,
-                                    GeminiGradingService geminiGradingService,
+                                    LLMGradingService llmGradingService,
                                     AsyncGradingService asyncGradingService) {
         this.writingSubmissionRepository = writingSubmissionRepository;
         this.testAttemptRepository = testAttemptRepository;
         this.sectionRepository = sectionRepository;
-        this.geminiGradingService = geminiGradingService;
+        this.llmGradingService = llmGradingService;
         this.asyncGradingService = asyncGradingService;
     }
 
@@ -338,10 +338,10 @@ public class WritingSubmissionService {
     }
 
     /**
-     * Validate Gemini API key.
+     * Validate DeepSeek API key.
      */
     public boolean validateApiKey(String apiKey) {
-        return geminiGradingService.validateApiKey(apiKey);
+        return llmGradingService.validateApiKey(apiKey);
     }
 
     /**

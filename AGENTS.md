@@ -79,6 +79,48 @@
 
 ## Recent Agent Notes
 
+- 2025-12-14: **Subscription System Revamp (2-tier + ATTEMPT System)** ✅ **COMPLETED:**
+  - **Goal:** Simplify to 2 tiers (Cramerie free, Cramerich 69,000đ/mo) with ATTEMPT-based limits
+  - **Database Changes:**
+    - Migration 010: Restructured `subscription_tiers` with ATTEMPT columns, soft-deleted Cramerous tier
+    - Migration 011: Added `attempts_used`, `attempt_ais_used`, `chatbot_used` to `user_subscriptions`
+    - Created `lua_packs` table with 3 packs (100/500/2000 Lúa)
+  - **Backend Changes:**
+    - Updated `SubscriptionTier.java` with ATTEMPT limit fields
+    - Updated `UserSubscription.java` with usage tracking fields
+    - Created `LuaPack.java`, `LuaPackDTO.java`, `LuaPackRepository.java`
+    - Updated `SubscriptionStatusDTO.java` to use ATTEMPT-based fields
+    - Updated `SubscriptionServiceImpl.java` to build new usage info
+    - Updated `LuaCreditServiceImpl.java` to read from `lua_packs` table
+  - **Frontend Changes:**
+    - Created `frontend/src/constants/subscription.js` (single source of truth)
+    - Rebuilt `PricingPage.jsx` with 2-tier comparison + FAQ + explainer
+    - Updated `SubscriptionPage.jsx` to show ATTEMPT/ATTEMPT_AI usage
+    - Updated `LuaStorePage.jsx` to use constants
+  - **Tier Limits:**
+    - Cramerie: 0 ATTEMPTs, 0 ATTEMPT_AIs, 50 chat/mo, 10 translations/day, 250 vocab
+    - Cramerich: 60 ATTEMPTs (20/skill), 30 ATTEMPT_AIs (3/skill), 500 chat/mo, 50 translations/day, 1000 vocab
+  - **Lúa Packs:** 100@10k, 500@45k (10% off), 2000@150k (25% off)
+  - **Documentation:** Updated `copilot-instructions.md` and `AGENTS.md`
+
+- 2025-12-12: **DeepSeek V3.2 Migration + Image Description Feature** ✅ **COMPLETED:**
+  - **Goal:** Replace Gemini with DeepSeek for AI writing grading (73% cost savings)
+  - **Database Changes:**
+    - Migration 003: Renamed `gemini_api_key` → `llm_api_key`, `gemini_model` → `llm_model`, added `llm_provider`
+    - Migration 004: Added `image_description TEXT` column to `sections` table
+    - Inserted descriptions for Cambridge 17 Test 1 (Norbiton maps, 2,173 chars) and Test 2 (Police Budget charts, 1,603 chars)
+  - **Backend Changes:**
+    - Created `LLMGradingService.java` using OpenAI-compatible API format
+    - Updated `Profile.java`, `ProfileDTO.java`, `Section.java` entities
+    - Modified `WritingSubmissionService`, `AsyncGradingService` to use new service
+    - `LLMGradingService.buildUserPrompt()` includes image description for Task 1
+  - **Frontend Changes:**
+    - `Profile.jsx`: DeepSeek API key input, model selector (deepseek-chat, deepseek-reasoner)
+    - Updated UI text, links, placeholders
+  - **Breaking Change:** Users must re-enter API keys (old Gemini keys won't work)
+  - **Legacy Code:** `GeminiGradingService.java` kept for reference but unused
+  - **Documentation:** See `docs/backend/DEEPSEEK_MIGRATION_GUIDE.md` for full details
+
 - 2025-12-10: **Major State Management Migration: React Context → Zustand** — Complete refactoring of frontend state management:
   - **New Stores Created** (`frontend/src/stores/`):
     - `useAuthStore.js` — Authentication state (user, session, signIn, signOut, OAuth)

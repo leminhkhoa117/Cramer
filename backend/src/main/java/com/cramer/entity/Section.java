@@ -43,6 +43,9 @@ public class Section {
     @Column(name = "audio_url")
     private String audioUrl; // URL for listening audio files
 
+    @Column(name = "image_description", columnDefinition = "TEXT")
+    private String imageDescription; // Detailed text description for Task 1 charts/maps when AI doesn't support images
+
     // Constructors
     public Section() {
     }
@@ -125,6 +128,14 @@ public class Section {
 
     public void setAudioUrl(String audioUrl) {
         this.audioUrl = audioUrl;
+    }
+
+    public String getImageDescription() {
+        return imageDescription;
+    }
+
+    public void setImageDescription(String imageDescription) {
+        this.imageDescription = imageDescription;
     }
 
     @Override

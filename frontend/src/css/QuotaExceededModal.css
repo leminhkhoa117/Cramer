@@ -1,0 +1,227 @@
+/* QuotaExceededModal.css */
+
+.quota-exceeded-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.quota-exceeded-modal {
+    background: var(--bg-primary, #ffffff);
+    border-radius: 16px;
+    max-width: 420px;
+    width: 100%;
+    padding: 24px;
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.quota-exceeded-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.quota-exceeded-icon {
+    font-size: 2rem;
+}
+
+.quota-exceeded-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary, #212529);
+}
+
+.quota-exceeded-content {
+    margin-bottom: 24px;
+}
+
+.quota-exceeded-message {
+    color: var(--text-secondary, #495057);
+    margin: 0 0 16px 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.quota-exceeded-info {
+    background: var(--bg-secondary, #f8f9fa);
+    border-radius: 8px;
+    padding: 12px 16px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.info-label {
+    color: var(--text-muted, #6c757d);
+    font-size: 0.9rem;
+}
+
+.info-value {
+    font-weight: 600;
+    color: var(--text-primary, #212529);
+}
+
+.info-value.lua-amount {
+    color: var(--color-lua, #f59e0b);
+    font-size: 1.1rem;
+}
+
+.quota-exceeded-hint {
+    margin: 16px 0 0 0;
+    font-size: 0.85rem;
+    color: var(--text-muted, #6c757d);
+    font-style: italic;
+}
+
+/* Action buttons */
+.quota-exceeded-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-buy-lua,
+.btn-upgrade {
+    flex: 1;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-buy-lua {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #ffffff;
+}
+
+.btn-buy-lua:hover {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    transform: translateY(-1px);
+}
+
+.btn-upgrade {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    color: #ffffff;
+}
+
+.btn-upgrade:hover {
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    transform: translateY(-1px);
+}
+
+/* Close button */
+.quota-exceeded-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--bg-secondary, #f8f9fa);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted, #6c757d);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.quota-exceeded-close:hover {
+    background: var(--bg-tertiary, #e9ecef);
+    color: var(--text-primary, #212529);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .quota-exceeded-modal {
+        padding: 20px;
+    }
+
+    .quota-exceeded-actions {
+        flex-direction: column;
+    }
+
+    .btn-buy-lua,
+    .btn-upgrade {
+        width: 100%;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .quota-exceeded-modal {
+        background: var(--bg-primary-dark, #1a1a1a);
+    }
+
+    .quota-exceeded-header h2 {
+        color: var(--text-primary-dark, #f8f9fa);
+    }
+
+    .quota-exceeded-message {
+        color: var(--text-secondary-dark, #adb5bd);
+    }
+
+    .quota-exceeded-info {
+        background: var(--bg-secondary-dark, #2d2d2d);
+    }
+
+    .info-value {
+        color: var(--text-primary-dark, #f8f9fa);
+    }
+
+    .quota-exceeded-close {
+        background: var(--bg-secondary-dark, #2d2d2d);
+        color: var(--text-muted-dark, #868e96);
+    }
+
+    .quota-exceeded-close:hover {
+        background: var(--bg-tertiary-dark, #3d3d3d);
+        color: var(--text-primary-dark, #f8f9fa);
+    }
+}

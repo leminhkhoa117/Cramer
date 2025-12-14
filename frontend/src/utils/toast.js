@@ -16,3 +16,11 @@ export const showErrorToast = (message) => {
 export const showSuccessToast = (message) => {
   console.log("Toast [Success]:", message);
 };
+
+/**
+ * Displays an info message to the console.
+ * @param {string} message The info message to display.
+ */
+export const showInfoToast = (message) => {
+  console.info("Toast [Info]:", message);
+};

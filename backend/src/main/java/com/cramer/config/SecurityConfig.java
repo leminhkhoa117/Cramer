@@ -34,6 +34,12 @@ public class SecurityConfig {
             .authorizeHttpRequests(authorize -> authorize
                 // Allow public access to auth and API docs
                 .requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                // Allow public access to PayOS webhook (must be accessible without auth)
+                .requestMatchers("/api/payments/webhook").permitAll()
+                // Allow public access to Lúa pack options
+                .requestMatchers("/api/payments/lua-packs").permitAll()
+                // Allow public access to PayOS config status check
+                .requestMatchers("/api/payments/config-status").permitAll()
                 // All other API requests must be authenticated
                 .requestMatchers("/api/**").authenticated()
                 // Any other request that doesn't start with /api can be permitted

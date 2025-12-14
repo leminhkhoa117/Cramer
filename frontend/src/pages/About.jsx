@@ -231,10 +231,10 @@ const TimelineItem = ({ date, title, description, delay }) => {
 // --- Testimonial Data ---
 const testimonials = [
   {
-    quote: "Web rất tiện và có nhiều đề khác nhau để mình làm",
+    quote: "Đây là một trong những web vippro nhất mà mình từng được thử qua với nhiều dạng đề, thật sự là rất yêu founder của trang này!",
     author: "Chí Phong",
     role: "Học viên IELTS",
-    avatar: null,
+    avatar: "https://scontent.fcxr1-1.fna.fbcdn.net/v/t39.30808-6/472721511_1380192343154381_7028061101838486876_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=a5f93a&_nc_ohc=yrhtnUVylgQQ7kNvwFEcxcq&_nc_oc=AdmHUUD-WoCd4bfPaHbrkiyLe7F9GFGSs1GSJ7zUmWvLhOC-LqhNxlUeiD0LlBWEDeZx79J9O7FNKU2AYEBluYKT&_nc_zt=23&_nc_ht=scontent.fcxr1-1.fna&_nc_gid=zfWcC7ZyvnrBOUH1SZ95ZA&oh=00_AfkCJjRrZh09CkdZCkEFgSqCefuY8EBy0qzB6ClZuptOOA&oe=694092C7",
     rating: 5,
   },
   {

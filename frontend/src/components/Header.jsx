@@ -58,6 +58,7 @@ export default function Header() {
           <Nav className="ms-auto">
             <Nav.Link as={NavLink} end to="/" className="header-nav-link">Trang chủ</Nav.Link>
             <Nav.Link as={NavLink} to="/courses" className="header-nav-link">Khóa học</Nav.Link>
+            <Nav.Link as={NavLink} to="/pricing" className="header-nav-link">Gói Cramer</Nav.Link>
             <Nav.Link as={NavLink} to="/about" className="header-nav-link">Về chúng tôi</Nav.Link>
 
             {user ? (
@@ -82,6 +83,12 @@ export default function Header() {
                 <Dropdown.Menu>
                   <Dropdown.Item onClick={() => navigate('/dashboard')}>
                     Bảng điều khiển
+                  </Dropdown.Item>
+                  <Dropdown.Item onClick={() => navigate('/subscription')}>
+                    Gói đăng ký
+                  </Dropdown.Item>
+                  <Dropdown.Item onClick={() => navigate('/vocabulary')}>
+                    Sổ tay Từ vựng
                   </Dropdown.Item>
                   <Dropdown.Item onClick={() => navigate('/profile')}>
                     Hồ sơ

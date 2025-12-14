@@ -6,6 +6,7 @@ import { AnimatePresence } from 'framer-motion';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import PageWrapper from './components/PageWrapper';
+import FloatingAssistant from './components/FloatingAssistant';
 
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -19,6 +20,11 @@ import TestLayout from './components/TestLayout';
 import TestReviewPage from './pages/TestReviewPage';
 import WritingResultPage from './pages/WritingResultPage';
 import Profile from './pages/Profile';
+import VocabularyPage from './pages/VocabularyPage';
+import PricingPage from './pages/PricingPage';
+import SubscriptionPage from './pages/SubscriptionPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
+import PaymentCancelPage from './pages/PaymentCancelPage';
 
 // This component waits for the initial auth loading to complete
 function AuthInitializer({ children }) {
@@ -86,10 +92,10 @@ function AppContent() {
   const location = useLocation();
   // Hide header/footer on test-taking pages and review pages (they have their own header)
   const isTestPage = /^\/test\/\w+\/\d+\/\w+$/.test(location.pathname) ||
-                     /^\/test\/writing\/(?!review)\w+\/\d+$/.test(location.pathname);
+    /^\/test\/writing\/(?!review)\w+\/\d+$/.test(location.pathname);
   // Review pages have their own internal header, so hide the main header
   const isReviewPage = /^\/test\/writing\/review\/\d+$/.test(location.pathname) ||
-                       /^\/test\/review\/\d+$/.test(location.pathname);
+    /^\/test\/review\/\d+$/.test(location.pathname);
 
   const showHeader = !isTestPage && !isReviewPage;
 
@@ -172,10 +178,44 @@ function AppContent() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/vocabulary"
+              element={
+                <ProtectedRoute>
+                  <PageWrapper><VocabularyPage /></PageWrapper>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pricing"
+              element={<PageWrapper><PricingPage /></PageWrapper>}
+            />
+            <Route
+              path="/subscription"
+              element={
+                <ProtectedRoute>
+                  <PageWrapper><SubscriptionPage /></PageWrapper>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payment/success"
+              element={
+                <ProtectedRoute>
+                  <PaymentSuccessPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payment/cancel"
+              element={<PaymentCancelPage />}
+            />
           </Routes>
         </AnimatePresence>
       </main>
       {!isTestPage && !isReviewPage && <Footer />}
+      {/* Floating Assistant Widget - visible on protected pages except test-taking */}
+      {!isTestPage && <FloatingAssistant />}
     </>
   );
 }

@@ -32,20 +32,23 @@ public class ProfileDTO {
     @Size(max = 2048, message = "Page background URL must be at most 2048 characters")
     private String pageBackgroundUrl;
     
-    @Size(max = 500, message = "Gemini API key must be at most 500 characters")
-    private String geminiApiKey;
+    @Size(max = 500, message = "LLM API key must be at most 500 characters")
+    private String llmApiKey;
     
-    private boolean hasGeminiApiKey;
+    private boolean hasLlmApiKey;
     
-    @Size(max = 100, message = "Gemini model must be at most 100 characters")
-    private String geminiModel;
+    @Size(max = 100, message = "LLM model must be at most 100 characters")
+    private String llmModel;
+
+    @Size(max = 50, message = "LLM provider must be at most 50 characters")
+    private String llmProvider;
     
     private OffsetDateTime createdAt;
 
     public ProfileDTO() {
     }
 
-    public ProfileDTO(UUID id, String username, String fullName, String phoneNumber, String address, String avatarUrl, String heroBackgroundUrl, String pageBackgroundUrl, String geminiApiKey, boolean hasGeminiApiKey, OffsetDateTime createdAt) {
+    public ProfileDTO(UUID id, String username, String fullName, String phoneNumber, String address, String avatarUrl, String heroBackgroundUrl, String pageBackgroundUrl, String llmApiKey, boolean hasLlmApiKey, String llmModel, String llmProvider, OffsetDateTime createdAt) {
         this.id = id;
         this.username = username;
         this.fullName = fullName;
@@ -54,8 +57,10 @@ public class ProfileDTO {
         this.avatarUrl = avatarUrl;
         this.heroBackgroundUrl = heroBackgroundUrl;
         this.pageBackgroundUrl = pageBackgroundUrl;
-        this.geminiApiKey = geminiApiKey;
-        this.hasGeminiApiKey = hasGeminiApiKey;
+        this.llmApiKey = llmApiKey;
+        this.hasLlmApiKey = hasLlmApiKey;
+        this.llmModel = llmModel;
+        this.llmProvider = llmProvider;
         this.createdAt = createdAt;
     }
 
@@ -133,27 +138,35 @@ public class ProfileDTO {
         this.createdAt = createdAt;
     }
 
-    public String getGeminiApiKey() {
-        return geminiApiKey;
+    public String getLlmApiKey() {
+        return llmApiKey;
     }
 
-    public void setGeminiApiKey(String geminiApiKey) {
-        this.geminiApiKey = geminiApiKey;
+    public void setLlmApiKey(String llmApiKey) {
+        this.llmApiKey = llmApiKey;
     }
 
-    public boolean isHasGeminiApiKey() {
-        return hasGeminiApiKey;
+    public boolean isHasLlmApiKey() {
+        return hasLlmApiKey;
     }
 
-    public void setHasGeminiApiKey(boolean hasGeminiApiKey) {
-        this.hasGeminiApiKey = hasGeminiApiKey;
+    public void setHasLlmApiKey(boolean hasLlmApiKey) {
+        this.hasLlmApiKey = hasLlmApiKey;
     }
 
-    public String getGeminiModel() {
-        return geminiModel;
+    public String getLlmModel() {
+        return llmModel;
     }
 
-    public void setGeminiModel(String geminiModel) {
-        this.geminiModel = geminiModel;
+    public void setLlmModel(String llmModel) {
+        this.llmModel = llmModel;
+    }
+
+    public String getLlmProvider() {
+        return llmProvider;
+    }
+
+    public void setLlmProvider(String llmProvider) {
+        this.llmProvider = llmProvider;
     }
 }

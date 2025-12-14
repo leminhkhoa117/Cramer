@@ -1,3 +1,17 @@
+/* ===================================
+   ABOUT PAGE BASE STYLES
+   =================================== */
+.about-page {
+  min-height: 100vh;
+  background: #faf8ff;
+  padding-top: var(--header-clearance, 90px);
+}
+
+/* Utility class to make hero sections absorb parent padding */
+.about-page .absorb-parent-padding {
+  margin-top: calc(-1 * var(--header-clearance, 90px));
+  padding-top: calc(var(--header-clearance, 90px) + 2rem);
+}
 
 @keyframes shimmer {
   0% { left: -100%; }

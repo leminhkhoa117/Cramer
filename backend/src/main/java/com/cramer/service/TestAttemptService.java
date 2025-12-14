@@ -1,6 +1,7 @@
 package com.cramer.service;
 
 import com.cramer.dto.AnswerSubmissionDTO;
+import com.cramer.dto.BillingResultDTO;
 import com.cramer.dto.SaveProgressDTO;
 import com.cramer.dto.TestResultDTO;
 import com.cramer.dto.TestReviewDTO;
@@ -11,6 +12,7 @@ import com.cramer.entity.Question;
 import com.cramer.entity.Section;
 import com.cramer.entity.TestAttempt;
 import com.cramer.entity.UserAnswer;
+import com.cramer.exception.QuotaExceededException;
 import com.cramer.repository.QuestionRepository;
 import com.cramer.repository.SectionRepository;
 import com.cramer.util.IeltsScoreConverter;
@@ -47,6 +49,7 @@ public class TestAttemptService {
     private final QuestionRepository questionRepository;
     private final SectionRepository sectionRepository;
     private final ObjectMapper objectMapper;
+    private final QuotaBillingService quotaBillingService;
     
     @PersistenceContext
     private EntityManager entityManager;
@@ -57,13 +60,15 @@ public class TestAttemptService {
                               WritingSubmissionRepository writingSubmissionRepository,
                               QuestionRepository questionRepository,
                               SectionRepository sectionRepository,
-                              ObjectMapper objectMapper) {
+                              ObjectMapper objectMapper,
+                              QuotaBillingService quotaBillingService) {
         this.testAttemptRepository = testAttemptRepository;
         this.userAnswerRepository = userAnswerRepository;
         this.writingSubmissionRepository = writingSubmissionRepository;
         this.questionRepository = questionRepository;
         this.sectionRepository = sectionRepository;
         this.objectMapper = objectMapper;
+        this.quotaBillingService = quotaBillingService;
     }
 
     @Transactional
@@ -219,6 +224,26 @@ public class TestAttemptService {
 
     private TestAttempt createNewAttempt(UUID userId, String source, String testNum, String skill, org.slf4j.Logger logger) {
         logger.info("   -> [Sub-Process] Inside createNewAttempt");
+        
+        // === QUOTA BILLING CHECK ===
+        // Check quota and bill Lua if necessary before creating the attempt
+        // Writing skill uses AI grading, others use standard grading
+        boolean isAI = "writing".equalsIgnoreCase(skill);
+        logger.info("   -> [Quota] Checking quota for skill={}, isAI={}", skill, isAI);
+        
+        BillingResultDTO billingResult = quotaBillingService.processAttemptBilling(userId, skill.toUpperCase(), isAI);
+        
+        if (!billingResult.isAllowed()) {
+            logger.warn("   -> [Quota] BLOCKED: {}", billingResult.getReason());
+            throw new QuotaExceededException(billingResult.getReason(), billingResult.getBlockType());
+        }
+        
+        if (billingResult.getLuaCharged() > 0) {
+            logger.info("   -> [Quota] Charged {} Lua for quota overage", billingResult.getLuaCharged());
+        } else {
+            logger.info("   -> [Quota] Within free quota, no charge");
+        }
+        // === END QUOTA BILLING CHECK ===
         
         // Cancel any existing IN_PROGRESS attempts for this test before creating a new one
         List<TestAttempt> existingInProgressAttempts = testAttemptRepository
@@ -557,14 +582,35 @@ public class TestAttemptService {
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
         logger.info("🗑️ Cancelling and deleting test attempt: attemptId={}, userId={}", attemptId, userId);
 
-        TestAttempt attempt = testAttemptRepository.findById(attemptId)
-                .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + attemptId));
+        Optional<TestAttempt> optionalAttempt = testAttemptRepository.findById(attemptId);
+        
+        // Idempotent: If attempt doesn't exist, consider it already cancelled (success)
+        if (optionalAttempt.isEmpty()) {
+            logger.info("   -> Attempt {} already deleted, returning success (idempotent)", attemptId);
+            return;
+        }
+        
+        TestAttempt attempt = optionalAttempt.get();
 
         if (!attempt.getUserId().equals(userId)) {
             throw new AccessDeniedException("User does not have permission to cancel this attempt.");
         }
 
-        if (!"IN_PROGRESS".equals(attempt.getStatus())) {
+        // Idempotent: If already cancelled or completed, return success without error
+        String status = attempt.getStatus();
+        if ("CANCELLED".equals(status)) {
+            logger.info("   -> Attempt {} already CANCELLED, returning success (idempotent)", attemptId);
+            return;
+        }
+        if ("COMPLETED".equals(status)) {
+            logger.info("   -> Attempt {} is COMPLETED, cannot cancel but returning success to avoid frontend error", attemptId);
+            // For completed attempts, we don't delete them - user should see their results
+            return;
+        }
+        
+        // Only allow cancellation of IN_PROGRESS attempts
+        if (!"IN_PROGRESS".equals(status)) {
+            logger.warn("   -> Attempt {} has unexpected status: {}", attemptId, status);
             throw new IllegalStateException("Only in-progress attempts can be cancelled.");
         }
 

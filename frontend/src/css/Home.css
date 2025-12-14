@@ -70,7 +70,7 @@
 .home-page {
   width: 100%;
   background: var(--bg-gradient);
-  padding-top: 100px; /* Space for floating header */
+  padding-top: var(--header-clearance, 90px); /* Space for floating header */
 }
 
 /* ============================================

@@ -18,3 +18,12 @@ export { default as useTestSessionStore } from './useTestSessionStore';
 // Data Caching
 export { default as useDashboardStore } from './useDashboardStore';
 export { default as useCourseStore } from './useCourseStore';
+
+// Vocabulary
+export { default as useVocabularyStore } from './useVocabularyStore';
+
+// User Stats (Subscription, Credits, Chat Usage)
+export { default as useUserStatsStore } from './useUserStatsStore';
+
+// Subscription Management
+export { default as useSubscriptionStore } from './useSubscriptionStore';

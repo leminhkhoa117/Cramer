@@ -28,7 +28,7 @@ public class WebConfig implements WebMvcConfigurer {
         configuration.setAllowCredentials(true);
         configuration.setAllowedOrigins(List.of(ALLOWED_ORIGINS));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type", "X-Debug-Key"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setMaxAge(3600L);
 

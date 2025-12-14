@@ -2,12 +2,19 @@
 
 ## Quick Start
 
-### Option 1: Using run-app.ps1 (Recommended)
+### Linux / macOS: run-app.sh (Recommended for Unix-like systems)
 
-```powershell
+```bash
 cd backend
-.\run-app.ps1
+./run-app.sh
 ```
+
+- This script automatically:
+- Loads environment variables from root `.env` (if present)
+- Uses system `JAVA_HOME` or system java when not set
+- Builds with the Maven wrapper if no JAR is present, then runs the JAR
+
+### Option (Windows): Using run-app.ps1 (Recommended for Windows)
 
 This script automatically:
 - Sets JAVA_HOME to Eclipse Adoptium JDK 21
@@ -16,20 +23,39 @@ This script automatically:
 
 ### Option 2: Manual Build
 
-If you need to rebuild:
+If you need to rebuild manually on Linux (or macOS):
 
-```powershell
-# Set JAVA_HOME first
-$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-21.0.8.9-hotspot"
-$env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
+```bash
+# Set JAVA_HOME if required
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+export PATH="$JAVA_HOME/bin:$PATH"
 
-# Build
+# Build and run using Maven wrapper
 cd backend
-.\mvnw.cmd clean package -DskipTests
+./mvnw clean package -DskipTests
 
-# Run
+# Run the JAR
 java -jar target/cramer-backend-0.0.1-SNAPSHOT.jar
 ```
+
+On Windows you can use PowerShell version shown above (run-app.ps1).
+
+### Note about .env file line endings
+
+If your `.env` was created or edited on Windows it may use CRLF line endings which cause the shell to show errors like `$'\r': command not found` when the file is sourced.
+
+Recommended fixes:
+- Convert using `dos2unix`:
+    ```bash
+    sudo pacman -S dos2unix  # if not installed
+    dos2unix .env
+    ```
+- Or convert with `sed`:
+    ```bash
+    sed -i 's/\r$//' .env
+    ```
+
+The `run-app.sh` script includes a handler that tries `dos2unix` automatically, and safely parses `.env` to avoid CRLF issues. If you still see an error, try converting the file first.
 
 ## Maven Build Issue Fix
 

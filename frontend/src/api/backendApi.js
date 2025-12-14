@@ -1,7 +1,7 @@
 import axios from 'axios';
 import {
-    showErrorToast,
-    showSuccessToast
+  showErrorToast,
+  showSuccessToast
 } from '../utils/toast.js';
 
 // Base URL from environment or default to localhost
@@ -230,15 +230,15 @@ export const userAnswerApi = {
 export const dashboardApi = {
   // Note: userId is now extracted from JWT on the backend (security fix)
   getSummary: (page = 0, size = 3, search = '') => {
-        return apiClient.get('/dashboard/summary', {
-            params: {
-                page,
-                size,
-                search
-            }
-        });
-    },
-    saveTarget: (targetData) => apiClient.post('/dashboard/target', targetData),
+    return apiClient.get('/dashboard/summary', {
+      params: {
+        page,
+        size,
+        search
+      }
+    });
+  },
+  saveTarget: (targetData) => apiClient.post('/dashboard/target', targetData),
 };
 
 // ============================================
@@ -246,32 +246,178 @@ export const dashboardApi = {
 // ============================================
 export const writingApi = {
   // Save essay draft during test
-  saveDraft: (attemptId, taskNumber, essayText) => 
+  saveDraft: (attemptId, taskNumber, essayText) =>
     apiClient.post(`/writing/draft/${attemptId}?taskNumber=${taskNumber}`, essayText, {
       headers: { 'Content-Type': 'text/plain' }
     }),
-  
+
   // Submit essays for AI grading
-  submitForGrading: (attemptId, essays) => 
+  submitForGrading: (attemptId, essays) =>
     apiClient.post(`/writing/submit/${attemptId}`, { essays }),
-  
+
   // Get grading status
-  getGradingStatus: (attemptId) => 
+  getGradingStatus: (attemptId) =>
     apiClient.get(`/writing/status/${attemptId}`),
-  
+
   // Get full writing review with AI feedback
-  getWritingReview: (attemptId) => 
+  getWritingReview: (attemptId) =>
     apiClient.get(`/writing/review/${attemptId}`),
-  
+
   // Get submissions for an attempt
-  getSubmissions: (attemptId) => 
+  getSubmissions: (attemptId) =>
     apiClient.get(`/writing/submissions/${attemptId}`),
-  
+
   // Validate Gemini API key
-  validateApiKey: (apiKey) => 
+  validateApiKey: (apiKey) =>
     apiClient.post('/writing/validate-api-key', { apiKey }),
 
   // Re-grade a completed writing attempt
   regradeAttempt: (attemptId) =>
     apiClient.post(`/writing/regrade/${attemptId}`),
+};
+
+// ============================================
+// VOCABULARY APIs
+// ============================================
+export const vocabularyApi = {
+  // Get paginated vocabulary list with optional filter
+  getAll: (page = 0, size = 20, search = '', filter = 'all') =>
+    apiClient.get('/vocabulary', { params: { page, size, search, filter } }),
+
+  // Get single vocabulary entry by ID
+  getById: (id) =>
+    apiClient.get(`/vocabulary/${id}`),
+
+  // Create new vocabulary entry
+  create: (data) =>
+    apiClient.post('/vocabulary', data),
+
+  // Update vocabulary entry
+  update: (id, data) =>
+    apiClient.put(`/vocabulary/${id}`, data),
+
+  // Delete vocabulary entry
+  delete: (id) =>
+    apiClient.delete(`/vocabulary/${id}`),
+
+  // Translate word using AI
+  translate: (word, context = null) =>
+    apiClient.post('/vocabulary/translate', { word, context }),
+
+  // Toggle mastered status
+  toggleMastered: (id) =>
+    apiClient.put(`/vocabulary/${id}/toggle-mastered`),
+
+  // Get vocabulary statistics
+  getStats: () =>
+    apiClient.get('/vocabulary/stats'),
+};
+
+// ============================================
+// SUBSCRIPTION APIs
+// ============================================
+export const subscriptionApi = {
+  // Get all available subscription tiers
+  getTiers: () =>
+    apiClient.get('/subscriptions/tiers'),
+
+  // Get current user's subscription
+  getCurrent: () =>
+    apiClient.get('/subscriptions/current'),
+
+  // Get AI grading status (remaining gradings this month)
+  getGradingStatus: () =>
+    apiClient.get('/subscriptions/grading-status'),
+
+  // Get comprehensive subscription status (tier, usage, credits, payments)
+  getMyStatus: () =>
+    apiClient.get('/subscriptions/my-status'),
+
+  // Toggle AI grading preference (enabled/disabled)
+  setAiGradingEnabled: (enabled) =>
+    apiClient.put('/subscriptions/ai-grading', { enabled }),
+};
+
+// ============================================
+// CREDITS (LÚA) APIs
+// ============================================
+export const creditsApi = {
+  // Get user's current credit balance
+  getBalance: () =>
+    apiClient.get('/credits'),
+
+  // Get credit statistics (lifetime earned/spent)
+  getStats: () =>
+    apiClient.get('/credits/stats'),
+
+  // Get transaction history (paginated)
+  getTransactions: (page = 0, size = 20) =>
+    apiClient.get('/credits/transactions', { params: { page, size } }),
+};
+
+// ============================================
+// CHAT (AI ASSISTANT) APIs
+// ============================================
+export const chatApi = {
+  // Send a message to the AI assistant
+  sendMessage: (message) =>
+    apiClient.post('/chat', { message }),
+
+  // Get chat history
+  getHistory: (page = 0, size = 50) =>
+    apiClient.get('/chat/history', { params: { page, size } }),
+
+  // Get remaining questions for today
+  getRemainingQuestions: () =>
+    apiClient.get('/chat/remaining'),
+};
+
+// ============================================
+// PAYMENT APIs (PayOS Integration)
+// ============================================
+export const paymentApi = {
+  // Create subscription payment link
+  createSubscriptionPayment: (tierId, tierCode = null) =>
+    apiClient.post('/payments/subscription', {
+      type: 'SUBSCRIPTION',
+      tierId: tierId,
+      tierCode: tierCode
+    }),
+
+  // Create Lúa pack payment link
+  createLuaPackPayment: (luaAmount, priceVnd) =>
+    apiClient.post('/payments/lua', {
+      type: 'LUA_PACK',
+      luaAmount: luaAmount,
+      priceVnd: priceVnd
+    }),
+
+  // Get payment status by order code
+  getStatus: (orderCode) =>
+    apiClient.get(`/payments/status/${orderCode}`),
+
+  // Get user's payment history
+  getHistory: (page = 0, size = 20) =>
+    apiClient.get('/payments/history', { params: { page, size } }),
+
+  // Get available Lúa packs (public endpoint)
+  getLuaPacks: () =>
+    apiClient.get('/payments/lua-packs'),
+
+  // Check if PayOS is configured (public endpoint)
+  getConfigStatus: () =>
+    apiClient.get('/payments/config-status'),
+};
+
+// ============================================
+// QUOTA (Dual-Quota Billing System) APIs
+// ============================================
+export const quotaApi = {
+  // Get current quota status (global and per-skill usage)
+  getStatus: () =>
+    apiClient.get('/quotas'),
+
+  // Pre-check if an attempt is allowed
+  canAttempt: (skill, isAI = false) =>
+    apiClient.get('/quotas/can-attempt', { params: { skill, ai: isAI } }),
 };

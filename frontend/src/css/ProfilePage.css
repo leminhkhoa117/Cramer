@@ -1118,6 +1118,40 @@
   gap: 0.6rem;
 }
 
+/* AI Status Card */
+.ai-status-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  border-radius: 10px;
+}
+
+.ai-status-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-dark);
+}
+
+.ai-status-icon {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+}
+
+.ai-status-icon.success {
+  color: var(--success-color);
+}
+
+.ai-status-item strong {
+  color: var(--primary-accent);
+  font-weight: 600;
+}
+
 /* Model Selector */
 .model-selector {
   display: flex;

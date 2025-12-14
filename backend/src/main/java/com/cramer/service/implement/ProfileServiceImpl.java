@@ -47,18 +47,23 @@ public class ProfileServiceImpl implements ProfileService {
             profile.setPageBackgroundUrl(profileDto.getPageBackgroundUrl());
         }
         
-        // Update Gemini API key if provided (empty string clears it)
-        if (profileDto.getGeminiApiKey() != null) {
-            if (profileDto.getGeminiApiKey().isEmpty()) {
-                profile.setGeminiApiKey(null); // Clear the key
+        // Update LLM API key if provided (empty string clears it)
+        if (profileDto.getLlmApiKey() != null) {
+            if (profileDto.getLlmApiKey().isEmpty()) {
+                profile.setLlmApiKey(null); // Clear the key
             } else {
-                profile.setGeminiApiKey(profileDto.getGeminiApiKey());
+                profile.setLlmApiKey(profileDto.getLlmApiKey());
             }
         }
         
-        // Update Gemini model if provided
-        if (profileDto.getGeminiModel() != null) {
-            profile.setGeminiModel(profileDto.getGeminiModel());
+        // Update LLM model if provided
+        if (profileDto.getLlmModel() != null) {
+            profile.setLlmModel(profileDto.getLlmModel());
+        }
+        
+        // Update LLM provider if provided
+        if (profileDto.getLlmProvider() != null) {
+            profile.setLlmProvider(profileDto.getLlmProvider());
         }
 
         Profile updatedProfile = profileRepository.save(profile);
@@ -76,8 +81,9 @@ public class ProfileServiceImpl implements ProfileService {
         dto.setHeroBackgroundUrl(profile.getHeroBackgroundUrl());
         dto.setPageBackgroundUrl(profile.getPageBackgroundUrl());
         // For security, don't return the actual API key - just indicate if it exists
-        dto.setHasGeminiApiKey(profile.getGeminiApiKey() != null && !profile.getGeminiApiKey().isEmpty());
-        dto.setGeminiModel(profile.getGeminiModel());
+        dto.setHasLlmApiKey(profile.getLlmApiKey() != null && !profile.getLlmApiKey().isEmpty());
+        dto.setLlmModel(profile.getLlmModel());
+        dto.setLlmProvider(profile.getLlmProvider());
         return dto;
     }
 }

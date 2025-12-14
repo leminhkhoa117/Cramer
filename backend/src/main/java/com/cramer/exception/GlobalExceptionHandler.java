@@ -166,6 +166,27 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle QuotaExceededException (quota billing blocked).
+     * Returns 402 Payment Required with block type for frontend handling.
+     */
+    @ExceptionHandler(QuotaExceededException.class)
+    public ResponseEntity<Object> handleQuotaExceededException(
+            QuotaExceededException ex, WebRequest request) {
+        
+        logger.warn("💰 Quota exceeded: {} (blockType: {})", ex.getMessage(), ex.getBlockType());
+        
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.PAYMENT_REQUIRED.value());
+        body.put("error", "Payment Required");
+        body.put("message", ex.getMessage());
+        body.put("blockType", ex.getBlockType());
+        body.put("path", request.getDescription(false).replace("uri=", ""));
+        
+        return new ResponseEntity<>(body, HttpStatus.PAYMENT_REQUIRED);
+    }
+
+    /**
      * Handle all other exceptions.
      */
     @ExceptionHandler(Exception.class)

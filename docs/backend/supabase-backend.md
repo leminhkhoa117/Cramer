@@ -64,6 +64,9 @@ The database consists of **six tables** in the `public` schema.
 | `avatar_url` | `varchar(255)` | YES | | |
 | `hero_background_url` | `varchar(255)` | YES | | |
 | `page_background_url` | `varchar(255)` | YES | | |
+| `llm_api_key` | `varchar(255)` | YES | | User's DeepSeek/LLM API key |
+| `llm_model` | `varchar(255)` | YES | | Selected AI model (deepseek-chat, deepseek-reasoner) |
+| `llm_provider` | `varchar(255)` | YES | `'deepseek'` | LLM provider identifier |
 | `created_at` | `timestamptz` | NO | `now()` | |
 
 ---
@@ -84,6 +87,7 @@ The database consists of **six tables** in the `public` schema.
 | `passage_text` | `text` | YES | |
 | `audio_url` | `varchar(255)` | YES | |
 | `section_layout` | `jsonb` | YES | |
+| `image_description` | `text` | YES | Detailed description for Writing Task 1 charts/maps (AI grading) |
 
 * **Indexes:**
     - `sections_pkey` — Primary key on `id`

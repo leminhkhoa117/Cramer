@@ -1,39 +1,324 @@
 /* frontend/src/css/SkillAnalysis.css */
+/* ===================================
+   SKILL ANALYSIS CHART STYLES - Glassmorphic Design
+   Following UI_GUIDELINES.md
+   =================================== */
 
+/* === Main Container with Glassmorphism === */
 .skill-analysis-container {
-    background: #fff;
-    padding: 1.5rem;
-    border-radius: 20px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
-    margin-top: 1rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 1.5rem;
+  border-radius: 20px;
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(124, 58, 237, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-top: 1rem;
+  transition: all 0.3s ease;
+}
+
+.skill-analysis-container:hover {
+  box-shadow: 
+    0 12px 40px rgba(124, 58, 237, 0.12),
+    0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* === Stats Cards Grid === */
+.skill-analysis-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.skill-analysis-stats .stat-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, rgba(99, 102, 241, 0.03) 100%);
+  border-radius: 14px;
+  border: 1px solid rgba(124, 58, 237, 0.08);
+  transition: all 0.3s ease;
+}
+
+.skill-analysis-stats .stat-card:hover {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(99, 102, 241, 0.06) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
+}
+
+.skill-analysis-stats .stat-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.skill-analysis-stats .stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.skill-analysis-stats .stat-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.skill-analysis-stats .stat-values {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.skill-analysis-stats .stat-current {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #7c3aed;
+  line-height: 1;
+}
+
+.skill-analysis-stats .stat-target {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6366f1;
+  opacity: 0.8;
+}
+
+.skill-analysis-stats .stat-target svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* === Chart Container === */
+.skill-analysis-chart {
+  margin: 0 -0.5rem;
+}
+
+/* === Custom Tooltip === */
+.skill-analysis-tooltip {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(124, 58, 237, 0.15);
+  border-radius: 12px;
+  padding: 0.875rem 1rem;
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
+  min-width: 180px;
+}
+
+.skill-analysis-tooltip .tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+}
+
+.skill-analysis-tooltip .tooltip-icon {
+  font-size: 1.1rem;
+}
+
+.skill-analysis-tooltip .tooltip-skill {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #1f2937;
+}
+
+.skill-analysis-tooltip .tooltip-vi {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.skill-analysis-tooltip .tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.skill-analysis-tooltip .tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.skill-analysis-tooltip .tooltip-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skill-analysis-tooltip .tooltip-label {
+  font-size: 0.8rem;
+  color: #64748b;
+  flex: 1;
+}
+
+.skill-analysis-tooltip .tooltip-value {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #1f2937;
+}
+
+/* === Custom Legend === */
+.skill-analysis-legend {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(124, 58, 237, 0.08);
+}
+
+.skill-analysis-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.skill-analysis-legend .legend-indicator {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.skill-analysis-legend .legend-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* === Empty State === */
+.skill-analysis-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.08);
+  margin-top: 1rem;
+}
+
+.skill-analysis-empty .empty-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+  border-radius: 50%;
+  margin-bottom: 1.25rem;
+}
+
+.skill-analysis-empty .empty-icon svg {
+  width: 28px;
+  height: 28px;
+  color: #7c3aed;
+}
+
+.skill-analysis-empty h4 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 0.5rem 0;
+}
+
+.skill-analysis-empty p {
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.6;
+  max-width: 360px;
+  margin: 0;
+}
+
+/* === Recharts overrides === */
+.recharts-polar-grid-angle line {
+  stroke: rgba(124, 58, 237, 0.12);
+}
+
+.recharts-polar-grid-concentric-polygon {
+  stroke: rgba(124, 58, 237, 0.1);
+}
+
+.recharts-legend-wrapper {
+  padding-top: 0 !important;
+}
+
+/* === Responsive === */
+@media (max-width: 992px) {
+  .skill-analysis-stats {
+    grid-template-columns: repeat(2, 1fr);
   }
-  
-  .skill-analysis-container h4 {
+}
+
+@media (max-width: 640px) {
+  .skill-analysis-container {
+    padding: 1rem;
+    border-radius: 16px;
+  }
+
+  .skill-analysis-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .skill-analysis-stats .stat-card {
+    padding: 0.75rem;
+  }
+
+  .skill-analysis-stats .stat-icon {
     font-size: 1.25rem;
-    color: var(--dash-text);
-    margin-bottom: 1.5rem;
-    text-align: center;
   }
-  
-  /* Re-using the chart-placeholder style from ProgressChart.css, 
-     but it's good to have it here in case of future modifications. */
-  .chart-placeholder {
-    padding: 3rem 2rem;
-    text-align: center;
-    background: #fff;
-    border-radius: 20px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
-    margin-top: 1rem;
+
+  .skill-analysis-stats .stat-current {
+    font-size: 1.1rem;
   }
-  
-  .chart-placeholder h4 {
-    font-size: 1.5rem;
-    color: var(--dash-text);
-    margin-bottom: 0.5rem;
+
+  .skill-analysis-legend {
+    gap: 1rem;
+    flex-direction: column;
+    align-items: center;
   }
-  
-  .chart-placeholder p {
-    font-size: 1rem;
-    color: #666;
+
+  .skill-analysis-empty {
+    padding: 2rem 1.5rem;
   }
+
+  .skill-analysis-empty .empty-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .skill-analysis-empty h4 {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .skill-analysis-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .skill-analysis-stats .stat-label {
+    font-size: 0.65rem;
+  }
+}
   

@@ -61,10 +61,10 @@ const TestPage = () => {
     } = useTestStore();
 
     // Session store for API operations
-    const { 
-        startOrResumeAttempt, 
-        loadTestData, 
-        loadAnswers, 
+    const {
+        startOrResumeAttempt,
+        loadTestData,
+        loadAnswers,
         submitAttempt: submitAttemptApi,
         cancelAttempt: cancelAttemptApi,
     } = useTestSessionStore();
@@ -92,7 +92,7 @@ const TestPage = () => {
     // ============ DATA LOADING AND SETUP ============
     const setupTestState = useCallback(async (attemptData, fullTestData, abortSignal) => {
         if (abortSignal?.aborted) return;
-        
+
         setAttempt(attemptData);
         setTestData(fullTestData);
 
@@ -119,7 +119,7 @@ const TestPage = () => {
         } else {
             setTimeLeft(INITIAL_READING_TIME);
         }
-        
+
         if (skill === 'listening' && attemptData.currentPart !== null && attemptData.currentPart > 0) {
             setDisplayPartIndex(attemptData.currentPart);
             setActiveAudioIndex(attemptData.currentPart);
@@ -142,9 +142,9 @@ const TestPage = () => {
             try {
                 setLoading(true);
                 setTestStatus('running');
-                
+
                 const attemptData = await startOrResumeAttempt(source, testNum, skill, forceNew);
-                
+
                 if (abortController.signal.aborted) return;
 
                 // If backend returned a COMPLETED attempt, show choice modal
@@ -184,7 +184,7 @@ const TestPage = () => {
                 setLoading(false);
             }
         };
-        
+
         fetchAndStartTest();
 
         return () => {
@@ -214,16 +214,9 @@ const TestPage = () => {
         try {
             setIsStartingNew(true);
 
-            if (inProgressAttempt?.status === 'IN_PROGRESS') {
-                try {
-                    await cancelAttemptApi(inProgressAttempt.id);
-                } catch (cancelError) {
-                    if (cancelError.response?.status !== 404) {
-                        throw cancelError;
-                    }
-                    console.log('Previous attempt already deleted, proceeding with new test.');
-                }
-            }
+            // Note: The backend's startOrResumeAttempt with forceNew=true already handles
+            // cancelling IN_PROGRESS attempts, so we don't need to cancel here first.
+            // This also avoids race conditions where the attempt gets cancelled twice.
 
             const newAttemptData = await startOrResumeAttempt(source, testNum, skill, true);
             const fullTestData = await loadTestData(source, testNum, skill);
@@ -242,14 +235,14 @@ const TestPage = () => {
             setIsStartingNew(false);
             closeResumeModal();
         }
-    }, [inProgressAttempt, source, testNum, skill, startOrResumeAttempt, loadTestData, cancelAttemptApi, setupTestState, setIsStartingNew, setAnswers, setTimeLeft, setDisplayPartIndex, setActiveAudioIndex, setError, setLoading, closeResumeModal]);
+    }, [source, testNum, skill, startOrResumeAttempt, loadTestData, setupTestState, setIsStartingNew, setAnswers, setTimeLeft, setDisplayPartIndex, setActiveAudioIndex, setError, setLoading, closeResumeModal]);
 
     // ============ SUBMISSION LOGIC ============
     const handleFinalSubmit = useCallback(async () => {
         if (!attempt || isSubmittingRef.current) return;
         isSubmittingRef.current = true;
         closeConfirmModal();
-        
+
         try {
             setIsSubmitting(true);
             const currentAnswers = answersRef.current;
@@ -275,21 +268,36 @@ const TestPage = () => {
 
     // ============ TIMER FOR READING TEST ============
     useEffect(() => {
+        // Only run timer for reading tests when not loading and time is set
         if (testStatus !== 'running' || skill !== 'reading' || loading) return;
-        
+
+        // Check current timeLeft directly from store to ensure it's properly initialized
+        const currentTimeLeft = useTestStore.getState().timeLeft;
+        if (currentTimeLeft <= 0) {
+            console.log('⏱️ Timer: Waiting for timeLeft to be initialized...');
+            return;
+        }
+
+        console.log('⏱️ Timer: Starting countdown from', currentTimeLeft, 'seconds');
+
         const timer = setInterval(() => {
             const currentTime = useTestStore.getState().timeLeft;
             if (currentTime <= 1) {
                 clearInterval(timer);
+                console.log('⏱️ Timer: Time up! Submitting...');
                 handleFinalSubmitRef.current?.();
                 setTimeLeft(0);
             } else {
                 setTimeLeft(currentTime - 1);
             }
         }, 1000);
-        
-        return () => clearInterval(timer);
-    }, [testStatus, skill, loading, setTimeLeft]);
+
+        return () => {
+            console.log('⏱️ Timer: Cleanup');
+            clearInterval(timer);
+        };
+    }, [testStatus, skill, loading, setTimeLeft, timeLeft]);
+
 
     // ============ AUDIO AUTOPLAY LOGIC ============
     useEffect(() => {
