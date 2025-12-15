@@ -5,12 +5,15 @@ import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { writingApi } from '../api/backendApi';
 import GradingLoader from '../components/common/GradingLoader';
 import EssayComparison from '../components/EssayComparison';
+import GradingQuotaInfo from '../components/GradingQuotaInfo';
+import useUserStatsStore from '../stores/useUserStatsStore';
+import useAuthStore from '../stores/useAuthStore';
 import {
     FiArrowLeft, FiRefreshCw, FiChevronDown, FiChevronRight,
     FiFileText, FiEdit3, FiBarChart2, FiCheckCircle, FiXCircle,
     FiAlertCircle, FiZap, FiTrendingUp, FiAward, FiBook,
     FiTarget, FiThumbsUp, FiAlertTriangle, FiEdit, FiInfo, FiRotateCw,
-    FiColumns, FiEye
+    FiColumns, FiEye, FiCheckSquare
 } from 'react-icons/fi';
 
 import '../css/WritingResultPage.css';
@@ -41,6 +44,7 @@ const WritingResultPage = () => {
     const [review, setReview] = useState(null);
     const [loading, setLoading] = useState(true);
     const [gradingStatus, setGradingStatus] = useState('PENDING');
+    const [taskStatuses, setTaskStatuses] = useState({}); // NEW: Track individual task statuses
     const [error, setError] = useState(null);
     const [activeTask, setActiveTask] = useState(1);
     const [pollKey, setPollKey] = useState(0); // Used to force restart polling
@@ -58,7 +62,7 @@ const WritingResultPage = () => {
     const [selectedItemId, setSelectedItemId] = useState(null);
     const [isRegrading, setIsRegrading] = useState(false);
     const [showRegradeModal, setShowRegradeModal] = useState(false);
-    
+
     // View mode for essay column: 'original' or 'compare'
     const [essayViewMode, setEssayViewMode] = useState(() => {
         // Restore from localStorage if available
@@ -97,11 +101,13 @@ const WritingResultPage = () => {
             try {
                 const statusRes = await writingApi.getGradingStatus(attemptId);
                 const status = statusRes.data.status;
+                const taskStatusData = statusRes.data.taskStatuses || {}; // NEW: Get task statuses
 
                 if (!isMounted || abortController.signal.aborted) return;
 
                 consecutiveErrors = 0; // Reset error counter on success
                 setGradingStatus(status);
+                setTaskStatuses(taskStatusData); // NEW: Update task statuses
                 currentPollCount++;
 
                 if (status === 'COMPLETED' || status === 'PARTIAL_FAILURE') {
@@ -124,10 +130,28 @@ const WritingResultPage = () => {
                     }
                 } else if (status === 'FAILED') {
                     clearInterval(pollInterval);
-                    if (isMounted && !abortController.signal.aborted) {
-                        setError('Chấm điểm thất bại. Vui lòng thử chấm lại.');
-                        setLoading(false);
-                        setIsRegrading(false);
+                    // Try to fetch review data even on failure to see if there's a specific error message (e.g., Quota Exceeded)
+                    try {
+                        const reviewRes = await writingApi.getWritingReview(attemptId);
+                        if (isMounted && !abortController.signal.aborted) {
+                            setReview(reviewRes.data); // This might contain aiFeedback.error
+
+                            // Check if there is specific aiFeedback error
+                            const hasTaskError = reviewRes.data?.tasks?.some(t => t.aiFeedback?.error);
+                            if (!hasTaskError) {
+                                setError('Chấm điểm thất bại. Vui lòng thử chấm lại hoặc liên hệ hỗ trợ.');
+                            }
+                            // If hasTaskError is true, the UI will render the error from aiFeedback in the main view
+
+                            setLoading(false);
+                            setIsRegrading(false);
+                        }
+                    } catch (reviewErr) {
+                        if (isMounted && !abortController.signal.aborted) {
+                            setError('Chấm điểm thất bại. Vui lòng thử chấm lại.');
+                            setLoading(false);
+                            setIsRegrading(false);
+                        }
                     }
                 }
             } catch (err) {
@@ -552,6 +576,7 @@ const WritingResultPage = () => {
         return (
             <GradingLoader
                 status={gradingStatus}
+                taskStatuses={taskStatuses}
                 onBackClick={() => navigate('/dashboard')}
             />
         );
@@ -731,25 +756,15 @@ const WritingResultPage = () => {
                             <div className="column-header">
                                 <h3><FiEdit3 size={16} /> Bài viết của bạn</h3>
                                 <div className="column-header-right">
-                                    {/* View Mode Toggle */}
-                                    <div className="view-mode-toggle">
-                                        <button
-                                            className={`view-mode-btn ${essayViewMode === 'original' ? 'active' : ''}`}
-                                            onClick={() => setEssayViewMode('original')}
-                                            title="Xem bài viết gốc"
-                                        >
-                                            <FiEye size={14} />
-                                            <span>Bài gốc</span>
-                                        </button>
-                                        <button
-                                            className={`view-mode-btn ${essayViewMode === 'compare' ? 'active' : ''}`}
-                                            onClick={() => setEssayViewMode('compare')}
-                                            title="So sánh với bài cải thiện"
-                                        >
-                                            <FiColumns size={14} />
-                                            <span>So sánh</span>
-                                        </button>
-                                    </div>
+                                    {/* View Mode Toggle - Single button to show/hide comparison */}
+                                    <button
+                                        className={`comparison-toggle-btn ${essayViewMode === 'compare' ? 'active' : ''}`}
+                                        onClick={() => setEssayViewMode(essayViewMode === 'compare' ? 'original' : 'compare')}
+                                        title={essayViewMode === 'compare' ? 'Ẩn so sánh' : 'Hiển thị so sánh'}
+                                    >
+                                        <FiColumns size={14} />
+                                        <span>{essayViewMode === 'compare' ? 'Ẩn so sánh' : 'Hiển thị so sánh'}</span>
+                                    </button>
                                     <div className="word-count">{currentTaskReview?.wordCount || 0} từ</div>
                                 </div>
                             </div>
@@ -776,9 +791,24 @@ const WritingResultPage = () => {
 
                                         {/* Error notice */}
                                         {aiFeedback.error && (
-                                            <div className="grading-error-notice">
-                                                <FiAlertTriangle size={18} className="error-icon" />
-                                                <p>{aiFeedback.error}</p>
+                                            <div className="essay-error-container">
+                                                {aiFeedback.error.toLowerCase().includes('lượt') || aiFeedback.error.toLowerCase().includes('quota') ? (
+                                                    <div className="quota-error-wrapper">
+                                                        <GradingQuotaInfo
+                                                            variant="card"
+                                                            showLuaOption={true}
+                                                            message={aiFeedback.error}
+                                                            userStats={useUserStatsStore.getState().stats}
+                                                            userProfile={useAuthStore.getState().profile}
+                                                            status="blocked"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div className="grading-error-notice">
+                                                        <FiAlertTriangle size={18} className="error-icon" />
+                                                        <p>{aiFeedback.error}</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </>
@@ -787,6 +817,7 @@ const WritingResultPage = () => {
                                     <EssayComparison
                                         originalEssay={currentTaskReview?.essayText || ''}
                                         paragraphRewrites={aiFeedback.paragraphRewrites}
+                                        onItemClick={scrollToItem}
                                     />
                                 )}
                             </div>
@@ -806,6 +837,22 @@ const WritingResultPage = () => {
                                 <h3><FiBarChart2 size={16} /> Phân tích chi tiết</h3>
                             </div>
                             <div className="column-content">
+                                {/* Error State */}
+                                {aiFeedback.error && (
+                                    <div className="analysis-error-state" style={{ padding: '1rem' }}>
+                                        <div className="quota-error-wrapper">
+                                            <GradingQuotaInfo
+                                                variant="card"
+                                                showLuaOption={true}
+                                                message={aiFeedback.error}
+                                                userStats={useUserStatsStore.getState().stats}
+                                                userProfile={useAuthStore.getState().profile}
+                                                status="blocked"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Feedback Summary */}
                                 {aiFeedback.feedbackSummary && Object.keys(aiFeedback.feedbackSummary).length > 0 && (
                                     <div className="feedback-summary-cards">
@@ -827,6 +874,41 @@ const WritingResultPage = () => {
                                                         <li key={i}>{w}</li>
                                                     ))}
                                                 </ul>
+                                            </div>
+                                        )}
+                                        {aiFeedback.feedbackSummary.grammar_patterns && (
+                                            <div className="feedback-card grammar-patterns">
+                                                <h4><FiCheckSquare size={14} /> Mẫu ngữ pháp</h4>
+                                                {aiFeedback.feedbackSummary.grammar_patterns.strong_patterns?.length > 0 && (
+                                                    <div className="pattern-section strong">
+                                                        <strong>Dùng tốt:</strong>
+                                                        <ul>
+                                                            {aiFeedback.feedbackSummary.grammar_patterns.strong_patterns.map((p, i) => (
+                                                                <li key={i}>{p}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                                {aiFeedback.feedbackSummary.grammar_patterns.weak_patterns?.length > 0 && (
+                                                    <div className="pattern-section weak">
+                                                        <strong>Cần cải thiện:</strong>
+                                                        <ul>
+                                                            {aiFeedback.feedbackSummary.grammar_patterns.weak_patterns.map((p, i) => (
+                                                                <li key={i}>{p}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                                {aiFeedback.feedbackSummary.grammar_patterns.missing_patterns?.length > 0 && (
+                                                    <div className="pattern-section missing">
+                                                        <strong>Nên thêm vào:</strong>
+                                                        <ul>
+                                                            {aiFeedback.feedbackSummary.grammar_patterns.missing_patterns.map((p, i) => (
+                                                                <li key={i}>{p}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                         {aiFeedback.feedbackSummary.writing_approach && (
@@ -1082,64 +1164,66 @@ const WritingResultPage = () => {
                             </div>
                         </div>
                     </Panel>
-                </PanelGroup>
-            </div>
+                </PanelGroup >
+            </div >
 
             {/* Regrade Confirmation Modal */}
-            {showRegradeModal && (
-                <div
-                    className={`cm-backdrop ${showRegradeModal === 'closing' ? 'closing' : ''}`}
-                    onClick={() => {
-                        // Trigger closing animation
-                        setShowRegradeModal('closing');
-                        setTimeout(() => setShowRegradeModal(false), 400);
-                    }}
-                >
+            {
+                showRegradeModal && (
                     <div
-                        className={`cm-content cm-content--sm ${showRegradeModal === 'closing' ? 'closing' : ''}`}
-                        onClick={(e) => e.stopPropagation()}
+                        className={`cm-backdrop ${showRegradeModal === 'closing' ? 'closing' : ''}`}
+                        onClick={() => {
+                            // Trigger closing animation
+                            setShowRegradeModal('closing');
+                            setTimeout(() => setShowRegradeModal(false), 400);
+                        }}
                     >
-                        <div className="cm-header cm-header--no-border">
-                            <h3 className="cm-title">Xác nhận chấm lại?</h3>
-                            <button
-                                className="cm-close-btn"
-                                onClick={() => {
-                                    setShowRegradeModal('closing');
-                                    setTimeout(() => setShowRegradeModal(false), 400);
-                                }}
-                            >×</button>
-                        </div>
-                        <div className="cm-body">
-                            <p>Bạn có chắc chắn muốn chấm lại bài viết này không?</p>
-                            <p>Quá trình chấm điểm sẽ được thực hiện lại từ đầu và có thể mất vài phút.</p>
-                        </div>
-                        <div className="cm-footer cm-footer--no-border">
-                            <button
-                                className="cm-btn cm-btn--secondary"
-                                onClick={() => {
-                                    setShowRegradeModal('closing');
-                                    setTimeout(() => setShowRegradeModal(false), 400);
-                                }}
-                            >
-                                Hủy
-                            </button>
-                            <button
-                                className="cm-btn cm-btn--primary"
-                                onClick={() => {
-                                    setShowRegradeModal('closing');
-                                    setTimeout(() => {
-                                        setShowRegradeModal(false);
-                                        handleRegrade();
-                                    }, 400);
-                                }}
-                            >
-                                <FiRotateCw size={14} /> Chấm lại
-                            </button>
+                        <div
+                            className={`cm-content cm-content--sm ${showRegradeModal === 'closing' ? 'closing' : ''}`}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="cm-header cm-header--no-border">
+                                <h3 className="cm-title">Xác nhận chấm lại?</h3>
+                                <button
+                                    className="cm-close-btn"
+                                    onClick={() => {
+                                        setShowRegradeModal('closing');
+                                        setTimeout(() => setShowRegradeModal(false), 400);
+                                    }}
+                                >×</button>
+                            </div>
+                            <div className="cm-body">
+                                <p>Bạn có chắc chắn muốn chấm lại bài viết này không?</p>
+                                <p>Quá trình chấm điểm sẽ được thực hiện lại từ đầu và có thể mất vài phút.</p>
+                            </div>
+                            <div className="cm-footer cm-footer--no-border">
+                                <button
+                                    className="cm-btn cm-btn--secondary"
+                                    onClick={() => {
+                                        setShowRegradeModal('closing');
+                                        setTimeout(() => setShowRegradeModal(false), 400);
+                                    }}
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    className="cm-btn cm-btn--primary"
+                                    onClick={() => {
+                                        setShowRegradeModal('closing');
+                                        setTimeout(() => {
+                                            setShowRegradeModal(false);
+                                            handleRegrade();
+                                        }, 400);
+                                    }}
+                                >
+                                    <FiRotateCw size={14} /> Chấm lại
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

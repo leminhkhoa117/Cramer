@@ -22,11 +22,15 @@ const useUserStatsStore = create(
         lifetimeSpent: 0,
       },
 
-      // Chat usage
+      // Chat usage - using MONTHLY limits
       chatUsage: {
+        usedThisMonth: 0,
+        monthlyLimit: 50,
+        remainingThisMonth: 50,
+        // Legacy fields for backward compatibility
         usedToday: 0,
-        dailyLimit: 20,
-        remainingToday: 20,
+        dailyLimit: 50,
+        remainingToday: 50,
       },
 
       // Grading status
@@ -182,6 +186,7 @@ const useUserStatsStore = create(
 
       /**
        * Refresh chat usage only - API returns { remaining, unlimited }
+       * Now using MONTHLY limits consistently
        */
       refreshChatUsage: async () => {
         try {
@@ -189,17 +194,21 @@ const useUserStatsStore = create(
           if (response?.data) {
             const data = response.data;
             const isUnlimited = data.unlimited === true || data.remaining < 0;
-            const remainingValue = isUnlimited ? -1 : (data.remaining ?? 20);
+            const remainingValue = isUnlimited ? -1 : (data.remaining ?? 50);
 
-            // Get daily limit from current subscription
+            // Get MONTHLY limit from current subscription (chatbotMonthlyLimit, not dailyChatLimit)
             const { subscription } = get();
-            const dailyLimit = isUnlimited ? -1 : (subscription?.tier?.dailyChatLimit || 20);
-            const usedToday = isUnlimited ? 0 : Math.max(0, dailyLimit - remainingValue);
+            const monthlyLimit = isUnlimited ? -1 : (subscription?.tier?.chatbotMonthlyLimit || 50);
+            const usedThisMonth = isUnlimited ? 0 : Math.max(0, monthlyLimit - remainingValue);
 
             set({
               chatUsage: {
-                usedToday,
-                dailyLimit,
+                usedThisMonth,
+                monthlyLimit,
+                remainingThisMonth: remainingValue,
+                // Keep legacy field names for backward compatibility
+                usedToday: usedThisMonth,
+                dailyLimit: monthlyLimit,
                 remainingToday: remainingValue,
               }
             }, false, 'refreshChatUsage');
@@ -214,11 +223,16 @@ const useUserStatsStore = create(
        */
       incrementChatUsage: () => {
         const { chatUsage } = get();
+        const newRemaining = Math.max(0, (chatUsage.remainingThisMonth ?? chatUsage.remainingToday) - 1);
+        const newUsed = (chatUsage.usedThisMonth ?? chatUsage.usedToday) + 1;
         set({
           chatUsage: {
             ...chatUsage,
-            usedToday: chatUsage.usedToday + 1,
-            remainingToday: Math.max(0, chatUsage.remainingToday - 1),
+            usedThisMonth: newUsed,
+            remainingThisMonth: newRemaining,
+            // Keep legacy fields in sync
+            usedToday: newUsed,
+            remainingToday: newRemaining,
           }
         }, false, 'incrementChatUsage');
       },
@@ -245,7 +259,15 @@ const useUserStatsStore = create(
           subscription: null,
           tiers: [],
           credits: { balance: 0, lifetimeEarned: 0, lifetimeSpent: 0 },
-          chatUsage: { usedToday: 0, dailyLimit: 20, remainingToday: 20 },
+          chatUsage: {
+            usedThisMonth: 0,
+            monthlyLimit: 50,
+            remainingThisMonth: 50,
+            // Legacy fields
+            usedToday: 0,
+            dailyLimit: 50,
+            remainingToday: 50
+          },
           gradingStatus: { canGrade: false, monthlyLimit: 0, usedThisMonth: 0, remaining: 0 },
           loading: false,
           error: null,

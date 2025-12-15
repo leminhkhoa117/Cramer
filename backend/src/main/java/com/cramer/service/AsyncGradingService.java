@@ -14,10 +14,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -30,29 +32,30 @@ import java.util.stream.Collectors;
 public class AsyncGradingService {
 
     private static final Logger logger = LoggerFactory.getLogger(AsyncGradingService.class);
-    
-    // Cost of AI grading in Lúa when subscription limit is exceeded
-    private static final int AI_GRADING_LUA_COST = 10;
+
+    // Cost of AI grading (ATTEMPT_AI) in Lúa when subscription limit is exceeded
+    // Per spec: 20 Lúa per ATTEMPT_AI overage
+    private static final int AI_GRADING_LUA_COST = 20;
 
     private final WritingSubmissionRepository writingSubmissionRepository;
     private final SectionRepository sectionRepository;
     private final LLMGradingService llmGradingService;
     private final SubscriptionService subscriptionService;
     private final CreditService creditService;
-    
+
     // Server's DeepSeek API key (required)
     @Value("${DEEPSEEK_API_KEY:}")
     private String deepSeekApiKey;
-    
+
     @Value("${DEEPSEEK_MODEL:deepseek-chat}")
     private String deepSeekModel;
 
     @Autowired
     public AsyncGradingService(WritingSubmissionRepository writingSubmissionRepository,
-                               SectionRepository sectionRepository,
-                               LLMGradingService llmGradingService,
-                               SubscriptionService subscriptionService,
-                               CreditService creditService) {
+            SectionRepository sectionRepository,
+            LLMGradingService llmGradingService,
+            SubscriptionService subscriptionService,
+            CreditService creditService) {
         this.writingSubmissionRepository = writingSubmissionRepository;
         this.sectionRepository = sectionRepository;
         this.llmGradingService = llmGradingService;
@@ -61,15 +64,16 @@ public class AsyncGradingService {
     }
 
     /**
-     * Async method to grade submissions in background.
+     * Async method to grade submissions in background with PARALLEL execution.
+     * Task 1 and Task 2 are graded simultaneously for faster results.
      * IMPORTANT: This must be called from another bean (not from within this class)
      * for the @Async proxy to work.
      */
     @Async
     public void gradeSubmissionsAsync(List<WritingSubmission> submissions, TestAttempt attempt, UUID userId) {
-        logger.info("🚀 Starting ASYNC grading for {} submissions (thread: {})", 
-                   submissions.size(), Thread.currentThread().getName());
-        
+        logger.info("🚀 Starting PARALLEL ASYNC grading for {} submissions (thread: {})",
+                submissions.size(), Thread.currentThread().getName());
+
         try {
             // Validate server API key is configured
             if (deepSeekApiKey == null || deepSeekApiKey.trim().isEmpty()) {
@@ -83,14 +87,15 @@ public class AsyncGradingService {
                 }
                 return;
             }
-            
+
             // Check if user has AI grading available (subscription or Lúa)
             GradingStatusDTO gradingStatus = subscriptionService.checkAIGradingAllowed(userId);
             boolean usingLua = false;
-            
+
             if (!Boolean.TRUE.equals(gradingStatus.getAllowed())) {
                 // Not allowed via subscription, check if can pay with Lúa
-                if (Boolean.TRUE.equals(gradingStatus.getCanUseExtraWithLua()) && gradingStatus.getLuaBalance() >= AI_GRADING_LUA_COST) {
+                if (Boolean.TRUE.equals(gradingStatus.getCanUseExtraWithLua())
+                        && gradingStatus.getLuaBalance() >= AI_GRADING_LUA_COST) {
                     logger.info("📊 User {} exceeded subscription limit, will use Lúa for grading", userId);
                     usingLua = true;
                 } else {
@@ -99,71 +104,132 @@ public class AsyncGradingService {
                     for (WritingSubmission submission : submissions) {
                         submission.setGradingStatus("FAILED");
                         Map<String, Object> errorFeedback = new HashMap<>();
-                        errorFeedback.put("error", "Bạn đã hết lượt chấm AI trong tháng. Vui lòng nâng cấp gói hoặc mua thêm Lúa để tiếp tục.");
+                        errorFeedback.put("error",
+                                "Bạn đã hết lượt chấm AI trong tháng. Vui lòng nâng cấp gói hoặc mua thêm Lúa để tiếp tục.");
                         submission.setAiFeedback(errorFeedback);
                         writingSubmissionRepository.save(submission);
                     }
                     return;
                 }
             }
-            
+
             logger.info("✅ Using server's DeepSeek API key for grading (model: {})", deepSeekModel);
-            
+
             // Track if we need to deduct Lúa (set before grading loop)
             final boolean shouldUseLua = usingLua;
-            
+
             // Get task prompts
             List<Section> sections = sectionRepository.findByExamSourceAndTestNumberAndSkill(
-                attempt.getExamSource(),
-                Integer.parseInt(attempt.getTestNumber()),
-                "writing"
-            );
-            
-            Map<Integer, Section> sectionMap = sections.stream()
-                .collect(Collectors.toMap(Section::getPartNumber, s -> s));
-            
-            // Grade each submission
-            boolean hasSuccessfulGrading = false;
-            for (WritingSubmission submission : submissions) {
-                try {
-                    logger.info("📝 Grading Task {} for attempt {}...", 
-                               submission.getTaskNumber(), attempt.getId());
-                    
-                    Section section = sectionMap.get(submission.getTaskNumber());
-                    String taskPrompt = section != null ? section.getPassageText() : "";
-                    String imageUrl = section != null ? section.getDisplayContentUrl() : null;
-                    String imageDescription = section != null ? section.getImageDescription() : null;
+                    attempt.getExamSource(),
+                    Integer.parseInt(attempt.getTestNumber()),
+                    "writing");
 
-                    llmGradingService.gradeSubmission(submission, taskPrompt, imageUrl, imageDescription, deepSeekApiKey, deepSeekModel);
-                    writingSubmissionRepository.save(submission);
-                    
-                    logger.info("✅ Graded submission {} with band {}", 
-                               submission.getId(), submission.getOverallBand());
-                    
-                    // Mark that we have at least one successful grading
-                    if ("COMPLETED".equals(submission.getGradingStatus())) {
-                        hasSuccessfulGrading = true;
+            Map<Integer, Section> sectionMap = sections.stream()
+                    .collect(Collectors.toMap(Section::getPartNumber, s -> s));
+
+            // 🚀 NEW: Grade submissions in PARALLEL using CompletableFuture
+            List<CompletableFuture<Boolean>> gradingTasks = new ArrayList<>();
+
+            for (WritingSubmission submission : submissions) {
+                CompletableFuture<Boolean> gradingTask = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        logger.info("📝 Grading Task {} for attempt {} (thread: {})...",
+                                submission.getTaskNumber(), attempt.getId(), Thread.currentThread().getName());
+
+                        // Set status to GRADING
+                        submission.setGradingStatus("GRADING");
+                        writingSubmissionRepository.save(submission);
+
+                        Section section = sectionMap.get(submission.getTaskNumber());
+                        String taskPrompt = section != null ? section.getPassageText() : "";
+                        String imageUrl = section != null ? section.getDisplayContentUrl() : null;
+                        String imageDescription = section != null ? section.getImageDescription() : null;
+
+                        llmGradingService.gradeSubmission(submission, taskPrompt, imageUrl, imageDescription,
+                                deepSeekApiKey, deepSeekModel);
+                        writingSubmissionRepository.save(submission);
+
+                        logger.info("✅ Graded Task {} with band {}",
+                                submission.getTaskNumber(), submission.getOverallBand());
+
+                        return "COMPLETED".equals(submission.getGradingStatus());
+
+                    } catch (Exception e) {
+                        logger.error("❌ Failed to grade Task {}: {}", submission.getTaskNumber(), e.getMessage());
+                        submission.setGradingStatus("FAILED");
+                        Map<String, Object> errorFeedback = new HashMap<>();
+                        errorFeedback.put("error", "Grading failed: " + e.getMessage());
+                        submission.setAiFeedback(errorFeedback);
+                        writingSubmissionRepository.save(submission);
+                        return false;
                     }
-                    
-                } catch (Exception e) {
-                    logger.error("❌ Failed to grade submission {}: {}", submission.getId(), e.getMessage());
-                    submission.setGradingStatus("FAILED");
-                    Map<String, Object> errorFeedback = new HashMap<>();
-                    errorFeedback.put("error", "Grading failed: " + e.getMessage());
-                    submission.setAiFeedback(errorFeedback);
-                    writingSubmissionRepository.save(submission);
+                });
+
+                gradingTasks.add(gradingTask);
+            }
+
+            // Wait for ALL tasks to complete
+            CompletableFuture<Void> allTasks = CompletableFuture.allOf(
+                    gradingTasks.toArray(new CompletableFuture[0]));
+
+            try {
+                // Wait for all grading tasks with timeout (20 minutes total)
+                allTasks.get(20, java.util.concurrent.TimeUnit.MINUTES);
+            } catch (Exception waitEx) {
+                logger.error("❌ Timeout or error waiting for parallel grading: {}", waitEx.getMessage());
+                // Mark any still-pending submissions as failed
+                for (WritingSubmission submission : submissions) {
+                    if ("GRADING".equals(submission.getGradingStatus())) {
+                        submission.setGradingStatus("FAILED");
+                        Map<String, Object> errorFeedback = new HashMap<>();
+                        errorFeedback.put("error", "Grading timeout after 20 minutes");
+                        submission.setAiFeedback(errorFeedback);
+                        writingSubmissionRepository.save(submission);
+                    }
                 }
             }
-            
-            // Track AI grading usage ONLY if at least one grading was successful
-            // This ensures users are not charged for failed gradings
+
+            // Check if ANY task succeeded
+            boolean hasSuccessfulGrading = gradingTasks.stream()
+                    .map(task -> {
+                        try {
+                            return task.get();
+                        } catch (Exception e) {
+                            return false;
+                        }
+                    })
+                    .anyMatch(success -> success);
+
+            // 🚨 NEW LOGIC: If ANY task failed, mark ALL as failed and don't charge
+            boolean anyFailed = submissions.stream()
+                    .anyMatch(s -> "FAILED".equals(s.getGradingStatus()));
+
+            if (anyFailed) {
+                logger.warn("⚠️ At least one task failed - marking entire attempt as FAILED and skipping billing");
+                // Mark ALL submissions as failed
+                for (WritingSubmission submission : submissions) {
+                    submission.setGradingStatus("FAILED");
+                    if (submission.getAiFeedback() == null || !submission.getAiFeedback().containsKey("error")) {
+                        Map<String, Object> errorFeedback = submission.getAiFeedback() != null
+                                ? submission.getAiFeedback()
+                                : new HashMap<>();
+                        errorFeedback.put("error", "Grading failed for one or more tasks. Please try again.");
+                        submission.setAiFeedback(errorFeedback);
+                    }
+                    writingSubmissionRepository.save(submission);
+                }
+                hasSuccessfulGrading = false; // Override to skip billing
+            }
+
+            // Track AI grading usage ONLY if ALL tasks succeeded
             if (hasSuccessfulGrading) {
                 try {
                     if (shouldUseLua) {
                         // Deduct Lúa for AI grading
-                        creditService.spendCredits(userId, AI_GRADING_LUA_COST, 
+                        creditService.spendCredits(userId, AI_GRADING_LUA_COST,
                                 CreditTransaction.Category.AI_GRADING,
-                                "Chấm điểm AI bài viết - " + attempt.getExamSource() + " Test " + attempt.getTestNumber(),
+                                "Chấm điểm AI bài viết - " + attempt.getExamSource() + " Test "
+                                        + attempt.getTestNumber(),
                                 "attempt_" + attempt.getId());
                         logger.info("💰 Deducted {} Lúa for AI grading from user {}", AI_GRADING_LUA_COST, userId);
                     } else {
@@ -176,11 +242,11 @@ public class AsyncGradingService {
                     // Don't fail the grading because of usage tracking error
                 }
             } else {
-                logger.warn("⚠️ No successful gradings - skipping billing for user {}", userId);
+                logger.warn("⚠️ Grading incomplete or failed - skipping billing for user {}", userId);
             }
-            
-            logger.info("🎉 Completed async grading for attempt {}", attempt.getId());
-            
+
+            logger.info("🎉 Completed parallel async grading for attempt {}", attempt.getId());
+
         } catch (Exception e) {
             logger.error("💥 Error in async grading: {}", e.getMessage(), e);
         }

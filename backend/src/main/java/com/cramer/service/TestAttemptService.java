@@ -50,18 +50,18 @@ public class TestAttemptService {
     private final SectionRepository sectionRepository;
     private final ObjectMapper objectMapper;
     private final QuotaBillingService quotaBillingService;
-    
+
     @PersistenceContext
     private EntityManager entityManager;
 
     @Autowired
     public TestAttemptService(TestAttemptRepository testAttemptRepository,
-                              UserAnswerRepository userAnswerRepository,
-                              WritingSubmissionRepository writingSubmissionRepository,
-                              QuestionRepository questionRepository,
-                              SectionRepository sectionRepository,
-                              ObjectMapper objectMapper,
-                              QuotaBillingService quotaBillingService) {
+            UserAnswerRepository userAnswerRepository,
+            WritingSubmissionRepository writingSubmissionRepository,
+            QuestionRepository questionRepository,
+            SectionRepository sectionRepository,
+            ObjectMapper objectMapper,
+            QuotaBillingService quotaBillingService) {
         this.testAttemptRepository = testAttemptRepository;
         this.userAnswerRepository = userAnswerRepository;
         this.writingSubmissionRepository = writingSubmissionRepository;
@@ -75,14 +75,14 @@ public class TestAttemptService {
     public TestAttempt startOrGetAttempt(String source, String testNum, String skill, UUID userId) {
         return startOrGetAttempt(source, testNum, skill, userId, false);
     }
-    
+
     @Transactional
     public TestAttempt startOrGetAttempt(String source, String testNum, String skill, UUID userId, boolean forceNew) {
         final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
         logger.info("--- NEW REQUEST ---");
-        logger.info("🎯 [1] Starting startOrGetAttempt: userId={}, source={}, testNum={}, skill={}, forceNew={}", 
-                        userId, source, testNum, skill, forceNew);
-        
+        logger.info("🎯 [1] Starting startOrGetAttempt: userId={}, source={}, testNum={}, skill={}, forceNew={}",
+                userId, source, testNum, skill, forceNew);
+
         try {
             // Trim inputs for robustness
             String trimmedSource = source != null ? source.trim() : null;
@@ -90,31 +90,38 @@ public class TestAttemptService {
             String trimmedSkill = skill != null ? skill.trim() : null;
 
             // Validate inputs
-            if (userId == null) throw new IllegalArgumentException("User ID cannot be null");
-            if (trimmedSource == null || trimmedSource.isEmpty()) throw new IllegalArgumentException("Source cannot be null or empty");
-            if (trimmedTestNum == null || trimmedTestNum.isEmpty()) throw new IllegalArgumentException("Test number cannot be null or empty");
-            if (trimmedSkill == null || trimmedSkill.isEmpty()) throw new IllegalArgumentException("Skill cannot be null or empty");
-            
+            if (userId == null)
+                throw new IllegalArgumentException("User ID cannot be null");
+            if (trimmedSource == null || trimmedSource.isEmpty())
+                throw new IllegalArgumentException("Source cannot be null or empty");
+            if (trimmedTestNum == null || trimmedTestNum.isEmpty())
+                throw new IllegalArgumentException("Test number cannot be null or empty");
+            if (trimmedSkill == null || trimmedSkill.isEmpty())
+                throw new IllegalArgumentException("Skill cannot be null or empty");
+
             logger.info("🎯 [2] Acquiring pessimistic lock to prevent race conditions");
             // Acquire pessimistic lock to prevent race conditions in concurrent requests
-            // This ensures only one thread can create/modify attempts for this user+test combination at a time
-            // Returns a List to handle cases where multiple attempts exist (which shouldn't happen but can due to race conditions)
+            // This ensures only one thread can create/modify attempts for this user+test
+            // combination at a time
+            // Returns a List to handle cases where multiple attempts exist (which shouldn't
+            // happen but can due to race conditions)
             List<TestAttempt> lockedAttempts = testAttemptRepository
                     .findAndLockByUserIdAndExamSourceAndTestNumberAndSkill(
                             userId, trimmedSource, trimmedTestNum, trimmedSkill);
             logger.info("🎯 [2a] Lock acquired. Found {} locked attempts", lockedAttempts.size());
-            
+
             // Use the locked attempts directly (they're already sorted by startedAt DESC)
             List<TestAttempt> allAttempts = lockedAttempts;
-            
+
             // Find the latest attempt and all IN_PROGRESS attempts
             TestAttempt latestAttempt = allAttempts.isEmpty() ? null : allAttempts.get(0);
             List<TestAttempt> inProgressAttempts = allAttempts.stream()
                     .filter(a -> "IN_PROGRESS".equals(a.getStatus()))
                     .toList();
-            
-            logger.info("🎯 [3] Found {} total attempts, {} IN_PROGRESS", allAttempts.size(), inProgressAttempts.size());
-            
+
+            logger.info("🎯 [3] Found {} total attempts, {} IN_PROGRESS", allAttempts.size(),
+                    inProgressAttempts.size());
+
             // If forceNew is true, cancel ALL IN_PROGRESS attempts and create new
             if (forceNew && !inProgressAttempts.isEmpty()) {
                 logger.info("   -> forceNew=true. Cancelling all {} IN_PROGRESS attempts.", inProgressAttempts.size());
@@ -125,8 +132,9 @@ public class TestAttemptService {
                 }
                 return createNewAttempt(userId, trimmedSource, trimmedTestNum, trimmedSkill, logger);
             }
-            
-            // If there are multiple IN_PROGRESS attempts, cancel all but the most recent one
+
+            // If there are multiple IN_PROGRESS attempts, cancel all but the most recent
+            // one
             if (inProgressAttempts.size() > 1) {
                 logger.info("   -> Found multiple IN_PROGRESS attempts. Keeping only the most recent.");
                 TestAttempt mostRecentInProgress = inProgressAttempts.get(0); // Already sorted by startedAt DESC
@@ -137,17 +145,21 @@ public class TestAttemptService {
                     testAttemptRepository.save(oldAttempt);
                 }
             }
-            
-            // Also check: if there's a COMPLETED attempt that's MORE RECENT than an IN_PROGRESS,
+
+            // Also check: if there's a COMPLETED attempt that's MORE RECENT than an
+            // IN_PROGRESS,
             // the IN_PROGRESS is stale and should be cancelled
-            if (!inProgressAttempts.isEmpty() && latestAttempt != null && "COMPLETED".equals(latestAttempt.getStatus())) {
-                logger.info("   -> Latest attempt is COMPLETED but there are stale IN_PROGRESS attempts. Cancelling them.");
+            if (!inProgressAttempts.isEmpty() && latestAttempt != null
+                    && "COMPLETED".equals(latestAttempt.getStatus())) {
+                logger.info(
+                        "   -> Latest attempt is COMPLETED but there are stale IN_PROGRESS attempts. Cancelling them.");
                 for (TestAttempt staleAttempt : inProgressAttempts) {
                     logger.info("   -> Cancelling stale IN_PROGRESS attempt ID: {}", staleAttempt.getId());
                     staleAttempt.setStatus("CANCELLED");
                     testAttemptRepository.save(staleAttempt);
                 }
-                // Return the COMPLETED attempt - frontend will decide what to do (show modal or redirect)
+                // Return the COMPLETED attempt - frontend will decide what to do (show modal or
+                // redirect)
                 logger.info("   -> Returning existing COMPLETED attempt ID: {}", latestAttempt.getId());
                 TestAttempt detachedAttempt = new TestAttempt();
                 detachedAttempt.setId(latestAttempt.getId());
@@ -165,7 +177,8 @@ public class TestAttemptService {
             }
 
             if (latestAttempt != null) {
-                logger.info("🎯 [4] Latest attempt ID: {}, Status: {}", latestAttempt.getId(), latestAttempt.getStatus());
+                logger.info("🎯 [4] Latest attempt ID: {}, Status: {}", latestAttempt.getId(),
+                        latestAttempt.getStatus());
 
                 if ("COMPLETED".equals(latestAttempt.getStatus())) {
                     if (forceNew) {
@@ -173,7 +186,8 @@ public class TestAttemptService {
                         return createNewAttempt(userId, trimmedSource, trimmedTestNum, trimmedSkill, logger);
                     } else {
                         // Return the COMPLETED attempt - frontend will decide what to do
-                        logger.info("   -> Status is 'COMPLETED' and forceNew=false. Returning existing COMPLETED attempt.");
+                        logger.info(
+                                "   -> Status is 'COMPLETED' and forceNew=false. Returning existing COMPLETED attempt.");
                         TestAttempt detachedAttempt = new TestAttempt();
                         detachedAttempt.setId(latestAttempt.getId());
                         detachedAttempt.setUserId(latestAttempt.getUserId());
@@ -189,12 +203,12 @@ public class TestAttemptService {
                         return detachedAttempt;
                     }
                 }
-                
+
                 if ("CANCELLED".equals(latestAttempt.getStatus())) {
                     logger.info("   -> Status is 'CANCELLED'. Proceeding to create a new attempt.");
                     return createNewAttempt(userId, trimmedSource, trimmedTestNum, trimmedSkill, logger);
                 }
-                
+
                 logger.info("   -> Status is 'IN_PROGRESS'. Resuming this attempt.");
                 // Detached copy to prevent serialization issues
                 TestAttempt detachedAttempt = new TestAttempt();
@@ -215,54 +229,71 @@ public class TestAttemptService {
                 logger.info("🎯 [3B] No existing attempt found. Proceeding to create a new attempt.");
                 return createNewAttempt(userId, trimmedSource, trimmedTestNum, trimmedSkill, logger);
             }
+        } catch (QuotaExceededException e) {
+            // Don't wrap quota exceptions - let GlobalExceptionHandler return proper 402
+            logger.warn("❌ [QUOTA BLOCKED] User {} blocked: {}", userId, e.getMessage());
+            throw e;
         } catch (Exception e) {
-            logger.error("❌ [ERROR] Unhandled exception in startOrGetAttempt: userId={}, source={}, testNum={}, skill={}", 
-                        userId, source, testNum, skill, e);
+            logger.error(
+                    "❌ [ERROR] Unhandled exception in startOrGetAttempt: userId={}, source={}, testNum={}, skill={}",
+                    userId, source, testNum, skill, e);
             throw new RuntimeException("Failed to start/get test attempt: " + e.getMessage(), e);
         }
     }
 
-    private TestAttempt createNewAttempt(UUID userId, String source, String testNum, String skill, org.slf4j.Logger logger) {
+    private TestAttempt createNewAttempt(UUID userId, String source, String testNum, String skill,
+            org.slf4j.Logger logger) {
         logger.info("   -> [Sub-Process] Inside createNewAttempt");
-        
+
         // === QUOTA BILLING CHECK ===
-        // Check quota and bill Lua if necessary before creating the attempt
-        // Writing skill uses AI grading, others use standard grading
-        boolean isAI = "writing".equalsIgnoreCase(skill);
-        logger.info("   -> [Quota] Checking quota for skill={}, isAI={}", skill, isAI);
-        
-        BillingResultDTO billingResult = quotaBillingService.processAttemptBilling(userId, skill.toUpperCase(), isAI);
-        
-        if (!billingResult.isAllowed()) {
-            logger.warn("   -> [Quota] BLOCKED: {}", billingResult.getReason());
-            throw new QuotaExceededException(billingResult.getReason(), billingResult.getBlockType());
-        }
-        
-        if (billingResult.getLuaCharged() > 0) {
-            logger.info("   -> [Quota] Charged {} Lua for quota overage", billingResult.getLuaCharged());
+        // Writing skill: Skip quota check here - users can practice freely
+        // AI grading quota is checked in AsyncGradingService when actually grading
+        // Reading/Listening: Check quota and bill Lua if necessary
+        boolean isWriting = "writing".equalsIgnoreCase(skill);
+
+        if (!isWriting) {
+            // Only check quota for non-writing skills (Reading, Listening)
+            logger.info("   -> [Quota] Checking quota for skill={}", skill);
+
+            BillingResultDTO billingResult = quotaBillingService.processAttemptBilling(userId, skill.toUpperCase(),
+                    false);
+
+            if (!billingResult.isAllowed()) {
+                logger.warn("   -> [Quota] BLOCKED: {}", billingResult.getReason());
+                throw new QuotaExceededException(billingResult.getReason(), billingResult.getBlockType());
+            }
+
+            if (billingResult.getLuaCharged() > 0) {
+                logger.info("   -> [Quota] Charged {} Lua for quota overage", billingResult.getLuaCharged());
+            } else {
+                logger.info("   -> [Quota] Within free quota, no charge");
+            }
         } else {
-            logger.info("   -> [Quota] Within free quota, no charge");
+            // Writing: No quota check here - quota checked at AI grading time
+            logger.info("   -> [Quota] Writing skill - skipping quota check (will check at grading time)");
         }
         // === END QUOTA BILLING CHECK ===
-        
-        // Cancel any existing IN_PROGRESS attempts for this test before creating a new one
+
+        // Cancel any existing IN_PROGRESS attempts for this test before creating a new
+        // one
         List<TestAttempt> existingInProgressAttempts = testAttemptRepository
                 .findByUserIdAndExamSourceAndTestNumberAndSkillAndStatus(userId, source, testNum, skill, "IN_PROGRESS");
-        
+
         for (TestAttempt oldAttempt : existingInProgressAttempts) {
             logger.info("   -> Cancelling old IN_PROGRESS attempt ID: {}", oldAttempt.getId());
             oldAttempt.setStatus("CANCELLED");
             testAttemptRepository.save(oldAttempt);
         }
-        
+
         TestAttempt newAttempt = new TestAttempt();
         newAttempt.setUserId(userId);
         newAttempt.setExamSource(source);
         newAttempt.setTestNumber(testNum);
         newAttempt.setSkill(skill);
-        
-        logger.info("   -> Attempt object to be saved: userId={}, source={}, testNum={}, skill={}, status={}", 
-            newAttempt.getUserId(), newAttempt.getExamSource(), newAttempt.getTestNumber(), newAttempt.getSkill(), newAttempt.getStatus());
+
+        logger.info("   -> Attempt object to be saved: userId={}, source={}, testNum={}, skill={}, status={}",
+                newAttempt.getUserId(), newAttempt.getExamSource(), newAttempt.getTestNumber(), newAttempt.getSkill(),
+                newAttempt.getStatus());
 
         try {
             TestAttempt savedAttempt = testAttemptRepository.save(newAttempt);
@@ -286,7 +317,7 @@ public class TestAttemptService {
 
         TestAttempt attempt = testAttemptRepository.findById(attemptId)
                 .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found"));
-        
+
         if (!attempt.getUserId().equals(userId)) {
             throw new AccessDeniedException("User does not have permission to update this attempt.");
         }
@@ -296,9 +327,11 @@ public class TestAttemptService {
         }
 
         // Update time and part
-        if (saveProgressDTO.getTimeLeft() != null) attempt.setTimeLeft(saveProgressDTO.getTimeLeft());
-        if (saveProgressDTO.getCurrentPart() != null) attempt.setCurrentPart(saveProgressDTO.getCurrentPart());
-        
+        if (saveProgressDTO.getTimeLeft() != null)
+            attempt.setTimeLeft(saveProgressDTO.getTimeLeft());
+        if (saveProgressDTO.getCurrentPart() != null)
+            attempt.setCurrentPart(saveProgressDTO.getCurrentPart());
+
         // Save answers
         if (saveProgressDTO.getAnswers() != null && !saveProgressDTO.getAnswers().isEmpty()) {
             logger.info("   -> Saving {} answers for attempt {}", saveProgressDTO.getAnswers().size(), attemptId);
@@ -317,8 +350,9 @@ public class TestAttemptService {
 
                 Question question = questionRepository.findById(questionId)
                         .orElseThrow(() -> new ResourceNotFoundException("Question not found with id: " + questionId));
-                
-                // Adapt the String answer to a JsonNode to maintain compatibility with downstream logic
+
+                // Adapt the String answer to a JsonNode to maintain compatibility with
+                // downstream logic
                 ObjectNode answerNode = objectMapper.createObjectNode();
                 answerNode.put("value", answerText);
 
@@ -344,9 +378,9 @@ public class TestAttemptService {
     @Transactional
     public TestResultDTO submitAttempt(Long testAttemptId, Map<Long, String> answers, UUID userId) {
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
-        logger.info("📝 Submitting test attempt: attemptId={}, userId={}, answersCount={}", 
-                    testAttemptId, userId, answers != null ? answers.size() : 0);
-        
+        logger.info("📝 Submitting test attempt: attemptId={}, userId={}, answersCount={}",
+                testAttemptId, userId, answers != null ? answers.size() : 0);
+
         TestAttempt testAttempt = testAttemptRepository.findById(testAttemptId)
                 .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + testAttemptId));
 
@@ -374,11 +408,12 @@ public class TestAttemptService {
                 if (answerText == null || answerText.trim().isEmpty()) {
                     continue; // Skip unanswered questions
                 }
-                
+
                 Question question = questionRepository.findById(questionId)
                         .orElseThrow(() -> new ResourceNotFoundException("Question not found with id: " + questionId));
 
-                // Adapt the String answer to a JsonNode to maintain compatibility with downstream logic
+                // Adapt the String answer to a JsonNode to maintain compatibility with
+                // downstream logic
                 ObjectNode answerNode = objectMapper.createObjectNode();
                 answerNode.put("value", answerText);
 
@@ -409,7 +444,7 @@ public class TestAttemptService {
         testAttempt.setStatus("COMPLETED");
         testAttempt.setCompletedAt(OffsetDateTime.now());
         testAttempt.setScore(correctCount);
-        
+
         long startUpdateAttempt = System.currentTimeMillis();
         testAttemptRepository.save(testAttempt);
         long updateTime = System.currentTimeMillis() - startUpdateAttempt;
@@ -417,10 +452,9 @@ public class TestAttemptService {
 
         long startCountQuestions = System.currentTimeMillis();
         int totalQuestions = questionRepository.countBySection_ExamSourceAndSection_TestNumberAndSection_Skill(
-            testAttempt.getExamSource(),
-            Integer.valueOf(testAttempt.getTestNumber()),
-            testAttempt.getSkill()
-        );
+                testAttempt.getExamSource(),
+                Integer.valueOf(testAttempt.getTestNumber()),
+                testAttempt.getSkill());
         long countTime = System.currentTimeMillis() - startCountQuestions;
         logger.info("🔢 Counted total questions in {}ms", countTime);
 
@@ -429,7 +463,8 @@ public class TestAttemptService {
     }
 
     private boolean compareAnswers(JsonNode userAnswer, JsonNode correctAnswer) {
-        if (userAnswer == null || userAnswer.get("value") == null || userAnswer.get("value").isNull() || correctAnswer == null) {
+        if (userAnswer == null || userAnswer.get("value") == null || userAnswer.get("value").isNull()
+                || correctAnswer == null) {
             return false;
         }
 
@@ -438,7 +473,8 @@ public class TestAttemptService {
                 .trim()
                 .toLowerCase();
 
-        // Handle cases where the correct answer is a JSON array (e.g., ["answer1", "answer2"])
+        // Handle cases where the correct answer is a JSON array (e.g., ["answer1",
+        // "answer2"])
         if (correctAnswer.isArray()) {
             for (JsonNode correctNode : correctAnswer) {
                 String correctText = correctNode.asText()
@@ -449,7 +485,8 @@ public class TestAttemptService {
                     return true;
                 }
             }
-        } else { // Handle cases where the correct answer is a single JSON string (e.g., "answer")
+        } else { // Handle cases where the correct answer is a single JSON string (e.g.,
+                 // "answer")
             String correctText = correctAnswer.asText()
                     .replace("_", " ")
                     .trim()
@@ -478,18 +515,17 @@ public class TestAttemptService {
                 .collect(Collectors.toMap(answer -> answer.getQuestion().getId(), answer -> answer));
 
         // 3. Fetch all questions for the entire test
-        List<Question> allTestQuestions = questionRepository.findBySection_ExamSourceAndSection_TestNumberAndSection_Skill(
-            testAttempt.getExamSource(),
-            Integer.valueOf(testAttempt.getTestNumber()),
-            testAttempt.getSkill()
-        );
+        List<Question> allTestQuestions = questionRepository
+                .findBySection_ExamSourceAndSection_TestNumberAndSection_Skill(
+                        testAttempt.getExamSource(),
+                        Integer.valueOf(testAttempt.getTestNumber()),
+                        testAttempt.getSkill());
 
         // 4. Fetch all sections for this test
         List<Section> sections = sectionRepository.findSectionsForTest(
-            testAttempt.getExamSource(),
-            Integer.valueOf(testAttempt.getTestNumber()),
-            testAttempt.getSkill()
-        );
+                testAttempt.getExamSource(),
+                Integer.valueOf(testAttempt.getTestNumber()),
+                testAttempt.getSkill());
 
         // 5. Group questions by sectionId
         Map<Long, List<Question>> questionsBySectionId = allTestQuestions.stream()
@@ -508,46 +544,23 @@ public class TestAttemptService {
 
         // Calculate and set duration
         if (testAttempt.getStartedAt() != null && testAttempt.getCompletedAt() != null) {
-            long durationInSeconds = java.time.Duration.between(testAttempt.getStartedAt(), testAttempt.getCompletedAt()).getSeconds();
+            long durationInSeconds = java.time.Duration
+                    .between(testAttempt.getStartedAt(), testAttempt.getCompletedAt()).getSeconds();
             reviewDTO.setDuration(durationInSeconds);
         }
 
         // Calculate and set band score
-        if ("COMPLETED".equals(testAttempt.getStatus()) && ("reading".equalsIgnoreCase(testAttempt.getSkill()) || "listening".equalsIgnoreCase(testAttempt.getSkill()))) {
+        if ("COMPLETED".equals(testAttempt.getStatus()) && ("reading".equalsIgnoreCase(testAttempt.getSkill())
+                || "listening".equalsIgnoreCase(testAttempt.getSkill()))) {
             reviewDTO.setBandScore(IeltsScoreConverter.convertToBand(testAttempt.getScore()));
         }
 
         // 7. Build flat list of QuestionReviewDTOs (for backward compatibility)
         List<QuestionReviewDTO> questionReviews = allTestQuestions.stream()
-            .sorted(Comparator.comparing(Question::getQuestionNumber))
-            .map(question -> {
-                UserAnswer userAnswer = answersByQuestionId.get(question.getId());
-                return new QuestionReviewDTO(
-                    question.getQuestionNumber(),
-                    question.getQuestionUid(),
-                    question.getQuestionType(),
-                    question.getQuestionContent(),
-                    userAnswer != null ? userAnswer.getAnswerContent() : null,
-                    question.getCorrectAnswer(),
-                    userAnswer != null ? userAnswer.getCorrect() : null,
-                    question.getExplanation()
-                );
-            })
-            .collect(Collectors.toList());
-
-        reviewDTO.setQuestions(questionReviews);
-
-        // 8. Build SectionReviewDTOs with grouped questions
-        List<SectionReviewDTO> sectionReviews = sections.stream()
-            .sorted(Comparator.comparing(Section::getPartNumber))
-            .map(section -> {
-                List<Question> sectionQuestions = questionsBySectionId.getOrDefault(section.getId(), List.of());
-                
-                List<QuestionReviewDTO> sectionQuestionReviews = sectionQuestions.stream()
-                    .sorted(Comparator.comparing(Question::getQuestionNumber))
-                    .map(question -> {
-                        UserAnswer userAnswer = answersByQuestionId.get(question.getId());
-                        return new QuestionReviewDTO(
+                .sorted(Comparator.comparing(Question::getQuestionNumber))
+                .map(question -> {
+                    UserAnswer userAnswer = answersByQuestionId.get(question.getId());
+                    return new QuestionReviewDTO(
                             question.getQuestionNumber(),
                             question.getQuestionUid(),
                             question.getQuestionType(),
@@ -555,22 +568,44 @@ public class TestAttemptService {
                             userAnswer != null ? userAnswer.getAnswerContent() : null,
                             question.getCorrectAnswer(),
                             userAnswer != null ? userAnswer.getCorrect() : null,
-                            question.getExplanation()
-                        );
-                    })
-                    .collect(Collectors.toList());
+                            question.getExplanation());
+                })
+                .collect(Collectors.toList());
 
-                return new SectionReviewDTO(
-                    section.getId(),
-                    section.getPartNumber(),
-                    section.getPassageText(),
-                    section.getDisplayContentUrl(),
-                    section.getAudioUrl(),
-                    section.getSectionLayout(),
-                    sectionQuestionReviews
-                );
-            })
-            .collect(Collectors.toList());
+        reviewDTO.setQuestions(questionReviews);
+
+        // 8. Build SectionReviewDTOs with grouped questions
+        List<SectionReviewDTO> sectionReviews = sections.stream()
+                .sorted(Comparator.comparing(Section::getPartNumber))
+                .map(section -> {
+                    List<Question> sectionQuestions = questionsBySectionId.getOrDefault(section.getId(), List.of());
+
+                    List<QuestionReviewDTO> sectionQuestionReviews = sectionQuestions.stream()
+                            .sorted(Comparator.comparing(Question::getQuestionNumber))
+                            .map(question -> {
+                                UserAnswer userAnswer = answersByQuestionId.get(question.getId());
+                                return new QuestionReviewDTO(
+                                        question.getQuestionNumber(),
+                                        question.getQuestionUid(),
+                                        question.getQuestionType(),
+                                        question.getQuestionContent(),
+                                        userAnswer != null ? userAnswer.getAnswerContent() : null,
+                                        question.getCorrectAnswer(),
+                                        userAnswer != null ? userAnswer.getCorrect() : null,
+                                        question.getExplanation());
+                            })
+                            .collect(Collectors.toList());
+
+                    return new SectionReviewDTO(
+                            section.getId(),
+                            section.getPartNumber(),
+                            section.getPassageText(),
+                            section.getDisplayContentUrl(),
+                            section.getAudioUrl(),
+                            section.getSectionLayout(),
+                            sectionQuestionReviews);
+                })
+                .collect(Collectors.toList());
 
         reviewDTO.setSections(sectionReviews);
 
@@ -583,13 +618,13 @@ public class TestAttemptService {
         logger.info("🗑️ Cancelling and deleting test attempt: attemptId={}, userId={}", attemptId, userId);
 
         Optional<TestAttempt> optionalAttempt = testAttemptRepository.findById(attemptId);
-        
+
         // Idempotent: If attempt doesn't exist, consider it already cancelled (success)
         if (optionalAttempt.isEmpty()) {
             logger.info("   -> Attempt {} already deleted, returning success (idempotent)", attemptId);
             return;
         }
-        
+
         TestAttempt attempt = optionalAttempt.get();
 
         if (!attempt.getUserId().equals(userId)) {
@@ -603,11 +638,12 @@ public class TestAttemptService {
             return;
         }
         if ("COMPLETED".equals(status)) {
-            logger.info("   -> Attempt {} is COMPLETED, cannot cancel but returning success to avoid frontend error", attemptId);
+            logger.info("   -> Attempt {} is COMPLETED, cannot cancel but returning success to avoid frontend error",
+                    attemptId);
             // For completed attempts, we don't delete them - user should see their results
             return;
         }
-        
+
         // Only allow cancellation of IN_PROGRESS attempts
         if (!"IN_PROGRESS".equals(status)) {
             logger.warn("   -> Attempt {} has unexpected status: {}", attemptId, status);
@@ -685,7 +721,8 @@ public class TestAttemptService {
             throw new AccessDeniedException("User does not have permission to delete this attempt.");
         }
 
-        // First, delete all associated UserAnswers to avoid foreign key constraint violations
+        // First, delete all associated UserAnswers to avoid foreign key constraint
+        // violations
         userAnswerRepository.deleteByAttemptId(attemptId);
         logger.info("   -> Deleted all user answers for attemptId={}", attemptId);
 
@@ -741,10 +778,9 @@ public class TestAttemptService {
 
         // Get total question count for the response
         int totalQuestions = questionRepository.countBySection_ExamSourceAndSection_TestNumberAndSection_Skill(
-            attempt.getExamSource(),
-            Integer.valueOf(attempt.getTestNumber()),
-            attempt.getSkill()
-        );
+                attempt.getExamSource(),
+                Integer.valueOf(attempt.getTestNumber()),
+                attempt.getSkill());
 
         logger.info("✅ Re-grading completed: score={}/{}", correctCount, totalQuestions);
         return new TestResultDTO(attempt.getId(), correctCount, totalQuestions, attempt.getStatus());

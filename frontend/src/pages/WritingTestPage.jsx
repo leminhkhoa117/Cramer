@@ -10,6 +10,7 @@ import FullPageLoader from '../components/FullPageLoader';
 import ResumeConfirmationModal from '../components/ResumeConfirmationModal';
 import ExitTestModal from '../components/ExitTestModal';
 import ConfirmationModal from '../components/ConfirmationModal';
+import GradingQuotaInfo from '../components/GradingQuotaInfo';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 
 // Reuse TestPage styles
@@ -72,13 +73,13 @@ const WritingTestPage = () => {
     } = useTestStore();
 
     // --- Session Store Actions (direct destructuring for stable references) ---
-    const { 
-        startOrResumeAttempt, 
-        loadTestData, 
-        loadEssays, 
-        saveProgress, 
-        submitWriting, 
-        cancelAttempt 
+    const {
+        startOrResumeAttempt,
+        loadTestData,
+        loadEssays,
+        saveProgress,
+        submitWriting,
+        cancelAttempt
     } = useTestSessionStore();
 
     // --- Refs (minimal local state) ---
@@ -120,7 +121,7 @@ const WritingTestPage = () => {
     // --- Data Loading and Setup ---
     const setupTestState = useCallback(async (attemptData, fullTestData, abortSignal) => {
         if (abortSignal?.aborted) return;
-        
+
         setAttempt(attemptData);
         setTestData(fullTestData);
 
@@ -161,7 +162,7 @@ const WritingTestPage = () => {
             try {
                 setLoading(true);
                 const attemptData = await startOrResumeAttempt(source, testNum, 'writing', forceNew);
-                
+
                 if (abortController.signal.aborted) return;
 
                 // If backend returned a COMPLETED attempt, show choice modal
@@ -407,12 +408,13 @@ const WritingTestPage = () => {
                         <span>{getWordCount(2)} từ</span>
                     </div>
                 </div>
+                <GradingQuotaInfo />
                 <div className="submit-info">
                     <p className="submit-info__ai">
                         🤖 Bài làm sẽ được chấm điểm chi tiết bởi AI theo 4 tiêu chí IELTS.
                     </p>
                     <p className="submit-info__billing">
-                        💡 <strong>Lưu ý:</strong> Bạn chỉ bị trừ lượt chấm nâng cao khi AI 
+                        💡 <strong>Lưu ý:</strong> Bạn chỉ bị trừ lượt chấm nâng cao khi AI
                         trả về kết quả thành công. Nếu có lỗi xảy ra, lượt chấm sẽ được hoàn lại.
                     </p>
                 </div>

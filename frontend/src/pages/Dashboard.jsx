@@ -29,6 +29,19 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('vi-VN');
 };
 
+// Map status codes to Vietnamese labels
+const formatStatus = (status) => {
+  const statusMap = {
+    'COMPLETED': 'Hoàn thành',
+    'IN_PROGRESS': 'Đang làm',
+    'GRADING': 'Đang chấm',
+    'PENDING': 'Chờ xử lý',
+    'FAILED': 'Lỗi',
+    'NOT_STARTED': 'Chưa bắt đầu',
+  };
+  return statusMap[status] || status;
+};
+
 // Animation variants for staggering children
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -480,7 +493,9 @@ export default function Dashboard() {
                                         </p>
                                         <p>
                                           <strong>Trạng thái</strong>
-                                          <span>{course.status}</span>
+                                          <span className={`status-${course.status?.toLowerCase()}`}>
+                                            {formatStatus(course.status)}
+                                          </span>
                                         </p>
                                         <p>
                                           <strong>Đã làm</strong>
@@ -499,7 +514,11 @@ export default function Dashboard() {
                                       <div className="dash-course-card__footer">
                                         <div className="dash-course-card__score-status">
                                           <span className="dash-course-card__status-badge">Kết quả</span>
-                                          {course.bandScore != null ? (
+                                          {course.status === 'GRADING' ? (
+                                            <span className="dash-course-card__progress-text grading">
+                                              Đang chấm...
+                                            </span>
+                                          ) : course.bandScore != null ? (
                                             <span className="dash-course-card__progress-text">
                                               Band {course.bandScore.toFixed(1)}
                                             </span>
@@ -544,7 +563,18 @@ export default function Dashboard() {
                                               Tiếp tục
                                             </Link>
                                           )}
-                                          {course.status !== 'COMPLETED' && course.status !== 'IN_PROGRESS' && (
+                                          {course.status === 'GRADING' && (
+                                            <Link
+                                              to={course.skill === 'writing'
+                                                ? `/test/writing/review/${course.attemptId}`
+                                                : `/test/review/${course.attemptId}`
+                                              }
+                                              className="btn-action-dashboard btn-action-dashboard--grading"
+                                            >
+                                              Xem tiến độ
+                                            </Link>
+                                          )}
+                                          {course.status !== 'COMPLETED' && course.status !== 'IN_PROGRESS' && course.status !== 'GRADING' && (
                                             <Link
                                               to={`/test/${course.examSource}/${course.testNumber}/${course.skill}`}
                                               className="btn-action-dashboard"

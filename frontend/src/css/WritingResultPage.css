@@ -11,6 +11,14 @@
     flex-direction: column;
     overflow: hidden;
     /* Prevent page-level scroll */
+    overscroll-behavior: none;
+    /* Prevent scroll chaining/bounce */
+    touch-action: pan-x pan-y;
+    /* Control touch scrolling */
+    position: fixed;
+    /* Fixed position to prevent any scroll */
+    inset: 0;
+    /* Fill entire viewport */
 }
 
 /* Custom scrollbar for columns */
@@ -907,6 +915,62 @@
     font-size: 0.85rem;
     color: #374151;
     line-height: 1.5;
+}
+
+/* Grammar Patterns Card */
+.feedback-card.grammar-patterns {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border-color: #7dd3fc;
+}
+
+.feedback-card.grammar-patterns h4 {
+    color: #0369a1;
+}
+
+.pattern-section {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: 6px;
+}
+
+.pattern-section strong {
+    font-size: 0.8rem;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.pattern-section.strong {
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.pattern-section.strong strong {
+    color: #16a34a;
+}
+
+.pattern-section.weak {
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.pattern-section.weak strong {
+    color: #d97706;
+}
+
+.pattern-section.missing {
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.pattern-section.missing strong {
+    color: #4f46e5;
+}
+
+.pattern-section ul {
+    margin: 0;
+    padding-left: 1rem;
+    font-size: 0.8rem;
+}
+
+.pattern-section li {
+    margin-bottom: 0.15rem;
 }
 
 /* Expandable Section */
@@ -2544,6 +2608,40 @@
     flex-shrink: 0;
 }
 
+/* Single Toggle Button for Comparison View */
+.comparison-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.7rem;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Be Vietnam Pro', sans-serif;
+}
+
+.comparison-toggle-btn:hover {
+    background: #ede9fe;
+    border-color: #c4b5fd;
+    color: #7c3aed;
+}
+
+.comparison-toggle-btn.active {
+    background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+    border-color: #7c3aed;
+    color: white;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+}
+
+.comparison-toggle-btn svg {
+    flex-shrink: 0;
+}
+
 /* ============================================
    Essay Comparison Component Styles
    ============================================ */
@@ -2625,7 +2723,7 @@
     color: #ffffff;
 }
 
-/* Comparison Legend */
+/* Comparison Legend - Enhanced */
 .comparison-legend {
     display: flex;
     gap: 1.25rem;
@@ -2635,18 +2733,49 @@
     border: 1px solid #e5e7eb;
 }
 
+.comparison-legend.enhanced {
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.75rem 1rem;
+}
+
+.comparison-legend .legend-row {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
 .comparison-legend .legend-item {
     display: flex;
-    align-items: center;
-    gap: 0.4rem;
+    align-items: flex-start;
+    gap: 0.5rem;
     font-size: 0.8rem;
     color: #4b5563;
+}
+
+.comparison-legend .legend-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.comparison-legend .legend-text strong {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.8rem;
+}
+
+.comparison-legend .legend-text span {
+    font-size: 0.7rem;
+    color: #6b7280;
 }
 
 .comparison-legend .legend-color {
     width: 16px;
     height: 16px;
     border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 
 .comparison-legend .diff-remove-sample {
@@ -2657,6 +2786,21 @@
 .comparison-legend .diff-add-sample {
     background: rgba(34, 197, 94, 0.25);
     border: 1px solid rgba(34, 197, 94, 0.5);
+}
+
+.comparison-legend .legend-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: #7c3aed;
+    background: rgba(124, 58, 237, 0.08);
+    padding: 0.35rem 0.65rem;
+    border-radius: 4px;
+}
+
+.comparison-legend .legend-hint svg {
+    flex-shrink: 0;
 }
 
 /* Comparison Panels Container */
@@ -2708,6 +2852,13 @@
     letter-spacing: 0.5px;
 }
 
+.comparison-panel .label-hint {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    font-weight: 400;
+    margin-left: 0.5rem;
+}
+
 .comparison-panel .panel-content {
     flex: 1;
     padding: 1rem;
@@ -2754,6 +2905,38 @@
     background: rgba(124, 58, 237, 0.03);
 }
 
+/* Clickable paragraphs */
+.comparison-paragraph.clickable {
+    cursor: pointer;
+}
+
+.comparison-paragraph.clickable:hover {
+    background: rgba(124, 58, 237, 0.08);
+    box-shadow: 0 1px 4px rgba(124, 58, 237, 0.1);
+}
+
+.comparison-paragraph.clickable:hover .para-number {
+    color: #7c3aed;
+}
+
+/* Selected paragraph animation */
+.comparison-paragraph.selected {
+    background: rgba(124, 58, 237, 0.15);
+    animation: paragraph-pulse 1.5s ease-out;
+}
+
+@keyframes paragraph-pulse {
+    0% {
+        background: rgba(124, 58, 237, 0.3);
+        box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.4);
+    }
+
+    100% {
+        background: rgba(124, 58, 237, 0.08);
+        box-shadow: 0 0 0 0 rgba(124, 58, 237, 0);
+    }
+}
+
 .comparison-paragraph .para-number {
     position: absolute;
     left: 0;
@@ -2763,18 +2946,33 @@
     color: #9ca3af;
     width: 1.25rem;
     text-align: center;
+    transition: color 0.2s ease;
 }
 
 .comparison-paragraph p {
     margin: 0;
 }
 
+/* Click hint icon */
+.comparison-paragraph .click-hint {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #c4b5fd;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.comparison-paragraph.clickable:hover .click-hint {
+    opacity: 1;
+    color: #7c3aed;
+}
+
 /* ============================================
    Diff Highlighting Styles
    ============================================ */
-.diff-same {
-    /* No special styling for unchanged text */
-}
+/* .diff-same has no special styling (inherits default) */
 
 .diff-add {
     background: rgba(34, 197, 94, 0.2);
@@ -2873,12 +3071,12 @@
         height: auto;
         min-height: 500px;
     }
-    
+
     /* Comparison panels stack vertically on tablet */
     .comparison-panels {
         flex-direction: column;
     }
-    
+
     .comparison-panel {
         max-height: 300px;
     }
@@ -2918,36 +3116,36 @@
     .brain-emoji {
         font-size: 3rem;
     }
-    
+
     /* View mode toggle responsive */
     .view-mode-toggle {
         flex-wrap: wrap;
     }
-    
+
     .view-mode-btn span {
         display: none;
     }
-    
+
     .view-mode-btn {
         padding: 0.4rem 0.5rem;
     }
-    
+
     /* Comparison header stacks on mobile */
     .comparison-header {
         flex-direction: column;
         gap: 0.5rem;
     }
-    
+
     .comparison-stats {
         width: 100%;
         justify-content: space-around;
     }
-    
+
     .comparison-controls {
         width: 100%;
         justify-content: center;
     }
-    
+
     /* Column header responsive */
     .essay-column .column-header-right {
         flex-wrap: wrap;

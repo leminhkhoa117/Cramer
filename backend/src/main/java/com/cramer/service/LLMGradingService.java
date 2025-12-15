@@ -17,8 +17,10 @@ import java.time.OffsetDateTime;
 import java.util.*;
 
 /**
- * Service for grading IELTS Writing essays using DeepSeek AI API (OpenAI-compatible).
- * Provides detailed feedback including band scores, corrections, and sample essays.
+ * Service for grading IELTS Writing essays using DeepSeek AI API
+ * (OpenAI-compatible).
+ * Provides detailed feedback including band scores, corrections, and sample
+ * essays.
  * 
  * Uses DeepSeek V3.2 models:
  * - deepseek-chat: Non-thinking mode (fast, cost-effective)
@@ -42,16 +44,17 @@ public class LLMGradingService {
 
         // Available models for user selection
         public static final String[] AVAILABLE_MODELS = {
-                        "deepseek-chat",      // DeepSeek V3.2 non-thinking mode (fast, cheap)
-                        "deepseek-reasoner"   // DeepSeek V3.2 thinking mode (accurate, up to 64K output)
+                        "deepseek-chat", // DeepSeek V3.2 non-thinking mode (fast, cheap)
+                        "deepseek-reasoner" // DeepSeek V3.2 thinking mode (accurate, up to 64K output)
         };
 
         // Minimum word thresholds for IELTS Writing
         private static final int TASK_1_MIN_WORDS = 150;
         private static final int TASK_2_MIN_WORDS = 250;
         private static final int MINIMUM_ESSAY_WORDS = 20; // Below this = band 0-1
-        
-        // Timeout for DeepSeek API calls (10 minutes - reasoner model can take long under high traffic)
+
+        // Timeout for DeepSeek API calls (10 minutes - reasoner model can take long
+        // under high traffic)
         private static final int API_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 
         private final RestTemplate restTemplate;
@@ -60,11 +63,10 @@ public class LLMGradingService {
 
         public LLMGradingService(LLMConfig llmConfig) {
                 // Configure RestTemplate with timeout
-                org.springframework.http.client.SimpleClientHttpRequestFactory factory = 
-                        new org.springframework.http.client.SimpleClientHttpRequestFactory();
+                org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
                 factory.setConnectTimeout(30000); // 30 seconds to connect
                 factory.setReadTimeout(API_TIMEOUT_MS); // 10 minutes for response
-                
+
                 this.restTemplate = new RestTemplate(factory);
                 this.objectMapper = new ObjectMapper();
                 this.llmConfig = llmConfig;
@@ -93,26 +95,29 @@ public class LLMGradingService {
 
                 // No API key available
                 throw new IllegalStateException(
-                        "No DeepSeek API key available. " +
-                        "Either set DEEPSEEK_API_KEY environment variable on server, " +
-                        "or add your personal API key in Profile settings."
-                );
+                                "No DeepSeek API key available. " +
+                                                "Either set DEEPSEEK_API_KEY environment variable on server, " +
+                                                "or add your personal API key in Profile settings.");
         }
 
         /**
          * Grade a writing submission using DeepSeek AI.
          * 
-         * @param submission        The writing submission to grade
-         * @param taskPrompt        The original task prompt/question
-         * @param taskImageUrl      Optional image URL for Task 1 (NOTE: DeepSeek doesn't support images yet)
-         * @param imageDescription  Text description of charts/maps for Task 1 (used instead of images)
-         * @param userApiKey        User's DeepSeek API key (optional - falls back to server key)
-         * @param model             User's selected model (optional, defaults to deepseek-chat)
+         * @param submission       The writing submission to grade
+         * @param taskPrompt       The original task prompt/question
+         * @param taskImageUrl     Optional image URL for Task 1 (NOTE: DeepSeek doesn't
+         *                         support images yet)
+         * @param imageDescription Text description of charts/maps for Task 1 (used
+         *                         instead of images)
+         * @param userApiKey       User's DeepSeek API key (optional - falls back to
+         *                         server key)
+         * @param model            User's selected model (optional, defaults to
+         *                         deepseek-chat)
          * @return Updated submission with grading results
          */
         public WritingSubmission gradeSubmission(WritingSubmission submission, String taskPrompt,
                         String taskImageUrl, String imageDescription, String userApiKey, String model) {
-                
+
                 // Resolve API key with fallback logic
                 String apiKey;
                 try {
@@ -128,10 +133,11 @@ public class LLMGradingService {
 
                 // Use grading model by default (deepseek-reasoner for accuracy)
                 // Priority: user-specified model > llmConfig.gradingModel > DEFAULT_LLM_MODEL
-                String selectedModel = (model != null && !model.trim().isEmpty()) 
-                        ? model 
-                        : (llmConfig.getGradingModel() != null ? llmConfig.getGradingModel() : DEFAULT_LLM_MODEL);
-                
+                String selectedModel = (model != null && !model.trim().isEmpty())
+                                ? model
+                                : (llmConfig.getGradingModel() != null ? llmConfig.getGradingModel()
+                                                : DEFAULT_LLM_MODEL);
+
                 logger.info("Using model '{}' for writing grading", selectedModel);
 
                 try {
@@ -156,7 +162,7 @@ public class LLMGradingService {
                         if (taskImageUrl != null && !taskImageUrl.trim().isEmpty()) {
                                 logger.info("Note: Image URL provided but DeepSeek doesn't support image input. Proceeding with text-only grading.");
                         }
-                        
+
                         String response = callLLMApi(
                                         submission.getTaskNumber(),
                                         taskPrompt,
@@ -270,69 +276,102 @@ public class LLMGradingService {
                                 "Nhiệm vụ của bạn là chấm điểm bài viết IELTS một cách chính xác và công bằng theo tiêu chí band descriptors chính thức của IELTS.\n\n");
 
                 // CRITICAL: Calibration-focused grading philosophy
-                prompt.append("## TRIẾT LÝ CHẤM ĐIỂM - CỰC KỲ QUAN TRỌNG\n\n");
+                prompt.append("## TRIẾT LÝ CHẤM ĐIỂM - CỰC KỲ QUAN TRỌNG\\n\\n");
 
-                prompt.append("### 🎯 NGUYÊN TẮC VÀNG - ĐỌC KỸ TRƯỚC KHI CHẤM:\n\n");
+                prompt.append("### 🎯 NGUYÊN TẮC VÀNG - ĐỌC KỸ TRƯỚC KHI CHẤM:\\n\\n");
 
-                prompt.append("**1. CHẤM DỰA TRÊN NĂNG LỰC NGÔN NGỮ THỂ HIỆN:**\n");
-                prompt.append("   - Đánh giá KHẢ NĂNG VIẾT TIẾNG ANH của thí sinh\n");
-                prompt.append("   - Cấu trúc câu có đa dạng không? Từ vựng có phong phú không?\n");
-                prompt.append("   - Có thể diễn đạt ý tưởng mạch lạc không?\n");
-                prompt.append("   - **QUAN TRỌNG**: Ngay cả bài lạc đề vẫn có thể có điểm ngôn ngữ tốt!\n\n");
+                prompt.append("**1. CHẤM DỰA TRÊN NĂNG LỰC NGÔN NGỮ THỂ HIỆN:**\\n");
+                prompt.append("   - Đánh giá KHẢ NĂNG VIẾT TIẾNG ANH của thí sinh\\n");
+                prompt.append("   - Cấu trúc câu có đa dạng không? Từ vựng có phong phú không?\\n");
+                prompt.append("   - Có thể diễn đạt ý tưởng mạch lạc không?\\n");
+                prompt.append("   - **QUAN TRỌNG**: Ngay cả bài lạc đề vẫn có thể có điểm ngôn ngữ tốt!\\n\\n");
 
-                prompt.append("**2. XỬ LÝ BÀI LẠC ĐỀ (OFF-TOPIC) - RẤT QUAN TRỌNG:**\n");
-                prompt.append("   - Nếu bài HOÀN TOÀN lạc đề: Task Response/Achievement bị ảnh hưởng (giảm 1-2 band)\n");
-                prompt.append("   - NHƯNG: Coherence, Lexical Resource, Grammar vẫn chấm BÌNH THƯỜNG theo năng lực thể hiện\n");
+                prompt.append("**2. XỬ LÝ BÀI LẠC ĐỀ (OFF-TOPIC) - RẤT QUAN TRỌNG:**\\n");
+                prompt.append("   - Nếu bài HOÀN TOÀN lạc đề: Task Response/Achievement bị ảnh hưởng (giảm 1-2 band)\\n");
+                prompt.append("   - NHƯNG: Coherence, Lexical Resource, Grammar vẫn chấm BÌNH THƯỜNG theo năng lực thể hiện\\n");
                 prompt.append(
-                                "   - Ví dụ thực tế: Bài lạc đề nhưng viết tốt có thể đạt: TR=4.5, CC=6.5, LR=6.5, GRA=6.0 → Overall = 6.0\n");
-                prompt.append("   - **KHÔNG** cho tất cả tiêu chí điểm thấp chỉ vì lạc đề!\n\n");
+                                "   - Ví dụ thực tế: Bài lạc đề nhưng viết tốt có thể đạt: TR=4.5, CC=6.5, LR=6.5, GRA=6.0 → Overall = 6.0\\n");
+                prompt.append("   - **KHÔNG** cho tất cả tiêu chí điểm thấp chỉ vì lạc đề!\\n\\n");
 
-                prompt.append("**3. PHÂN LOẠI LỖI - ẢNH HƯỞNG ĐIỂM:**\n");
+                prompt.append("**3. PHÂN LOẠI LỖI - ẢNH HƯỞNG ĐIỂM:**\\n");
                 prompt.append(
-                                "   - **Lỗi MINOR** (không ảnh hưởng hiểu): article, số ít/số nhiều nhỏ, typo 1-2 chữ → hầu như KHÔNG trừ điểm\n");
-                prompt.append("   - **Lỗi MODERATE**: awkward phrasing, collocation hơi sai → trừ nhẹ, vẫn có thể band 7+\n");
+                                "   - **Lỗi MINOR** (không ảnh hưởng hiểu): article, số ít/số nhiều nhỏ, typo 1-2 chữ → hầu như KHÔNG trừ điểm\\n");
+                prompt.append("   - **Lỗi MODERATE**: awkward phrasing, collocation hơi sai → trừ nhẹ, vẫn có thể band 7+\\n");
                 prompt.append(
-                                "   - **Lỗi MAJOR** (gây hiểu sai/không hiểu): sai meaning, câu không có nghĩa → ảnh hưởng điểm\n\n");
+                                "   - **Lỗi MAJOR** (gây hiểu sai/không hiểu): sai meaning, câu không có nghĩa → ảnh hưởng điểm\\n\\n");
 
-                prompt.append("**4. QUY TẮC \"BENEFIT OF DOUBT\":**\n");
-                prompt.append("   - Khi phân vân giữa 2 band liền kề → **LUÔN CHỌN BAND CAO HƠN**\n");
-                prompt.append("   - Khi có cả điểm mạnh và điểm yếu rõ ràng → **ƯU TIÊN GHI NHẬN ĐIỂM MẠNH**\n");
+                prompt.append("**4. QUY TẮC \\\"BENEFIT OF DOUBT\\\" - LUÔN ƯU TIÊN:**\\n");
+                prompt.append("   - Khi phân vân giữa 2 band liền kề → **LUÔN CHỌN BAND CAO HƠN**\\n");
+                prompt.append("   - Khi có cả điểm mạnh và điểm yếu rõ ràng → **ƯU TIÊN GHI NHẬN ĐIỂM MẠNH**\\n");
                 prompt.append(
-                                "   - Nhớ: Thí sinh viết trong điều kiện thi giới hạn thời gian (20 phút Task 1, 40 phút Task 2)\n\n");
+                                "   - Nhớ: Thí sinh viết trong điều kiện thi giới hạn thời gian (20 phút Task 1, 40 phút Task 2)\\n");
+                prompt.append("   - **CỰC KỲ QUAN TRỌNG**: AI có xu hướng chấm khắt khe hơn con người. Hãy bù đắp bằng cách hào phóng hơn!\\n\\n");
 
-                prompt.append("### 📊 BẢNG CALIBRATION THỰC TẾ (dựa trên bài mẫu IELTS chính thức):\n\n");
-                prompt.append("| Đặc điểm bài viết | Band thường đạt |\n");
-                prompt.append("|-------------------|----------------|\n");
-                prompt.append("| Lạc đề hoàn toàn nhưng ngôn ngữ khá | 5.5 - 6.0 |\n");
-                prompt.append("| Đúng đề, ý tưởng cơ bản, nhiều lỗi grammar/vocab | 5.0 - 5.5 |\n");
-                prompt.append("| Đúng đề, ý tưởng OK, một số lỗi grammar không ảnh hưởng hiểu | 6.0 - 6.5 |\n");
-                prompt.append("| Đúng đề, ý tưởng tốt, cấu trúc rõ ràng, ít lỗi | 6.5 - 7.0 |\n");
-                prompt.append("| Đúng đề, ý tưởng sâu, từ vựng đa dạng, grammar chính xác | 7.0 - 7.5 |\n");
-                prompt.append("| Xuất sắc toàn diện, chỉ lỗi rất nhỏ | 7.5 - 8.0 |\n");
-                prompt.append("| Gần như hoàn hảo | 8.0 - 8.5 |\n");
-                prompt.append("| Hoàn hảo như native speaker | 9.0 |\n\n");
+                prompt.append("### 🚨 CẢNH BÁO: TRÁNH CHẤM QUÁ THẤP\\n\\n");
+                prompt.append("**AI models thường có xu hướng undergrade (cho điểm thấp hơn thực tế). Vì vậy:**\\n");
+                prompt.append("- Nếu bài viết có ý tưởng rõ ràng + coherent structure + từ vựng đủ dùng → PHẢI TỐI THIỂU Band 6.0\\n");
+                prompt.append("- Nếu có variety of sentence structures + less common vocabulary sử dụng đúng → PHẢI TỐI THIỂU Band 7.0\\n");
+                prompt.append("- Nếu chỉ có 3-5 lỗi minor trong toàn bài → PHẢI CÓ THỂ ĐẠT Band 8.0\\n");
+                prompt.append("- **ĐỌC LẠI LẦN NỮA**: Khi nghi ngờ, CHỌN ĐIỂM CAO HƠN!\\n\\n");
 
-                prompt.append("### 📈 CHI TIẾT VỀ TỪNG BAND (quan trọng để không chấm quá khắt khe):\n\n");
+                // Task-specific calibration
+                if (taskNumber == 1) {
+                        prompt.append("### 📝 HIỆU CHUẨN ĐẶC BIỆT CHO TASK 1:\\n\\n");
+                        prompt.append("- Task 1 thường dễ đạt điểm cao hơn Task 2 (do yêu cầu đơn giản hơn)\\n");
+                        prompt.append("- Nếu bài cover đủ key features + có overview → TỐI THIỂU Band 6.5\\n");
+                        prompt.append("- Nếu có data selection tốt + comparison hợp lý → NÊN Band 7.0-7.5\\n");
+                        prompt.append("- Chỉ cần thông tin accurate và đầy đủ, KHÔNG CẦN ngôn ngữ fancy → vẫn có thể Band 7+\\n");
+                        prompt.append("- **TRÁNH**: Cho điểm dưới 6.0 trừ khi bài THỰC SỰ thiếu nội dung hoặc sai lệch nghiêm trọng\\n\\n");
+                } else {
+                        prompt.append("### 📝 HIỆU CHUẨN ĐẶC BIỆT CHO TASK 2:\\n\\n");
+                        prompt.append("- Task 2 khó hơn Task 1, NHƯNG KHÔNG ĐƯỢC chấm quá khắt khe\\n");
+                        prompt.append("- Nếu có position rõ ràng + 2 body paragraphs với examples → TỐI THIỂU Band 6.0\\n");
+                        prompt.append("- Nếu ideas được develop với specific examples/reasons → NÊN Band 6.5-7.0\\n");
+                        prompt.append("- Nếu có critical thinking + well-structured argument → NÊN Band 7.5+\\n");
+                        prompt.append("- **QUAN TRỌNG**: Ý tưởng sâu sắc quan trọng HƠN ngôn ngữ hoàn hảo\\n");
+                        prompt.append("- **TRÁNH**: Cho điểm dưới 5.5 trừ khi bài THỰC SỰ không trả lời câu hỏi hoặc quá ngắn\\n\\n");
+                }
 
-                prompt.append("**Band 6.0 - 6.5 (Competent User - PHỔ BIẾN NHẤT):**\n");
-                prompt.append("- Đây là band của đa số sinh viên đại học Việt Nam viết tốt\n");
-                prompt.append("- Có lỗi grammar nhưng KHÔNG ảnh hưởng communication\n");
-                prompt.append("- Từ vựng adequate (đủ dùng) dù không fancy\n");
-                prompt.append("- Có thể có một số ý chưa developed đầy đủ\n");
-                prompt.append("- **QUAN TRỌNG**: Bài có lỗi rải rác nhưng đọc hiểu được = Band 6.0+\n\n");
+                prompt.append("### 📊 BẢNG CALIBRATION THỰC TẾ (dựa trên bài mẫu IELTS chính thức):\\n\\n");
+                prompt.append("| Đặc điểm bài viết | Band thường đạt |\\n");
+                prompt.append("|-------------------|----------------|\\n");
+                prompt.append("| Lạc đề hoàn toàn nhưng ngôn ngữ khá | 5.5 - 6.0 |\\n");
+                prompt.append("| Đúng đề, ý tưởng cơ bản, nhiều lỗi grammar/vocab | 5.5 - 6.0 |\\n");
+                prompt.append("| Đúng đề, ý tưởng OK, một số lỗi grammar không ảnh hưởng hiểu | 6.5 - 7.0 |\\n");
+                prompt.append("| Đúng đề, ý tưởng tốt, cấu trúc rõ ràng, ít lỗi | 7.0 - 7.5 |\\n");
+                prompt.append("| Đúng đề, ý tưởng sâu, từ vựng đa dạng, grammar chính xác | 7.5 - 8.0 |\\n");
+                prompt.append("| Xuất sắc toàn diện, chỉ lỗi rất nhỏ | 8.0 - 8.5 |\\n");
+                prompt.append("| Gần như hoàn hảo | 8.5 - 9.0 |\\n");
+                prompt.append("| Hoàn hảo như native speaker | 9.0 |\\n\\n");
 
-                prompt.append("**Band 7.0 - 7.5 (Good User):**\n");
-                prompt.append("- Ý tưởng được develop rõ ràng với examples/support\n");
-                prompt.append("- Có variety trong sentence structures\n");
-                prompt.append("- Có sử dụng một số từ vựng less common\n");
-                prompt.append("- Lỗi ít và không systematic\n");
-                prompt.append("- **QUAN TRỌNG**: Error-free sentences FREQUENT (không phải tất cả câu)\n\n");
+                prompt.append("### 📈 CHI TIẾT VỀ TỪNG BAND (quan trọng để không chấm quá khắt khe):\\n\\n");
 
-                prompt.append("**Band 8.0+ (Very Good User):**\n");
-                prompt.append("- Majority of sentences error-free (cho phép 2-4 lỗi nhỏ trong toàn bài)\n");
-                prompt.append("- Wide range of vocabulary với skilful use\n");
-                prompt.append("- Ideas well-extended và well-supported\n");
-                prompt.append("- **QUAN TRỌNG**: 'Occasional errors' = VẪN CÓ THỂ ĐẠT BAND 8.0!\n\n");
+                prompt.append("**Band 6.0 - 6.5 (Competent User - PHỔ BIẾN NHẤT):**\\n");
+                prompt.append("- Đây là band của đa số sinh viên đại học Việt Nam viết tốt\\n");
+                prompt.append("- Có lỗi grammar nhưng KHÔNG ảnh hưởng communication\\n");
+                prompt.append("- Từ vựng adequate (đủ dùng) dù không fancy\\n");
+                prompt.append("- Có thể có một số ý chưa developed đầy đủ\\n");
+                prompt.append("- **QUAN TRỌNG**: Bài có lỗi rải rác nhưng đọc hiểu được = Band 6.0+\\n");
+                prompt.append("- **VÍ DỤ**: 8-12 lỗi grammar/vocabulary nhưng vẫn clear communication → Band 6.5\\n\\n");
+
+                prompt.append("**Band 7.0 - 7.5 (Good User):**\\n");
+                prompt.append("- Ý tưởng được develop rõ ràng với examples/support\\n");
+                prompt.append("- Có variety trong sentence structures\\n");
+                prompt.append("- Có sử dụng một số từ vựng less common\\n");
+                prompt.append("- Lỗi ít và không systematic\\n");
+                prompt.append("- **QUAN TRỌNG**: Error-free sentences FREQUENT (không phải tất cả câu)\\n");
+                prompt.append("- **VÍ DỤ**: 4-7 lỗi nhỏ rải rác + good vocabulary range → Band 7.0-7.5\\n\\n");
+
+                prompt.append("**Band 8.0+ (Very Good User):**\\n");
+                prompt.append("- Majority of sentences error-free (cho phép 2-4 lỗi nhỏ trong toàn bài)\\n");
+                prompt.append("- Wide range of vocabulary với skilful use\\n");
+                prompt.append("- Ideas well-extended và well-supported\\n");
+                prompt.append("- **QUAN TRỌNG**: 'Occasional errors' = VẪN CÓ THỂ ĐẠT BAND 8.0!\\n");
+                prompt.append("- **VÍ DỤ**: 2-3 lỗi typo hoặc article + excellent content → Band 8.0\\n\\n");
+
+                prompt.append("**Band 9.0 (Expert User) - HIẾM KHI ĐẠT:**\\n");
+                prompt.append("- Chỉ cho Band 9.0 khi bài viết THỰC SỰ hoàn hảo, native-like\\n");
+                prompt.append("- Hầu hết bài viết xuất sắc nên được 8.5, KHÔNG PHẢI 9.0\\n\\n");
 
                 // Word count context
                 int minWords = taskNumber == 1 ? TASK_1_MIN_WORDS : TASK_2_MIN_WORDS;
@@ -595,12 +634,17 @@ public class LLMGradingService {
                                 "  \"sample_essay_band_plus_one\": \"<bài viết hoàn chỉnh ở mức band+1, viết bằng tiếng Anh>\",\n");
                 prompt.append("  \"sample_essay_band_9\": \"<bài mẫu band 9 cho đề này, viết bằng tiếng Anh>\",\n\n");
 
-                prompt.append("  \"feedback_summary\": {\n");
-                prompt.append("    \"strengths\": [\"<điểm mạnh 1 - tiếng Việt>\", \"<điểm mạnh 2>\", \"<điểm mạnh 3>\"],\n");
-                prompt.append("    \"weaknesses\": [\"<điểm yếu 1 - tiếng Việt>\", \"<điểm yếu 2>\"],\n");
-                prompt.append("    \"writing_approach\": \"<gợi ý cách tiếp cận bài viết - tiếng Việt, 2-3 câu>\",\n");
-                prompt.append("    \"improvement_tips\": \"<tips cải thiện cụ thể - tiếng Việt, 2-3 câu>\"\n");
-                prompt.append("  },\n\n");
+                prompt.append("  \\\"feedback_summary\\\": {\\n");
+                prompt.append("    \\\"strengths\\\": [\\\"<điểm mạnh 1 CỤ THỂ với ví dụ - tiếng Việt>\\\", \\\"<điểm mạnh 2>\\\", \\\"<điểm mạnh 3>\\\"],\\n");
+                prompt.append("    \\\"weaknesses\\\": [\\\"<điểm yếu 1 CỤ THỂ với ví dụ - tiếng Việt>\\\", \\\"<điểm yếu 2>\\\"],\\n");
+                prompt.append("    \\\"grammar_patterns\\\": {\\n");
+                prompt.append("      \\\"strong_patterns\\\": [\\\"<các cấu trúc ngữ pháp thí sinh sử dụng TỐT, ví dụ: 'Relative clauses', 'Conditional sentences'>\\\"],\\n");
+                prompt.append("      \\\"weak_patterns\\\": [\\\"<các cấu trúc ngữ pháp cần cải thiện, ví dụ: 'Subject-verb agreement', 'Articles'>\\\"],\\n");
+                prompt.append("      \\\"missing_patterns\\\": [\\\"<các cấu trúc nâng cao CHƯA dùng nhưng NÊN dùng để tăng band, ví dụ: 'Passive voice', 'Inversion'>\\\"]\\n");
+                prompt.append("    },\\n");
+                prompt.append("    \\\"writing_approach\\\": \\\"<gợi ý cách tiếp cận bài viết - tiếng Việt, 3-4 câu CỤ THỂ>\\\",\\n");
+                prompt.append("    \\\"improvement_tips\\\": \\\"<tips cải thiện CỤ THỂ với bước làm rõ ràng - tiếng Việt, 3-4 câu>\\\"\\n");
+                prompt.append("  },\\n\\n");
 
                 prompt.append("  \"word_analysis\": [\n");
                 prompt.append("    {\n");
@@ -609,6 +653,7 @@ public class LLMGradingService {
                 prompt.append("      \"definition\": \"<định nghĩa tiếng Việt>\",\n");
                 prompt.append("      \"context\": \"<câu chứa từ đó trong bài>\",\n");
                 prompt.append("      \"usage_quality\": \"<good|acceptable|incorrect>\",\n");
+                prompt.append("      \"vocab_level\": \"<A1|A2|B1|B2|C1|C2 - CEFR level của từ này>\",\n");
                 prompt.append("      \"correction\": \"<nếu sai chính tả hoặc sai từ, ghi từ đúng ở đây; nếu đúng thì để null hoặc bỏ trống>\"\n");
                 prompt.append("    }\n");
                 prompt.append("  ],\n\n");
@@ -675,19 +720,19 @@ public class LLMGradingService {
 
                 // Messages array with system and user messages
                 List<Map<String, Object>> messages = new ArrayList<>();
-                
+
                 // System message
                 Map<String, Object> systemMessage = new HashMap<>();
                 systemMessage.put("role", "system");
                 systemMessage.put("content", buildSystemPrompt(taskNumber, wordCount));
                 messages.add(systemMessage);
-                
+
                 // User message
                 Map<String, Object> userMessage = new HashMap<>();
                 userMessage.put("role", "user");
                 userMessage.put("content", buildUserPrompt(taskNumber, taskPrompt, essay, imageDescription));
                 messages.add(userMessage);
-                
+
                 requestBody.put("messages", messages);
 
                 // Generation parameters
@@ -714,7 +759,8 @@ public class LLMGradingService {
         }
 
         /**
-         * Parse DeepSeek API response (OpenAI format) and apply grading results to submission.
+         * Parse DeepSeek API response (OpenAI format) and apply grading results to
+         * submission.
          */
         private void parseAndApplyGradingResults(WritingSubmission submission, String apiResponse)
                         throws JsonProcessingException {
@@ -724,8 +770,9 @@ public class LLMGradingService {
                 // Validate OpenAI-compatible response structure
                 JsonNode choices = root.path("choices");
                 if (choices.isMissingNode() || !choices.isArray() || choices.size() == 0) {
-                        logger.error("Invalid DeepSeek API response: missing choices array. Response: {}", 
-                                        apiResponse.length() > 500 ? apiResponse.substring(0, 500) + "..." : apiResponse);
+                        logger.error("Invalid DeepSeek API response: missing choices array. Response: {}",
+                                        apiResponse.length() > 500 ? apiResponse.substring(0, 500) + "..."
+                                                        : apiResponse);
                         throw new RuntimeException("Invalid DeepSeek API response: missing choices array");
                 }
 
@@ -743,7 +790,8 @@ public class LLMGradingService {
 
                 JsonNode contentNode = messageNode.path("content");
                 if (contentNode.isMissingNode()) {
-                        logger.error("Invalid DeepSeek API response: missing content in message. Message: {}", messageNode);
+                        logger.error("Invalid DeepSeek API response: missing content in message. Message: {}",
+                                        messageNode);
                         throw new RuntimeException("Invalid DeepSeek API response: missing content in message");
                 }
 
@@ -766,29 +814,21 @@ public class LLMGradingService {
                 // Parse the grading JSON
                 JsonNode gradingResult = objectMapper.readTree(generatedText);
 
-                // Extract band scores and apply calibration adjustment
+                // Extract band scores - NO MORE hardcoded calibration, let the enhanced prompt
+                // handle it
                 JsonNode bandScoresNode = gradingResult.path("band_scores");
-                Map<String, Object> rawBandScores = objectMapper.convertValue(bandScoresNode, Map.class);
-
-                // Apply calibration adjustment to each criterion
-                Map<String, Object> calibratedBandScores = new HashMap<>();
-                for (Map.Entry<String, Object> entry : rawBandScores.entrySet()) {
-                        double rawScore = ((Number) entry.getValue()).doubleValue();
-                        double calibratedScore = applyCriteriaCalibratedAdjustment(rawScore);
-                        calibratedBandScores.put(entry.getKey(), calibratedScore);
-                }
-                submission.setBandScores(calibratedBandScores);
+                Map<String, Object> bandScores = objectMapper.convertValue(bandScoresNode, Map.class);
+                submission.setBandScores(bandScores);
 
                 // Calculate and set overall band (rounded to nearest 0.5)
-                double calibratedOverall = calibratedBandScores.values().stream()
+                double overallBandValue = bandScores.values().stream()
                                 .mapToDouble(v -> ((Number) v).doubleValue())
                                 .average()
                                 .orElse(0.0);
-                BigDecimal overallBand = roundToNearestHalf(calibratedOverall);
+                BigDecimal overallBand = roundToNearestHalf(overallBandValue);
                 submission.setOverallBand(overallBand);
 
-                logger.info("Score calibration applied: raw overall={}, calibrated overall={}",
-                                gradingResult.path("overall_band").asDouble(), overallBand);
+                logger.info("AI scoring complete - overall band: {}", overallBand);
 
                 // Build AI feedback object
                 Map<String, Object> aiFeedback = new HashMap<>();
@@ -845,32 +885,6 @@ public class LLMGradingService {
         }
 
         /**
-         * Apply calibration adjustment to individual criterion scores.
-         */
-        private double applyCriteriaCalibratedAdjustment(double rawScore) {
-                double adjustment;
-
-                if (rawScore < 4.0) {
-                        // Very low scores - minimal adjustment
-                        adjustment = 0.0;
-                } else if (rawScore < 8.0) {
-                        // Scores 4.0-7.5: Apply 0.5 band uplift
-                        adjustment = 0.5;
-                } else {
-                        // Scores 8.0+: No adjustment needed (high scores are usually accurate)
-                        adjustment = 0.0;
-                }
-
-                double adjusted = rawScore + adjustment;
-
-                // Cap at 9.0 and ensure rounded to 0.5
-                adjusted = Math.min(9.0, adjusted);
-                adjusted = Math.round(adjusted * 2) / 2.0;
-
-                return adjusted;
-        }
-
-        /**
          * Round a band score to the nearest 0.5 according to IELTS rules.
          */
         private BigDecimal roundToNearestHalf(double score) {
@@ -896,7 +910,8 @@ public class LLMGradingService {
                 String selectedModel = (model != null && !model.trim().isEmpty()) ? model : DEFAULT_LLM_MODEL;
 
                 try {
-                        String baseUrl = llmConfig.getBaseUrl() != null ? llmConfig.getBaseUrl() : "https://api.deepseek.com";
+                        String baseUrl = llmConfig.getBaseUrl() != null ? llmConfig.getBaseUrl()
+                                        : "https://api.deepseek.com";
                         String url = baseUrl + "/chat/completions";
 
                         HttpHeaders headers = new HttpHeaders();
@@ -905,7 +920,7 @@ public class LLMGradingService {
 
                         Map<String, Object> requestBody = new HashMap<>();
                         requestBody.put("model", selectedModel);
-                        
+
                         List<Map<String, String>> messages = new ArrayList<>();
                         Map<String, String> userMessage = new HashMap<>();
                         userMessage.put("role", "user");

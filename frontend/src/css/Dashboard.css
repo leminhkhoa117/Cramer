@@ -400,6 +400,86 @@
   border-color: #fff;
 }
 
+/* Grading status button */
+.btn-action-dashboard--grading {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: white;
+  animation: pulse-grading 2s ease-in-out infinite;
+}
+
+.btn-action-dashboard--grading:hover {
+  background: linear-gradient(135deg, #d97706, #ea580c);
+}
+
+@keyframes pulse-grading {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+  }
+}
+
+.dash-course-card:hover .btn-action-dashboard--grading {
+  background: linear-gradient(135deg, #fbbf24, #fb923c);
+  color: #1f2937;
+  animation: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Grading progress text */
+.dash-course-card__progress-text.grading {
+  color: #f59e0b;
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+.dash-course-card:hover .dash-course-card__progress-text.grading {
+  color: #fbbf24;
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Status color classes */
+.status-completed {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.status-in_progress {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.status-grading {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.status-failed {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.dash-course-card:hover .status-completed,
+.dash-course-card:hover .status-in_progress,
+.dash-course-card:hover .status-grading,
+.dash-course-card:hover .status-failed {
+  color: #fff;
+}
+
 /* === Dashboard-specific Responsive === */
 @media (max-width: 992px) {
   .dashboard-course-grid {

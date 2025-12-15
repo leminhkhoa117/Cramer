@@ -120,32 +120,34 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                                 .orElse(null);
 
                 if (subscription == null || subscription.getTier() == null) {
-                        // No subscription - treat as free tier
-                        logger.info("⚠️ No subscription for user {}, treating as free tier", userId);
-                        GradingStatusDTO status = GradingStatusDTO.freeTierBlocked(luaBalance);
+                        // No subscription - initialize free tier
+                        logger.info("⚠️ No subscription for user {}, treating as free tier with 3 AI gradings", userId);
+                        // Cramerie default: 3 ATTEMPT_AIs/month
+                        GradingStatusDTO status = GradingStatusDTO.allowed(0, 3, luaBalance);
                         status.setTierCode(FREE_TIER_CODE);
                         return status;
                 }
 
                 SubscriptionTier tier = subscription.getTier();
-                int used = subscription.getAiGradingsUsed();
-                int limit = tier.getIncludedAiGradings();
 
-                // Free tier (cramerie) has 0 included gradings
-                if (limit == 0) {
-                        GradingStatusDTO status = GradingStatusDTO.freeTierBlocked(luaBalance);
-                        status.setTierCode(tier.getCode());
-                        return status;
-                }
+                // Use ATTEMPT_AI fields: attemptAisUsed and monthlyAttemptAiLimit
+                // Cramerie: 3 ATTEMPT_AIs/month, Cramerich: 20 ATTEMPT_AIs/month
+                int used = subscription.getAttemptAisUsed() != null ? subscription.getAttemptAisUsed() : 0;
+                Integer tierLimit = tier.getMonthlyAttemptAiLimit();
+                int limit = tierLimit != null ? tierLimit : 3; // Default to 3 for Cramerie
 
-                // Check if within limit
+                logger.info("📊 User {} AI grading status: used={}, limit={}, tier={}",
+                                userId, used, limit, tier.getCode());
+
+                // Check if within limit (limit 0 means no AI grading, but Cramerie should have
+                // 3)
                 if (used < limit) {
                         GradingStatusDTO status = GradingStatusDTO.allowed(used, limit, luaBalance);
                         status.setTierCode(tier.getCode());
                         return status;
                 }
 
-                // Limit reached - check if can use Lúa
+                // Limit reached - check if can use Lúa (20 Lúa per ATTEMPT_AI overage)
                 GradingStatusDTO status = GradingStatusDTO.limitReachedWithLua(used, limit, luaBalance);
                 status.setTierCode(tier.getCode());
                 return status;
@@ -153,23 +155,20 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         @Override
         public UserSubscriptionDTO incrementAIGradingUsage(UUID userId) {
-                logger.info("➕ Incrementing AI grading usage for user: {}", userId);
+                logger.info("➕ Incrementing AI grading usage (ATTEMPT_AI) for user: {}", userId);
 
                 UserSubscription subscription = subscriptionRepository.findActiveByUserId(userId)
                                 .orElseThrow(() -> new ResourceNotFoundException("UserSubscription", "userId", userId));
 
-                Long subscriptionId = subscription.getId();
-                subscriptionRepository.incrementAiGradingsUsed(subscriptionId);
+                // Increment attemptAisUsed (the correct ATTEMPT_AI counter)
+                Integer current = subscription.getAttemptAisUsed();
+                subscription.setAttemptAisUsed((current != null ? current : 0) + 1);
+                subscription = subscriptionRepository.save(subscription);
 
-                // Refresh entity
-                UserSubscription refreshedSubscription = subscriptionRepository.findById(subscriptionId)
-                                .orElseThrow(() -> new ResourceNotFoundException("UserSubscription", "id",
-                                                subscriptionId));
+                logger.info("✅ ATTEMPT_AI usage incremented to {} for user {}",
+                                subscription.getAttemptAisUsed(), userId);
 
-                logger.info("✅ AI grading usage incremented to {} for user {}",
-                                refreshedSubscription.getAiGradingsUsed(), userId);
-
-                return UserSubscriptionDTO.fromEntity(refreshedSubscription);
+                return UserSubscriptionDTO.fromEntity(subscription);
         }
 
         @Override

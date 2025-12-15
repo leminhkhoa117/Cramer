@@ -16,12 +16,12 @@ import '../../css/common/GradingLoader.css';
  */
 const GradingLoader = ({
     status = 'PENDING',
+    taskStatuses = {}, // NEW: { 1: 'PENDING', 2: 'GRADING' }
     stages = [
         { key: 'receive', label: 'Nhận bài' },
-        { key: 'grammar', label: 'Ngữ pháp' },
-        { key: 'vocabulary', label: 'Từ vựng' },
-        { key: 'coherence', label: 'Mạch lạc' },
-        { key: 'generate', label: 'Tạo nhận xét' },
+        { key: 'task1', label: 'Task 1' },
+        { key: 'task2', label: 'Task 2' },
+        { key: 'generate', label: 'Hoàn tất' },
     ],
     carousels = {
         action: [
@@ -88,6 +88,8 @@ const GradingLoader = ({
                     'PENDING': 20,
                     'GRADING': 75,
                     'COMPLETED': 100,
+                    'PARTIAL_FAILURE': 100, // Treat partial failure as completed process
+                    'FAILED': 100,
                 };
                 const target = targetByStatus[status] || 20;
 
@@ -102,21 +104,37 @@ const GradingLoader = ({
         return () => clearInterval(progressInterval);
     }, [status]);
 
-    // Update stage index based on status
+    // Update stage index based on actual task statuses
     useEffect(() => {
-        const stageInterval = setInterval(() => {
-            setCurrentStageIndex(prev => {
-                if (status === 'COMPLETED') return stages.length - 1;
-                if (status === 'GRADING') {
-                    const nextStage = prev + 1;
-                    return nextStage >= stages.length - 1 ? 1 : nextStage;
-                }
-                return 0;
-            });
-        }, 2500);
+        const calculateStageIndex = () => {
+            if (status === 'COMPLETED' || status === 'PARTIAL_FAILURE') return stages.length - 1;
 
-        return () => clearInterval(stageInterval);
-    }, [status, stages.length]);
+            // Map task statuses to stage indices
+            const task1Status = taskStatuses[1] || 'PENDING';
+            const task2Status = taskStatuses[2] || 'PENDING';
+
+            // Stage 0: receive (always done if not PENDING)
+            if (status === 'PENDING') return 0;
+
+            // Stage 1: task1
+            if (task1Status === 'GRADING') return 1;
+            if (task1Status === 'COMPLETED' && task2Status === 'PENDING') return 1;
+
+            // Stage 2: task2
+            if (task2Status === 'GRADING') return 2;
+            if (task1Status === 'COMPLETED' && task2Status === 'COMPLETED') return 3;
+
+            // Stage 3: generate (both completed)
+            if (task1Status === 'COMPLETED' && task2Status === 'COMPLETED') {
+                return 3;
+            }
+
+            // Default to stage based on GRADING status
+            return status === 'GRADING' ? 1 : 0;
+        };
+
+        setCurrentStageIndex(calculateStageIndex());
+    }, [status, taskStatuses, stages.length]);
 
     return (
         <div className="grading-loader">
@@ -196,7 +214,7 @@ const GradingLoader = ({
                             {stages.map((stage, idx) => (
                                 <React.Fragment key={stage.key}>
                                     <div className={`stage-item ${idx < currentStageIndex ? 'completed' :
-                                            idx === currentStageIndex ? 'active' : 'pending'
+                                        idx === currentStageIndex ? 'active' : 'pending'
                                         }`}>
                                         <div className="stage-icon-wrapper">
                                             {idx < currentStageIndex ? (
@@ -232,7 +250,7 @@ const GradingLoader = ({
                             <div className="progress-segments">
                                 {['TA', 'CC', 'LR', 'GR'].map((segment, idx) => (
                                     <div key={segment} className={`segment segment-${idx + 1} ${progressPercent > (idx + 1) * 25 ? 'filled' :
-                                            progressPercent > idx * 25 ? 'filling' : 'empty'
+                                        progressPercent > idx * 25 ? 'filling' : 'empty'
                                         }`}>
                                         <div className="segment-fill" style={{
                                             width: progressPercent > (idx + 1) * 25 ? '100%' :

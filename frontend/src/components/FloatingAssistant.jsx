@@ -93,9 +93,10 @@ const FloatingAssistant = () => {
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
-    // Check if user has remaining questions
-    if (chatUsage.remainingToday <= 0) {
-      setError('Bạn đã hết lượt hỏi hôm nay. Hãy nâng cấp gói để có thêm lượt!');
+    // Check if user has remaining questions (use monthly limit)
+    const remaining = chatUsage.remainingThisMonth ?? chatUsage.remainingToday;
+    if (remaining !== undefined && remaining !== null && remaining <= 0 && remaining !== -1) {
+      setError('Bạn đã hết lượt hỏi tháng này. Hãy nâng cấp gói để có thêm lượt!');
       return;
     }
 
@@ -285,17 +286,17 @@ const FloatingAssistant = () => {
           {/* Usage indicator */}
           <div className="fa-widget__usage">
             <span className="fa-widget__usage-text">
-              {chatUsage.remainingToday < 0
+              {(chatUsage.remainingThisMonth ?? chatUsage.remainingToday) < 0
                 ? 'Không giới hạn tin nhắn'
                 : `Còn ${chatUsage.remainingThisMonth ?? chatUsage.remainingToday}/${chatUsage.monthlyLimit ?? chatUsage.dailyLimit} câu hỏi tháng này`
               }
             </span>
-            {chatUsage.remainingToday >= 0 && (
+            {(chatUsage.remainingThisMonth ?? chatUsage.remainingToday) >= 0 && (
               <div className="fa-widget__usage-bar">
                 <div
                   className="fa-widget__usage-fill"
                   style={{
-                    width: `${((chatUsage.remainingThisMonth ?? chatUsage.remainingToday) / (chatUsage.monthlyLimit ?? chatUsage.dailyLimit)) * 100}%`
+                    width: `${Math.min(100, ((chatUsage.remainingThisMonth ?? chatUsage.remainingToday) / (chatUsage.monthlyLimit ?? chatUsage.dailyLimit)) * 100)}%`
                   }}
                 />
               </div>
@@ -321,12 +322,12 @@ const FloatingAssistant = () => {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={isLoading || chatUsage.remainingToday <= 0}
+              disabled={isLoading || ((chatUsage.remainingThisMonth ?? chatUsage.remainingToday) <= 0 && (chatUsage.remainingThisMonth ?? chatUsage.remainingToday) !== -1)}
             />
             <button
               className="fa-widget__send-btn"
               onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isLoading || chatUsage.remainingToday <= 0}
+              disabled={!inputValue.trim() || isLoading || ((chatUsage.remainingThisMonth ?? chatUsage.remainingToday) <= 0 && (chatUsage.remainingThisMonth ?? chatUsage.remainingToday) !== -1)}
               title="Gửi"
             >
               <FiSend />
