@@ -1,13 +1,14 @@
 package com.cramer.service.implement;
 
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.cramer.dto.ProfileDTO;
 import com.cramer.entity.Profile;
 import com.cramer.repository.ProfileRepository;
 import com.cramer.service.ProfileService;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.UUID;
 
 @Service
 public class ProfileServiceImpl implements ProfileService {
@@ -84,6 +85,8 @@ public class ProfileServiceImpl implements ProfileService {
         dto.setHasLlmApiKey(profile.getLlmApiKey() != null && !profile.getLlmApiKey().isEmpty());
         dto.setLlmModel(profile.getLlmModel());
         dto.setLlmProvider(profile.getLlmProvider());
+        dto.setIsAdmin(profile.getIsAdmin());
+        dto.setCreatedAt(profile.getCreatedAt());
         return dto;
     }
 }

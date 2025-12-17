@@ -19,12 +19,25 @@ import CourseDetailPage from './pages/CourseDetailPage';
 import TestLayout from './components/TestLayout';
 import TestReviewPage from './pages/TestReviewPage';
 import WritingResultPage from './pages/WritingResultPage';
-import Profile from './pages/Profile';
+import Profile from './pages/profile';
 import VocabularyPage from './pages/VocabularyPage';
 import PricingPage from './pages/PricingPage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
+
+// Admin imports
+import AdminLayout from './admin/components/AdminLayout';
+import AdminRouteGuard from './admin/components/AdminRouteGuard';
+import AdminDashboard from './admin/pages/AdminDashboard';
+import UserListPage from './admin/pages/users/UserListPage';
+import UserDetailPage from './admin/pages/users/UserDetailPage';
+import FinanceDashboard from './admin/pages/finance/FinanceDashboard';
+import TransactionHistoryPage from './admin/pages/finance/TransactionHistoryPage';
+import ReportsPage from './admin/pages/finance/ReportsPage';
+import ContentListPage from './admin/pages/content/ContentListPage';
+import TestEditorSelectPage from './admin/pages/content/TestEditorSelectPage';
+import TestEditorPage from './admin/pages/content/TestEditorPage';
 
 // This component waits for the initial auth loading to complete
 function AuthInitializer({ children }) {
@@ -96,8 +109,10 @@ function AppContent() {
   // Review pages have their own internal header, so hide the main header
   const isReviewPage = /^\/test\/writing\/review\/\d+$/.test(location.pathname) ||
     /^\/test\/review\/\d+$/.test(location.pathname);
+  // Admin pages have their own layout with AdminHeader/AdminSidebar
+  const isAdminPage = location.pathname.startsWith('/admin');
 
-  const showHeader = !isTestPage && !isReviewPage;
+  const showHeader = !isTestPage && !isReviewPage && !isAdminPage;
 
   return (
     <>
@@ -210,12 +225,33 @@ function AppContent() {
               path="/payment/cancel"
               element={<PaymentCancelPage />}
             />
+
+            {/* Admin Routes - separate layout, no Header/Footer */}
+            <Route
+              path="/admin"
+              element={
+                <AdminRouteGuard>
+                  <AdminLayout />
+                </AdminRouteGuard>
+              }
+            >
+              <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<UserListPage />} />
+              <Route path="users/:userId" element={<UserDetailPage />} />
+              <Route path="finance" element={<FinanceDashboard />} />
+              <Route path="finance/transactions" element={<TransactionHistoryPage />} />
+              <Route path="finance/reports" element={<ReportsPage />} />
+              <Route path="content" element={<ContentListPage />} />
+              <Route path="content/editor" element={<TestEditorSelectPage />} />
+              <Route path="content/editor/:examSource/:testNumber" element={<TestEditorPage />} />
+            </Route>
           </Routes>
         </AnimatePresence>
       </main>
-      {!isTestPage && !isReviewPage && <Footer />}
-      {/* Floating Assistant Widget - visible on protected pages except test-taking */}
-      {!isTestPage && <FloatingAssistant />}
+      {!isTestPage && !isReviewPage && !isAdminPage && <Footer />}
+      {/* Floating Assistant Widget - visible on protected pages except test-taking and admin */}
+      {!isTestPage && !isAdminPage && <FloatingAssistant />}
     </>
   );
 }

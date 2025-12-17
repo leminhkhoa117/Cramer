@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     FiArrowLeft,
@@ -6,8 +6,6 @@ import {
     FiCreditCard,
     FiDollarSign,
     FiActivity,
-    FiFileText,
-    FiEdit,
     FiSlash,
     FiMail,
     FiPhone,
@@ -17,18 +15,12 @@ import {
     FiCheckCircle,
     FiTarget,
     FiBook,
-    FiPlus,
-    FiMinus
+    FiLoader,
+    FiAlertTriangle
 } from 'react-icons/fi';
-import {
-    getUserById,
-    getUserActivities,
-    getUserAuditLogs,
-    getCreditTransactions,
-    getUserQuotas,
-    quotaTypes
-} from '../../mock/mockUsers';
-import { AccountStatusBadge, SubscriptionBadge, SubscriptionStatusBadge } from '../../components/StatusBadge';
+import useAdminUsersStore from '../../stores/useAdminUsersStore';
+import { AccountStatusBadge, SubscriptionBadge } from '../../components/StatusBadge';
+import BaseModal from '../../../components/common/BaseModal';
 import './UserDetailPage.css';
 
 export default function UserDetailPage() {
@@ -36,13 +28,54 @@ export default function UserDetailPage() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('profile');
 
-    const user = getUserById(userId);
-    const activities = getUserActivities(userId);
-    const auditLogs = getUserAuditLogs(userId);
-    const creditTransactions = getCreditTransactions(userId);
-    const userQuotas = user ? getUserQuotas(userId, user.subscription) : null;
+    // Modal states
+    const [banModalOpen, setBanModalOpen] = useState(false);
+    const [banReason, setBanReason] = useState('');
+    const [subscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
+    const [newSubscription, setNewSubscription] = useState('');
+    const [creditsModalOpen, setCreditsModalOpen] = useState(false);
+    const [creditAmount, setCreditAmount] = useState('');
+    const [creditAction, setCreditAction] = useState('ADD');
+    const [creditReason, setCreditReason] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    if (!user) {
+    // Zustand store
+    const {
+        selectedUser: user,
+        isLoadingUser,
+        error,
+        fetchUserById,
+        clearSelectedUser,
+        updateUserStatus,
+        updateUserCredits
+    } = useAdminUsersStore();
+
+    // Fetch user on mount
+    useEffect(() => {
+        if (userId) {
+            fetchUserById(userId);
+        }
+
+        // Cleanup on unmount
+        return () => {
+            clearSelectedUser();
+        };
+    }, [userId, fetchUserById, clearSelectedUser]);
+
+    // Loading state
+    if (isLoadingUser) {
+        return (
+            <div className="admin-page user-detail-page">
+                <div className="user-loading">
+                    <FiLoader size={32} className="spin" />
+                    <p>Đang tải thông tin người dùng...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Not found state
+    if (!user && !isLoadingUser) {
         return (
             <div className="admin-page user-detail-page">
                 <div className="user-not-found">
@@ -67,8 +100,61 @@ export default function UserDetailPage() {
         });
     };
 
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    const isBanned = user.accountStatus === 'BANNED';
+
+    // Handle ban/unban
+    const handleBanConfirm = async () => {
+        setIsSubmitting(true);
+        try {
+            const newStatus = isBanned ? 'ACTIVE' : 'BANNED';
+            await updateUserStatus(userId, newStatus, banReason);
+            setBanModalOpen(false);
+            setBanReason('');
+            // Refresh user
+            await fetchUserById(userId);
+        } catch (error) {
+            console.error('Error updating status:', error);
+            alert('Có lỗi xảy ra. Vui lòng thử lại.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Handle credits update
+    const handleCreditsConfirm = async () => {
+        const amount = parseInt(creditAmount);
+        if (isNaN(amount) || amount <= 0) {
+            alert('Vui lòng nhập số Lúa hợp lệ');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            await updateUserCredits(userId, amount, creditAction, creditReason);
+            setCreditsModalOpen(false);
+            setCreditAmount('');
+            setCreditReason('');
+            setCreditAction('ADD');
+            // Refresh user
+            await fetchUserById(userId);
+        } catch (error) {
+            console.error('Error updating credits:', error);
+            alert('Có lỗi xảy ra. Vui lòng thử lại.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Handle subscription update (placeholder)
+    const handleSubscriptionConfirm = async () => {
+        setIsSubmitting(true);
+        try {
+            // TODO: Implement subscription update API
+            alert('Chức năng đang phát triển');
+            setSubscriptionModalOpen(false);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const tabs = [
@@ -76,7 +162,6 @@ export default function UserDetailPage() {
         { id: 'subscription', label: 'Gói đăng ký', icon: FiCreditCard },
         { id: 'credits', label: 'Lúa', icon: FiDollarSign },
         { id: 'activity', label: 'Hoạt động', icon: FiActivity },
-        { id: 'audit', label: 'Lịch sử Admin', icon: FiFileText },
     ];
 
     return (
@@ -107,13 +192,12 @@ export default function UserDetailPage() {
                     </div>
                 </div>
                 <div className="user-header-card__actions">
-                    <button className="admin-btn admin-btn--secondary">
-                        <FiEdit size={16} />
-                        <span>Chỉnh sửa</span>
-                    </button>
-                    <button className={`admin-btn ${user.accountStatus === 'BANNED' ? 'admin-btn--success' : 'admin-btn--danger'}`}>
+                    <button
+                        className={`admin-btn ${isBanned ? 'admin-btn--success' : 'admin-btn--danger'}`}
+                        onClick={() => setBanModalOpen(true)}
+                    >
                         <FiSlash size={16} />
-                        <span>{user.accountStatus === 'BANNED' ? 'Unban' : 'Ban'}</span>
+                        <span>{isBanned ? 'Unban' : 'Ban'}</span>
                     </button>
                 </div>
             </div>
@@ -145,14 +229,14 @@ export default function UserDetailPage() {
                                             <FiMail className="info-item__icon" />
                                             <div className="info-item__content">
                                                 <span className="info-item__label">Email</span>
-                                                <span className="info-item__value">{user.email}</span>
+                                                <span className="info-item__value">{user.email || '-'}</span>
                                             </div>
                                         </div>
                                         <div className="info-item">
                                             <FiPhone className="info-item__icon" />
                                             <div className="info-item__content">
                                                 <span className="info-item__label">Số điện thoại</span>
-                                                <span className="info-item__value">{user.phone || '-'}</span>
+                                                <span className="info-item__value">{user.phoneNumber || '-'}</span>
                                             </div>
                                         </div>
                                         <div className="info-item">
@@ -185,8 +269,10 @@ export default function UserDetailPage() {
                                         <div className="info-item">
                                             <FiCheckCircle className="info-item__icon" />
                                             <div className="info-item__content">
-                                                <span className="info-item__label">Số lần đăng nhập</span>
-                                                <span className="info-item__value">{user.loginCount} lần</span>
+                                                <span className="info-item__label">ID người dùng</span>
+                                                <span className="info-item__value" style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>
+                                                    {user.id}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -197,22 +283,12 @@ export default function UserDetailPage() {
                                     <div className="stats-grid">
                                         <div className="mini-stat">
                                             <FiTarget className="mini-stat__icon" />
-                                            <div className="mini-stat__value">{user.testsCompleted}</div>
+                                            <div className="mini-stat__value">{user.totalTests || 0}</div>
                                             <div className="mini-stat__label">Bài thi hoàn thành</div>
                                         </div>
                                         <div className="mini-stat">
-                                            <div className="mini-stat__icon">🎯</div>
-                                            <div className="mini-stat__value">{user.averageScore || 0}</div>
-                                            <div className="mini-stat__label">Điểm trung bình</div>
-                                        </div>
-                                        <div className="mini-stat">
-                                            <div className="mini-stat__icon">🔥</div>
-                                            <div className="mini-stat__value">{user.highestStreak}</div>
-                                            <div className="mini-stat__label">Streak cao nhất</div>
-                                        </div>
-                                        <div className="mini-stat">
                                             <FiBook className="mini-stat__icon" />
-                                            <div className="mini-stat__value">{user.vocabularySaved}</div>
+                                            <div className="mini-stat__value">{user.totalVocabulary || 0}</div>
                                             <div className="mini-stat__label">Từ vựng đã lưu</div>
                                         </div>
                                     </div>
@@ -235,13 +311,16 @@ export default function UserDetailPage() {
                                 <div className="subscription-card__header">
                                     <div className="subscription-card__type">
                                         <SubscriptionBadge subscription={user.subscription} size="lg" />
-                                        {user.subscriptionStatus && (
-                                            <SubscriptionStatusBadge status={user.subscriptionStatus} />
-                                        )}
                                     </div>
-                                    <button className="admin-btn admin-btn--primary">
-                                        <FiEdit size={16} />
-                                        <span>Chỉnh sửa gói</span>
+                                    <button
+                                        className="admin-btn admin-btn--primary"
+                                        onClick={() => {
+                                            setNewSubscription(user.subscription || 'FREE');
+                                            setSubscriptionModalOpen(true);
+                                        }}
+                                    >
+                                        <FiCreditCard size={16} />
+                                        <span>Thay đổi gói</span>
                                     </button>
                                 </div>
 
@@ -249,11 +328,11 @@ export default function UserDetailPage() {
                                     <div className="subscription-card__details">
                                         <div className="subscription-detail">
                                             <span className="subscription-detail__label">Ngày bắt đầu</span>
-                                            <span className="subscription-detail__value">{formatDate(user.subscriptionStartDate)}</span>
+                                            <span className="subscription-detail__value">{formatDate(user.subscriptionStart)}</span>
                                         </div>
                                         <div className="subscription-detail">
                                             <span className="subscription-detail__label">Ngày hết hạn</span>
-                                            <span className="subscription-detail__value">{formatDate(user.subscriptionEndDate)}</span>
+                                            <span className="subscription-detail__value">{formatDate(user.subscriptionEnd)}</span>
                                         </div>
                                         <div className="subscription-detail">
                                             <span className="subscription-detail__label">Tự động gia hạn</span>
@@ -263,82 +342,6 @@ export default function UserDetailPage() {
                                         </div>
                                     </div>
                                 )}
-                            </div>
-
-                            {/* Quotas Section */}
-                            <div className="quotas-section">
-                                <div className="quotas-section__header">
-                                    <h3 className="quotas-section__title">Hạn mức sử dụng</h3>
-                                    {userQuotas?.resetDate && (
-                                        <span className="quotas-section__reset">
-                                            Reset: {formatDate(userQuotas.resetDate)}
-                                        </span>
-                                    )}
-                                </div>
-
-                                <div className="quotas-grid">
-                                    {quotaTypes.map(quotaType => {
-                                        const quota = userQuotas?.[quotaType.key] || { used: 0, limit: 0, customLimit: null };
-                                        const effectiveLimit = quota.customLimit !== null ? quota.customLimit : quota.limit;
-                                        const isUnlimited = effectiveLimit === -1;
-                                        const percentage = isUnlimited ? 0 : (effectiveLimit > 0 ? (quota.used / effectiveLimit) * 100 : 100);
-                                        const isNearLimit = percentage >= 80;
-                                        const isOverLimit = percentage >= 100;
-
-                                        return (
-                                            <div key={quotaType.key} className="quota-card">
-                                                <div className="quota-card__header">
-                                                    <span className="quota-card__icon">{quotaType.icon}</span>
-                                                    <div className="quota-card__info">
-                                                        <span className="quota-card__label">{quotaType.label}</span>
-                                                        <span className="quota-card__description">{quotaType.description}</span>
-                                                    </div>
-                                                    <button
-                                                        className="quota-card__edit-btn"
-                                                        onClick={() => alert(`Sẽ mở modal chỉnh sửa ${quotaType.label}`)}
-                                                        title="Chỉnh sửa hạn mức"
-                                                    >
-                                                        <FiEdit size={14} />
-                                                    </button>
-                                                </div>
-
-                                                <div className="quota-card__usage">
-                                                    <div className="quota-card__numbers">
-                                                        <span className="quota-card__used">{quota.used.toLocaleString()}</span>
-                                                        <span className="quota-card__separator">/</span>
-                                                        <span className="quota-card__limit">
-                                                            {isUnlimited ? '∞' : effectiveLimit.toLocaleString()}
-                                                        </span>
-                                                        {quota.customLimit !== null && (
-                                                            <span className="quota-card__custom-badge">Tùy chỉnh</span>
-                                                        )}
-                                                    </div>
-
-                                                    {!isUnlimited && effectiveLimit > 0 && (
-                                                        <div className="quota-card__progress">
-                                                            <div
-                                                                className={`quota-card__progress-bar ${isOverLimit ? 'quota-card__progress-bar--danger' : isNearLimit ? 'quota-card__progress-bar--warning' : ''}`}
-                                                                style={{ width: `${Math.min(percentage, 100)}%` }}
-                                                            />
-                                                        </div>
-                                                    )}
-
-                                                    {isUnlimited && (
-                                                        <div className="quota-card__unlimited-badge">
-                                                            ✨ Không giới hạn
-                                                        </div>
-                                                    )}
-
-                                                    {effectiveLimit === 0 && !isUnlimited && (
-                                                        <div className="quota-card__disabled-badge">
-                                                            🚫 Không khả dụng
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
                             </div>
                         </div>
                     )}
@@ -350,62 +353,24 @@ export default function UserDetailPage() {
                                 <div className="credits-balance">
                                     <span className="credits-balance__icon">🌾</span>
                                     <div className="credits-balance__info">
-                                        <span className="credits-balance__value">{user.credits?.toLocaleString()}</span>
+                                        <span className="credits-balance__value">{user.credits?.toLocaleString() || 0}</span>
                                         <span className="credits-balance__label">Lúa hiện tại</span>
                                     </div>
                                     <div className="credits-balance__actions">
-                                        <button className="admin-btn admin-btn--primary">
-                                            <FiPlus size={16} />
-                                            <span>Cộng Lúa</span>
+                                        <button
+                                            className="admin-btn admin-btn--primary"
+                                            onClick={() => setCreditsModalOpen(true)}
+                                        >
+                                            <FiDollarSign size={16} />
+                                            <span>Thay đổi số Lúa</span>
                                         </button>
-                                        <button className="admin-btn admin-btn--secondary">
-                                            <FiMinus size={16} />
-                                            <span>Trừ Lúa</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="credits-summary">
-                                    <div className="credits-summary__item">
-                                        <span className="credits-summary__label">Tổng đã nhận</span>
-                                        <span className="credits-summary__value credits-summary__value--plus">
-                                            +{user.totalCreditsEarned?.toLocaleString()}
-                                        </span>
-                                    </div>
-                                    <div className="credits-summary__item">
-                                        <span className="credits-summary__label">Tổng đã dùng</span>
-                                        <span className="credits-summary__value credits-summary__value--minus">
-                                            -{user.totalCreditsSpent?.toLocaleString()}
-                                        </span>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="transaction-history">
                                 <h3 className="transaction-history__title">Lịch sử giao dịch Lúa</h3>
-                                {creditTransactions.length > 0 ? (
-                                    <div className="transaction-list">
-                                        {creditTransactions.map(tx => (
-                                            <div key={tx.id} className="transaction-item">
-                                                <div className={`transaction-item__icon ${tx.amount > 0 ? 'transaction-item__icon--plus' : 'transaction-item__icon--minus'}`}>
-                                                    {tx.amount > 0 ? <FiPlus size={14} /> : <FiMinus size={14} />}
-                                                </div>
-                                                <div className="transaction-item__info">
-                                                    <span className="transaction-item__description">{tx.description}</span>
-                                                    <span className="transaction-item__date">{formatDate(tx.createdAt)}</span>
-                                                </div>
-                                                <div className={`transaction-item__amount ${tx.amount > 0 ? 'transaction-item__amount--plus' : 'transaction-item__amount--minus'}`}>
-                                                    {tx.amount > 0 ? '+' : ''}{tx.amount}
-                                                </div>
-                                                <div className="transaction-item__balance">
-                                                    Số dư: {tx.balance}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="empty-message">Chưa có giao dịch nào</p>
-                                )}
+                                <p className="empty-message">Chưa có dữ liệu lịch sử giao dịch</p>
                             </div>
                         </div>
                     )}
@@ -414,49 +379,215 @@ export default function UserDetailPage() {
                     {activeTab === 'activity' && (
                         <div className="tab-content">
                             <h3 className="section-title">Hoạt động gần đây</h3>
-                            {activities.length > 0 ? (
-                                <div className="activity-timeline">
-                                    {activities.map(activity => (
-                                        <div key={activity.id} className="activity-item">
-                                            <div className="activity-item__dot" />
-                                            <div className="activity-item__content">
-                                                <span className="activity-item__type">{activity.type}</span>
-                                                <span className="activity-item__description">{activity.description}</span>
-                                                <span className="activity-item__time">{formatDate(activity.createdAt)}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="empty-message">Chưa có hoạt động nào được ghi nhận</p>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Audit Log Tab */}
-                    {activeTab === 'audit' && (
-                        <div className="tab-content">
-                            <h3 className="section-title">Lịch sử thao tác Admin</h3>
-                            {auditLogs.length > 0 ? (
-                                <div className="audit-list">
-                                    {auditLogs.map(log => (
-                                        <div key={log.id} className="audit-item">
-                                            <div className="audit-item__header">
-                                                <span className="audit-item__action">{log.action}</span>
-                                                <span className="audit-item__time">{formatDate(log.createdAt)}</span>
-                                            </div>
-                                            <p className="audit-item__description">{log.description}</p>
-                                            <span className="audit-item__admin">Bởi: {log.adminEmail}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="empty-message">Chưa có thao tác admin nào được ghi nhận</p>
-                            )}
+                            <p className="empty-message">Chưa có hoạt động nào được ghi nhận</p>
                         </div>
                     )}
                 </div>
             </div>
+
+            {/* Ban/Unban Modal */}
+            <BaseModal
+                isOpen={banModalOpen}
+                onClose={() => setBanModalOpen(false)}
+                title={isBanned ? 'Unban người dùng' : 'Ban người dùng'}
+                size="sm"
+                className="admin-modal"
+                footer={
+                    <>
+                        <button
+                            className="admin-btn admin-btn--secondary"
+                            onClick={() => setBanModalOpen(false)}
+                            disabled={isSubmitting}
+                        >
+                            Hủy
+                        </button>
+                        <button
+                            className={`admin-btn ${isBanned ? 'admin-btn--success' : 'admin-btn--danger'}`}
+                            onClick={handleBanConfirm}
+                            disabled={isSubmitting || (!isBanned && !banReason.trim())}
+                        >
+                            {isSubmitting ? 'Đang xử lý...' : (isBanned ? 'Xác nhận Unban' : 'Xác nhận Ban')}
+                        </button>
+                    </>
+                }
+            >
+                <div className="ban-modal-content">
+                    <div className="ban-modal-warning">
+                        <FiAlertTriangle size={24} className="ban-modal-warning__icon" />
+                        <p>
+                            {isBanned
+                                ? `Bạn có chắc chắn muốn unban người dùng "${user.fullName || user.username}"?`
+                                : `Bạn có chắc chắn muốn ban người dùng "${user.fullName || user.username}"?`
+                            }
+                        </p>
+                    </div>
+                    {!isBanned && (
+                        <div className="form-group">
+                            <label className="form-label">Lý do ban <span className="required">*</span></label>
+                            <textarea
+                                className="form-textarea"
+                                placeholder="Nhập lý do ban người dùng..."
+                                value={banReason}
+                                onChange={(e) => setBanReason(e.target.value)}
+                                rows={3}
+                            />
+                        </div>
+                    )}
+                </div>
+            </BaseModal>
+
+            {/* Credits Modal */}
+            <BaseModal
+                isOpen={creditsModalOpen}
+                onClose={() => setCreditsModalOpen(false)}
+                title="Thay đổi số Lúa"
+                size="sm"
+                className="admin-modal"
+                footer={
+                    <>
+                        <button
+                            className="admin-btn admin-btn--secondary"
+                            onClick={() => setCreditsModalOpen(false)}
+                            disabled={isSubmitting}
+                        >
+                            Hủy
+                        </button>
+                        <button
+                            className="admin-btn admin-btn--primary"
+                            onClick={handleCreditsConfirm}
+                            disabled={isSubmitting || !creditAmount || !creditReason.trim()}
+                        >
+                            {isSubmitting ? 'Đang xử lý...' : 'Xác nhận'}
+                        </button>
+                    </>
+                }
+            >
+                <div className="credits-modal-content">
+                    <div className="current-balance">
+                        <span>Số Lúa hiện tại:</span>
+                        <strong>🌾 {user.credits?.toLocaleString() || 0}</strong>
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Thao tác</label>
+                        <div className="credit-action-buttons">
+                            <button
+                                className={`action-btn ${creditAction === 'ADD' ? 'action-btn--active action-btn--add' : ''}`}
+                                onClick={() => setCreditAction('ADD')}
+                            >
+                                + Cộng Lúa
+                            </button>
+                            <button
+                                className={`action-btn ${creditAction === 'SUBTRACT' ? 'action-btn--active action-btn--subtract' : ''}`}
+                                onClick={() => setCreditAction('SUBTRACT')}
+                            >
+                                − Trừ Lúa
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Số Lúa <span className="required">*</span></label>
+                        <input
+                            type="number"
+                            className="form-input"
+                            placeholder="Nhập số Lúa..."
+                            value={creditAmount}
+                            onChange={(e) => setCreditAmount(e.target.value)}
+                            min="1"
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Lý do <span className="required">*</span></label>
+                        <textarea
+                            className="form-textarea"
+                            placeholder="Nhập lý do thay đổi..."
+                            value={creditReason}
+                            onChange={(e) => setCreditReason(e.target.value)}
+                            rows={2}
+                        />
+                    </div>
+
+                    {creditAmount && (
+                        <div className="preview-balance">
+                            <span>Số Lúa sau khi thay đổi:</span>
+                            <strong>
+                                🌾 {creditAction === 'ADD'
+                                    ? ((user.credits || 0) + parseInt(creditAmount || 0)).toLocaleString()
+                                    : Math.max(0, (user.credits || 0) - parseInt(creditAmount || 0)).toLocaleString()
+                                }
+                            </strong>
+                        </div>
+                    )}
+                </div>
+            </BaseModal>
+
+            {/* Subscription Modal */}
+            <BaseModal
+                isOpen={subscriptionModalOpen}
+                onClose={() => setSubscriptionModalOpen(false)}
+                title="Thay đổi gói đăng ký"
+                size="sm"
+                className="admin-modal"
+                footer={
+                    <>
+                        <button
+                            className="admin-btn admin-btn--secondary"
+                            onClick={() => setSubscriptionModalOpen(false)}
+                            disabled={isSubmitting}
+                        >
+                            Hủy
+                        </button>
+                        <button
+                            className="admin-btn admin-btn--primary"
+                            onClick={handleSubscriptionConfirm}
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? 'Đang xử lý...' : 'Xác nhận'}
+                        </button>
+                    </>
+                }
+            >
+                <div className="subscription-modal-content">
+                    <div className="current-subscription">
+                        <span>Gói hiện tại:</span>
+                        <SubscriptionBadge subscription={user.subscription} />
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Chọn gói mới</label>
+                        <div className="subscription-options">
+                            <label className={`subscription-option ${newSubscription === 'FREE' ? 'subscription-option--selected' : ''}`}>
+                                <input
+                                    type="radio"
+                                    name="subscription"
+                                    value="FREE"
+                                    checked={newSubscription === 'FREE'}
+                                    onChange={(e) => setNewSubscription(e.target.value)}
+                                />
+                                <div className="subscription-option__content">
+                                    <strong>Cramerie (Free)</strong>
+                                    <span>Gói miễn phí với các tính năng cơ bản</span>
+                                </div>
+                            </label>
+                            <label className={`subscription-option ${newSubscription === 'CRAMERICH' ? 'subscription-option--selected' : ''}`}>
+                                <input
+                                    type="radio"
+                                    name="subscription"
+                                    value="CRAMERICH"
+                                    checked={newSubscription === 'CRAMERICH'}
+                                    onChange={(e) => setNewSubscription(e.target.value)}
+                                />
+                                <div className="subscription-option__content">
+                                    <strong>Cramerich</strong>
+                                    <span>Gói premium với đầy đủ tính năng</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </BaseModal>
         </div>
     );
 }

@@ -45,8 +45,11 @@ public class Profile {
     @Column(name = "llm_model")
     private String llmModel;
 
-    @Column(name = "llm_provider")
+    @Column(name = "llm_provider", nullable = true)
     private String llmProvider = "deepseek";
+
+    @Column(name = "is_admin")
+    private Boolean isAdmin = false;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -148,6 +151,14 @@ public class Profile {
 
     public void setLlmProvider(String llmProvider) {
         this.llmProvider = llmProvider;
+    }
+
+    public Boolean getIsAdmin() {
+        return isAdmin;
+    }
+
+    public void setIsAdmin(Boolean isAdmin) {
+        this.isAdmin = isAdmin;
     }
 
     public OffsetDateTime getCreatedAt() {

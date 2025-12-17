@@ -90,23 +90,24 @@ const ProfilePage = () => {
 
   // Refs
   const avatarFileRef = useRef(null);
+  const hasFetchedRef = useRef(false);
 
   // Fetch profile on mount
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user?.id) return;
+      if (!user?.id || hasFetchedRef.current) return;
+      hasFetchedRef.current = true;
+      
       try {
         setLoading(true);
         const response = await profileApi.getById(user.id);
+        console.log('✅ Profile response:', response.data);
         const fullProfile = { ...response.data, email: user.email };
         setProfileData(fullProfile);
         setEditedProfile(fullProfile);
-        // Set saved model or default
-        if (response.data.llmModel) {
-          setLlmModel(response.data.llmModel);
-        }
         setError(null);
       } catch (err) {
+        console.error('❌ Profile fetch error:', err);
         setError('Không thể tải thông tin cá nhân.');
         showErrorToast('Lỗi khi tải thông tin cá nhân.');
       } finally {
