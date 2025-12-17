@@ -77,6 +77,13 @@
 - Service role policies have been added to allow backend DELETE operations.
 - When adding new tables with RLS, ensure service_role policies are created for backend operations.
 
+## Supabase MCP Configuration
+
+- **Project ID:** `jpocdgkrvohmjkejclpl`
+- **Region:** us-east-2
+- **Database Host:** db.jpocdgkrvohmjkejclpl.supabase.co
+- When using Supabase MCP tools (e.g., `supabase_list_tables`, `supabase_execute_sql`, `supabase_apply_migration`, etc.), always use project ID `jpocdgkrvohmjkejclpl` unless the user explicitly specifies a different project.
+
 ## Recent Agent Notes
 
 - 2025-12-14: **Subscription System Revamp (2-tier + ATTEMPT System)** ✅ **COMPLETED:**
