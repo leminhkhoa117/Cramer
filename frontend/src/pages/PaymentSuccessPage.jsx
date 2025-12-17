@@ -5,7 +5,7 @@ import { FiCheck, FiGift, FiArrowRight, FiLoader } from 'react-icons/fi';
 import { paymentApi } from '../api/backendApi';
 import { useUserStatsStore, useAuthStore } from '../stores';
 import { showSuccessToast, showErrorToast } from '../utils/toast';
-import '../css/PaymentPage.css';
+import '../css/payment-page.css';
 
 export default function PaymentSuccessPage() {
   const [searchParams] = useSearchParams();

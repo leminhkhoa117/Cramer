@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { sanitizeHtml } from '../../utils/sanitize';
 import ReviewQuestionRenderer from './ReviewQuestionRenderer';
-import '../../css/ReviewQuestionGroup.css';
+import '../../css/review-question-group.css';
 
 /**
  * ReviewQuestionGroup - Groups and renders questions in review mode

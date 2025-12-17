@@ -1,6 +1,6 @@
 import React from 'react';
 import HighlightableHtmlContent from './HighlightableHtmlContent'; // Import the new component
-import '../css/QuestionRenderer.css';
+import '../css/question-renderer.css';
 
 const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, groupOptions, partId }) => {
     const { id, questionType, questionContent, questionNumber } = question;

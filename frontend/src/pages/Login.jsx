@@ -6,7 +6,7 @@ import OTPVerification from '../components/OTPVerification';
 import { authApi } from '../api/backendApi';
 import { authHelpers } from '../api/supabaseClient';
 import logoImage from '../../pictures/logo/Icon.png';
-import '../css/Login.css';
+import '../css/login.css';
 
 // ====================================================================
 // FORGOT PASSWORD FORM

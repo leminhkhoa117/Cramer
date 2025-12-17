@@ -1,6 +1,6 @@
 /* TestPage.css - Reading & Listening Test Specific Styles */
 /* Base layout imported from common */
-@import './common/TestLayoutBase.css';
+@import './common/test-layout-base.css';
 
 /* ============================================
    Listening Test Specific Styles

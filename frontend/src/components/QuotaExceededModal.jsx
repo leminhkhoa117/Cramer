@@ -1,5 +1,5 @@
 import React from 'react';
-import '../css/QuotaExceededModal.css';
+import '../css/quota-exceeded-modal.css';
 
 /**
  * Modal shown when quota is exceeded.

@@ -11,7 +11,7 @@ import {
 import { useAuthStore, useUserStatsStore } from '../stores';
 import { chatApi } from '../api/backendApi';
 import ChatBubble from './ChatBubble';
-import '../css/FloatingAssistant.css';
+import '../css/floating-assistant.css';
 
 /**
  * Floating Assistant Widget - "Trợ lý Cramer"

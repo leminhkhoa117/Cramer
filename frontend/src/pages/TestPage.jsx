@@ -7,7 +7,7 @@ import TestPageContent from '../components/TestPageContent';
 import FullPageLoader from '../components/FullPageLoader';
 import ResumeConfirmationModal from '../components/ResumeConfirmationModal';
 
-import '../css/TestPage.css';
+import '../css/test-page.css';
 
 const INITIAL_READING_TIME = 3600;
 

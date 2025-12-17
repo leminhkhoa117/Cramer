@@ -3,7 +3,7 @@ import { Navbar, Nav, Container, Button, Dropdown } from 'react-bootstrap';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore, useProfileStore } from '../stores';
 import { FaUserCircle } from 'react-icons/fa';
-import '../css/Header.css';
+import '../css/header.css';
 
 export default function Header() {
   const navigate = useNavigate();

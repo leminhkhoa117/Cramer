@@ -14,10 +14,10 @@ import GradingQuotaInfo from '../components/GradingQuotaInfo';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 
 // Reuse TestPage styles
-import '../css/TestPage.css';
-import '../css/TestHeader.css';
-import '../css/TestFooter.css';
-import '../css/WritingTestPage.css';
+import '../css/test-page.css';
+import '../css/test-header.css';
+import '../css/test-footer.css';
+import '../css/writing-test-page.css';
 
 // Initial time: 60 minutes for writing test (combined Task 1 + Task 2)
 const INITIAL_WRITING_TIME = 3600;

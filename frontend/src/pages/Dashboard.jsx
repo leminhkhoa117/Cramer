@@ -6,12 +6,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import GoalModal from '../components/GoalModal';
 import FilterModal from '../components/FilterModal';
 
-import '../css/common/SidebarLayout.css';
-import '../css/Dashboard.css';
+import '../css/common/sidebar-layout.css';
+import '../css/dashboard.css';
 import ProgressChart from '../components/ProgressChart';
 import SkillAnalysis from '../components/SkillAnalysis';
-import '../css/ProgressChart.css';
-import '../css/SkillAnalysis.css';
+import '../css/progress-chart.css';
+import '../css/skill-analysis.css';
 import FullPageLoader from '../components/FullPageLoader';
 import Pagination from '../components/Pagination';
 import AttemptHistoryDropdown from '../components/AttemptHistoryDropdown';

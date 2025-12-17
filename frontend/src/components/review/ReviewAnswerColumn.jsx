@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import ReviewQuestionGroup from './ReviewQuestionGroup';
-import '../../css/ReviewAnswerColumn.css';
+import '../../css/review-answer-column.css';
 
 /**
  * ReviewAnswerColumn - Renders the answer field column for review pages

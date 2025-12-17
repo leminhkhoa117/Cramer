@@ -16,7 +16,7 @@ import { useVocabularyStore } from '../stores';
 import VocabularyCard from '../components/VocabularyCard';
 import VocabularyModal from '../components/VocabularyModal';
 import Pagination from '../components/Pagination';
-import '../css/VocabularyPage.css';
+import '../css/vocabulary-page.css';
 
 // Animation variants
 const containerVariants = {

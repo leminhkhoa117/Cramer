@@ -19,8 +19,8 @@ import {
 import CreditHistoryList from '../components/CreditHistoryList';
 import LuaPurchaseModal from '../components/LuaPurchaseModal';
 import ConfirmationModal from '../components/ConfirmationModal';
-import '../css/common/SidebarLayout.css';
-import '../css/SubscriptionPage.css';
+import '../css/common/sidebar-layout.css';
+import '../css/subscription-page.css';
 
 // =============================================================================
 // CONSTANTS & CONFIGS

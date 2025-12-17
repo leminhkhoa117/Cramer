@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useCourseStore } from '../stores';
-import './../css/CourseDetail.css';
+import './../css/course-detail.css';
 import FullPageLoader from '../components/FullPageLoader';
 import { FaBookOpen, FaHeadphones, FaPen, FaMicrophone, FaArrowLeft } from 'react-icons/fa';
 

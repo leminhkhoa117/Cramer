@@ -1,5 +1,5 @@
 import React from 'react';
-import './../css/QuestionNavBar.css';
+import './../css/question-nav-bar.css';
 
 const QuestionNavBar = ({ allQuestions, answers, onQuestionSelect }) => {
     if (!allQuestions || allQuestions.length === 0) {

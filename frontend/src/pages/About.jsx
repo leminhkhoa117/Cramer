@@ -13,7 +13,7 @@ import {
   FiBookOpen
 } from 'react-icons/fi';
 import { useInView, useSectionInView } from '../hooks/useInView';
-import '../css/About.css';
+import '../css/about.css';
 
 // Lazy load 3D scene for performance
 const Scene3DAbout = lazy(() => import('../components/3d/Scene3DAbout'));

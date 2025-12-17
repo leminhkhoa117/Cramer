@@ -1,6 +1,6 @@
 import React from 'react';
 import useQuotaStore from '../stores/useQuotaStore';
-import '../css/QuotaDisplay.css';
+import '../css/quota-display.css';
 
 /**
  * QuotaDisplay component for showing global and per-skill quota usage.

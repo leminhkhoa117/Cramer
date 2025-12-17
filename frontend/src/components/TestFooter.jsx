@@ -1,5 +1,5 @@
 import React from 'react';
-import './../css/TestFooter.css';
+import './../css/test-footer.css';
 
 /**
  * QuestionButton - Button for question navigation

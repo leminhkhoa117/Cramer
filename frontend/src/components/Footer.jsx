@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaGithub } from 'react-icons/fa';
-import '../css/Footer.css';
+import '../css/footer.css';
 
 export default function Footer() {
   return (

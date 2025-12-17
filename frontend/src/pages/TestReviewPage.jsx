@@ -10,7 +10,7 @@ import {
     FiHeadphones, FiImage
 } from 'react-icons/fi';
 import { AnimatePresence, motion } from 'framer-motion';
-import '../css/TestReviewPage.css';
+import '../css/test-review-page.css';
 import FullPageLoader from '../components/FullPageLoader';
 import ReviewAnswerColumn from '../components/review/ReviewAnswerColumn';
 

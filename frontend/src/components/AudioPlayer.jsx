@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useImperativeHandle, forwardRef, useState } from 'react';
-import '../css/AudioPlayer.css';
+import '../css/audio-player.css';
 
 const formatTime = (timeInSeconds) => {
     const seconds = Math.floor(timeInSeconds);

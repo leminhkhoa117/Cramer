@@ -25,7 +25,7 @@ import {
 } from '../constants/subscription';
 import FAQ from '../components/common/FAQ';
 import InteractiveGradingDemo from '../components/pricing/InteractiveGradingDemo';
-import '../css/PricingPage.css';
+import '../css/pricing-page.css';
 
 // =============================================================================
 // Animation Variants

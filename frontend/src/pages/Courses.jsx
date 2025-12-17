@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useCourseStore } from '../stores';
 import FilterModal from '../components/FilterModal';
-import './../css/Courses.css';
+import './../css/courses.css';
 
 import { FaSearch } from 'react-icons/fa';
 import FullPageLoader from '../components/FullPageLoader';

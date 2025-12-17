@@ -1,7 +1,7 @@
 import React from 'react';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 import { sanitizeHtml } from '../utils/sanitize';
-import '../css/ReviewedQuestion.css';
+import '../css/reviewed-question.css';
 
 const getUserAnswerText = (answerContent) => {
     if (!answerContent || answerContent.value == null) {

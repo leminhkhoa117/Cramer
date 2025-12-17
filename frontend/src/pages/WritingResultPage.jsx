@@ -16,8 +16,8 @@ import {
     FiColumns, FiEye, FiCheckSquare
 } from 'react-icons/fi';
 
-import '../css/WritingResultPage.css';
-import '../css/common/Modal.css';
+import '../css/writing-result-page.css';
+import '../css/common/modal.css';
 
 // Error type colors with Vietnamese labels - consistent across essay highlights and analysis sections
 const ERROR_TYPE_COLORS = {

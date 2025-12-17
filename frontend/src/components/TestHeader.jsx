@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiMaximize, FiMinimize } from 'react-icons/fi';
-import './../css/TestHeader.css';
+import './../css/test-header.css';
 
 const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);

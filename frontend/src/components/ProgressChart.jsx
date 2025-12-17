@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { FiTrendingUp, FiCalendar } from 'react-icons/fi';
-import '../css/ProgressChart.css';
+import '../css/progress-chart.css';
 
 // Skill color palette following UI_GUIDELINES.md
 const SKILL_COLORS = {

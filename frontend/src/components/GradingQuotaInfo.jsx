@@ -3,7 +3,7 @@ import { FiAlertTriangle, FiCheckCircle, FiDollarSign } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { useUserStatsStore } from '../stores';
 import PropTypes from 'prop-types';
-import '../css/GradingQuotaInfo.css';
+import '../css/grading-quota-info.css';
 
 /**
  * GradingQuotaInfo - Reusable component showing AI grading quota status

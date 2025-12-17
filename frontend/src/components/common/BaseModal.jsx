@@ -2,7 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
-import '../../css/common/Modal.css';
+import '../../css/common/modal.css';
 
 /**
  * BaseModal - Reusable modal component with glassmorphic styling

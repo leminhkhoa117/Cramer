@@ -2,7 +2,7 @@ import React from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiX, FiArrowLeft, FiHelpCircle } from 'react-icons/fi';
-import '../css/PaymentPage.css';
+import '../css/payment-page.css';
 
 export default function PaymentCancelPage() {
   const [searchParams] = useSearchParams();
