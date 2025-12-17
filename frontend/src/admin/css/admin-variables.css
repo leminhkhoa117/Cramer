@@ -1,0 +1,122 @@
+/* ==========================================================================
+   CRAMER CMS ADMIN - CSS VARIABLES
+   Admin theme với màu tím accent để phân biệt với user UI
+   Scoped to .admin-root to prevent affecting global styles
+   ========================================================================== */
+
+.admin-root {
+  /* ========================================================================
+     ADMIN PRIMARY COLORS
+     ======================================================================== */
+  --admin-primary: #8B5CF6;
+  --admin-primary-hover: #7C3AED;
+  --admin-primary-active: #6D28D9;
+  --admin-primary-light: rgba(139, 92, 246, 0.1);
+  --admin-primary-rgb: 139, 92, 246;
+
+  /* ========================================================================
+     STATUS COLORS
+     ======================================================================== */
+  --admin-success: #10B981;
+  --admin-success-light: rgba(16, 185, 129, 0.1);
+  --admin-success-rgb: 16, 185, 129;
+
+  --admin-warning: #F59E0B;
+  --admin-warning-light: rgba(245, 158, 11, 0.1);
+  --admin-warning-rgb: 245, 158, 11;
+
+  --admin-danger: #EF4444;
+  --admin-danger-light: rgba(239, 68, 68, 0.1);
+  --admin-danger-rgb: 239, 68, 68;
+
+  --admin-info: #3B82F6;
+  --admin-info-light: rgba(59, 130, 246, 0.1);
+  --admin-info-rgb: 59, 130, 246;
+
+  /* ========================================================================
+     BACKGROUND COLORS (Dark Theme)
+     ======================================================================== */
+  --admin-bg-primary: #0F0F23;
+  --admin-bg-secondary: #1A1A2E;
+  --admin-bg-tertiary: #16213E;
+  --admin-bg-card: rgba(255, 255, 255, 0.03);
+  --admin-bg-card-hover: rgba(255, 255, 255, 0.05);
+  --admin-bg-input: rgba(255, 255, 255, 0.05);
+
+  /* ========================================================================
+     TEXT COLORS
+     ======================================================================== */
+  --admin-text-primary: #F8FAFC;
+  --admin-text-secondary: #94A3B8;
+  --admin-text-muted: #64748B;
+  --admin-text-disabled: #475569;
+
+  /* ========================================================================
+     BORDER COLORS
+     ======================================================================== */
+  --admin-border-primary: rgba(255, 255, 255, 0.1);
+  --admin-border-secondary: rgba(255, 255, 255, 0.05);
+  --admin-border-focus: var(--admin-primary);
+
+  /* ========================================================================
+     GLASSMORPHISM
+     ======================================================================== */
+  --admin-glass-bg: rgba(255, 255, 255, 0.05);
+  --admin-glass-border: rgba(255, 255, 255, 0.1);
+  --admin-glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
+  /* ========================================================================
+     LAYOUT DIMENSIONS
+     ======================================================================== */
+  --admin-sidebar-width: 260px;
+  --admin-sidebar-collapsed-width: 80px;
+  --admin-header-height: 64px;
+  --admin-content-padding: 24px;
+
+  /* ========================================================================
+     SPACING
+     ======================================================================== */
+  --admin-spacing-xs: 4px;
+  --admin-spacing-sm: 8px;
+  --admin-spacing-md: 16px;
+  --admin-spacing-lg: 24px;
+  --admin-spacing-xl: 32px;
+  --admin-spacing-2xl: 48px;
+
+  /* ========================================================================
+     BORDER RADIUS
+     ======================================================================== */
+  --admin-radius-sm: 6px;
+  --admin-radius-md: 8px;
+  --admin-radius-lg: 12px;
+  --admin-radius-xl: 16px;
+  --admin-radius-2xl: 24px;
+  --admin-radius-full: 9999px;
+
+  /* ========================================================================
+     SHADOWS
+     ======================================================================== */
+  --admin-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --admin-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --admin-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --admin-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* ========================================================================
+     TRANSITIONS
+     ======================================================================== */
+  --admin-transition-fast: 150ms ease;
+  --admin-transition-normal: 250ms ease;
+  --admin-transition-slow: 350ms ease;
+
+  /* ========================================================================
+     Z-INDEX LAYERS
+     ======================================================================== */
+  --admin-z-dropdown: 100;
+  --admin-z-sticky: 200;
+  --admin-z-fixed: 300;
+  --admin-z-modal-backdrop: 400;
+  --admin-z-modal: 500;
+  --admin-z-popover: 600;
+  --admin-z-tooltip: 700;
+}
+

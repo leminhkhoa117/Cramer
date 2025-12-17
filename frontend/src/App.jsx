@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore, useProfileStore } from './stores';
 import { AnimatePresence } from 'framer-motion';
@@ -25,6 +25,18 @@ import PricingPage from './pages/PricingPage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
+
+// Admin imports - Lazy loaded to prevent CSS from affecting user pages
+const AdminLayout = React.lazy(() => import('./admin/components/AdminLayout'));
+const AdminRouteGuard = React.lazy(() => import('./admin/components/AdminRouteGuard'));
+const AdminDashboard = React.lazy(() => import('./admin/pages/AdminDashboard'));
+const UserListPage = React.lazy(() => import('./admin/pages/users/UserListPage'));
+const UserDetailPage = React.lazy(() => import('./admin/pages/users/UserDetailPage'));
+const FinanceDashboard = React.lazy(() => import('./admin/pages/finance/FinanceDashboard'));
+const TransactionHistoryPage = React.lazy(() => import('./admin/pages/finance/TransactionHistoryPage'));
+const ContentListPage = React.lazy(() => import('./admin/pages/content/ContentListPage'));
+const TestEditorSelectPage = React.lazy(() => import('./admin/pages/content/TestEditorSelectPage'));
+const TestEditorPage = React.lazy(() => import('./admin/pages/content/TestEditorPage'));
 
 // This component waits for the initial auth loading to complete
 function AuthInitializer({ children }) {
@@ -90,6 +102,10 @@ function ProtectedRoute({ children }) {
 // This component contains the actual app layout and routes
 function AppContent() {
   const location = useLocation();
+
+  // Check if current route is admin
+  const isAdminPage = location.pathname.startsWith('/admin');
+
   // Hide header/footer on test-taking pages and review pages (they have their own header)
   const isTestPage = /^\/test\/\w+\/\d+\/\w+$/.test(location.pathname) ||
     /^\/test\/writing\/(?!review)\w+\/\d+$/.test(location.pathname);
@@ -97,7 +113,8 @@ function AppContent() {
   const isReviewPage = /^\/test\/writing\/review\/\d+$/.test(location.pathname) ||
     /^\/test\/review\/\d+$/.test(location.pathname);
 
-  const showHeader = !isTestPage && !isReviewPage;
+  // Don't show user header/footer on admin pages, test pages, or review pages
+  const showHeader = !isTestPage && !isReviewPage && !isAdminPage;
 
   return (
     <>
@@ -210,12 +227,47 @@ function AppContent() {
               path="/payment/cancel"
               element={<PaymentCancelPage />}
             />
+
+            {/* Admin Routes - Wrapped in Suspense for lazy loading */}
+            <Route
+              path="/admin/*"
+              element={
+                <Suspense fallback={
+                  <div style={{
+                    minHeight: '100vh',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: '#0F0F23',
+                    color: '#F8FAFC'
+                  }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <p>Loading Admin...</p>
+                    </div>
+                  </div>
+                }>
+                  <AdminRouteGuard>
+                    <AdminLayout />
+                  </AdminRouteGuard>
+                </Suspense>
+              }
+            >
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<UserListPage />} />
+              <Route path="users/:userId" element={<UserDetailPage />} />
+              <Route path="finance" element={<FinanceDashboard />} />
+              <Route path="finance/transactions" element={<TransactionHistoryPage />} />
+              <Route path="finance/reports" element={<FinanceDashboard />} />
+              <Route path="content" element={<ContentListPage />} />
+              <Route path="content/editor" element={<TestEditorSelectPage />} />
+              <Route path="content/editor/:testId" element={<TestEditorPage />} />
+            </Route>
           </Routes>
         </AnimatePresence>
       </main>
-      {!isTestPage && !isReviewPage && <Footer />}
-      {/* Floating Assistant Widget - visible on protected pages except test-taking */}
-      {!isTestPage && <FloatingAssistant />}
+      {!isTestPage && !isReviewPage && !isAdminPage && <Footer />}
+      {/* Floating Assistant Widget - visible on protected pages except test-taking and admin */}
+      {!isTestPage && !isAdminPage && <FloatingAssistant />}
     </>
   );
 }

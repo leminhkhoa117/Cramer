@@ -94,6 +94,21 @@ export default function Header() {
                     Hồ sơ
                   </Dropdown.Item>
                   <Dropdown.Divider />
+                  {/* Admin Panel Link - DEV: shown for all users, PROD: check admin role */}
+                  <Dropdown.Item
+                    onClick={() => navigate('/admin')}
+                    style={{
+                      color: '#8B5CF6',
+                      fontWeight: 500,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <span style={{ fontSize: '14px' }}>⚙️</span>
+                    Quản trị Admin
+                  </Dropdown.Item>
+                  <Dropdown.Divider />
                   <Dropdown.Item onClick={handleLogout}>
                     Đăng xuất
                   </Dropdown.Item>

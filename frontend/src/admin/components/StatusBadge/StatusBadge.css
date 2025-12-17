@@ -1,0 +1,97 @@
+/* ==========================================================================
+   STATUS BADGE COMPONENT STYLES
+   ========================================================================== */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--admin-radius-full);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Sizes */
+.status-badge--sm {
+  padding: 2px 8px;
+  font-size: 0.6875rem;
+}
+
+.status-badge--md {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}
+
+.status-badge--lg {
+  padding: 6px 14px;
+  font-size: 0.8125rem;
+}
+
+/* Dot Indicator */
+.status-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Variants */
+.status-badge--success {
+  background: var(--admin-success-light);
+  color: var(--admin-success);
+}
+
+.status-badge--success .status-badge__dot {
+  background: var(--admin-success);
+  box-shadow: 0 0 6px var(--admin-success);
+}
+
+.status-badge--warning {
+  background: var(--admin-warning-light);
+  color: var(--admin-warning);
+}
+
+.status-badge--warning .status-badge__dot {
+  background: var(--admin-warning);
+  box-shadow: 0 0 6px var(--admin-warning);
+}
+
+.status-badge--danger {
+  background: var(--admin-danger-light);
+  color: var(--admin-danger);
+}
+
+.status-badge--danger .status-badge__dot {
+  background: var(--admin-danger);
+  box-shadow: 0 0 6px var(--admin-danger);
+}
+
+.status-badge--info {
+  background: var(--admin-info-light);
+  color: var(--admin-info);
+}
+
+.status-badge--info .status-badge__dot {
+  background: var(--admin-info);
+  box-shadow: 0 0 6px var(--admin-info);
+}
+
+.status-badge--primary {
+  background: var(--admin-primary-light);
+  color: var(--admin-primary);
+}
+
+.status-badge--primary .status-badge__dot {
+  background: var(--admin-primary);
+  box-shadow: 0 0 6px var(--admin-primary);
+}
+
+.status-badge--neutral {
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--admin-text-secondary);
+}
+
+.status-badge--neutral .status-badge__dot {
+  background: var(--admin-text-secondary);
+}

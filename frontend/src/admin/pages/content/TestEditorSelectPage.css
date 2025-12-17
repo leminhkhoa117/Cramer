@@ -1,0 +1,307 @@
+/* ==========================================================================
+   TEST EDITOR SELECT PAGE STYLES
+   ========================================================================== */
+
+/* Quick Stats */
+.editor-quick-stats {
+  display: flex;
+  gap: var(--admin-spacing-md);
+  margin-bottom: var(--admin-spacing-xl);
+}
+
+.editor-quick-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-spacing-md);
+  padding: var(--admin-spacing-lg);
+  background: var(--admin-glass-bg);
+  border: 1px solid var(--admin-glass-border);
+  border-radius: var(--admin-radius-lg);
+  flex: 1;
+}
+
+.editor-quick-stat--draft {
+  border-left: 3px solid var(--admin-warning);
+}
+
+.editor-quick-stat--draft svg {
+  color: var(--admin-warning);
+}
+
+.editor-quick-stat--review {
+  border-left: 3px solid var(--admin-info);
+}
+
+.editor-quick-stat--review svg {
+  color: var(--admin-info);
+}
+
+.editor-quick-stat--published {
+  border-left: 3px solid var(--admin-success);
+}
+
+.editor-quick-stat--published svg {
+  color: var(--admin-success);
+}
+
+.editor-quick-stat__content {
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-quick-stat__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--admin-text-primary);
+}
+
+.editor-quick-stat__label {
+  font-size: 0.8125rem;
+  color: var(--admin-text-muted);
+}
+
+/* Filters */
+.editor-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-spacing-lg);
+  margin-bottom: var(--admin-spacing-lg);
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  max-width: 320px;
+}
+
+.search-box__icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--admin-text-muted);
+}
+
+.search-box__input {
+  width: 100%;
+  padding: 10px 14px 10px 42px;
+  background: var(--admin-bg-input);
+  border: 1px solid var(--admin-border-primary);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text-primary);
+  font-size: 0.875rem;
+}
+
+.search-box__input:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+}
+
+.search-box__input::placeholder {
+  color: var(--admin-text-muted);
+}
+
+/* Filter Tabs */
+.filter-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--admin-bg-input);
+  padding: 4px;
+  border-radius: var(--admin-radius-md);
+}
+
+.filter-tab {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--admin-transition-fast);
+  white-space: nowrap;
+}
+
+.filter-tab:hover {
+  color: var(--admin-text-primary);
+}
+
+.filter-tab--active {
+  background: var(--admin-primary);
+  color: white;
+}
+
+/* Test Grid */
+.editor-test-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--admin-spacing-md);
+}
+
+/* Test Card */
+.editor-test-card {
+  background: var(--admin-glass-bg);
+  border: 1px solid var(--admin-glass-border);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-spacing-lg);
+  cursor: pointer;
+  transition: all var(--admin-transition-fast);
+}
+
+.editor-test-card:hover {
+  border-color: var(--admin-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
+}
+
+.editor-test-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--admin-spacing-sm);
+}
+
+.editor-test-card__topic {
+  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+}
+
+.editor-test-card__title {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-spacing-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  margin: 0 0 var(--admin-spacing-md) 0;
+}
+
+.editor-test-card__title svg {
+  color: var(--admin-primary);
+}
+
+/* Skill Progress */
+.editor-test-card__skills {
+  margin-bottom: var(--admin-spacing-md);
+}
+
+.skill-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-spacing-sm);
+}
+
+.skill-progress__bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--admin-radius-full);
+  display: flex;
+  overflow: hidden;
+}
+
+.skill-progress__fill {
+  height: 100%;
+}
+
+.skill-progress__fill--complete {
+  background: var(--admin-success);
+}
+
+.skill-progress__fill--draft {
+  background: var(--admin-warning);
+}
+
+.skill-progress__text {
+  font-size: 0.6875rem;
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+/* Skill Icons */
+.editor-test-card__skill-icons {
+  display: flex;
+  gap: var(--admin-spacing-sm);
+  margin-bottom: var(--admin-spacing-lg);
+}
+
+.skill-icon {
+  font-size: 1.125rem;
+  opacity: 0.4;
+  transition: opacity var(--admin-transition-fast);
+}
+
+.skill-icon--complete {
+  opacity: 1;
+}
+
+.skill-icon--draft {
+  opacity: 0.7;
+}
+
+/* Footer */
+.editor-test-card__footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.editor-test-card__btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--admin-primary);
+  border: none;
+  border-radius: var(--admin-radius-md);
+  color: white;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--admin-transition-fast);
+}
+
+.editor-test-card__btn:hover {
+  background: var(--admin-primary-hover);
+}
+
+/* Empty State */
+.empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--admin-text-muted);
+  text-align: center;
+}
+
+.empty-state p {
+  margin-top: var(--admin-spacing-md);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .editor-quick-stats {
+    flex-direction: column;
+  }
+
+  .editor-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-box {
+    max-width: 100%;
+  }
+
+  .filter-tabs {
+    overflow-x: auto;
+  }
+
+  .editor-test-grid {
+    grid-template-columns: 1fr;
+  }
+}
