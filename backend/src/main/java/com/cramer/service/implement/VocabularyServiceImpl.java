@@ -330,23 +330,17 @@ public class VocabularyServiceImpl implements VocabularyService {
     // ==================== Private Helper Methods ====================
 
     /**
-     * Resolve API key with priority: user's key > server key
+     * Resolve API key - uses server-side key only.
+     * User personal API keys have been deprecated.
      */
     private String resolveApiKey(UUID userId) {
-        // First try user's personal API key
-        Optional<Profile> profile = profileRepository.findById(userId);
-        if (profile.isPresent() && profile.get().getLlmApiKey() != null
-                && !profile.get().getLlmApiKey().isEmpty()) {
-            logger.debug("Using user's personal API key for translation");
-            return profile.get().getLlmApiKey();
-        }
-
-        // Fallback to server-side key
+        // Use server-side API key only (user personal keys deprecated)
         if (llmConfig.hasApiKey()) {
             logger.debug("Using server-side API key for translation");
             return llmConfig.getApiKey();
         }
 
+        logger.warn("No server-side API key configured!");
         return null;
     }
 

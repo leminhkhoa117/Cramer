@@ -1,0 +1,58 @@
+# ===========================================
+# GIT ATTRIBUTES - LINE ENDING NORMALIZATION
+# ===========================================
+# This file ensures consistent line endings across different OS platforms.
+# Critical for: .env files, shell scripts, and configuration files.
+
+# Auto-detect text files and normalize their line endings to LF on commit.
+* text=auto
+
+# ===== FORCE LF (Unix) LINE ENDINGS =====
+# These files MUST use LF to prevent runtime issues on both Linux and Windows.
+
+# Environment files (CRITICAL: must be LF to prevent JWT/secret parsing issues)
+.env text eol=lf
+.env.* text eol=lf
+*.env text eol=lf
+
+# Shell scripts (must be LF for bash compatibility)
+*.sh text eol=lf
+
+# SQL and database files
+*.sql text eol=lf
+
+# Configuration files
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.properties text eol=lf
+*.xml text eol=lf
+
+# Frontend source files
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+
+# ===== ALLOW CRLF (Windows) LINE ENDINGS =====
+# Windows-specific scripts can use CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# ===== BINARY FILES (NO LINE ENDING CONVERSION) =====
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.jar binary
