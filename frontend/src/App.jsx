@@ -19,7 +19,7 @@ import CourseDetailPage from './pages/CourseDetailPage';
 import TestLayout from './components/TestLayout';
 import TestReviewPage from './pages/TestReviewPage';
 import WritingResultPage from './pages/WritingResultPage';
-import Profile from './pages/profile';
+import Profile from './pages/Profile';
 import VocabularyPage from './pages/VocabularyPage';
 import PricingPage from './pages/PricingPage';
 import SubscriptionPage from './pages/SubscriptionPage';
