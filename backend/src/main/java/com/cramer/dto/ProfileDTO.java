@@ -43,12 +43,14 @@ public class ProfileDTO {
     @Size(max = 50, message = "LLM provider must be at most 50 characters")
     private String llmProvider;
     
+    private Boolean isAdmin;
+    
     private OffsetDateTime createdAt;
 
     public ProfileDTO() {
     }
 
-    public ProfileDTO(UUID id, String username, String fullName, String phoneNumber, String address, String avatarUrl, String heroBackgroundUrl, String pageBackgroundUrl, String llmApiKey, boolean hasLlmApiKey, String llmModel, String llmProvider, OffsetDateTime createdAt) {
+    public ProfileDTO(UUID id, String username, String fullName, String phoneNumber, String address, String avatarUrl, String heroBackgroundUrl, String pageBackgroundUrl, String llmApiKey, boolean hasLlmApiKey, String llmModel, String llmProvider, Boolean isAdmin, OffsetDateTime createdAt) {
         this.id = id;
         this.username = username;
         this.fullName = fullName;
@@ -61,6 +63,7 @@ public class ProfileDTO {
         this.hasLlmApiKey = hasLlmApiKey;
         this.llmModel = llmModel;
         this.llmProvider = llmProvider;
+        this.isAdmin = isAdmin;
         this.createdAt = createdAt;
     }
 
@@ -168,5 +171,13 @@ public class ProfileDTO {
 
     public void setLlmProvider(String llmProvider) {
         this.llmProvider = llmProvider;
+    }
+
+    public Boolean getIsAdmin() {
+        return isAdmin;
+    }
+
+    public void setIsAdmin(Boolean isAdmin) {
+        this.isAdmin = isAdmin;
     }
 }

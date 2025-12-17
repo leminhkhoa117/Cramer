@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { FiChevronUp, FiChevronDown, FiSearch, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { FiChevronUp, FiChevronDown, FiSearch, FiChevronLeft, FiChevronRight, FiLoader } from 'react-icons/fi';
 import './DataTable.css';
 
 /**
@@ -16,6 +16,14 @@ import './DataTable.css';
  * @param {React.ReactNode} actions - Render prop cho header actions
  * @param {boolean} loading - Loading state
  * @param {string} emptyMessage - Message khi không có data
+ * 
+ * Server-side pagination props:
+ * @param {boolean} serverSidePagination - Dùng server-side pagination
+ * @param {number} currentPage - Trang hiện tại (0-indexed cho server)
+ * @param {number} totalItems - Tổng số items
+ * @param {Function} onPageChange - Handler khi đổi trang (page: number)
+ * @param {Function} onSearch - Handler khi search (debounced)
+ * @param {Function} onSort - Handler khi sort
  */
 export default function DataTable({
     columns = [],
@@ -29,16 +37,51 @@ export default function DataTable({
     actions,
     loading = false,
     emptyMessage = 'Không có dữ liệu',
+    // Server-side pagination
+    serverSidePagination = false,
+    currentPage: externalCurrentPage,
+    totalItems: externalTotalItems,
+    onPageChange: externalOnPageChange,
+    onSearch,
+    onSort,
 }) {
-    const [searchTerm, setSearchTerm] = useState('');
+    // Local state (for client-side pagination)
+    const [localSearchTerm, setLocalSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-    const [currentPage, setCurrentPage] = useState(1);
+    const [localCurrentPage, setLocalCurrentPage] = useState(1);
 
-    // Filter data based on search term
+    // Debounce search for server-side
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(localSearchTerm);
+            if (onSearch && serverSidePagination) {
+                onSearch(localSearchTerm);
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [localSearchTerm, onSearch, serverSidePagination]);
+
+    // Use external or local pagination state
+    const currentPage = serverSidePagination
+        ? (externalCurrentPage !== undefined ? externalCurrentPage + 1 : 1) // Convert 0-indexed to 1-indexed
+        : localCurrentPage;
+
+    const handlePageChange = useCallback((page) => {
+        if (serverSidePagination && externalOnPageChange) {
+            externalOnPageChange(page - 1); // Convert back to 0-indexed
+        } else {
+            setLocalCurrentPage(page);
+        }
+    }, [serverSidePagination, externalOnPageChange]);
+
+    // Filter data based on search term (client-side only)
     const filteredData = useMemo(() => {
-        if (!searchTerm || searchKeys.length === 0) return data;
+        if (serverSidePagination) return data; // Server handles filtering
+        if (!localSearchTerm || searchKeys.length === 0) return data;
 
-        const lowerSearch = searchTerm.toLowerCase();
+        const lowerSearch = localSearchTerm.toLowerCase();
         return data.filter(item =>
             searchKeys.some(key => {
                 const value = item[key];
@@ -46,10 +89,11 @@ export default function DataTable({
                 return String(value).toLowerCase().includes(lowerSearch);
             })
         );
-    }, [data, searchTerm, searchKeys]);
+    }, [data, localSearchTerm, searchKeys, serverSidePagination]);
 
-    // Sort data
+    // Sort data (client-side only)
     const sortedData = useMemo(() => {
+        if (serverSidePagination) return filteredData; // Server handles sorting
         if (!sortConfig.key) return filteredData;
 
         return [...filteredData].sort((a, b) => {
@@ -70,37 +114,38 @@ export default function DataTable({
 
             return sortConfig.direction === 'asc' ? comparison : -comparison;
         });
-    }, [filteredData, sortConfig]);
+    }, [filteredData, sortConfig, serverSidePagination]);
 
-    // Paginate data
+    // Paginate data (client-side only)
     const paginatedData = useMemo(() => {
+        if (serverSidePagination) return data; // Server handles pagination
         const start = (currentPage - 1) * pageSize;
         const end = start + pageSize;
         return sortedData.slice(start, end);
-    }, [sortedData, currentPage, pageSize]);
+    }, [sortedData, currentPage, pageSize, serverSidePagination, data]);
 
     // Calculate pagination info
-    const totalPages = Math.ceil(sortedData.length / pageSize);
-    const startItem = (currentPage - 1) * pageSize + 1;
-    const endItem = Math.min(currentPage * pageSize, sortedData.length);
+    const totalItems = serverSidePagination ? (externalTotalItems || 0) : sortedData.length;
+    const totalPages = Math.ceil(totalItems / pageSize) || 1;
+    const startItem = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+    const endItem = Math.min(currentPage * pageSize, totalItems);
 
     // Handle sort
     const handleSort = (key) => {
-        setSortConfig(prev => ({
-            key,
-            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
-        }));
+        const newDirection = sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc';
+        setSortConfig({ key, direction: newDirection });
+
+        if (serverSidePagination && onSort) {
+            onSort(key, newDirection);
+        }
     };
 
-    // Handle page change
-    const handlePageChange = (page) => {
-        setCurrentPage(Math.max(1, Math.min(page, totalPages)));
-    };
-
-    // Reset to page 1 when search changes
-    React.useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm]);
+    // Reset to page 1 when search changes (client-side)
+    useEffect(() => {
+        if (!serverSidePagination) {
+            setLocalCurrentPage(1);
+        }
+    }, [localSearchTerm, serverSidePagination]);
 
     return (
         <div className="data-table">
@@ -113,8 +158,8 @@ export default function DataTable({
                             <input
                                 type="text"
                                 placeholder={searchPlaceholder}
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                value={localSearchTerm}
+                                onChange={(e) => setLocalSearchTerm(e.target.value)}
                                 className="data-table__search-input"
                             />
                         </div>
@@ -190,16 +235,16 @@ export default function DataTable({
             </div>
 
             {/* Pagination */}
-            {sortedData.length > 0 && (
+            {totalItems > 0 && (
                 <div className="data-table__pagination">
                     <div className="data-table__pagination-info">
-                        Hiển thị {startItem} - {endItem} trong tổng số {sortedData.length} kết quả
+                        Hiển thị {startItem} - {endItem} trong tổng số {totalItems.toLocaleString()} kết quả
                     </div>
                     <div className="data-table__pagination-controls">
                         <button
                             className="data-table__pagination-btn"
                             onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
+                            disabled={currentPage === 1 || loading}
                         >
                             <FiChevronLeft size={16} />
                         </button>
@@ -228,6 +273,7 @@ export default function DataTable({
                                         key={page}
                                         className={`data-table__pagination-btn ${currentPage === page ? 'data-table__pagination-btn--active' : ''}`}
                                         onClick={() => handlePageChange(page)}
+                                        disabled={loading}
                                     >
                                         {page}
                                     </button>
@@ -238,7 +284,7 @@ export default function DataTable({
                         <button
                             className="data-table__pagination-btn"
                             onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
+                            disabled={currentPage === totalPages || loading}
                         >
                             <FiChevronRight size={16} />
                         </button>

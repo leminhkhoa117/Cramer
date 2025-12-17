@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore, useProfileStore } from './stores';
 import { AnimatePresence } from 'framer-motion';
@@ -19,24 +19,25 @@ import CourseDetailPage from './pages/CourseDetailPage';
 import TestLayout from './components/TestLayout';
 import TestReviewPage from './pages/TestReviewPage';
 import WritingResultPage from './pages/WritingResultPage';
-import Profile from './pages/Profile';
+import Profile from './pages/profile';
 import VocabularyPage from './pages/VocabularyPage';
 import PricingPage from './pages/PricingPage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
 
-// Admin imports - Lazy loaded to prevent CSS from affecting user pages
-const AdminLayout = React.lazy(() => import('./admin/components/AdminLayout'));
-const AdminRouteGuard = React.lazy(() => import('./admin/components/AdminRouteGuard'));
-const AdminDashboard = React.lazy(() => import('./admin/pages/AdminDashboard'));
-const UserListPage = React.lazy(() => import('./admin/pages/users/UserListPage'));
-const UserDetailPage = React.lazy(() => import('./admin/pages/users/UserDetailPage'));
-const FinanceDashboard = React.lazy(() => import('./admin/pages/finance/FinanceDashboard'));
-const TransactionHistoryPage = React.lazy(() => import('./admin/pages/finance/TransactionHistoryPage'));
-const ContentListPage = React.lazy(() => import('./admin/pages/content/ContentListPage'));
-const TestEditorSelectPage = React.lazy(() => import('./admin/pages/content/TestEditorSelectPage'));
-const TestEditorPage = React.lazy(() => import('./admin/pages/content/TestEditorPage'));
+// Admin imports
+import AdminLayout from './admin/components/AdminLayout';
+import AdminRouteGuard from './admin/components/AdminRouteGuard';
+import AdminDashboard from './admin/pages/AdminDashboard';
+import UserListPage from './admin/pages/users/UserListPage';
+import UserDetailPage from './admin/pages/users/UserDetailPage';
+import FinanceDashboard from './admin/pages/finance/FinanceDashboard';
+import TransactionHistoryPage from './admin/pages/finance/TransactionHistoryPage';
+import ReportsPage from './admin/pages/finance/ReportsPage';
+import ContentListPage from './admin/pages/content/ContentListPage';
+import TestEditorSelectPage from './admin/pages/content/TestEditorSelectPage';
+import TestEditorPage from './admin/pages/content/TestEditorPage';
 
 // This component waits for the initial auth loading to complete
 function AuthInitializer({ children }) {
@@ -102,18 +103,15 @@ function ProtectedRoute({ children }) {
 // This component contains the actual app layout and routes
 function AppContent() {
   const location = useLocation();
-
-  // Check if current route is admin
-  const isAdminPage = location.pathname.startsWith('/admin');
-
   // Hide header/footer on test-taking pages and review pages (they have their own header)
   const isTestPage = /^\/test\/\w+\/\d+\/\w+$/.test(location.pathname) ||
     /^\/test\/writing\/(?!review)\w+\/\d+$/.test(location.pathname);
   // Review pages have their own internal header, so hide the main header
   const isReviewPage = /^\/test\/writing\/review\/\d+$/.test(location.pathname) ||
     /^\/test\/review\/\d+$/.test(location.pathname);
+  // Admin pages have their own layout with AdminHeader/AdminSidebar
+  const isAdminPage = location.pathname.startsWith('/admin');
 
-  // Don't show user header/footer on admin pages, test pages, or review pages
   const showHeader = !isTestPage && !isReviewPage && !isAdminPage;
 
   return (
@@ -228,39 +226,25 @@ function AppContent() {
               element={<PaymentCancelPage />}
             />
 
-            {/* Admin Routes - Wrapped in Suspense for lazy loading */}
+            {/* Admin Routes - separate layout, no Header/Footer */}
             <Route
-              path="/admin/*"
+              path="/admin"
               element={
-                <Suspense fallback={
-                  <div style={{
-                    minHeight: '100vh',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: '#0F0F23',
-                    color: '#F8FAFC'
-                  }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <p>Loading Admin...</p>
-                    </div>
-                  </div>
-                }>
-                  <AdminRouteGuard>
-                    <AdminLayout />
-                  </AdminRouteGuard>
-                </Suspense>
+                <AdminRouteGuard>
+                  <AdminLayout />
+                </AdminRouteGuard>
               }
             >
               <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="users" element={<UserListPage />} />
               <Route path="users/:userId" element={<UserDetailPage />} />
               <Route path="finance" element={<FinanceDashboard />} />
               <Route path="finance/transactions" element={<TransactionHistoryPage />} />
-              <Route path="finance/reports" element={<FinanceDashboard />} />
+              <Route path="finance/reports" element={<ReportsPage />} />
               <Route path="content" element={<ContentListPage />} />
               <Route path="content/editor" element={<TestEditorSelectPage />} />
-              <Route path="content/editor/:testId" element={<TestEditorPage />} />
+              <Route path="content/editor/:examSource/:testNumber" element={<TestEditorPage />} />
             </Route>
           </Routes>
         </AnimatePresence>
