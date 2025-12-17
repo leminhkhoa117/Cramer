@@ -15,7 +15,10 @@ Write-Host "Running backend (Windows helper) from $ScriptDir" -ForegroundColor C
 if (Test-Path $EnvFile) {
     Write-Host "Loading environment variables from $EnvFile" -ForegroundColor Green
     Get-Content $EnvFile | ForEach-Object {
-        $line = $_.Trim()
+        # IMPORTANT: Remove carriage return (\r) characters that may be present in CRLF files
+        # PowerShell's Trim() does NOT remove \r, which causes JWT secret mismatch!
+        $line = $_ -replace "`r", ""
+        $line = $line.Trim()
         # Skip comments and empty lines
         if ($line -and -not $line.StartsWith('#')) {
             if ($line -match '^([^=]+)=(.*)$') {
@@ -28,6 +31,9 @@ if (Test-Path $EnvFile) {
                 } elseif ($value -match "^'(.*)'$") {
                     $value = $matches[1]
                 }
+                
+                # Safety: ensure no hidden \r characters in value
+                $value = $value -replace "`r", ""
                 
                 [Environment]::SetEnvironmentVariable($name, $value, 'Process')
                 

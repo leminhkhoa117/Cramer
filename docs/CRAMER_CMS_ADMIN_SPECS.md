@@ -1484,5 +1484,574 @@ Ghi nhật ký tất cả thao tác admin với thông tin:
 
 ---
 
+## 13. Implementation Plan (Frontend-First Approach)
+
+> **Cập nhật:** 16/12/2025  
+> **Phương pháp:** Xây dựng giao diện trước với mock data, sau đó tích hợp backend
+
+### 13.1 Tổng quan Phương pháp
+
+Thay vì xây dựng đồng thời frontend và backend, chúng ta sẽ:
+1. **Xây dựng toàn bộ UI** với mock data trước
+2. **Demo và nhận feedback** sớm về UX
+3. **Sau đó mới xây dựng backend** và thay thế mock data bằng API calls
+
+**Ưu điểm:**
+- Demo được sớm cho stakeholders
+- Validate UX trước khi đầu tư vào backend
+- Frontend dev và Backend dev có thể work parallel sau Phase 1
+- Dễ iterate trên UI mà không ảnh hưởng backend
+
+### 13.2 Cấu trúc Thư mục Admin
+
+```
+frontend/src/admin/
+├── components/
+│   ├── AdminLayout.jsx       # Layout chung (sidebar + header + content)
+│   ├── AdminSidebar.jsx      # Sidebar navigation
+│   ├── AdminHeader.jsx       # Header với breadcrumb
+│   ├── DataTable/            # Reusable table component
+│   │   ├── DataTable.jsx
+│   │   ├── DataTablePagination.jsx
+│   │   └── DataTable.css
+│   ├── Charts/               # Chart components (Recharts wrapper)
+│   │   ├── LineChart.jsx
+│   │   ├── DonutChart.jsx
+│   │   └── MetricCard.jsx
+│   └── Modals/               # Shared modal components
+│       ├── ConfirmModal.jsx
+│       └── ImportWizard.jsx
+│
+├── pages/
+│   ├── AdminDashboard.jsx    # Trang tổng quan admin
+│   ├── users/                # Module quản lý users
+│   │   ├── UserListPage.jsx
+│   │   ├── UserDetailPage.jsx
+│   │   └── components/
+│   │       ├── UserProfileTab.jsx
+│   │       ├── UserSubscriptionTab.jsx
+│   │       ├── UserCreditsTab.jsx
+│   │       ├── UserActivityTab.jsx
+│   │       └── UserAuditLogTab.jsx
+│   ├── finance/              # Module tài chính
+│   │   ├── FinanceDashboard.jsx
+│   │   ├── TransactionHistoryPage.jsx
+│   │   └── FinanceReportsPage.jsx
+│   └── content/              # Module nội dung đề thi
+│       ├── ContentListPage.jsx
+│       ├── TestEditorPage.jsx
+│       └── components/
+│           ├── QuestionNavigator.jsx
+│           ├── QuestionEditor.jsx
+│           └── PublishChecklist.jsx
+│
+├── mock/
+│   ├── mockUsers.js          # Mock data cho users
+│   ├── mockFinance.js        # Mock data cho finance
+│   ├── mockContent.js        # Mock data cho content
+│   └── index.js              # Export tất cả mock data
+│
+├── hooks/
+│   └── useAdminAuth.js       # Hook kiểm tra quyền admin
+│
+└── css/
+    ├── admin.css             # Admin base styles
+    ├── admin-variables.css   # CSS variables cho admin theme
+    └── components/           # Component-specific styles
+```
+
+---
+
+### 13.3 Phase 1: Setup & Admin Shell (1-2 ngày)
+
+#### Mục tiêu
+Tạo khung cơ bản cho admin panel, có thể navigate giữa các trang.
+
+#### Tasks
+
+| # | Task | File(s) | Độ ưu tiên |
+|---|------|---------|------------|
+| 1.1 | Tạo cấu trúc thư mục admin | `frontend/src/admin/` | 🔴 Cao |
+| 1.2 | Tạo AdminLayout component | `AdminLayout.jsx` | 🔴 Cao |
+| 1.3 | Tạo AdminSidebar với menu items | `AdminSidebar.jsx` | 🔴 Cao |
+| 1.4 | Tạo AdminHeader với breadcrumb | `AdminHeader.jsx` | 🔴 Cao |
+| 1.5 | Setup admin CSS với theme tím | `admin.css`, `admin-variables.css` | 🔴 Cao |
+| 1.6 | Thêm routes `/admin/*` vào App.jsx | `App.jsx` | 🔴 Cao |
+| 1.7 | Tạo AdminRouteGuard component | `AdminRouteGuard.jsx` | 🟡 Trung bình |
+| 1.8 | Tạo AdminDashboard placeholder | `AdminDashboard.jsx` | 🟡 Trung bình |
+
+#### CSS Variables cho Admin Theme
+
+```css
+/* admin-variables.css */
+:root {
+  /* Admin Primary - Tím để phân biệt với user UI */
+  --admin-primary: #8B5CF6;
+  --admin-primary-hover: #7C3AED;
+  --admin-primary-light: rgba(139, 92, 246, 0.1);
+  
+  /* Status Colors */
+  --admin-success: #10B981;
+  --admin-warning: #F59E0B;
+  --admin-danger: #EF4444;
+  --admin-info: #3B82F6;
+  
+  /* Background */
+  --admin-bg-primary: #0F0F23;
+  --admin-bg-secondary: #1A1A2E;
+  --admin-bg-card: rgba(255, 255, 255, 0.05);
+  
+  /* Sidebar */
+  --admin-sidebar-width: 260px;
+  --admin-sidebar-collapsed-width: 80px;
+}
+```
+
+#### Deliverables Phase 1
+- [ ] Admin shell hoạt động với sidebar navigation
+- [ ] Có thể click menu items để navigate (pages rỗng)
+- [ ] Theme tím đã được apply
+- [ ] Route guard chặn non-admin users (tạm thời hardcode check)
+
+---
+
+### 13.4 Phase 2: Module Quản lý Người dùng - UI (3-4 ngày)
+
+#### Mock Data Structure
+
+```javascript
+// mock/mockUsers.js
+export const mockUsers = [
+  {
+    id: "550e8400-e29b-41d4-a716-446655440001",
+    username: "quochuu54",
+    fullName: "Nguyễn Quốc Hữu",
+    email: "quochuu@gmail.com",
+    phone: "0901234567",
+    address: "Quận 1, TP.HCM",
+    avatarUrl: null,
+    subscription: "CRAMERICH",
+    subscriptionStatus: "ACTIVE",
+    subscriptionStartDate: "2025-12-01",
+    subscriptionEndDate: "2026-01-01",
+    autoRenew: true,
+    accountStatus: "ACTIVE",
+    statusReason: null,
+    credits: 350,
+    totalCreditsEarned: 1200,
+    totalCreditsSpent: 850,
+    createdAt: "2025-01-15T10:30:00Z",
+    lastLoginAt: "2025-12-15T14:30:00Z",
+    loginCount: 145,
+    testsCompleted: 45,
+    averageScore: 6.5,
+    highestStreak: 12,
+    vocabularySaved: 234,
+  },
+  // ... thêm 20-30 mock users với dữ liệu đa dạng
+];
+
+export const mockUserActivities = [
+  {
+    userId: "550e8400-e29b-41d4-a716-446655440001",
+    activities: [
+      {
+        id: 1,
+        type: "TEST_COMPLETED",
+        description: "Hoàn thành bài Reading Cambridge 17 Test 1",
+        metadata: { score: "32/40", testId: 123 },
+        createdAt: "2025-12-15T14:30:00Z",
+      },
+      // ... more activities
+    ],
+  },
+];
+
+export const mockUserAuditLogs = [
+  {
+    id: 1,
+    adminEmail: "admin1@cramer.edu.vn",
+    action: "UPDATE_SUBSCRIPTION",
+    targetUserId: "550e8400-e29b-41d4-a716-446655440001",
+    oldValue: { subscription: "CRAMERIE" },
+    newValue: { subscription: "CRAMERICH" },
+    createdAt: "2025-12-14T15:00:00Z",
+  },
+  // ... more logs
+];
+
+// =========================================================================
+// QUOTA SYSTEM - Hạn mức sử dụng theo gói đăng ký
+// =========================================================================
+
+// Định nghĩa 4 loại hạn mức chính
+export const quotaTypes = [
+  { key: "basicGrading", label: "Lượt chấm thường", icon: "📝" },
+  { key: "advancedGrading", label: "Lượt chấm nâng cao", icon: "🎯" },
+  { key: "aiChat", label: "Lượt trò chuyện AI", icon: "💬" },
+  { key: "vocabTranslation", label: "Lượt dịch từ vựng", icon: "📖" },
+];
+
+// Hạn mức mặc định theo tier (per month)
+export const defaultQuotaLimits = {
+  FREE: {
+    basicGrading: 5,
+    advancedGrading: 0,      // Không có quyền truy cập
+    aiChat: 10,
+    vocabTranslation: 20,
+  },
+  CRAMERIE: {
+    basicGrading: 30,
+    advancedGrading: 10,
+    aiChat: 100,
+    vocabTranslation: 200,
+  },
+  CRAMERICH: {
+    basicGrading: -1,        // -1 = unlimited
+    advancedGrading: 50,
+    aiChat: -1,              // unlimited
+    vocabTranslation: -1,    // unlimited
+  },
+};
+
+// Mock user quotas với usage và custom limits
+export const mockUserQuotas = {
+  "user-id-here": {
+    basicGrading: { used: 45, limit: -1, customLimit: null },
+    advancedGrading: { used: 28, limit: 50, customLimit: 100 }, // Custom tăng limit
+    aiChat: { used: 156, limit: -1, customLimit: null },
+    vocabTranslation: { used: 89, limit: -1, customLimit: null },
+    resetDate: "2026-01-01", // Ngày reset hạn mức
+  },
+};
+```
+
+#### Tasks
+
+| # | Task | File(s) | Độ ưu tiên |
+|---|------|---------|------------|
+| 2.1 | Tạo DataTable component cơ bản | `DataTable/` | 🔴 Cao |
+| 2.2 | Tạo UserListPage với table | `UserListPage.jsx` | 🔴 Cao |
+| 2.3 | Implement search bar (filter local) | `UserListPage.jsx` | 🔴 Cao |
+| 2.4 | Implement filters (status, subscription) | `UserListPage.jsx` | 🔴 Cao |
+| 2.5 | Implement pagination (client-side) | `DataTablePagination.jsx` | 🔴 Cao |
+| 2.6 | Tạo UserDetailPage layout với tabs | `UserDetailPage.jsx` | 🔴 Cao |
+| 2.7 | Tạo UserProfileTab | `UserProfileTab.jsx` | 🔴 Cao |
+| 2.8 | Tạo UserSubscriptionTab | `UserSubscriptionTab.jsx` | 🟡 Trung bình |
+| 2.9 | Tạo UserCreditsTab với transaction history | `UserCreditsTab.jsx` | 🟡 Trung bình |
+| 2.10 | Tạo UserActivityTab với timeline | `UserActivityTab.jsx` | 🟡 Trung bình |
+| 2.11 | Tạo UserAuditLogTab | `UserAuditLogTab.jsx` | 🟡 Trung bình |
+| 2.12 | Tạo BanUserModal | `BanUserModal.jsx` | 🟢 Thấp |
+| 2.13 | Tạo AddCreditsModal | `AddCreditsModal.jsx` | 🟢 Thấp |
+| 2.14 | Tạo BatchActionModal | `BatchActionModal.jsx` | 🟢 Thấp |
+
+#### Deliverables Phase 2
+- [ ] Danh sách users hiển thị đầy đủ với mock data
+- [ ] Search và filter hoạt động (client-side)
+- [ ] Pagination hoạt động
+- [ ] User detail page với 5 tabs đầy đủ
+- [ ] Các modal để thực hiện actions (UI only, chưa có logic)
+
+---
+
+### 13.5 Phase 3: Module Quản lý Tài chính - UI (2-3 ngày)
+
+#### Mock Data Structure
+
+```javascript
+// mock/mockFinance.js
+export const mockFinanceOverview = {
+  totalRevenue: 125000000,
+  totalRevenueChange: 12.5, // % so với kỳ trước
+  subscriptionRevenue: 89000000,
+  luaRevenue: 36000000,
+  
+  newSubscriptions: 45,
+  subscriptionChange: 8.3,
+  churnedSubscriptions: 5,
+  
+  luaPacksSold: 234,
+  luaPacksChange: -2.1,
+  averageOrderValue: 153846,
+  
+  growthRate: 15.2,
+};
+
+export const mockRevenueChart = [
+  { date: "2025-12-01", total: 4200000, subscriptions: 3000000, lua: 1200000 },
+  { date: "2025-12-02", total: 3800000, subscriptions: 2500000, lua: 1300000 },
+  // ... 30 ngày data
+];
+
+export const mockTransactions = [
+  {
+    id: "txn-001",
+    orderCode: "1234567",
+    paymentLinkId: "pl_abc123",
+    userId: "550e8400-e29b-41d4-a716-446655440001",
+    username: "quochuu54",
+    userEmail: "quochuu@gmail.com",
+    type: "SUBSCRIPTION_NEW",
+    productName: "Cramerich Monthly",
+    amount: 199000,
+    status: "PAID",
+    paymentMethod: "BANK_TRANSFER",
+    createdAt: "2025-12-15T14:30:00Z",
+    paidAt: "2025-12-15T14:32:15Z",
+  },
+  // ... more transactions
+];
+
+export const mockTopSpenders = [
+  { rank: 1, userId: "uuid-1", username: "vip_user1", totalSpent: 2500000 },
+  { rank: 2, userId: "uuid-2", username: "vip_user2", totalSpent: 1890000 },
+  // ... top 10
+];
+```
+
+#### Tasks
+
+| # | Task | File(s) | Độ ưu tiên |
+|---|------|---------|------------|
+| 3.1 | Tạo MetricCard component | `MetricCard.jsx` | 🔴 Cao |
+| 3.2 | Tạo FinanceDashboard với 4 metric cards | `FinanceDashboard.jsx` | 🔴 Cao |
+| 3.3 | Tạo time filter component | `TimeFilter.jsx` | 🔴 Cao |
+| 3.4 | Tạo LineChart component (Recharts) | `LineChart.jsx` | 🔴 Cao |
+| 3.5 | Tạo DonutChart component (Recharts) | `DonutChart.jsx` | 🟡 Trung bình |
+| 3.6 | Tạo TopSpendersTable | `TopSpendersTable.jsx` | 🟡 Trung bình |
+| 3.7 | Tạo TransactionHistoryPage | `TransactionHistoryPage.jsx` | 🔴 Cao |
+| 3.8 | Tạo StatusBadge component | `StatusBadge.jsx` | 🔴 Cao |
+| 3.9 | Tạo TransactionDetailDrawer | `TransactionDetailDrawer.jsx` | 🟡 Trung bình |
+| 3.10 | Tạo FinanceReportsPage | `FinanceReportsPage.jsx` | 🟢 Thấp |
+| 3.11 | Tạo ExportButton (placeholder) | `ExportButton.jsx` | 🟢 Thấp |
+
+#### Deliverables Phase 3
+- [ ] Finance dashboard với charts và metrics
+- [ ] Transaction history với filters và pagination
+- [ ] Transaction detail drawer
+- [ ] Reports page (UI skeleton)
+
+---
+
+### 13.6 Phase 4: Module Quản lý Nội dung - UI (4-5 ngày)
+
+#### Mock Data Structure
+
+```javascript
+// mock/mockContent.js
+export const mockTopics = [
+  {
+    id: 1,
+    source: "Cambridge 17",
+    displayName: "Cambridge IELTS 17",
+    testsCount: 4,
+    tests: [
+      {
+        number: 1,
+        status: "PUBLISHED",
+        publishedAt: "2025-11-01T00:00:00Z",
+        skills: {
+          reading: { 
+            questionCount: 40, 
+            status: "complete",
+            sections: [
+              { id: 1, name: "Passage 1", questionRange: "1-13" },
+              { id: 2, name: "Passage 2", questionRange: "14-26" },
+              { id: 3, name: "Passage 3", questionRange: "27-40" },
+            ]
+          },
+          listening: { 
+            questionCount: 40, 
+            status: "complete",
+            sections: [
+              { id: 4, name: "Part 1", questionRange: "1-10", hasAudio: true },
+              { id: 5, name: "Part 2", questionRange: "11-20", hasAudio: true },
+              { id: 6, name: "Part 3", questionRange: "21-30", hasAudio: true },
+              { id: 7, name: "Part 4", questionRange: "31-40", hasAudio: true },
+            ]
+          },
+          writing: { status: "complete", hasTask1: true, hasTask2: true },
+          speaking: { status: "draft" },
+        },
+      },
+      // ... Test 2, 3, 4
+    ],
+  },
+  // ... more topics (Cambridge 18, Real Tests, etc.)
+];
+
+export const mockQuestions = [
+  {
+    id: 1,
+    sectionId: 1,
+    questionNumber: 1,
+    questionType: "FILL_IN_BLANK",
+    text: "The ____ of London has grown significantly over the past century.",
+    correctAnswers: ["population"],
+    wordLimit: "ONE WORD ONLY",
+    explanation: "Paragraph 1 mentions 'the population of London'...",
+    hasValidation: true,
+    validationErrors: [],
+  },
+  {
+    id: 2,
+    sectionId: 1,
+    questionNumber: 2,
+    questionType: "TRUE_FALSE_NOT_GIVEN",
+    text: "The railway system was expensive to build.",
+    correctAnswers: ["TRUE"],
+    explanation: "Paragraph 2 states that 'the construction costs were enormous'...",
+    hasValidation: true,
+    validationErrors: [],
+  },
+  // ... more questions với đủ 13 types
+];
+```
+
+#### Tasks
+
+| # | Task | File(s) | Độ ưu tiên |
+|---|------|---------|------------|
+| 4.1 | Tạo ContentListPage với Tree View | `ContentListPage.jsx` | 🔴 Cao |
+| 4.2 | Implement expand/collapse tree nodes | `TreeNode.jsx` | 🔴 Cao |
+| 4.3 | Tạo Grid View alternative | `ContentGridView.jsx` | 🟡 Trung bình |
+| 4.4 | Tạo TestEditorPage layout | `TestEditorPage.jsx` | 🔴 Cao |
+| 4.5 | Tạo skill tabs (Reading/Listening/Writing/Speaking) | `TestEditorPage.jsx` | 🔴 Cao |
+| 4.6 | Tạo QuestionNavigator (left panel) | `QuestionNavigator.jsx` | 🔴 Cao |
+| 4.7 | Tạo QuestionEditor base component | `QuestionEditor.jsx` | 🔴 Cao |
+| 4.8 | Implement FILL_IN_BLANK editor | `editors/FillInBlankEditor.jsx` | 🔴 Cao |
+| 4.9 | Implement TRUE_FALSE_NOT_GIVEN editor | `editors/TrueFalseEditor.jsx` | 🔴 Cao |
+| 4.10 | Implement MULTIPLE_CHOICE editor | `editors/MultipleChoiceEditor.jsx` | 🔴 Cao |
+| 4.11 | Implement các editor còn lại (10 types) | `editors/` | 🟡 Trung bình |
+| 4.12 | Tạo QuestionPreview modal | `QuestionPreview.jsx` | 🟡 Trung bình |
+| 4.13 | Tạo SectionEditor (cho passage/audio) | `SectionEditor.jsx` | 🟡 Trung bình |
+| 4.14 | Tạo ImportWizard multi-step | `ImportWizard.jsx` | 🟡 Trung bình |
+| 4.15 | Tạo PublishChecklist modal | `PublishChecklist.jsx` | 🟢 Thấp |
+
+#### Deliverables Phase 4
+- [ ] Content list với Tree/Grid view
+- [ ] Test editor với navigation và form editors
+- [ ] Support tất cả 13 question types
+- [ ] Question preview
+- [ ] Import wizard UI (không có actual import logic)
+- [ ] Publish checklist UI
+
+---
+
+### 13.7 Phase 5: Shared Components (Song song với các phases khác)
+
+Các components được xây dựng dần trong quá trình làm các phases:
+
+| Component | Mô tả | Sử dụng ở |
+|-----------|-------|-----------|
+| `DataTable` | Bảng với sort, filter, pagination, selection | Users, Transactions, Audit logs |
+| `MetricCard` | Card hiển thị số liệu với trend indicator | Finance Dashboard |
+| `StatusBadge` | Badge với màu theo status | Transactions, Users, Content |
+| `LineChart` | Wrapper Recharts line chart | Finance Dashboard |
+| `DonutChart` | Wrapper Recharts donut chart | Finance Dashboard |
+| `ConfirmModal` | Modal xác nhận action | Ban user, Delete, Publish |
+| `DateRangePicker` | Chọn khoảng ngày | Filters, Reports |
+| `SearchInput` | Input tìm kiếm với debounce | User list, Transaction list |
+| `Toast` | Thông báo success/error | Sau mọi action |
+
+---
+
+### 13.8 Phase 6: Backend Integration (SAU KHI UI HOÀN THÀNH)
+
+Sau khi tất cả UI đã sẵn sàng với mock data:
+
+#### 6.1 Database Changes
+- [ ] Tạo bảng `admin_audit_log`
+- [ ] Tạo bảng `content_publish_status`
+- [ ] Thêm columns vào bảng `profiles` (account_status, status_reason, etc.)
+- [ ] Tạo indexes cho các columns thường query
+
+#### 6.2 Backend APIs
+- [ ] Tạo `AdminAuthFilter` kiểm tra admin quyền
+- [ ] Implement tất cả endpoints trong Section 9 (Admin APIs)
+- [ ] Thêm audit logging cho mọi admin action
+
+#### 6.3 Frontend Integration
+- [ ] Tạo `adminApi.js` với các API functions
+- [ ] Tạo `useAdminStore.js` Zustand store
+- [ ] Thay thế mock data bằng API calls
+- [ ] Implement loading states và error handling
+- [ ] Kết nối actual authentication
+
+---
+
+### 13.9 Timeline Tổng quan
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  FRONTEND-FIRST IMPLEMENTATION TIMELINE                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Phase 1: Setup & Shell          ████░░░░░░░░░░░░░░░░░░░░░░  (1-2 ngày)    │
+│  Phase 2: User Management UI     ░░░░████████░░░░░░░░░░░░░░  (3-4 ngày)    │
+│  Phase 3: Finance UI             ░░░░░░░░░░░░█████░░░░░░░░░  (2-3 ngày)    │
+│  Phase 4: Content UI             ░░░░░░░░░░░░░░░░░████████░  (4-5 ngày)    │
+│  Phase 5: Shared Components      ████████████████████████░░  (song song)   │
+│                                                                             │
+│  ────────────────────────────────────────────────────────────────────────  │
+│  TỔNG THỜI GIAN UI: ~10-14 ngày làm việc                                   │
+│  ────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  Phase 6: Backend Integration    ░░░░░░░░░░░░░░░░░░░░░░░░██████  (TBD)     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 13.10 Checklist Theo Dõi Tiến Độ
+
+#### Phase 1: Setup & Admin Shell
+- [ ] Tạo cấu trúc thư mục `frontend/src/admin/`
+- [ ] `AdminLayout.jsx` hoàn thành
+- [ ] `AdminSidebar.jsx` hoàn thành
+- [ ] `AdminHeader.jsx` hoàn thành
+- [ ] `admin.css` và `admin-variables.css` hoàn thành
+- [ ] Routes `/admin/*` đã thêm vào `App.jsx`
+- [ ] `AdminRouteGuard.jsx` hoàn thành
+- [ ] `AdminDashboard.jsx` placeholder hoàn thành
+- **Trạng thái:** ⏳ Chưa bắt đầu
+
+#### Phase 2: Module Quản lý Người dùng
+- [ ] Mock data users đã tạo
+- [ ] `DataTable` component hoàn thành
+- [ ] `UserListPage.jsx` hoàn thành
+- [ ] `UserDetailPage.jsx` với 5 tabs hoàn thành
+- [ ] Các modals (Ban, Credits, Batch) hoàn thành
+- **Trạng thái:** ⏳ Chưa bắt đầu
+
+#### Phase 3: Module Quản lý Tài chính
+- [ ] Mock data finance đã tạo
+- [ ] `FinanceDashboard.jsx` hoàn thành
+- [ ] Charts (Line, Donut) hoàn thành
+- [ ] `TransactionHistoryPage.jsx` hoàn thành
+- [ ] `TransactionDetailDrawer.jsx` hoàn thành
+- [ ] `FinanceReportsPage.jsx` hoàn thành
+- **Trạng thái:** ⏳ Chưa bắt đầu
+
+#### Phase 4: Module Quản lý Nội dung
+- [ ] Mock data content đã tạo
+- [ ] `ContentListPage.jsx` (Tree + Grid view) hoàn thành
+- [ ] `TestEditorPage.jsx` hoàn thành
+- [ ] `QuestionNavigator.jsx` hoàn thành
+- [ ] `QuestionEditor.jsx` với 13 types hoàn thành
+- [ ] `ImportWizard.jsx` hoàn thành
+- [ ] `PublishChecklist.jsx` hoàn thành
+- **Trạng thái:** ⏳ Chưa bắt đầu
+
+#### Phase 6: Backend Integration
+- [ ] Database schema updated
+- [ ] Backend APIs implemented
+- [ ] Frontend connected to APIs
+- [ ] Authentication integrated
+- **Trạng thái:** ⏳ Chưa bắt đầu
+
+---
+
 **KẾT THÚC TÀI LIỆU**
 

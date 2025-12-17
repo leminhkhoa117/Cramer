@@ -36,6 +36,32 @@
 }
 
 /* ============================================
+   FIX: Ensure navbar items show on desktop
+   Override Tailwind base styles that may hide them
+   ============================================ */
+@media (min-width: 992px) {
+  .navbar .navbar-collapse {
+    display: flex !important;
+    flex-basis: auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  .navbar .navbar-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+  
+  .navbar .nav-link,
+  .navbar .header-nav-link {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
+/* ============================================
    NAV LINKS - White on purple, dark on white
    ============================================ */
 .header-nav-link {

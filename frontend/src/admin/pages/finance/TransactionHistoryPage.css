@@ -1,0 +1,283 @@
+/* ==========================================================================
+   TRANSACTION HISTORY PAGE STYLES
+   ========================================================================== */
+
+/* Transaction Stats */
+.transaction-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--admin-spacing-md);
+  margin-bottom: var(--admin-spacing-xl);
+}
+
+.transaction-stat {
+  background: var(--admin-glass-bg);
+  border: 1px solid var(--admin-glass-border);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-spacing-lg);
+  text-align: center;
+}
+
+.transaction-stat__value {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  margin-bottom: 4px;
+}
+
+.transaction-stat__label {
+  font-size: 0.8125rem;
+  color: var(--admin-text-muted);
+}
+
+.transaction-stat--success .transaction-stat__value {
+  color: var(--admin-success);
+}
+
+.transaction-stat--warning .transaction-stat__value {
+  color: var(--admin-warning);
+}
+
+.transaction-stat--danger .transaction-stat__value {
+  color: var(--admin-danger);
+}
+
+/* Order Code */
+.order-code {
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.8125rem;
+  color: var(--admin-primary);
+  font-weight: 500;
+}
+
+/* Customer Cell */
+.customer-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.customer-cell__name {
+  font-weight: 500;
+  color: var(--admin-text-primary);
+}
+
+.customer-cell__email {
+  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+}
+
+/* Transaction Type */
+.transaction-type {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: var(--admin-radius-full);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--admin-text-secondary);
+}
+
+.transaction-type--subscription_new {
+  background: var(--admin-success-light);
+  color: var(--admin-success);
+}
+
+.transaction-type--subscription_renew {
+  background: var(--admin-info-light);
+  color: var(--admin-info);
+}
+
+.transaction-type--lua_purchase {
+  background: var(--admin-warning-light);
+  color: var(--admin-warning);
+}
+
+.transaction-type--refund {
+  background: var(--admin-danger-light);
+  color: var(--admin-danger);
+}
+
+/* Amount Cell */
+.amount-cell {
+  font-weight: 600;
+  color: var(--admin-success);
+}
+
+.amount-cell--negative {
+  color: var(--admin-danger);
+}
+
+/* Action Button */
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid var(--admin-border-primary);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  transition: all var(--admin-transition-fast);
+}
+
+.action-btn:hover {
+  background: var(--admin-primary);
+  border-color: var(--admin-primary);
+  color: white;
+}
+
+/* Filter Select */
+.filter-select {
+  padding: 10px 32px 10px 12px;
+  background: var(--admin-bg-input);
+  border: 1px solid var(--admin-border-primary);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+}
+
+/* ==========================================================================
+   TRANSACTION DRAWER
+   ========================================================================== */
+
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.transaction-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100%;
+  max-width: 420px;
+  height: 100vh;
+  background: var(--admin-bg-secondary);
+  border-left: 1px solid var(--admin-border-primary);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.25s ease;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.transaction-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--admin-spacing-lg);
+  border-bottom: 1px solid var(--admin-border-primary);
+  flex-shrink: 0;
+}
+
+.transaction-drawer__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  margin: 0;
+}
+
+.transaction-drawer__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  transition: all var(--admin-transition-fast);
+}
+
+.transaction-drawer__close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--admin-text-primary);
+}
+
+.transaction-drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--admin-spacing-lg);
+}
+
+.drawer-field {
+  margin-bottom: var(--admin-spacing-lg);
+}
+
+.drawer-field__label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--admin-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.drawer-field__value {
+  font-size: 0.9375rem;
+  color: var(--admin-text-primary);
+}
+
+.drawer-field__value--amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--admin-success);
+}
+
+.drawer-field__value--negative {
+  color: var(--admin-danger);
+}
+
+.drawer-divider {
+  height: 1px;
+  background: var(--admin-border-primary);
+  margin: var(--admin-spacing-lg) 0;
+}
+
+.transaction-drawer__footer {
+  padding: var(--admin-spacing-lg);
+  border-top: 1px solid var(--admin-border-primary);
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .transaction-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .transaction-drawer {
+    max-width: 100%;
+  }
+}
