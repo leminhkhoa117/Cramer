@@ -104,14 +104,14 @@ const GradingQuotaInfo = ({ variant = 'default', showIcon = true, className = ''
                                 </span>
                             </div>
                         ) : (
-                            <p className="quota-message blocked" style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <div className="quota-message blocked" style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 <span>Bạn không có đủ Lúa ({luaBalance}/{luaCost}) để chấm bài.</span>
                                 <div>
                                     <Link to="/subscription" className="quota-link">Mua thêm Lúa</Link>
                                     {' hoặc '}
                                     <Link to="/pricing" className="quota-link">nâng cấp gói</Link>!
                                 </div>
-                            </p>
+                            </div>
                         )}
                     </>
                 )}

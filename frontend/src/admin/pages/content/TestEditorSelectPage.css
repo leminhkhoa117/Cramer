@@ -220,24 +220,24 @@
   white-space: nowrap;
 }
 
-/* Skill Icons */
-.editor-test-card__skill-icons {
+/* Skill Icons - Scoped to admin to prevent leaking to user pages */
+.admin-root .editor-test-card__skill-icons {
   display: flex;
   gap: var(--admin-spacing-sm);
   margin-bottom: var(--admin-spacing-lg);
 }
 
-.skill-icon {
+.admin-root .editor-test-card__skill-icons .skill-icon {
   font-size: 1.125rem;
-  opacity: 0.4;
+  opacity: 1;
   transition: opacity var(--admin-transition-fast);
 }
 
-.skill-icon--complete {
+.admin-root .editor-test-card__skill-icons .skill-icon--complete {
   opacity: 1;
 }
 
-.skill-icon--draft {
+.admin-root .editor-test-card__skill-icons .skill-icon--draft {
   opacity: 0.7;
 }
 

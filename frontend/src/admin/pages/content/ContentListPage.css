@@ -142,12 +142,12 @@
   border-radius: var(--admin-radius-md);
 }
 
-.tree-node--topic > .tree-node__header {
+.tree-node--topic>.tree-node__header {
   background: rgba(139, 92, 246, 0.1);
   border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
-.tree-node--topic > .tree-node__header:hover {
+.tree-node--topic>.tree-node__header:hover {
   background: rgba(139, 92, 246, 0.15);
 }
 
@@ -210,12 +210,12 @@
   margin-top: 4px;
 }
 
-.skill-indicator {
+.admin-root .skill-indicator {
   font-size: 0.875rem;
   transition: transform var(--admin-transition-fast);
 }
 
-.skill-indicator:hover {
+.admin-root .skill-indicator:hover {
   transform: scale(1.2);
 }
 
@@ -288,7 +288,8 @@
   gap: var(--admin-spacing-md);
 }
 
-.test-card {
+/* Admin .test-card - Scoped to prevent leaking to user pages */
+.admin-root .test-card {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--admin-border-secondary);
   border-radius: var(--admin-radius-md);
@@ -296,37 +297,37 @@
   transition: all var(--admin-transition-fast);
 }
 
-.test-card:hover {
+.admin-root .test-card:hover {
   border-color: var(--admin-primary);
   background: rgba(139, 92, 246, 0.05);
 }
 
-.test-card__header {
+.admin-root .test-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--admin-spacing-sm);
 }
 
-.test-card__topic {
+.admin-root .test-card__topic {
   font-size: 0.75rem;
   color: var(--admin-text-muted);
 }
 
-.test-card__title {
+.admin-root .test-card__title {
   font-size: 1rem;
   font-weight: 600;
   color: var(--admin-text-primary);
   margin: 0 0 var(--admin-spacing-md) 0;
 }
 
-.test-card__skills {
+.admin-root .test-card__skills {
   display: flex;
   gap: 8px;
   margin-bottom: var(--admin-spacing-lg);
 }
 
-.test-card__footer {
+.admin-root .test-card__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -334,7 +335,7 @@
   border-top: 1px solid var(--admin-border-secondary);
 }
 
-.test-card__stat {
+.admin-root .test-card__stat {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -342,12 +343,12 @@
   color: var(--admin-text-muted);
 }
 
-.test-card__actions {
+.admin-root .test-card__actions {
   display: flex;
   gap: 4px;
 }
 
-.test-card__action-btn {
+.admin-root .test-card__action-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -361,7 +362,7 @@
   transition: all var(--admin-transition-fast);
 }
 
-.test-card__action-btn:hover {
+.admin-root .test-card__action-btn:hover {
   background: var(--admin-primary);
   border-color: var(--admin-primary);
   color: white;

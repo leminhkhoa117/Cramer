@@ -67,23 +67,26 @@
 }
 
 .writing-result-page .review-header-left .back-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    background: rgba(255, 255, 255, 0.15);
+    justify-content: center;
+    gap: 0.4rem;
+    min-width: 125px;
+    background-color: rgba(255, 255, 255, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.3);
     color: white;
     padding: 0.4rem 0.75rem;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-family: 'Be Vietnam Pro', sans-serif;
     font-size: 0.8rem;
-    font-weight: 500;
+    font-weight: 600;
     transition: all 0.2s ease;
+    text-decoration: none;
 }
 
 .writing-result-page .review-header-left .back-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background-color: rgba(255, 255, 255, 0.25);
 }
 
 .writing-result-page .review-title {

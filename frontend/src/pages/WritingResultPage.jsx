@@ -795,7 +795,7 @@ const WritingResultPage = () => {
                                                 {aiFeedback.error.toLowerCase().includes('lượt') || aiFeedback.error.toLowerCase().includes('quota') ? (
                                                     <div className="quota-error-wrapper">
                                                         <GradingQuotaInfo
-                                                            variant="card"
+                                                            variant="default"
                                                             showLuaOption={true}
                                                             message={aiFeedback.error}
                                                             userStats={useUserStatsStore.getState().stats}
@@ -842,7 +842,7 @@ const WritingResultPage = () => {
                                     <div className="analysis-error-state" style={{ padding: '1rem' }}>
                                         <div className="quota-error-wrapper">
                                             <GradingQuotaInfo
-                                                variant="card"
+                                                variant="default"
                                                 showLuaOption={true}
                                                 message={aiFeedback.error}
                                                 userStats={useUserStatsStore.getState().stats}
