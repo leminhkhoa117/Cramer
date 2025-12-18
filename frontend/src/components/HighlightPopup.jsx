@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaHighlighter, FaStrikethrough, FaUnderline, FaTrashAlt } from 'react-icons/fa';
-import '../css/HighlightPopup.css'; // Local styles for popup controls
+import '../css/highlight-popup.css'; // Local styles for popup controls
 
 const HighlightPopup = ({ x, y, visible, applyHighlight, clearHighlight }) => {
     const colors = ['#FFFF00', '#ADD8E6', '#90EE90', '#FFB6C1', '#D3D3D3']; // Yellow, LightBlue, LightGreen, LightPink, LightGray

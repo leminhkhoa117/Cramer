@@ -23,7 +23,8 @@
     padding: 5rem 0 6rem;
     background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 50%, #7c3aed 100%);
     color: white;
-    margin-bottom: -3rem; /* Overlap effect */
+    margin-bottom: -3rem;
+    /* Overlap effect */
     overflow: hidden;
     /* Absorb parent padding to remove white gap */
     margin-top: calc(-1 * var(--header-clearance));
@@ -34,7 +35,7 @@
     position: absolute;
     inset: 0;
     background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 50%, rgba(39, 175, 219, 0.2) 0%, transparent 50%);
+        radial-gradient(circle at 80% 50%, rgba(39, 175, 219, 0.2) 0%, transparent 50%);
     pointer-events: none;
 }
 
@@ -93,110 +94,131 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: 2rem;
-    width: 100%; /* Ensure grid doesn't overflow container */
+    width: 100%;
+    /* Ensure grid doesn't overflow container */
 }
 
 @media (min-width: 768px) {
     .tests-grid {
-        grid-template-columns: repeat(2, 1fr); /* 2 columns as requested */
+        grid-template-columns: repeat(2, 1fr);
+        /* 2 columns as requested */
     }
 }
 
-/* Test Card */
-.test-card {
-    background: var(--glass-card-bg);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border);
-    border-radius: 24px;
+/* Test Card - Glassmorphism Style */
+.course-detail-page .test-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 20px;
     padding: 1.5rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.25rem;
 }
 
-.test-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(124, 58, 237, 0.15);
-    background: white;
-    border-color: white;
+.course-detail-page .test-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px rgba(124, 58, 237, 0.12);
+    border-color: rgba(124, 58, 237, 0.15);
+    background: rgba(255, 255, 255, 0.95);
 }
 
-.test-card-header {
+.course-detail-page .test-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding-bottom: 1rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-.test-card-title {
-    font-size: 1.5rem;
+.course-detail-page .test-card-title {
+    font-size: 1.4rem;
     font-weight: 700;
-    color: var(--detail-text);
+    color: var(--detail-text) !important;
     margin: 0;
+    letter-spacing: -0.01em;
 }
 
-.test-card-badge {
-    background: rgba(124, 58, 237, 0.1);
+.course-detail-page .test-card-badge {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(39, 175, 219, 0.1));
     color: var(--detail-primary);
-    padding: 0.25rem 0.75rem;
+    padding: 0.3rem 0.85rem;
     border-radius: 999px;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
+    border: 1px solid rgba(124, 58, 237, 0.15);
 }
 
 /* Skills List */
-.test-card-skills {
+.course-detail-page .test-card-skills {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
 }
 
-@media (min-width: 1280px) {
-    .test-card-skills {
-        grid-template-columns: 1fr 1fr; /* 2x2 skills on large screens */
+@media (max-width: 640px) {
+    .course-detail-page .test-card-skills {
+        grid-template-columns: 1fr;
     }
 }
 
-.test-card-skill-link {
+.course-detail-page .test-card-skill-link {
     display: flex;
     align-items: center;
-    padding: 0.75rem 1rem;
+    padding: 0.65rem 0.9rem;
     background: #f8fafc;
-    border: 1px solid transparent;
-    border-radius: 12px;
-    text-decoration: none;
-    color: var(--detail-text);
-    transition: all 0.2s ease;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    text-decoration: none !important;
+    color: var(--detail-text) !important;
+    transition: all 0.25s ease;
 }
 
-.test-card-skill-link:hover {
-    background: white;
+.course-detail-page .test-card-skill-link:hover {
+    background: #ffffff;
     border-color: var(--detail-primary);
-    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
-    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.12);
+    transform: translateX(3px);
 }
 
 .skill-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    margin-right: 1rem;
-    font-size: 1rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    margin-right: 0.85rem;
+    font-size: 1.1rem;
+    flex-shrink: 0;
 }
 
-/* Icon Colors */
-.text-blue-500 { color: #3b82f6; background: #eff6ff; }
-.text-red-500 { color: #ef4444; background: #fef2f2; }
-.text-yellow-500 { color: #f59e0b; background: #fffbeb; }
-.text-green-500 { color: #10b981; background: #ecfdf5; }
+/* Icon Colors - Custom Classes (avoids Tailwind override) */
+.skill-icon.skill-icon-reading {
+    color: #1d4ed8;
+    background: #dbeafe;
+}
+
+.skill-icon.skill-icon-listening {
+    color: #b91c1c;
+    background: #fee2e2;
+}
+
+.skill-icon.skill-icon-writing {
+    color: #b45309;
+    background: #fef3c7;
+}
+
+.skill-icon.skill-icon-speaking {
+    color: #047857;
+    background: #d1fae5;
+}
 
 .skill-info {
     display: flex;
@@ -254,11 +276,11 @@
     .course-detail-title {
         font-size: 2rem;
     }
-    
+
     .course-detail-banner {
         padding: 4rem 0 5rem;
     }
-    
+
     .tests-grid {
         grid-template-columns: 1fr;
     }

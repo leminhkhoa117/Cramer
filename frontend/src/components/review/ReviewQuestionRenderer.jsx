@@ -1,6 +1,6 @@
 import React from 'react';
 import { sanitizeHtml } from '../../utils/sanitize';
-import '../../css/ReviewQuestionRenderer.css';
+import '../../css/review-question-renderer.css';
 
 /**
  * ReviewQuestionRenderer - Renders a question in review mode with answer highlighting

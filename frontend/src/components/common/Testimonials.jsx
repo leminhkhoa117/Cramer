@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaQuoteLeft, FaChevronLeft, FaChevronRight, FaStar } from 'react-icons/fa';
-import '../../css/common/Testimonials.css';
+import '../../css/common/testimonials.css';
 
 /**
  * Reusable Testimonials Component (Carousel or Grid)

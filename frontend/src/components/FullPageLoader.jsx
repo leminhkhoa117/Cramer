@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import '../css/FullPageLoader.css';
+import '../css/full-page-loader.css';
 import cramerLoadingGif from '../../pictures/anim/cramer_loading.gif';
 
 const FullPageLoader = ({

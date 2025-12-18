@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useCourseStore } from '../stores';
-import './../css/CourseDetail.css';
+import './../css/course-detail.css';
 import FullPageLoader from '../components/FullPageLoader';
 import { FaBookOpen, FaHeadphones, FaPen, FaMicrophone, FaArrowLeft } from 'react-icons/fa';
 
@@ -14,22 +14,22 @@ const formatCourseName = (source) => {
 };
 
 const skills = [
-    { name: 'Reading', icon: <FaBookOpen />, color: 'text-blue-500', bg: 'bg-blue-50', time: '60 phút', questions: '40 câu' },
-    { name: 'Listening', icon: <FaHeadphones />, color: 'text-red-500', bg: 'bg-red-50', time: '30 phút', questions: '40 câu' },
-    { name: 'Writing', icon: <FaPen />, color: 'text-yellow-500', bg: 'bg-yellow-50', time: '60 phút', questions: '2 phần' },
-    { name: 'Speaking', icon: <FaMicrophone />, color: 'text-green-500', bg: 'bg-green-50', time: '15 phút', questions: '3 phần' }
+    { name: 'Reading', icon: <FaBookOpen />, color: 'skill-icon-reading', time: '60 phút', questions: '40 câu' },
+    { name: 'Listening', icon: <FaHeadphones />, color: 'skill-icon-listening', time: '30 phút', questions: '40 câu' },
+    { name: 'Writing', icon: <FaPen />, color: 'skill-icon-writing', time: '60 phút', questions: '2 phần' },
+    { name: 'Speaking', icon: <FaMicrophone />, color: 'skill-icon-speaking', time: '15 phút', questions: '3 phần' }
 ];
 
 export default function CourseDetailPage() {
     const { courseName } = useParams();
-    
+
     // Zustand store for course tests caching
-    const { 
-        courseTests, 
-        fetchCourseTests, 
+    const {
+        courseTests,
+        fetchCourseTests,
         getCachedTests,
         loading,
-        error 
+        error
     } = useCourseStore();
 
     // Get tests from cache or fetch

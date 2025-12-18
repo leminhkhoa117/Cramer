@@ -3,7 +3,7 @@ import { FiUser, FiImage, FiBox } from 'react-icons/fi';
 import 'react-image-crop/dist/ReactCrop.css';
 import CroppableImageTab from './CroppableImageTab';
 import BaseModal from './common/BaseModal';
-import '../css/UploadImageModal.css';
+import '../css/upload-image-modal.css';
 
 /**
  * UploadImageModal - Upload and crop profile images

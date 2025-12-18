@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { testAttemptApi } from '../api/backendApi';
 import ConfirmationModal from './ConfirmationModal'; // Import ConfirmationModal
 import { FiTrash2 } from 'react-icons/fi'; // Import trash icon
-import '../css/AttemptHistoryDropdown.css';
+import '../css/attempt-history-dropdown.css';
 
 const formatDate = (dateString) => {
     if (!dateString) return 'Chưa hoàn thành';

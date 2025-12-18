@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiArrowLeft, FiCheckCircle, FiZap, FiInfo } from 'react-icons/fi';
-import '../../css/common/GradingLoader.css';
+import '../../css/common/grading-loader.css';
 
 /**
  * GradingLoader - A reusable AI grading loading screen component

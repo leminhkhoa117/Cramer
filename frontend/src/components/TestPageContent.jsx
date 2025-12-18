@@ -14,12 +14,12 @@ import TestLayout from './TestLayout';
 import useTextHighlighter from '../hooks/useTextHighlighter';
 import HighlightPopup from './HighlightPopup';
 
-import '../css/TestPage.css';
-import '../css/TestHeader.css';
-import '../css/TestFooter.css';
-import '../css/QuestionGroup.css';
-import '../css/ToggleSwitch.css';
-import '../css/HighlightPopup.css';
+import '../css/test-page.css';
+import '../css/test-header.css';
+import '../css/test-footer.css';
+import '../css/question-group.css';
+import '../css/toggle-switch.css';
+import '../css/highlight-popup.css';
 
 const containerVariants = {
     hidden: { opacity: 0 },

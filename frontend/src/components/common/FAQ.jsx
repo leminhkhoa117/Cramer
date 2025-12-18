@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaChevronDown, FaQuestionCircle } from 'react-icons/fa';
-import '../../css/common/FAQ.css';
+import '../../css/common/faq.css';
 
 /**
  * Reusable FAQ Component

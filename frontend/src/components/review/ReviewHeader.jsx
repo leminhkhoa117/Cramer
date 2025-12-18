@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
-import '../../css/ReviewHeader.css';
+import '../../css/review-header.css';
 
 /**
  * ReviewHeader - Unified header for review pages

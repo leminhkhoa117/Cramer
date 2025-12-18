@@ -24,8 +24,8 @@ import {
   FiLink
 } from 'react-icons/fi';
 import { FaGoogle, FaFacebook } from 'react-icons/fa';
-import '../css/common/SidebarLayout.css';
-import '../css/ProfilePage.css';
+import '../css/common/sidebar-layout.css';
+import '../css/profile-page.css';
 import FullPageLoader from '../components/FullPageLoader';
 import { supabase } from '../api/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';

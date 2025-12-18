@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { sanitizeHtml } from '../utils/sanitize';
 import QuestionRenderer from './QuestionRenderer';
 import HighlightableHtmlContent from './HighlightableHtmlContent'; // Import the new component
-import '../css/QuestionGroup.css';
+import '../css/question-group.css';
 
 const itemVariants = {
     hidden: { y: 20, opacity: 0 },

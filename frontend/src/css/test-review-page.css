@@ -48,23 +48,26 @@
 }
 
 .review-header-left .back-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    background: rgba(255, 255, 255, 0.15);
+    justify-content: center;
+    gap: 0.4rem;
+    min-width: 125px;
+    background-color: rgba(255, 255, 255, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.3);
     color: white;
     padding: 0.4rem 0.75rem;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-family: 'Be Vietnam Pro', sans-serif;
     font-size: 0.8rem;
-    font-weight: 500;
+    font-weight: 600;
     transition: all 0.2s ease;
+    text-decoration: none;
 }
 
 .review-header-left .back-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background-color: rgba(255, 255, 255, 0.25);
 }
 
 .review-title {
@@ -168,8 +171,13 @@
 }
 
 @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .band-badge {
@@ -198,11 +206,30 @@
 }
 
 /* Band Color Coding */
-.band-9, .band-8 { color: #4ade80 !important; }
-.band-7 { color: #86efac !important; }
-.band-6 { color: #fbbf24 !important; }
-.band-5 { color: #fb923c !important; }
-.band-4, .band-3, .band-2, .band-1, .band-0 { color: #f87171 !important; }
+.band-9,
+.band-8 {
+    color: #4ade80 !important;
+}
+
+.band-7 {
+    color: #86efac !important;
+}
+
+.band-6 {
+    color: #fbbf24 !important;
+}
+
+.band-5 {
+    color: #fb923c !important;
+}
+
+.band-4,
+.band-3,
+.band-2,
+.band-1,
+.band-0 {
+    color: #f87171 !important;
+}
 
 /* ============================================
    Part Tabs - Compact Design
@@ -445,9 +472,17 @@
     height: 18px;
 }
 
-.user-answer-card .status-icon.correct { color: #22c55e; }
-.user-answer-card .status-icon.incorrect { color: #ef4444; }
-.user-answer-card .status-icon.unanswered { color: #9ca3af; }
+.user-answer-card .status-icon.correct {
+    color: #22c55e;
+}
+
+.user-answer-card .status-icon.incorrect {
+    color: #ef4444;
+}
+
+.user-answer-card .status-icon.unanswered {
+    color: #9ca3af;
+}
 
 .user-answer-card .answer-content {
     display: flex;
@@ -467,7 +502,10 @@
     word-break: break-word;
 }
 
-.user-answer-card .answer-text.correct { color: #16a34a; }
+.user-answer-card .answer-text.correct {
+    color: #16a34a;
+}
+
 .user-answer-card .answer-text.incorrect {
     color: #dc2626;
     text-decoration: line-through;
@@ -517,9 +555,17 @@
     box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25), 0 4px 12px rgba(99, 102, 241, 0.15);
 }
 
-.explanation-card.correct { border-left: 4px solid #22c55e; }
-.explanation-card.incorrect { border-left: 4px solid #ef4444; }
-.explanation-card.unanswered { border-left: 4px solid #9ca3af; }
+.explanation-card.correct {
+    border-left: 4px solid #22c55e;
+}
+
+.explanation-card.incorrect {
+    border-left: 4px solid #ef4444;
+}
+
+.explanation-card.unanswered {
+    border-left: 4px solid #9ca3af;
+}
 
 .explanation-header {
     display: flex;
@@ -545,9 +591,20 @@
     letter-spacing: 0.5px;
 }
 
-.result-badge.correct { background: #dcfce7; color: #16a34a; }
-.result-badge.incorrect { background: #fee2e2; color: #dc2626; }
-.result-badge.unanswered { background: #f3f4f6; color: #6b7280; }
+.result-badge.correct {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.result-badge.incorrect {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.result-badge.unanswered {
+    background: #f3f4f6;
+    color: #6b7280;
+}
 
 .question-content-box {
     background: #f8fafc;
@@ -578,8 +635,13 @@
     border-radius: 8px;
 }
 
-.comparison-row.your-answer { background: #f9fafb; }
-.comparison-row.correct-answer { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); }
+.comparison-row.your-answer {
+    background: #f9fafb;
+}
+
+.comparison-row.correct-answer {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
 
 .comparison-label {
     font-size: 0.75rem;
@@ -593,9 +655,19 @@
     font-weight: 600;
 }
 
-.comparison-value.correct { color: #16a34a; }
-.comparison-value.incorrect { color: #dc2626; }
-.comparison-value.empty { color: #9ca3af; font-style: italic; font-weight: 400; }
+.comparison-value.correct {
+    color: #16a34a;
+}
+
+.comparison-value.incorrect {
+    color: #dc2626;
+}
+
+.comparison-value.empty {
+    color: #9ca3af;
+    font-style: italic;
+    font-weight: 400;
+}
 
 .explanation-content {
     background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
@@ -643,7 +715,7 @@
     background-color: white;
     border: 1px solid #d1d5db;
     border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -679,8 +751,15 @@
    Highlight Flash Animation
    ============================================ */
 @keyframes highlightFlash {
-    0%, 100% { background-color: inherit; }
-    50% { background-color: rgba(129, 140, 248, 0.3); }
+
+    0%,
+    100% {
+        background-color: inherit;
+    }
+
+    50% {
+        background-color: rgba(129, 140, 248, 0.3);
+    }
 }
 
 .highlight-flash {
@@ -690,7 +769,8 @@
 /* ============================================
    Loading & Error States
    ============================================ */
-.review-loading, .review-error {
+.review-loading,
+.review-error {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -713,7 +793,7 @@
     .review-header-center {
         gap: 1.5rem;
     }
-    
+
     .review-header-center .summary-value {
         font-size: 1rem;
     }
@@ -724,7 +804,7 @@
         flex-wrap: wrap;
         gap: 1rem;
     }
-    
+
     .review-header-center {
         order: 3;
         width: 100%;
@@ -739,21 +819,21 @@
     .review-header {
         padding: 0.75rem 1rem;
     }
-    
+
     .review-title {
         font-size: 0.95rem;
     }
-    
+
     .review-main-content {
         padding: 0.5rem;
     }
-    
+
     .comparison-row {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.25rem;
     }
-    
+
     .comparison-label {
         min-width: auto;
     }

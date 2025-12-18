@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FiUser, FiCpu, FiCopy, FiCheck } from 'react-icons/fi';
 import ReactMarkdown from 'react-markdown';
-import '../css/FloatingAssistant.css';
+import '../css/floating-assistant.css';
 
 /**
  * Chat bubble component for displaying messages in the floating assistant.

@@ -1,5 +1,5 @@
 import React from 'react';
-import '../../css/ReviewColumn.css';
+import '../../css/review-column.css';
 
 /**
  * ReviewColumn - Single column component for review layout

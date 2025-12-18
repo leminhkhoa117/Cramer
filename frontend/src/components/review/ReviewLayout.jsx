@@ -1,7 +1,7 @@
 import React from 'react';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import ReviewColumn from './ReviewColumn';
-import '../../css/common/ReviewLayoutBase.css';
+import '../../css/common/review-layout-base.css';
 
 /**
  * ReviewLayout - Unified resizable multi-panel layout for review pages

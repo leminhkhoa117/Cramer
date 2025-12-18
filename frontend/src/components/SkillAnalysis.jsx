@@ -10,7 +10,7 @@ import {
   Legend,
 } from 'recharts';
 import { FiPieChart, FiTarget } from 'react-icons/fi';
-import '../css/SkillAnalysis.css';
+import '../css/skill-analysis.css';
 
 // Color scheme following UI_GUIDELINES.md
 const COLORS = {

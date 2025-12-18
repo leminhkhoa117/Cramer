@@ -4,7 +4,7 @@ import { supabase } from '../api/supabaseClient';
 import { showSuccessToast, showErrorToast } from '../utils/toast';
 import { useAuthStore } from '../stores';
 import BaseModal from './common/BaseModal';
-import '../css/ChangePasswordModal.css';
+import '../css/change-password-modal.css';
 
 /**
  * ChangePasswordModal - Change user password
