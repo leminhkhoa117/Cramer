@@ -680,7 +680,7 @@ public class GeminiGradingService {
 
                 try {
                         ResponseEntity<String> response = restTemplate.exchange(
-                                        url, HttpMethod.POST, entity, String.class);
+                                        url, Objects.requireNonNull(HttpMethod.POST), entity, String.class);
 
                         if (response.getStatusCode() != HttpStatus.OK) {
                                 throw new RuntimeException("Gemini API returned status: " + response.getStatusCode());
@@ -699,7 +699,7 @@ public class GeminiGradingService {
          */
         private Map<String, Object> createImagePart(String imageUrl) {
                 try {
-                        URL url = new URL(imageUrl);
+                        URL url = java.net.URI.create(imageUrl).toURL();
                         try (InputStream is = url.openStream()) {
                                 byte[] imageBytes = is.readAllBytes();
                                 String base64Data = Base64.getEncoder().encodeToString(imageBytes);
@@ -734,6 +734,7 @@ public class GeminiGradingService {
          * Includes calibration adjustment to counteract AI's tendency to score too
          * harshly.
          */
+        @SuppressWarnings("unchecked")
         private void parseAndApplyGradingResults(WritingSubmission submission, String apiResponse)
                         throws JsonProcessingException {
 
@@ -742,8 +743,9 @@ public class GeminiGradingService {
                 // Validate Gemini API response structure with null checks
                 JsonNode candidates = root.path("candidates");
                 if (candidates.isMissingNode() || !candidates.isArray() || candidates.size() == 0) {
-                        logger.error("Invalid Gemini API response: missing candidates array. Response: {}", 
-                                        apiResponse.length() > 500 ? apiResponse.substring(0, 500) + "..." : apiResponse);
+                        logger.error("Invalid Gemini API response: missing candidates array. Response: {}",
+                                        apiResponse.length() > 500 ? apiResponse.substring(0, 500) + "..."
+                                                        : apiResponse);
                         throw new RuntimeException("Invalid Gemini API response: missing candidates array");
                 }
 
@@ -755,7 +757,8 @@ public class GeminiGradingService {
 
                 JsonNode parts = firstCandidate.path("content").path("parts");
                 if (parts.isMissingNode() || !parts.isArray() || parts.size() == 0) {
-                        logger.error("Invalid Gemini API response: missing parts array. First candidate: {}", firstCandidate);
+                        logger.error("Invalid Gemini API response: missing parts array. First candidate: {}",
+                                        firstCandidate);
                         throw new RuntimeException("Invalid Gemini API response: missing parts array");
                 }
 
@@ -767,7 +770,8 @@ public class GeminiGradingService {
 
                 JsonNode textNode = firstPart.path("text");
                 if (textNode.isMissingNode()) {
-                        logger.error("Invalid Gemini API response: missing text in response. First part: {}", firstPart);
+                        logger.error("Invalid Gemini API response: missing text in response. First part: {}",
+                                        firstPart);
                         throw new RuntimeException("Invalid Gemini API response: missing text in response");
                 }
 
@@ -953,7 +957,7 @@ public class GeminiGradingService {
                         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
                         ResponseEntity<String> response = restTemplate.exchange(
-                                        url, HttpMethod.POST, entity, String.class);
+                                        url, Objects.requireNonNull(HttpMethod.POST), entity, String.class);
 
                         return response.getStatusCode() == HttpStatus.OK;
                 } catch (Exception e) {

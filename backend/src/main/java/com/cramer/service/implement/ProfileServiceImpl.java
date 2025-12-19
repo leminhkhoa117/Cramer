@@ -1,5 +1,6 @@
 package com.cramer.service.implement;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -22,7 +23,7 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     @Transactional(readOnly = true)
     public ProfileDTO getProfileById(UUID id) {
-        Profile profile = profileRepository.findById(id)
+        Profile profile = profileRepository.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> new RuntimeException("Profile not found with id: " + id));
         return convertToDto(profile);
     }
@@ -30,14 +31,14 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     @Transactional
     public ProfileDTO updateProfile(UUID id, ProfileDTO profileDto) {
-        Profile profile = profileRepository.findById(id)
+        Profile profile = profileRepository.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> new RuntimeException("Profile not found with id: " + id));
 
         // Update fields from DTO
         profile.setFullName(profileDto.getFullName());
         profile.setPhoneNumber(profileDto.getPhoneNumber());
         profile.setAddress(profileDto.getAddress());
-        
+
         if (profileDto.getAvatarUrl() != null) {
             profile.setAvatarUrl(profileDto.getAvatarUrl());
         }
@@ -47,7 +48,7 @@ public class ProfileServiceImpl implements ProfileService {
         if (profileDto.getPageBackgroundUrl() != null) {
             profile.setPageBackgroundUrl(profileDto.getPageBackgroundUrl());
         }
-        
+
         // Update LLM API key if provided (empty string clears it)
         if (profileDto.getLlmApiKey() != null) {
             if (profileDto.getLlmApiKey().isEmpty()) {
@@ -56,12 +57,12 @@ public class ProfileServiceImpl implements ProfileService {
                 profile.setLlmApiKey(profileDto.getLlmApiKey());
             }
         }
-        
+
         // Update LLM model if provided
         if (profileDto.getLlmModel() != null) {
             profile.setLlmModel(profileDto.getLlmModel());
         }
-        
+
         // Update LLM provider if provided
         if (profileDto.getLlmProvider() != null) {
             profile.setLlmProvider(profileDto.getLlmProvider());

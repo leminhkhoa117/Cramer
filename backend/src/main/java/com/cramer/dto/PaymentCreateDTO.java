@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Request to create a new payment")
 public class PaymentCreateDTO {
 
-    @Schema(description = "Payment type", example = "SUBSCRIPTION", required = true)
+    @Schema(description = "Payment type", example = "SUBSCRIPTION", requiredMode = Schema.RequiredMode.REQUIRED)
     private PaymentOrder.Type type;
 
     @Schema(description = "Subscription tier ID (required for SUBSCRIPTION type)", example = "2")
@@ -40,7 +40,7 @@ public class PaymentCreateDTO {
         if (type == null) {
             return false;
         }
-        
+
         return switch (type) {
             case SUBSCRIPTION -> tierId != null || (tierCode != null && !tierCode.isEmpty());
             case LUA_PACK -> luaAmount != null && luaAmount > 0 && priceVnd != null && priceVnd > 0;

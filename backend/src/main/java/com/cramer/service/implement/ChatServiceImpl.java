@@ -23,6 +23,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -109,7 +110,7 @@ public class ChatServiceImpl implements ChatService {
         try {
             // Step 3: Save user message
             ChatMessage userMessage = ChatMessage.userMessage(userId, message);
-            messageRepository.save(userMessage);
+            messageRepository.save(Objects.requireNonNull(userMessage));
 
             // Step 4: Build conversation context
             List<Map<String, String>> conversationHistory = buildConversationContext(userId);
@@ -119,7 +120,7 @@ public class ChatServiceImpl implements ChatService {
 
             // Step 6: Save assistant message
             ChatMessage assistantMessage = ChatMessage.assistantMessage(userId, response, 0);
-            messageRepository.save(assistantMessage);
+            messageRepository.save(Objects.requireNonNull(assistantMessage));
 
             // Step 7: Keep daily tracking for analytics (billing already done in step 1)
             incrementUsage(userId);
@@ -213,7 +214,7 @@ public class ChatServiceImpl implements ChatService {
         // Set headers
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(llmConfig.getApiKey());
+        headers.setBearerAuth(Objects.requireNonNull(llmConfig.getApiKey()));
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
@@ -221,7 +222,7 @@ public class ChatServiceImpl implements ChatService {
             logger.debug("📤 Sending request to DeepSeek API");
             ResponseEntity<String> response = restTemplate.exchange(
                     apiUrl,
-                    HttpMethod.POST,
+                    Objects.requireNonNull(HttpMethod.POST),
                     request,
                     String.class);
 
@@ -266,7 +267,7 @@ public class ChatServiceImpl implements ChatService {
                             .usageDate(today)
                             .messagesUsed(0)
                             .build();
-                    return usageRepository.save(newUsage);
+                    return usageRepository.save(Objects.requireNonNull(newUsage));
                 });
 
         usage.incrementUsage();

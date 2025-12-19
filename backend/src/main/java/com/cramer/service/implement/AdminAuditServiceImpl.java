@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -38,15 +39,15 @@ public class AdminAuditServiceImpl implements AdminAuditService {
 
     @Override
     public Page<AdminAuditLogDTO> getAllAuditLogs(Pageable pageable) {
-        return auditLogRepository.findAll(pageable).map(this::toDTO);
+        return auditLogRepository.findAll(Objects.requireNonNull(pageable)).map(this::toDTO);
     }
 
     @Override
     @Transactional
     public void logAudit(UUID adminUserId, String adminEmail, String action,
-                         String targetType, String targetId,
-                         Map<String, Object> oldValue, Map<String, Object> newValue,
-                         String description, String ipAddress, String userAgent) {
+            String targetType, String targetId,
+            Map<String, Object> oldValue, Map<String, Object> newValue,
+            String description, String ipAddress, String userAgent) {
         AdminAuditLog auditLog = new AdminAuditLog();
         auditLog.setAdminUserId(adminUserId);
         auditLog.setAdminEmail(adminEmail);
@@ -59,64 +60,63 @@ public class AdminAuditServiceImpl implements AdminAuditService {
         auditLog.setIpAddress(ipAddress);
         auditLog.setUserAgent(userAgent);
         auditLog.setCreatedAt(OffsetDateTime.now());
-        
+
         auditLogRepository.save(auditLog);
         log.info("Admin audit: {} performed {} on {} {}", adminEmail, action, targetType, targetId);
     }
 
     @Override
     public void logStatusChange(UUID adminUserId, String adminEmail, String userId,
-                                String oldStatus, String newStatus, String reason,
-                                String ipAddress) {
+            String oldStatus, String newStatus, String reason,
+            String ipAddress) {
         Map<String, Object> oldValue = new HashMap<>();
         oldValue.put("status", oldStatus);
-        
+
         Map<String, Object> newValue = new HashMap<>();
         newValue.put("status", newStatus);
         newValue.put("reason", reason);
-        
-        String action = "BANNED".equals(newStatus) ? AdminAuditLog.ACTION_BAN : 
-                        "ACTIVE".equals(newStatus) ? AdminAuditLog.ACTION_UNBAN : 
-                        AdminAuditLog.ACTION_STATUS_CHANGE;
-        
-        String description = String.format("Đổi trạng thái từ %s sang %s. Lý do: %s", 
+
+        String action = "BANNED".equals(newStatus) ? AdminAuditLog.ACTION_BAN
+                : "ACTIVE".equals(newStatus) ? AdminAuditLog.ACTION_UNBAN : AdminAuditLog.ACTION_STATUS_CHANGE;
+
+        String description = String.format("Đổi trạng thái từ %s sang %s. Lý do: %s",
                 oldStatus, newStatus, reason != null ? reason : "Không có");
-        
+
         logAudit(adminUserId, adminEmail, action, AdminAuditLog.TARGET_USER, userId,
                 oldValue, newValue, description, ipAddress, null);
     }
 
     @Override
     public void logCreditsChange(UUID adminUserId, String adminEmail, String userId,
-                                 int oldBalance, int newBalance, int amount, String reason,
-                                 String ipAddress) {
+            int oldBalance, int newBalance, int amount, String reason,
+            String ipAddress) {
         Map<String, Object> oldValue = new HashMap<>();
         oldValue.put("balance", oldBalance);
-        
+
         Map<String, Object> newValue = new HashMap<>();
         newValue.put("balance", newBalance);
         newValue.put("amount", amount);
         newValue.put("reason", reason);
-        
+
         String action = amount > 0 ? AdminAuditLog.ACTION_CREDITS_ADD : AdminAuditLog.ACTION_CREDITS_SUBTRACT;
         String description = String.format("%s %d Lúa. Số dư: %d → %d. Lý do: %s",
                 amount > 0 ? "Thêm" : "Trừ", Math.abs(amount), oldBalance, newBalance, reason);
-        
+
         logAudit(adminUserId, adminEmail, action, AdminAuditLog.TARGET_CREDITS, userId,
                 oldValue, newValue, description, ipAddress, null);
     }
 
     @Override
     public void logSubscriptionChange(UUID adminUserId, String adminEmail, String userId,
-                                      String oldTier, String newTier, String ipAddress) {
+            String oldTier, String newTier, String ipAddress) {
         Map<String, Object> oldValue = new HashMap<>();
         oldValue.put("tier", oldTier);
-        
+
         Map<String, Object> newValue = new HashMap<>();
         newValue.put("tier", newTier);
-        
+
         String description = String.format("Đổi gói từ %s sang %s", oldTier, newTier);
-        
+
         logAudit(adminUserId, adminEmail, AdminAuditLog.ACTION_SUBSCRIPTION_CHANGE,
                 AdminAuditLog.TARGET_SUBSCRIPTION, userId, oldValue, newValue, description, ipAddress, null);
     }

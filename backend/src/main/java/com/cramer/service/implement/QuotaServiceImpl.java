@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -37,7 +38,7 @@ public class QuotaServiceImpl implements QuotaService {
 
     @Autowired
     public QuotaServiceImpl(UserQuotaRepository userQuotaRepository,
-                           SkillQuotaRepository skillQuotaRepository) {
+            SkillQuotaRepository skillQuotaRepository) {
         this.userQuotaRepository = userQuotaRepository;
         this.skillQuotaRepository = skillQuotaRepository;
     }
@@ -46,35 +47,35 @@ public class QuotaServiceImpl implements QuotaService {
     @Transactional(readOnly = true)
     public QuotaStatusDTO getQuotaStatus(UUID userId) {
         logger.info("📊 Getting quota status for user: {}", userId);
-        
+
         LocalDate currentMonth = getFirstDayOfCurrentMonth();
         String monthStr = currentMonth.format(MONTH_FORMATTER);
-        
+
         // Get or create global quota
         UserQuota userQuota = getOrCreateUserQuota(userId, currentMonth);
-        
+
         // Get all skill quotas for current month
         List<SkillQuota> skillQuotaList = skillQuotaRepository.findAllByUserIdAndQuotaMonth(userId, currentMonth);
         Map<SkillQuota.Skill, SkillQuota> skillQuotas = new HashMap<>();
         for (SkillQuota sq : skillQuotaList) {
             skillQuotas.put(sq.getSkill(), sq);
         }
-        
+
         return QuotaStatusDTO.fromEntities(userQuota, skillQuotas, monthStr);
     }
 
     @Override
     public void incrementAttempt(UUID userId, String skill, boolean isAI) {
-        logger.info("➕ Incrementing {} quota for user {}, skill {}", 
+        logger.info("➕ Incrementing {} quota for user {}, skill {}",
                 isAI ? "AI" : "regular", userId, skill);
-        
+
         LocalDate currentMonth = getFirstDayOfCurrentMonth();
         SkillQuota.Skill skillEnum = SkillQuota.Skill.valueOf(skill.toUpperCase());
-        
+
         // Ensure quota rows exist (with race condition handling)
         getOrCreateUserQuota(userId, currentMonth);
         getOrCreateSkillQuota(userId, skillEnum, currentMonth);
-        
+
         // Increment global quota
         if (isAI) {
             userQuotaRepository.incrementAttemptAiCount(userId, currentMonth);
@@ -83,7 +84,7 @@ public class QuotaServiceImpl implements QuotaService {
             userQuotaRepository.incrementAttemptCount(userId, currentMonth);
             skillQuotaRepository.incrementAttemptCount(userId, skillEnum, currentMonth);
         }
-        
+
         logger.info("✅ Quota incremented for user {}", userId);
     }
 
@@ -97,14 +98,14 @@ public class QuotaServiceImpl implements QuotaService {
     @Transactional(readOnly = true)
     public boolean isGlobalCapHit(UUID userId, boolean isAI) {
         LocalDate currentMonth = getFirstDayOfCurrentMonth();
-        
+
         UserQuota quota = userQuotaRepository.findByUserIdAndQuotaMonth(userId, currentMonth)
                 .orElse(null);
-        
+
         if (quota == null) {
             return false; // No quota record means no usage yet
         }
-        
+
         return isAI ? quota.isAttemptAiCapReached() : quota.isAttemptCapReached();
     }
 
@@ -113,14 +114,14 @@ public class QuotaServiceImpl implements QuotaService {
     public boolean isLocalCapHit(UUID userId, String skill, boolean isAI) {
         LocalDate currentMonth = getFirstDayOfCurrentMonth();
         SkillQuota.Skill skillEnum = SkillQuota.Skill.valueOf(skill.toUpperCase());
-        
+
         SkillQuota quota = skillQuotaRepository.findByUserIdAndSkillAndQuotaMonth(
                 userId, skillEnum, currentMonth).orElse(null);
-        
+
         if (quota == null) {
             return false; // No quota record means no usage yet
         }
-        
+
         return isAI ? quota.isAttemptAiCapReached() : quota.isAttemptCapReached();
     }
 
@@ -135,14 +136,16 @@ public class QuotaServiceImpl implements QuotaService {
 
     /**
      * Get or create UserQuota for current month.
-     * Handles race condition by catching DataIntegrityViolationException and retrying find.
+     * Handles race condition by catching DataIntegrityViolationException and
+     * retrying find.
      */
+    @SuppressWarnings("null")
     private UserQuota getOrCreateUserQuota(UUID userId, LocalDate quotaMonth) {
         Optional<UserQuota> existing = userQuotaRepository.findByUserIdAndQuotaMonth(userId, quotaMonth);
         if (existing.isPresent()) {
             return existing.get();
         }
-        
+
         // Try to create new quota
         try {
             logger.info("🆕 Creating new UserQuota for user {} month {}", userId, quotaMonth);
@@ -152,10 +155,10 @@ public class QuotaServiceImpl implements QuotaService {
                     .attemptCount(0)
                     .attemptAiCount(0)
                     .build();
-            return userQuotaRepository.save(newQuota);
+            return Objects.requireNonNull(userQuotaRepository.save(newQuota));
         } catch (DataIntegrityViolationException e) {
             // Race condition: another thread created it first, just fetch it
-            logger.info("🔄 UserQuota already created by concurrent request, fetching existing for user {} month {}", 
+            logger.info("🔄 UserQuota already created by concurrent request, fetching existing for user {} month {}",
                     userId, quotaMonth);
             return userQuotaRepository.findByUserIdAndQuotaMonth(userId, quotaMonth)
                     .orElseThrow(() -> new IllegalStateException(
@@ -165,17 +168,20 @@ public class QuotaServiceImpl implements QuotaService {
 
     /**
      * Get or create SkillQuota for current month.
-     * Handles race condition by catching DataIntegrityViolationException and retrying find.
+     * Handles race condition by catching DataIntegrityViolationException and
+     * retrying find.
      */
+    @SuppressWarnings("null")
     private SkillQuota getOrCreateSkillQuota(UUID userId, SkillQuota.Skill skill, LocalDate quotaMonth) {
-        Optional<SkillQuota> existing = skillQuotaRepository.findByUserIdAndSkillAndQuotaMonth(userId, skill, quotaMonth);
+        Optional<SkillQuota> existing = skillQuotaRepository.findByUserIdAndSkillAndQuotaMonth(userId, skill,
+                quotaMonth);
         if (existing.isPresent()) {
             return existing.get();
         }
-        
+
         // Try to create new quota
         try {
-            logger.info("🆕 Creating new SkillQuota for user {} skill {} month {}", 
+            logger.info("🆕 Creating new SkillQuota for user {} skill {} month {}",
                     userId, skill, quotaMonth);
             SkillQuota newQuota = SkillQuota.builder()
                     .userId(userId)
@@ -184,10 +190,11 @@ public class QuotaServiceImpl implements QuotaService {
                     .attemptCount(0)
                     .attemptAiCount(0)
                     .build();
-            return skillQuotaRepository.save(newQuota);
+            return Objects.requireNonNull(skillQuotaRepository.save(newQuota));
         } catch (DataIntegrityViolationException e) {
             // Race condition: another thread created it first, just fetch it
-            logger.info("🔄 SkillQuota already created by concurrent request, fetching existing for user {} skill {} month {}", 
+            logger.info(
+                    "🔄 SkillQuota already created by concurrent request, fetching existing for user {} skill {} month {}",
                     userId, skill, quotaMonth);
             return skillQuotaRepository.findByUserIdAndSkillAndQuotaMonth(userId, skill, quotaMonth)
                     .orElseThrow(() -> new IllegalStateException(
@@ -195,4 +202,3 @@ public class QuotaServiceImpl implements QuotaService {
         }
     }
 }
-

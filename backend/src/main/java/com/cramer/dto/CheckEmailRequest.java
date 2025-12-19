@@ -1,7 +1,5 @@
 package com.cramer.dto;
 
-import lombok.Data;
-
 public class CheckEmailRequest {
     private String email;
 

@@ -37,17 +37,18 @@ public class TestAttemptController {
             Authentication authentication) {
 
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptController.class);
-        logger.info("📥 POST /api/test-attempts/start - source={}, test={}, skill={}, forceNew={}", source, test, skill, forceNew);
-        
+        logger.info("📥 POST /api/test-attempts/start - source={}, test={}, skill={}, forceNew={}", source, test, skill,
+                forceNew);
+
         try {
             if (authentication == null || authentication.getName() == null) {
                 logger.error("❌ No authentication provided");
                 throw new IllegalArgumentException("Authentication required");
             }
-            
+
             UUID userId = UUID.fromString(authentication.getName());
             logger.info("🔐 User authenticated: userId={}", userId);
-            
+
             TestAttempt attempt = testAttemptService.startOrGetAttempt(source, test, skill, userId, forceNew);
             logger.info("✅ Test attempt returned: attemptId={}", attempt.getId());
             return ResponseEntity.ok(attempt);
@@ -61,21 +62,26 @@ public class TestAttemptController {
     }
 
     @PostMapping("/{id}/submit")
-    public ResponseEntity<TestResultDTO> submitAttempt(@PathVariable Long id, @RequestBody AnswerSubmissionDTO submissionDTO, Authentication authentication) {
+    public ResponseEntity<TestResultDTO> submitAttempt(@PathVariable Long id,
+            @RequestBody AnswerSubmissionDTO submissionDTO, Authentication authentication) {
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptController.class);
         logger.info("📥 POST /api/test-attempts/{}/submit - Received request", id);
-        
+
         try {
             if (authentication == null || authentication.getName() == null) {
                 logger.error("❌ No authentication provided for submit");
                 throw new IllegalArgumentException("Authentication required");
             }
-            
+
             String userIdStr = authentication.getName();
             UUID userId = UUID.fromString(userIdStr);
-            logger.info("🔐 User authenticated: userId={}, answersCount={}", userId, 
-                        submissionDTO != null && submissionDTO.getAnswers() != null ? submissionDTO.getAnswers().size() : 0);
-            
+            if (submissionDTO == null || submissionDTO.getAnswers() == null) {
+                logger.error("❌ Invalid submission: Missing answers");
+                throw new IllegalArgumentException("Submission data cannot be null");
+            }
+
+            logger.info("🔐 User authenticated: userId={}, answersCount={}", userId, submissionDTO.getAnswers().size());
+
             TestResultDTO result = testAttemptService.submitAttempt(id, submissionDTO.getAnswers(), userId);
             logger.info("✅ Test submitted successfully: score={}/{}", result.getScore(), result.getTotalQuestions());
             return ResponseEntity.ok(result);
@@ -90,11 +96,12 @@ public class TestAttemptController {
             @PathVariable Long id,
             @RequestBody SaveProgressDTO saveProgressDTO,
             Authentication authentication) {
-        
+
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptController.class);
-        logger.info("📥 POST /api/test-attempts/{}/progress - attemptId={}, timeLeft={}, currentPart={}, answersCount={}", 
-                    id, saveProgressDTO.getTimeLeft(), saveProgressDTO.getCurrentPart(), 
-                    saveProgressDTO.getAnswers() != null ? saveProgressDTO.getAnswers().size() : 0);
+        logger.info(
+                "📥 POST /api/test-attempts/{}/progress - attemptId={}, timeLeft={}, currentPart={}, answersCount={}",
+                id, saveProgressDTO.getTimeLeft(), saveProgressDTO.getCurrentPart(),
+                saveProgressDTO.getAnswers() != null ? saveProgressDTO.getAnswers().size() : 0);
 
         if (authentication == null || authentication.getName() == null) {
             throw new IllegalArgumentException("Authentication required");
@@ -102,7 +109,7 @@ public class TestAttemptController {
 
         UUID userId = UUID.fromString(authentication.getName());
         testAttemptService.saveProgress(id, saveProgressDTO, userId);
-        
+
         return ResponseEntity.ok().build();
     }
 
@@ -117,7 +124,7 @@ public class TestAttemptController {
 
         UUID userId = UUID.fromString(authentication.getName());
         testAttemptService.cancelAttempt(id, userId);
-        
+
         logger.info("✅ Test attempt cancelled successfully: attemptId={}", id);
         return ResponseEntity.ok().build();
     }
@@ -133,7 +140,7 @@ public class TestAttemptController {
 
         UUID userId = UUID.fromString(authentication.getName());
         testAttemptService.resumeAttempt(id, userId);
-        
+
         logger.info("✅ Test attempt marked for resume successfully: attemptId={}", id);
         return ResponseEntity.ok().build();
     }
@@ -149,7 +156,7 @@ public class TestAttemptController {
 
         UUID userId = UUID.fromString(authentication.getName());
         List<UserAnswerDTO> answers = testAttemptService.getAnswersForAttempt(id, userId);
-        
+
         logger.info("✅ Successfully fetched {} answers for attemptId={}", answers.size(), id);
         return ResponseEntity.ok(answers);
     }
@@ -166,7 +173,7 @@ public class TestAttemptController {
 
         UUID userId = UUID.fromString(authentication.getName());
         TestReviewDTO reviewDTO = testAttemptService.getTestReview(id, userId);
-        
+
         logger.info("✅ Successfully fetched test review: attemptId={}", id);
         return ResponseEntity.ok(reviewDTO);
     }
@@ -182,7 +189,7 @@ public class TestAttemptController {
 
         UUID userId = UUID.fromString(authentication.getName());
         testAttemptService.deleteAttempt(id, userId);
-        
+
         logger.info("✅ Successfully deleted test attempt: attemptId={}", id);
         return ResponseEntity.noContent().build();
     }
@@ -199,9 +206,9 @@ public class TestAttemptController {
 
         UUID userId = UUID.fromString(authentication.getName());
         TestResultDTO result = testAttemptService.regradeAttempt(id, userId);
-        
-        logger.info("✅ Successfully re-graded test attempt: attemptId={}, newScore={}/{}", 
-                    id, result.getScore(), result.getTotalQuestions());
+
+        logger.info("✅ Successfully re-graded test attempt: attemptId={}, newScore={}/{}",
+                id, result.getScore(), result.getTotalQuestions());
         return ResponseEntity.ok(result);
     }
 }

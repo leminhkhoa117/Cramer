@@ -1,6 +1,5 @@
 package com.cramer.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,7 +11,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.List;
 
 @Service
 public class SupabaseAdminService {
@@ -22,7 +20,7 @@ public class SupabaseAdminService {
     private final HttpClient httpClient;
 
     public SupabaseAdminService(@Value("${supabase.url:}") String supabaseUrl,
-                               @Value("${supabase.service-role-key:}") String serviceRoleKey) {
+            @Value("${supabase.service-role-key:}") String serviceRoleKey) {
         this.baseUrl = supabaseUrl == null ? "" : supabaseUrl.trim().replaceAll("/+$", "");
         this.serviceRoleKey = serviceRoleKey == null ? "" : serviceRoleKey.trim();
         String insecure = System.getenv("SUPABASE_INSECURE_TLS");
@@ -39,9 +37,15 @@ public class SupabaseAdminService {
         try {
             javax.net.ssl.TrustManager[] trustAll = new javax.net.ssl.TrustManager[] {
                     new javax.net.ssl.X509TrustManager() {
-                        public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new java.security.cert.X509Certificate[0]; }
-                        public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
-                        public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return new java.security.cert.X509Certificate[0];
+                        }
+
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+                        }
+
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+                        }
                     }
             };
             javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
@@ -71,18 +75,21 @@ public class SupabaseAdminService {
                     .build();
 
             HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
-            
+
             if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
                 return resp.body();
             } else {
-                System.err.println("Supabase Admin GET request failed with status " + resp.statusCode() + ": " + resp.body());
+                System.err.println(
+                        "Supabase Admin GET request failed with status " + resp.statusCode() + ": " + resp.body());
                 return null;
             }
         } catch (IOException | InterruptedException e) {
             // We should log the exception before re-throwing or wrapping it
             System.err.println("Exception during Supabase Admin GET request: " + e.getMessage());
-            // Wrapping in a RuntimeException is one option, but returning null might be safer
-            // depending on the desired contract of this method. Let's stick to returning null
+            // Wrapping in a RuntimeException is one option, but returning null might be
+            // safer
+            // depending on the desired contract of this method. Let's stick to returning
+            // null
             // to indicate failure, which is consistent with the status code check.
             return null;
         }
@@ -124,12 +131,14 @@ public class SupabaseAdminService {
                 requestBuilder.POST(HttpRequest.BodyPublishers.ofString(body == null ? "" : body));
             }
 
-            HttpResponse<String> resp = this.httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> resp = this.httpClient.send(requestBuilder.build(),
+                    HttpResponse.BodyHandlers.ofString());
 
             if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
                 return resp.body();
             } else {
-                System.err.println("Supabase Auth Admin API request failed with status " + resp.statusCode() + ": " + resp.body());
+                System.err.println(
+                        "Supabase Auth Admin API request failed with status " + resp.statusCode() + ": " + resp.body());
                 return null;
             }
         } catch (Exception e) {
@@ -143,41 +152,58 @@ public class SupabaseAdminService {
             return false;
         }
 
-        // WARNING: This is not a scalable solution!
-        // The Supabase Admin API does not support server-side filtering of users by email.
-        // This code fetches all users (up to the default page limit of 50) and checks them in memory.
-        // This will be slow and will fail for user bases larger than 50.
-        // The recommended solution is to create a PostgreSQL RPC function to perform this check in the database.
-        String responseBody = callAuthAdminApi("GET", "admin/users", null);
+        int page = 1;
+        int perPage = 50;
+        boolean hasMore = true;
 
-        if (responseBody == null) {
-            return false; // Error occurred during the HTTP request
-        }
+        while (hasMore) {
+            String queryString = String.format("?page=%d&per_page=%d", page, perPage);
+            // Assuming callAuthAdminApi handles query string injection or modify it if
+            // needed
+            // But wait, callAuthAdminApi takes (method, path, body).
+            // We need to append query string to path.
+            String responseBody = callAuthAdminApi("GET", "admin/users" + queryString, null);
 
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            // The response is an object like {"users": [...]}
-            JsonNode root = mapper.readTree(responseBody);
-            JsonNode usersNode = root.path("users");
-            
-            if (usersNode.isMissingNode() || !usersNode.isArray()) {
+            if (responseBody == null) {
+                return false; // Error
+            }
+
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode root = mapper.readTree(responseBody);
+                JsonNode usersNode = root.path("users");
+
+                if (usersNode.isMissingNode() || !usersNode.isArray()) {
+                    return false;
+                }
+
+                if (usersNode.size() == 0) {
+                    hasMore = false;
+                    break;
+                }
+
+                for (JsonNode userNode : usersNode) {
+                    JsonNode emailNode = userNode.path("email");
+                    if (!emailNode.isMissingNode() && email.equalsIgnoreCase(emailNode.asText())) {
+                        return true;
+                    }
+                }
+
+                // Check pagination metadata if available, otherwise just increment page
+                // Supabase might return "next" link or total count, but simplest is to check if
+                // we got full page
+                if (usersNode.size() < perPage) {
+                    hasMore = false;
+                } else {
+                    page++;
+                }
+
+            } catch (Exception e) {
+                System.err.println("Failed to parse Supabase admin users response: " + e.getMessage());
                 return false;
             }
-
-            for (JsonNode userNode : usersNode) {
-                JsonNode emailNode = userNode.path("email");
-                if (!emailNode.isMissingNode() && email.equalsIgnoreCase(emailNode.asText())) {
-                    return true; // Found a matching user
-                }
-            }
-
-            // TODO: Handle pagination if total users > page limit.
-            // The response includes "total", "page", "per_page" fields which can be used to fetch all pages.
-
-            return false; // No user found on the first page
-        } catch (Exception e) {
-            System.err.println("Failed to parse Supabase admin users response: " + responseBody);
-            return false;
         }
+
+        return false;
     }
 }

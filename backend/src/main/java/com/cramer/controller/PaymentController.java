@@ -208,11 +208,9 @@ public class PaymentController {
         
         return ResponseEntity.ok(Map.of(
                 "packs", java.util.List.of(
-                        Map.of("amount", 50, "priceVnd", 10000, "name", "Túi Lúa", "discount", 0),
-                        Map.of("amount", 100, "priceVnd", 20000, "name", "Gói Lúa", "discount", 0),
-                        Map.of("amount", 300, "priceVnd", 50000, "name", "Bao Lúa", "discount", 17),
-                        Map.of("amount", 500, "priceVnd", 80000, "name", "Bao Lúa lớn", "discount", 20),
-                        Map.of("amount", 1000, "priceVnd", 160000, "name", "Xe Lúa", "discount", 20)
+                        Map.of("amount", 100, "priceVnd", 10000, "name", "Túi Lúa", "discount", 0),
+                        Map.of("amount", 500, "priceVnd", 45000, "name", "Bao Lúa", "discount", 10),
+                        Map.of("amount", 2000, "priceVnd", 150000, "name", "Xe Lúa", "discount", 25)
                 )
         ));
     }

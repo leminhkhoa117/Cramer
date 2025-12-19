@@ -52,53 +52,45 @@ public class VocabularyController {
         return UUID.fromString(authentication.getName());
     }
 
-    @Operation(
-        summary = "List user vocabulary",
-        description = "Get all vocabulary entries for the authenticated user with pagination"
-    )
+    @Operation(summary = "List user vocabulary", description = "Get all vocabulary entries for the authenticated user with pagination")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved vocabulary list"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized - JWT token required")
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved vocabulary list"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - JWT token required")
     })
     @GetMapping
     public ResponseEntity<Page<VocabularyDTO>> listVocabulary(
-            @Parameter(description = "Page number (0-indexed)") 
-            @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") 
-            @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "Sort by field") 
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @Parameter(description = "Sort direction (asc/desc)") 
-            @RequestParam(defaultValue = "desc") String sortDir,
-            @Parameter(description = "Search term (optional)") 
-            @RequestParam(required = false) String search,
-            @Parameter(description = "Filter by mastered status: 'all', 'mastered', 'unmastered'") 
-            @RequestParam(defaultValue = "all") String filter,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Sort by field") @RequestParam(defaultValue = "createdAt") String sortBy,
+            @Parameter(description = "Sort direction (asc/desc)") @RequestParam(defaultValue = "desc") String sortDir,
+            @Parameter(description = "Search term (optional)") @RequestParam(required = false) String search,
+            @Parameter(description = "Filter by mastered status: 'all', 'mastered', 'unmastered'") @RequestParam(defaultValue = "all") String filter,
             Authentication authentication) {
-        
+
         UUID userId = getCurrentUserId(authentication);
-        logger.info("📥 GET /api/vocabulary - User: {}, page: {}, size: {}, search: '{}', filter: {}", 
+        logger.info("📥 GET /api/vocabulary - User: {}, page: {}, size: {}, search: '{}', filter: {}",
                 userId, page, size, search, filter);
 
-        Sort sort = sortDir.equalsIgnoreCase("asc") 
-                ? Sort.by(sortBy).ascending() 
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<VocabularyDTO> result;
-        boolean hasSearch = search != null && !search.trim().isEmpty();
+        String searchTerm = (search != null) ? search.trim() : "";
+        boolean hasSearch = !searchTerm.isEmpty();
         boolean isMasteredFilter = "mastered".equalsIgnoreCase(filter);
         boolean isUnmasteredFilter = "unmastered".equalsIgnoreCase(filter);
-        
+
         if (hasSearch && isMasteredFilter) {
             // Search + Mastered filter
-            result = vocabularyService.searchWithFilter(userId, search.trim(), true, pageable);
+            result = vocabularyService.searchWithFilter(userId, searchTerm, true, pageable);
         } else if (hasSearch && isUnmasteredFilter) {
             // Search + Unmastered filter
-            result = vocabularyService.searchWithFilter(userId, search.trim(), false, pageable);
+            result = vocabularyService.searchWithFilter(userId, searchTerm, false, pageable);
         } else if (hasSearch) {
             // Search only (all)
-            result = vocabularyService.search(userId, search.trim(), pageable);
+            result = vocabularyService.search(userId, searchTerm, pageable);
         } else if (isMasteredFilter) {
             // Mastered filter only
             result = vocabularyService.getByUserIdAndMastered(userId, true, pageable);
@@ -113,20 +105,16 @@ public class VocabularyController {
         return ResponseEntity.ok(result);
     }
 
-    @Operation(
-        summary = "Get vocabulary by ID",
-        description = "Get a specific vocabulary entry by its ID"
-    )
+    @Operation(summary = "Get vocabulary by ID", description = "Get a specific vocabulary entry by its ID")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Vocabulary found"),
-        @ApiResponse(responseCode = "404", description = "Vocabulary not found or access denied")
+            @ApiResponse(responseCode = "200", description = "Vocabulary found"),
+            @ApiResponse(responseCode = "404", description = "Vocabulary not found or access denied")
     })
     @GetMapping("/{id}")
     public ResponseEntity<VocabularyDTO> getVocabularyById(
-            @Parameter(description = "Vocabulary entry ID") 
-            @PathVariable Long id,
+            @Parameter(description = "Vocabulary entry ID") @PathVariable Long id,
             Authentication authentication) {
-        
+
         UUID userId = getCurrentUserId(authentication);
         logger.info("📥 GET /api/vocabulary/{} - User: {}", id, userId);
 
@@ -134,20 +122,17 @@ public class VocabularyController {
         return ResponseEntity.ok(vocabulary);
     }
 
-    @Operation(
-        summary = "Create vocabulary entry",
-        description = "Add a new word to the vocabulary notebook. Optionally auto-translate using AI."
-    )
+    @Operation(summary = "Create vocabulary entry", description = "Add a new word to the vocabulary notebook. Optionally auto-translate using AI.")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Vocabulary created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid input or word already exists"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized")
+            @ApiResponse(responseCode = "201", description = "Vocabulary created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input or word already exists"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @PostMapping
     public ResponseEntity<VocabularyDTO> createVocabulary(
             @Valid @RequestBody VocabularyCreateDTO createDTO,
             Authentication authentication) {
-        
+
         UUID userId = getCurrentUserId(authentication);
         logger.info("📥 POST /api/vocabulary - User: {}, word: {}", userId, createDTO.getWord());
 
@@ -160,22 +145,18 @@ public class VocabularyController {
         }
     }
 
-    @Operation(
-        summary = "Update vocabulary entry",
-        description = "Update an existing vocabulary entry"
-    )
+    @Operation(summary = "Update vocabulary entry", description = "Update an existing vocabulary entry")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Vocabulary updated successfully"),
-        @ApiResponse(responseCode = "404", description = "Vocabulary not found or access denied"),
-        @ApiResponse(responseCode = "400", description = "Invalid input")
+            @ApiResponse(responseCode = "200", description = "Vocabulary updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Vocabulary not found or access denied"),
+            @ApiResponse(responseCode = "400", description = "Invalid input")
     })
     @PutMapping("/{id}")
     public ResponseEntity<VocabularyDTO> updateVocabulary(
-            @Parameter(description = "Vocabulary entry ID") 
-            @PathVariable Long id,
+            @Parameter(description = "Vocabulary entry ID") @PathVariable Long id,
             @RequestBody VocabularyDTO updateDTO,
             Authentication authentication) {
-        
+
         UUID userId = getCurrentUserId(authentication);
         logger.info("📥 PUT /api/vocabulary/{} - User: {}", id, userId);
 
@@ -183,20 +164,16 @@ public class VocabularyController {
         return ResponseEntity.ok(updated);
     }
 
-    @Operation(
-        summary = "Delete vocabulary entry",
-        description = "Remove a word from the vocabulary notebook"
-    )
+    @Operation(summary = "Delete vocabulary entry", description = "Remove a word from the vocabulary notebook")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "204", description = "Vocabulary deleted successfully"),
-        @ApiResponse(responseCode = "404", description = "Vocabulary not found or access denied")
+            @ApiResponse(responseCode = "204", description = "Vocabulary deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Vocabulary not found or access denied")
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteVocabulary(
-            @Parameter(description = "Vocabulary entry ID") 
-            @PathVariable Long id,
+            @Parameter(description = "Vocabulary entry ID") @PathVariable Long id,
             Authentication authentication) {
-        
+
         UUID userId = getCurrentUserId(authentication);
         logger.info("📥 DELETE /api/vocabulary/{} - User: {}", id, userId);
 
@@ -204,21 +181,17 @@ public class VocabularyController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(
-        summary = "Translate word using AI",
-        description = "Translate an English word to Vietnamese using DeepSeek AI. Returns translation, phonetic, part of speech, definition, and example sentence."
-    )
+    @Operation(summary = "Translate word using AI", description = "Translate an English word to Vietnamese using DeepSeek AI. Returns translation, phonetic, part of speech, definition, and example sentence.")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Translation successful",
-            content = @Content(schema = @Schema(implementation = Map.class))),
-        @ApiResponse(responseCode = "400", description = "Invalid input"),
-        @ApiResponse(responseCode = "500", description = "Translation failed")
+            @ApiResponse(responseCode = "200", description = "Translation successful", content = @Content(schema = @Schema(implementation = Map.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input"),
+            @ApiResponse(responseCode = "500", description = "Translation failed")
     })
     @PostMapping("/translate")
     public ResponseEntity<Map<String, String>> translateWord(
             @RequestBody Map<String, String> request,
             Authentication authentication) {
-        
+
         UUID userId = getCurrentUserId(authentication);
         String word = request.get("word");
         String context = request.get("context");
@@ -238,20 +211,16 @@ public class VocabularyController {
         }
     }
 
-    @Operation(
-        summary = "Toggle mastered status",
-        description = "Toggle the mastered status of a vocabulary entry and increment review count"
-    )
+    @Operation(summary = "Toggle mastered status", description = "Toggle the mastered status of a vocabulary entry and increment review count")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Mastered status toggled"),
-        @ApiResponse(responseCode = "404", description = "Vocabulary not found or access denied")
+            @ApiResponse(responseCode = "200", description = "Mastered status toggled"),
+            @ApiResponse(responseCode = "404", description = "Vocabulary not found or access denied")
     })
     @PutMapping("/{id}/toggle-mastered")
     public ResponseEntity<VocabularyDTO> toggleMastered(
-            @Parameter(description = "Vocabulary entry ID") 
-            @PathVariable Long id,
+            @Parameter(description = "Vocabulary entry ID") @PathVariable Long id,
             Authentication authentication) {
-        
+
         UUID userId = getCurrentUserId(authentication);
         logger.info("📥 PUT /api/vocabulary/{}/toggle-mastered - User: {}", id, userId);
 
@@ -259,13 +228,9 @@ public class VocabularyController {
         return ResponseEntity.ok(updated);
     }
 
-    @Operation(
-        summary = "Get vocabulary statistics",
-        description = "Get statistics about user's vocabulary including total count, mastered count, and achievement progress"
-    )
+    @Operation(summary = "Get vocabulary statistics", description = "Get statistics about user's vocabulary including total count, mastered count, and achievement progress")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully",
-            content = @Content(schema = @Schema(implementation = Map.class)))
+            @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully", content = @Content(schema = @Schema(implementation = Map.class)))
     })
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStats(Authentication authentication) {

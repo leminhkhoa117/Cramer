@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,20 +47,20 @@ public class ProfileServiceOld {
     public Optional<Profile> getProfileById(UUID id) {
         try {
             logger.info("🔍 Fetching profile by ID: {}", id);
-            
+
             if (id == null) {
                 logger.error("❌ Profile ID cannot be null");
                 throw new IllegalArgumentException("Profile ID cannot be null");
             }
-            
-            Optional<Profile> profile = profileRepository.findById(id);
-            
+
+            Optional<Profile> profile = profileRepository.findById(Objects.requireNonNull(id));
+
             if (profile.isPresent()) {
                 logger.info("✅ Profile found: id={}, username={}", id, profile.get().getUsername());
             } else {
                 logger.warn("⚠️ Profile not found for id={}", id);
             }
-            
+
             return profile;
         } catch (IllegalArgumentException e) {
             throw e;
@@ -90,13 +91,13 @@ public class ProfileServiceOld {
      */
     public Profile createProfile(Profile profile) {
         logger.info("Creating new profile with username: {}", profile.getUsername());
-        
+
         if (profileRepository.existsByUsername(profile.getUsername())) {
             logger.error("Username already exists: {}", profile.getUsername());
             throw new IllegalArgumentException("Username already exists: " + profile.getUsername());
         }
-        
-        Profile savedProfile = profileRepository.save(profile);
+
+        Profile savedProfile = Objects.requireNonNull(profileRepository.save(profile));
         logger.info("Profile created successfully with ID: {}", savedProfile.getId());
         return savedProfile;
     }
@@ -104,30 +105,30 @@ public class ProfileServiceOld {
     /**
      * Update an existing profile.
      * 
-     * @param id the profile UUID
+     * @param id             the profile UUID
      * @param updatedProfile the updated profile data
      * @return the updated profile
      * @throws IllegalArgumentException if profile not found or username conflict
      */
     public Profile updateProfile(UUID id, Profile updatedProfile) {
         logger.info("Updating profile with ID: {}", id);
-        
-        Profile existingProfile = profileRepository.findById(id)
+
+        Profile existingProfile = profileRepository.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> {
                     logger.error("Profile not found with ID: {}", id);
                     return new IllegalArgumentException("Profile not found with ID: " + id);
                 });
-        
+
         // Check if new username conflicts with another user
-        if (!existingProfile.getUsername().equals(updatedProfile.getUsername()) 
+        if (!existingProfile.getUsername().equals(updatedProfile.getUsername())
                 && profileRepository.existsByUsername(updatedProfile.getUsername())) {
             logger.error("Username already taken: {}", updatedProfile.getUsername());
             throw new IllegalArgumentException("Username already taken: " + updatedProfile.getUsername());
         }
-        
+
         existingProfile.setUsername(updatedProfile.getUsername());
-        
-        Profile savedProfile = profileRepository.save(existingProfile);
+
+        Profile savedProfile = Objects.requireNonNull(profileRepository.save(existingProfile));
         logger.info("Profile updated successfully: {}", id);
         return savedProfile;
     }
@@ -140,13 +141,13 @@ public class ProfileServiceOld {
      */
     public void deleteProfile(UUID id) {
         logger.info("Deleting profile with ID: {}", id);
-        
-        if (!profileRepository.existsById(id)) {
+
+        if (!profileRepository.existsById(Objects.requireNonNull(id))) {
             logger.error("Profile not found with ID: {}", id);
             throw new IllegalArgumentException("Profile not found with ID: " + id);
         }
-        
-        profileRepository.deleteById(id);
+
+        profileRepository.deleteById(Objects.requireNonNull(id));
         logger.info("Profile deleted successfully: {}", id);
     }
 

@@ -5,8 +5,7 @@ import com.cramer.entity.Question;
 import com.cramer.exception.ResourceNotFoundException;
 import com.cramer.service.QuestionService;
 import com.cramer.util.EntityMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,8 +21,6 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/questions")
 public class QuestionController {
 
-    private static final Logger logger = LoggerFactory.getLogger(QuestionController.class);
-
     private final QuestionService questionService;
 
     @Autowired
@@ -33,8 +30,8 @@ public class QuestionController {
 
     @GetMapping
     public ResponseEntity<List<QuestionDTO>> getAllQuestions() {
-        List<QuestionDTO> questions = questionService.getAllQuestions()
-                .stream().map(EntityMapper::toDTO).collect(Collectors.toList());
+        List<QuestionDTO> questions = questionService.getAllQuestions().stream().map(EntityMapper::toDTO)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(questions);
     }
 
@@ -47,8 +44,8 @@ public class QuestionController {
 
     @GetMapping("/section/{sectionId}")
     public ResponseEntity<List<QuestionDTO>> getQuestionsBySectionId(@PathVariable Long sectionId) {
-        List<QuestionDTO> questions = questionService.getQuestionsBySectionId(sectionId)
-                .stream().map(EntityMapper::toDTO).collect(Collectors.toList());
+        List<QuestionDTO> questions = questionService.getQuestionsBySectionId(sectionId).stream()
+                .map(EntityMapper::toDTO).collect(Collectors.toList());
         return ResponseEntity.ok(questions);
     }
 
@@ -61,16 +58,16 @@ public class QuestionController {
 
     @GetMapping("/type/{questionType}")
     public ResponseEntity<List<QuestionDTO>> getQuestionsByType(@PathVariable String questionType) {
-        List<QuestionDTO> questions = questionService.getQuestionsByType(questionType)
-                .stream().map(EntityMapper::toDTO).collect(Collectors.toList());
+        List<QuestionDTO> questions = questionService.getQuestionsByType(questionType).stream().map(EntityMapper::toDTO)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(questions);
     }
 
     @GetMapping("/section/{sectionId}/type/{questionType}")
-    public ResponseEntity<List<QuestionDTO>> getQuestionsBySectionAndType(
-            @PathVariable Long sectionId, @PathVariable String questionType) {
-        List<QuestionDTO> questions = questionService.getQuestionsBySectionAndType(sectionId, questionType)
-                .stream().map(EntityMapper::toDTO).collect(Collectors.toList());
+    public ResponseEntity<List<QuestionDTO>> getQuestionsBySectionAndType(@PathVariable Long sectionId,
+            @PathVariable String questionType) {
+        List<QuestionDTO> questions = questionService.getQuestionsBySectionAndType(sectionId, questionType).stream()
+                .map(EntityMapper::toDTO).collect(Collectors.toList());
         return ResponseEntity.ok(questions);
     }
 

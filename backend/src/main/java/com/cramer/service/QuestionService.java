@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -48,7 +49,7 @@ public class QuestionService {
     @Transactional(readOnly = true)
     public Optional<Question> getQuestionById(Long id) {
         logger.info("Fetching question by ID: {}", id);
-        return questionRepository.findById(id);
+        return questionRepository.findById(Objects.requireNonNull(id));
     }
 
     /**
@@ -90,7 +91,7 @@ public class QuestionService {
     /**
      * Get questions by section and type.
      * 
-     * @param sectionId the section ID
+     * @param sectionId    the section ID
      * @param questionType the question type
      * @return list of matching questions
      */
@@ -103,7 +104,7 @@ public class QuestionService {
     /**
      * Get a specific question by section and number.
      * 
-     * @param sectionId the section ID
+     * @param sectionId      the section ID
      * @param questionNumber the question number
      * @return Optional containing the question if found
      */
@@ -133,12 +134,12 @@ public class QuestionService {
      */
     public Question createQuestion(Question question) {
         logger.info("Creating new question with UID: {}", question.getQuestionUid());
-        
+
         if (questionRepository.existsByQuestionUid(question.getQuestionUid())) {
             logger.error("Question UID already exists: {}", question.getQuestionUid());
             throw new IllegalArgumentException("Question UID already exists: " + question.getQuestionUid());
         }
-        
+
         Question savedQuestion = questionRepository.save(question);
         logger.info("Question created successfully with ID: {}", savedQuestion.getId());
         return savedQuestion;
@@ -147,34 +148,34 @@ public class QuestionService {
     /**
      * Update an existing question.
      * 
-     * @param id the question ID
+     * @param id              the question ID
      * @param updatedQuestion the updated question data
      * @return the updated question
      * @throws IllegalArgumentException if question not found
      */
     public Question updateQuestion(Long id, Question updatedQuestion) {
         logger.info("Updating question with ID: {}", id);
-        
-        Question existingQuestion = questionRepository.findById(id)
+
+        Question existingQuestion = questionRepository.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> {
                     logger.error("Question not found with ID: {}", id);
                     return new IllegalArgumentException("Question not found with ID: " + id);
                 });
-        
+
         // Check UID conflict if changed
-        if (!existingQuestion.getQuestionUid().equals(updatedQuestion.getQuestionUid()) 
+        if (!existingQuestion.getQuestionUid().equals(updatedQuestion.getQuestionUid())
                 && questionRepository.existsByQuestionUid(updatedQuestion.getQuestionUid())) {
             logger.error("Question UID already taken: {}", updatedQuestion.getQuestionUid());
             throw new IllegalArgumentException("Question UID already taken: " + updatedQuestion.getQuestionUid());
         }
-        
+
         existingQuestion.setSectionId(updatedQuestion.getSectionId());
         existingQuestion.setQuestionNumber(updatedQuestion.getQuestionNumber());
         existingQuestion.setQuestionUid(updatedQuestion.getQuestionUid());
         existingQuestion.setQuestionType(updatedQuestion.getQuestionType());
         existingQuestion.setQuestionContent(updatedQuestion.getQuestionContent());
         existingQuestion.setCorrectAnswer(updatedQuestion.getCorrectAnswer());
-        
+
         Question savedQuestion = questionRepository.save(existingQuestion);
         logger.info("Question updated successfully: {}", id);
         return savedQuestion;
@@ -188,13 +189,13 @@ public class QuestionService {
      */
     public void deleteQuestion(Long id) {
         logger.info("Deleting question with ID: {}", id);
-        
-        if (!questionRepository.existsById(id)) {
+
+        if (!questionRepository.existsById(Objects.requireNonNull(id))) {
             logger.error("Question not found with ID: {}", id);
             throw new IllegalArgumentException("Question not found with ID: " + id);
         }
-        
-        questionRepository.deleteById(id);
+
+        questionRepository.deleteById(Objects.requireNonNull(id));
         logger.info("Question deleted successfully: {}", id);
     }
 

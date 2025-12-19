@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -168,7 +169,7 @@ public class TranslationBillingServiceImpl implements TranslationBillingService 
                         .usageMonth(firstOfMonth)
                         .translationsUsed(1)
                         .build();
-                translationUsageRepository.save(usage);
+                translationUsageRepository.save(Objects.requireNonNull(usage));
                 logger.debug("🆕 Created new translation usage record for user {}", userId);
             } catch (DataIntegrityViolationException e) {
                 // Race condition - record was created by another thread
