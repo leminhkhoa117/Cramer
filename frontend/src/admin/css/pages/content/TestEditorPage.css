@@ -563,6 +563,97 @@
 }
 
 /* ==========================================================================
+   LOADING & EMPTY STATES
+   ========================================================================== */
+
+.sidebar-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-spacing-xl);
+  color: var(--admin-text-muted);
+  gap: var(--admin-spacing-sm);
+}
+
+.sidebar-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-spacing-xl);
+  color: var(--admin-text-muted);
+  text-align: center;
+  gap: var(--admin-spacing-md);
+}
+
+.sidebar-empty p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.questions-loading,
+.questions-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-spacing-xl);
+  color: var(--admin-text-muted);
+  gap: var(--admin-spacing-md);
+}
+
+.questions-empty p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.no-section-selected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--admin-text-muted);
+  padding: var(--admin-spacing-xl);
+}
+
+.no-section-selected p {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+/* Audio Placeholder */
+.audio-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-spacing-xl);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--admin-radius-md);
+  border: 2px dashed var(--admin-border-primary);
+  text-align: center;
+  gap: var(--admin-spacing-md);
+}
+
+.audio-placeholder span {
+  font-size: 2rem;
+}
+
+.audio-placeholder p {
+  margin: 0;
+  color: var(--admin-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Small Button Variant */
+.admin-btn--small {
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+}
+
+/* ==========================================================================
    RESPONSIVE
    ========================================================================== */
 

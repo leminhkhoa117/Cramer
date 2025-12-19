@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import ActivityTimeline from '../../components/ActivityTimeline';
+import adminApi from '../../api/adminApi';
 import {
     FiArrowLeft,
     FiUser,
@@ -21,7 +23,7 @@ import {
 import useAdminUsersStore from '../../stores/useAdminUsersStore';
 import { AccountStatusBadge, SubscriptionBadge } from '../../components/StatusBadge';
 import BaseModal from '../../../components/common/BaseModal';
-import './UserDetailPage.css';
+import '../../css/pages/users/UserDetailPage.css';
 
 export default function UserDetailPage() {
     const { userId } = useParams();
@@ -39,6 +41,10 @@ export default function UserDetailPage() {
     const [creditReason, setCreditReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const [activities, setActivities] = useState([]);
+    const [auditLogs, setAuditLogs] = useState([]);
+    const [loadingActivities, setLoadingActivities] = useState(false);
+
     // Zustand store
     const {
         selectedUser: user,
@@ -49,6 +55,34 @@ export default function UserDetailPage() {
         updateUserStatus,
         updateUserCredits
     } = useAdminUsersStore();
+
+    // Define fetch functions first (before useEffect)
+    const fetchActivities = async () => {
+        try {
+            setLoadingActivities(true);
+            const response = await adminApi.activity.getUserActivities(userId, {
+                page: 0,
+                size: 20
+            });
+            setActivities(response.content || []);
+        } catch (err) {
+            console.error('Lỗi khi tải hoạt động:', err);
+        } finally {
+            setLoadingActivities(false);
+        }
+    };
+
+    const fetchAuditLogs = async () => {
+        try {
+            const response = await adminApi.activity.getAuditLogs(userId, {
+                page: 0,
+                size: 20
+            });
+            setAuditLogs(response.content || []);
+        } catch (err) {
+            console.error('Lỗi khi tải audit logs:', err);
+        }
+    };
 
     // Fetch user on mount
     useEffect(() => {
@@ -61,6 +95,14 @@ export default function UserDetailPage() {
             clearSelectedUser();
         };
     }, [userId, fetchUserById, clearSelectedUser]);
+
+    // Fetch activities and audit logs when user is loaded
+    useEffect(() => {
+        if (userId && user) {
+            fetchActivities();
+            fetchAuditLogs();
+        }
+    }, [userId, user]);
 
     // Loading state
     if (isLoadingUser) {
@@ -377,10 +419,40 @@ export default function UserDetailPage() {
 
                     {/* Activity Tab */}
                     {activeTab === 'activity' && (
-                        <div className="tab-content">
-                            <h3 className="section-title">Hoạt động gần đây</h3>
-                            <p className="empty-message">Chưa có hoạt động nào được ghi nhận</p>
-                        </div>
+                        <section className="user-detail__section">
+                            <h3 style={{
+                                color: '#ffffff',
+                                fontSize: '1.25rem',
+                                fontWeight: 600,
+                                marginBottom: '20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}>
+                                📋 Timeline Hoạt động
+                            </h3>
+                            <ActivityTimeline
+                                activities={activities}
+                                loading={loadingActivities}
+                            />
+
+                            <h3 style={{
+                                color: '#ffffff',
+                                fontSize: '1.25rem',
+                                fontWeight: 600,
+                                marginTop: '48px',
+                                marginBottom: '20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}>
+                                🔒 Nhật ký Admin
+                            </h3>
+                            <ActivityTimeline
+                                activities={auditLogs}
+                                loading={loadingActivities}
+                            />
+                        </section>
                     )}
                 </div>
             </div>

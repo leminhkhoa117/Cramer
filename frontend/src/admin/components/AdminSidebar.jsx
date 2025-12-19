@@ -89,6 +89,9 @@ export default function AdminSidebar({ collapsed, onToggle }) {
                     alt="Cramer Logo"
                     className="admin-sidebar__logo-img"
                 />
+                {!collapsed && (
+                    <span className="admin-sidebar__logo-text">cramer</span>
+                )}
             </div>
 
             {/* Navigation */}

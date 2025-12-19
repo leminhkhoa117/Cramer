@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     FiPieChart,
     FiTrendingUp,
@@ -31,8 +31,10 @@ import {
     Area,
     ComposedChart
 } from 'recharts';
-import { formatCurrency, formatShortCurrency } from '../../mock/mockFinance';
-import './ReportsPage.css';
+import { formatCurrency, formatShortCurrency } from '../../utils/formatUtils';
+import adminApi from '../../api/adminApi';
+import { exportToExcel } from '../../utils/exportUtils';
+import '../../css/pages/finance/ReportsPage.css';
 
 // Report Types Configuration
 const REPORT_TYPES = [
@@ -73,59 +75,23 @@ const GRANULARITY_OPTIONS = [
     { value: 'monthly', label: 'Theo tháng' }
 ];
 
-// Mock Data for Reports
-const mockRevenueData = [
-    { date: '01/12', subscriptions: 2500000, lua: 800000, total: 3300000 },
-    { date: '02/12', subscriptions: 2800000, lua: 950000, total: 3750000 },
-    { date: '03/12', subscriptions: 2200000, lua: 720000, total: 2920000 },
-    { date: '04/12', subscriptions: 3100000, lua: 1100000, total: 4200000 },
-    { date: '05/12', subscriptions: 2900000, lua: 880000, total: 3780000 },
-    { date: '06/12', subscriptions: 3400000, lua: 1250000, total: 4650000 },
-    { date: '07/12', subscriptions: 3200000, lua: 1000000, total: 4200000 }
+// Default mock data (fallback if API fails)
+const defaultRevenueData = [
+    { date: '01/12', subscriptions: 0, lua: 0, total: 0 }
 ];
 
-const mockSubscriptionMetrics = {
-    mrr: 45000000,
-    mrrChange: 12.5,
-    churnRate: 3.2,
-    churnRateChange: -0.8,
-    ltv: 450000,
-    ltvChange: 8.3,
-    activeSubscribers: 234,
-    newSubscribers: 45,
-    cancelledSubscribers: 12
-};
-
-const mockCohortData = [
-    { cohort: 'T10/25', month1: 100, month2: 85, month3: 72 },
-    { cohort: 'T11/25', month1: 100, month2: 88 },
-    { cohort: 'T12/25', month1: 100 }
-];
-
-const mockLuaEconomy = {
-    totalIssued: 125000,
-    totalSpent: 87500,
-    inCirculation: 37500,
-    purchasedLua: 95000,
-    bonusLua: 30000,
-    avgBalance: 160,
-    topFeatures: [
-        { name: 'AI Grading', spent: 35000, percentage: 40 },
-        { name: 'Chatbot Premium', spent: 26250, percentage: 30 },
-        { name: 'Extra Attempts', spent: 17500, percentage: 20 },
-        { name: 'Other', spent: 8750, percentage: 10 }
-    ]
-};
-
-const mockAcquisitionMetrics = {
-    bonusCost: 3000000,
-    conversionRate: 12.5,
-    conversionRateChange: 2.3,
-    avgTimeToConvert: 14,
-    promotionROI: 245,
-    freeUsers: 1256,
-    paidUsers: 234,
-    convertedThisPeriod: 45
+const defaultMetrics = {
+    totalRevenue: 0,
+    subscriptionRevenue: 0,
+    luaRevenue: 0,
+    newSubscriptions: 0,
+    luaPacksSold: 0,
+    pendingTransactions: 0,
+    totalRevenueChange: 0,
+    subscriptionChange: 0,
+    luaPacksChange: 0,
+    growthRate: 0,
+    mrr: 0
 };
 
 /**
@@ -134,18 +100,77 @@ const mockAcquisitionMetrics = {
  */
 export default function ReportsPage() {
     const [selectedReport, setSelectedReport] = useState('revenue_summary');
-    const [dateFrom, setDateFrom] = useState('2025-12-01');
-    const [dateTo, setDateTo] = useState('2025-12-17');
+    const [dateFrom, setDateFrom] = useState(() => {
+        const date = new Date();
+        date.setDate(1); // First day of month
+        return date.toISOString().split('T')[0];
+    });
+    const [dateTo, setDateTo] = useState(() => new Date().toISOString().split('T')[0]);
     const [granularity, setGranularity] = useState('daily');
     const [isExporting, setIsExporting] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // API data state
+    const [overview, setOverview] = useState(defaultMetrics);
+    const [chartData, setChartData] = useState(defaultRevenueData);
+    const [breakdown, setBreakdown] = useState([]);
+
+    // Fetch dashboard data
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const [overviewData, chartResponse, breakdownData] = await Promise.all([
+                adminApi.finance.getOverview('30days'),
+                adminApi.finance.getChart('30days'),
+                adminApi.finance.getBreakdown('30days')
+            ]);
+
+            setOverview(overviewData || defaultMetrics);
+
+            // Transform chart data
+            if (chartResponse && chartResponse.length > 0) {
+                const formattedChart = chartResponse.map(item => ({
+                    date: new Date(item.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
+                    subscriptions: item.subscriptions || 0,
+                    lua: item.lua || 0,
+                    total: item.total || 0
+                }));
+                setChartData(formattedChart);
+            }
+
+            setBreakdown(breakdownData || []);
+        } catch (err) {
+            console.error('Error fetching report data:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // Fetch data on mount
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     // Handle export
     const handleExport = async (format) => {
         setIsExporting(true);
-        // Simulate export
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setIsExporting(false);
-        alert(`Đã xuất báo cáo định dạng ${format.toUpperCase()}`);
+        try {
+            if (format === 'xlsx') {
+                const exportData = await adminApi.finance.getExportData(dateFrom, dateTo);
+                if (exportData && exportData.length > 0) {
+                    exportToExcel(exportData, 'Báo cáo Tài chính', 'finance_report');
+                } else {
+                    alert('Không có dữ liệu để xuất');
+                }
+            } else {
+                alert(`Định dạng ${format.toUpperCase()} chưa được hỗ trợ`);
+            }
+        } catch (err) {
+            console.error('Error exporting:', err);
+            alert('Lỗi khi xuất báo cáo');
+        } finally {
+            setIsExporting(false);
+        }
     };
 
     // Custom Chart Tooltip
@@ -176,11 +201,12 @@ export default function ReportsPage() {
                         <FiDollarSign size={24} style={{ color: '#8B5CF6' }} />
                     </div>
                     <div className="report-metric-card__content">
-                        <span className="report-metric-card__value">{formatShortCurrency(25800000)}</span>
+                        <span className="report-metric-card__value">{formatShortCurrency(overview.totalRevenue)}</span>
                         <span className="report-metric-card__label">Tổng doanh thu</span>
                     </div>
-                    <div className="report-metric-card__change report-metric-card__change--up">
-                        <FiTrendingUp size={14} /> +15.2%
+                    <div className={`report-metric-card__change report-metric-card__change--${overview.totalRevenueChange >= 0 ? 'up' : 'down'}`}>
+                        {overview.totalRevenueChange >= 0 ? <FiTrendingUp size={14} /> : <FiTrendingDown size={14} />}
+                        {overview.totalRevenueChange >= 0 ? '+' : ''}{overview.totalRevenueChange}%
                     </div>
                 </div>
 
@@ -189,11 +215,12 @@ export default function ReportsPage() {
                         <FiUsers size={24} style={{ color: '#10B981' }} />
                     </div>
                     <div className="report-metric-card__content">
-                        <span className="report-metric-card__value">{formatShortCurrency(19200000)}</span>
+                        <span className="report-metric-card__value">{formatShortCurrency(overview.subscriptionRevenue)}</span>
                         <span className="report-metric-card__label">Doanh thu Subscriptions</span>
                     </div>
-                    <div className="report-metric-card__change report-metric-card__change--up">
-                        <FiTrendingUp size={14} /> +12.8%
+                    <div className={`report-metric-card__change report-metric-card__change--${overview.subscriptionChange >= 0 ? 'up' : 'down'}`}>
+                        {overview.subscriptionChange >= 0 ? <FiTrendingUp size={14} /> : <FiTrendingDown size={14} />}
+                        {overview.subscriptionChange >= 0 ? '+' : ''}{overview.subscriptionChange}%
                     </div>
                 </div>
 
@@ -202,11 +229,12 @@ export default function ReportsPage() {
                         <span style={{ fontSize: '1.5rem' }}>🌾</span>
                     </div>
                     <div className="report-metric-card__content">
-                        <span className="report-metric-card__value">{formatShortCurrency(6600000)}</span>
+                        <span className="report-metric-card__value">{formatShortCurrency(overview.luaRevenue)}</span>
                         <span className="report-metric-card__label">Doanh thu Lúa</span>
                     </div>
-                    <div className="report-metric-card__change report-metric-card__change--up">
-                        <FiTrendingUp size={14} /> +18.5%
+                    <div className={`report-metric-card__change report-metric-card__change--${overview.luaPacksChange >= 0 ? 'up' : 'down'}`}>
+                        {overview.luaPacksChange >= 0 ? <FiTrendingUp size={14} /> : <FiTrendingDown size={14} />}
+                        {overview.luaPacksChange >= 0 ? '+' : ''}{overview.luaPacksChange}%
                     </div>
                 </div>
 
@@ -215,7 +243,7 @@ export default function ReportsPage() {
                         <FiBarChart2 size={24} style={{ color: '#3B82F6' }} />
                     </div>
                     <div className="report-metric-card__content">
-                        <span className="report-metric-card__value">+22.1%</span>
+                        <span className="report-metric-card__value">{overview.growthRate >= 0 ? '+' : ''}{overview.growthRate}%</span>
                         <span className="report-metric-card__label">Tăng trưởng so với kỳ trước</span>
                     </div>
                 </div>
@@ -225,7 +253,7 @@ export default function ReportsPage() {
                 <h3 className="report-section-title">Xu hướng doanh thu</h3>
                 <div className="report-chart-container">
                     <ResponsiveContainer width="100%" height={350}>
-                        <AreaChart data={mockRevenueData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorSub" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3} />
@@ -626,8 +654,13 @@ export default function ReportsPage() {
                             ))}
                         </select>
                     </div>
-                    <button className="admin-btn admin-btn--secondary">
-                        <FiRefreshCw size={16} /> Làm mới
+                    <button
+                        className="admin-btn admin-btn--secondary"
+                        onClick={fetchData}
+                        disabled={isLoading}
+                    >
+                        <FiRefreshCw size={16} className={isLoading ? 'spinning' : ''} />
+                        {isLoading ? 'Đang tải...' : 'Làm mới'}
                     </button>
                 </div>
                 <div className="reports-config__export">

@@ -597,3 +597,194 @@
     font-size: 1.5rem;
   }
 }
+
+/* ==========================================================================
+   UTILITIES & ANIMATIONS
+   ========================================================================== */
+
+/* Spin animation for loading indicators */
+@keyframes adminSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: adminSpin 1s linear infinite;
+}
+
+.spinning {
+  animation: adminSpin 1s linear infinite;
+}
+
+/* Loading spinner */
+.admin-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-spacing-xl);
+  color: var(--admin-text-muted);
+}
+
+.admin-loading .spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--admin-border-primary);
+  border-top-color: var(--admin-primary);
+  border-radius: 50%;
+  animation: adminSpin 1s linear infinite;
+  margin-right: var(--admin-spacing-sm);
+}
+
+/* ==========================================================================
+   MODAL STYLES
+   ========================================================================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--admin-z-modal);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  background: var(--admin-bg-secondary);
+  border: 1px solid var(--admin-border-primary);
+  border-radius: var(--admin-radius-xl);
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--admin-spacing-lg);
+  border-bottom: 1px solid var(--admin-border-primary);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  padding: var(--admin-spacing-xs);
+  border-radius: var(--admin-radius-sm);
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: var(--admin-bg-card);
+  color: var(--admin-text-primary);
+}
+
+.modal-body {
+  padding: var(--admin-spacing-lg);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--admin-spacing-sm);
+  padding: var(--admin-spacing-lg);
+  border-top: 1px solid var(--admin-border-primary);
+}
+
+/* Form styles */
+.form-group {
+  margin-bottom: var(--admin-spacing-md);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--admin-spacing-xs);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+}
+
+.form-input {
+  width: 100%;
+  padding: var(--admin-spacing-sm) var(--admin-spacing-md);
+  background: var(--admin-bg-input);
+  border: 1px solid var(--admin-border-primary);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text-primary);
+  font-size: 0.9375rem;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px rgba(var(--admin-primary-rgb), 0.15);
+}
+
+.form-input::placeholder {
+  color: var(--admin-text-disabled);
+}
+
+.form-hint {
+  margin-top: var(--admin-spacing-xs);
+  font-size: 0.8125rem;
+  color: var(--admin-text-muted);
+}
+
+/* Placeholder states */
+.loading-placeholder,
+.empty-placeholder {
+  text-align: center;
+  padding: var(--admin-spacing-lg);
+  color: var(--admin-text-muted);
+  font-size: 0.875rem;
+}
+
+.chart-loading,
+.chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--admin-text-muted);
+  gap: var(--admin-spacing-sm);
+}
+
+.chart-loading .spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--admin-border-primary);
+  border-top-color: var(--admin-primary);
+  border-radius: 50%;
+  animation: adminSpin 1s linear infinite;
+}

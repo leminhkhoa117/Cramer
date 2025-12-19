@@ -27,7 +27,7 @@ import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
 
 // Admin imports
-import AdminLayout from './admin/components/AdminLayout';
+import { AdminLayout } from './admin/components/layout';
 import AdminRouteGuard from './admin/components/AdminRouteGuard';
 import AdminDashboard from './admin/pages/AdminDashboard';
 import UserListPage from './admin/pages/users/UserListPage';

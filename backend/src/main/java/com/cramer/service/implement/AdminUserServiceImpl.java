@@ -3,6 +3,8 @@ package com.cramer.service.implement;
 import com.cramer.dto.AdminUserDTO;
 import com.cramer.dto.AdminUserListResponse;
 import com.cramer.service.AdminUserService;
+import com.cramer.service.UserActivityService;
+import com.cramer.service.AdminAuditService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,12 @@ public class AdminUserServiceImpl implements AdminUserService {
     
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    
+    @Autowired
+    private UserActivityService userActivityService;
+    
+    @Autowired
+    private AdminAuditService adminAuditService;
     
     @Override
     public AdminUserListResponse getUsers(int page, int size, String search, String status,
@@ -238,10 +246,42 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Override
     public AdminUserDTO updateUserStatus(String userId, String newStatus, String reason, String adminId) {
         try {
+            // Get current status before update
+            String oldStatus = "ACTIVE";
+            String adminEmail = null;
+            try {
+                oldStatus = jdbcTemplate.queryForObject(
+                    "SELECT COALESCE(account_status, 'ACTIVE') FROM public.profiles WHERE id = ?::uuid",
+                    String.class, userId
+                );
+                adminEmail = jdbcTemplate.queryForObject(
+                    "SELECT email FROM auth.users WHERE id = ?::uuid",
+                    String.class, adminId
+                );
+            } catch (Exception e) {
+                logger.warn("Could not get old status or admin email: " + e.getMessage());
+            }
+            
+            // Update status
             jdbcTemplate.update(
                 "UPDATE public.profiles SET account_status = ?, status_reason = ? WHERE id = ?::uuid",
                 newStatus, reason, userId
             );
+            
+            // Log to Admin Audit
+            try {
+                adminAuditService.logStatusChange(
+                    UUID.fromString(adminId),
+                    adminEmail,
+                    userId,
+                    oldStatus,
+                    newStatus,
+                    reason,
+                    null // IP address - could be passed from controller
+                );
+            } catch (Exception e) {
+                logger.warn("Could not log audit: " + e.getMessage());
+            }
             
             logger.info("Admin {} updated user {} status to {} with reason: {}", adminId, userId, newStatus, reason);
             
@@ -255,23 +295,34 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Override
     public AdminUserDTO updateUserCredits(String userId, int amount, String action, String reason, String adminId) {
         try {
-            // Get current balance
-            Integer currentBalance = null;
+            // Get current balance and admin email
+            Integer currentBalance = 0;
+            String adminEmail = null;
             try {
                 currentBalance = jdbcTemplate.queryForObject(
                     "SELECT COALESCE(balance, 0) FROM public.user_credits WHERE user_id = ?::uuid",
                     Integer.class,
                     userId
                 );
+                adminEmail = jdbcTemplate.queryForObject(
+                    "SELECT email FROM auth.users WHERE id = ?::uuid",
+                    String.class, adminId
+                );
             } catch (Exception e) {
-                currentBalance = 0;
+                if (currentBalance == null) currentBalance = 0;
+                logger.warn("Could not get balance or admin email: " + e.getMessage());
             }
             
+            int oldBalance = currentBalance != null ? currentBalance : 0;
             int newBalance;
+            int actualAmount;
+            
             if ("ADD".equalsIgnoreCase(action)) {
-                newBalance = (currentBalance != null ? currentBalance : 0) + amount;
+                newBalance = oldBalance + amount;
+                actualAmount = amount;
             } else {
-                newBalance = Math.max(0, (currentBalance != null ? currentBalance : 0) - amount);
+                newBalance = Math.max(0, oldBalance - amount);
+                actualAmount = -amount;
             }
             
             // Update or insert credits
@@ -289,17 +340,44 @@ public class AdminUserServiceImpl implements AdminUserService {
                 );
             }
             
-            // Log the credit change
+            // Log the credit change to credit_transactions
             try {
                 jdbcTemplate.update(
                     "INSERT INTO public.credit_transactions (user_id, amount, type, category, description, created_at) " +
                     "VALUES (?::uuid, ?, 'BONUS', 'ADMIN_ADJUSTMENT', ?, NOW())",
                     userId,
-                    "ADD".equalsIgnoreCase(action) ? amount : -amount,
+                    actualAmount,
                     "Admin: " + reason
                 );
             } catch (Exception e) {
                 logger.warn("Could not log credit transaction: " + e.getMessage());
+            }
+            
+            // Log to User Activities (user can see this)
+            try {
+                userActivityService.logCreditsChanged(
+                    UUID.fromString(userId),
+                    actualAmount,
+                    reason
+                );
+            } catch (Exception e) {
+                logger.warn("Could not log user activity: " + e.getMessage());
+            }
+            
+            // Log to Admin Audit Log (admin can see this)
+            try {
+                adminAuditService.logCreditsChange(
+                    UUID.fromString(adminId),
+                    adminEmail,
+                    userId,
+                    oldBalance,
+                    newBalance,
+                    actualAmount,
+                    reason,
+                    null // IP address
+                );
+            } catch (Exception e) {
+                logger.warn("Could not log admin audit: " + e.getMessage());
             }
             
             logger.info("Admin {} {} {} Lúa for user {} with reason: {}", 

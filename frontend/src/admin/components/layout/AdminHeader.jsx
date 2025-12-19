@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FiChevronRight, FiExternalLink } from 'react-icons/fi';
-import { useProfileStore } from '../../stores';
+import { useProfileStore } from '../../../stores';
 
 /**
  * AdminHeader - Header bar cho admin panel

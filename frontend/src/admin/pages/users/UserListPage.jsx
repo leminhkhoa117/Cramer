@@ -21,7 +21,7 @@ import {
 import { AccountStatusBadge, SubscriptionBadge } from '../../components/StatusBadge';
 import useAdminUsersStore from '../../stores/useAdminUsersStore';
 import { exportUsersToExcel } from '../../utils/exportExcel';
-import './UserListPage.css';
+import '../../css/pages/users/UserListPage.css';
 
 // Filter options
 const subscriptionOptions = [
@@ -365,7 +365,7 @@ export default function UserListPage() {
                             onClick={handleExport}
                             disabled={isExporting}
                         >
-                            <FiDownload size={16} className={isExporting ? 'spin' : ''} />
+                            <FiDownload size={16} />
                             <span>{isExporting ? 'Đang xuất...' : 'Xuất Excel'}</span>
                         </button>
                     </div>
