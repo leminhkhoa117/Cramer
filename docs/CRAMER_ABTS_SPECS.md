@@ -1,9 +1,9 @@
 # Tech Specs: ABTS - AI-Based Test Generation System
 
-> **Phiên bản:** 1.2.0  
+> **Phiên bản:** 2.0.0  
 > **Tác giả:** Quốc Hữu - Project Manager :)  
 > **Ngày tạo:** 17/12/2025  
-> **Cập nhật:** 17/12/2025 - DeepSeek API Reference + Q&A Enhancements
+> **Cập nhật:** 20/12/2025 - OpenRouter Migration + Multi-Model Support + Streaming
 > **Loại tài liệu:** Extension cho CRAMER_CMS_ADMIN_SPECS.md  
 > **Trạng thái:** Draft - Đang trong giai đoạn lên kế hoạch
 
@@ -29,8 +29,10 @@
 16. [Phụ lục](#16-phụ-lục)
 
 **Appendices:**
-- [Appendix A: DeepSeek API Reference](#appendix-a-deepseek-api-reference)
+- [Appendix A: OpenRouter API Reference](#appendix-a-openrouter-api-reference)
 - [Appendix B: Chart Styling Guidelines](#appendix-b-chart-styling-guidelines)
+- [Appendix C: Recommended Models for ABTS](#appendix-c-recommended-models-for-abts)
+- [Appendix D: System Prompts Reference (Full)](#appendix-d-system-prompts-reference-full)
 
 
 ---
@@ -57,7 +59,7 @@ Hiện tại, việc tạo nội dung đề thi IELTS cho Cramer CMS đang gặp
 
 ### 1.2 Giải pháp: ABTS (AI-Based Test Generation System)
 
-ABTS là một **extension của Module Quản lý Nội dung** trong Cramer CMS Admin, tích hợp AI (DeepSeek V3) để hỗ trợ việc tạo nội dung đề thi IELTS.
+ABTS là một **extension của Module Quản lý Nội dung** trong Cramer CMS Admin, tích hợp **OpenRouter Unified AI API** (truy cập 400+ models) để hỗ trợ việc tạo nội dung đề thi IELTS.
 
 **ABTS KHÔNG phải là:**
 - Hệ thống tự động hoàn toàn (fully automated)
@@ -69,6 +71,8 @@ ABTS là một **extension của Module Quản lý Nội dung** trong Cramer CMS
 - Tăng tốc quy trình soạn đề từ 2-4 giờ xuống còn 30-60 phút
 - Đảm bảo format chuẩn IELTS với structured output
 - Cho phép tùy chỉnh độ khó và chủ đề theo nhu cầu
+- **Linh hoạt chọn AI model** phù hợp cho từng task (free hoặc paid)
+- **Real-time streaming** - xem AI "suy nghĩ" trực tiếp
 
 ### 1.3 Phạm vi & Các Skills Được Hỗ trợ
 
@@ -84,41 +88,116 @@ ABTS là một **extension của Module Quản lý Nội dung** trong Cramer CMS
 - **Admin Cramer CMS:** 2 tài khoản admin cố định
 - **Yêu cầu:** Hiểu biết về format IELTS, khả năng review và chỉnh sửa nội dung AI generate
 
-### 1.5 AI Model & API
+### 1.5 AI Gateway: OpenRouter Unified API
 
-**DeepSeek V3.2 - Non-thinking Mode**
+> **🔄 Migration Note (v2.0):** ABTS đã chuyển từ DeepSeek direct API sang **OpenRouter** để có access đến 400+ AI models với unified interface.
+
+**OpenRouter - Unified AI Gateway**
 
 | Thông số | Giá trị |
 |----------|---------|
-| **Provider** | DeepSeek |
-| **Model ID** | `deepseek-chat` (DeepSeek V3.2 Non-thinking Mode) |
-| **Base URL** | `https://api.deepseek.com` |
-| **Alternative URL** | `https://api.deepseek.com/v1` (OpenAI-compatible) |
-| **Context Length** | 128K tokens |
-| **Max Output** | Default 4K, Maximum 8K tokens |
-| **JSON Output** | ✅ Supported (`response_format: {type: "json_object"}`) |
-| **Tool Calls** | ✅ Supported |
-| **Chat Prefix** | ✅ Supported |
+| **Provider** | OpenRouter (AI Gateway) |
+| **Base URL** | `https://openrouter.ai/api/v1` |
+| **Authentication** | Bearer Token (`Authorization: Bearer $OPENROUTER_API_KEY`) |
+| **Available Models** | 400+ models (OpenAI, Anthropic, Google, DeepSeek, Meta, Mistral, etc.) |
+| **JSON Output** | ✅ Supported (`response_format: {type: "json_object"}` hoặc `json_schema`) |
+| **Structured Output** | ✅ Full JSON Schema validation support |
+| **Streaming** | ✅ **Default ON** - Server-Sent Events (SSE) |
+| **Model Fallbacks** | ✅ Built-in automatic failover |
+| **Reasoning Tokens** | ✅ Unified `reasoning` parameter across models |
+| **Free Models** | ✅ Available with `:free` suffix |
 
-**Pricing (per 1M tokens):**
+### 1.6 Recommended Models for ABTS
 
-| Loại Token | Giá (USD) | Ghi chú |
-|------------|-----------|----------|
-| **Input (Cache Hit)** | $0.028 | Khi prompt được cache (~10x cheaper) |
-| **Input (Cache Miss)** | $0.28 | Chi phí thông thường |
-| **Output** | $0.42 | Chi phí output tokens |
+Admin có thể chọn model phù hợp cho từng task. Bảng dưới đây là recommendations:
 
-**Ước tính chi phí cho ABTS:**
+| Task Type | Recommended Model | Alternatives | Variant |
+|-----------|-------------------|--------------|---------|
+| **Full Reading/Listening Generation** | `deepseek/deepseek-r1` | `anthropic/claude-3.5-sonnet`, `google/gemini-2.5-pro-preview` | `:thinking` |
+| **Full Writing Generation** | `deepseek/deepseek-r1` | `openai/gpt-4o` | `:thinking` |
+| **Selective Regeneration** | `deepseek/deepseek-chat` | `anthropic/claude-3.5-sonnet` | `:floor` (lowest cost) |
+| **Quick JSON Fix** | `meta-llama/llama-3.1-70b-instruct:free` | `deepseek/deepseek-chat` | `:free` |
+| **Testing/Development** | `meta-llama/llama-3.2-3b-instruct:free` | Any `:free` model | `:free` |
+
+**Model Variants (Suffixes):**
+
+| Variant | Mô tả | Use Case |
+|---------|-------|----------|
+| `:free` | Sử dụng free tier (rate limits thấp hơn) | Testing, drafts |
+| `:thinking` | Bật extended reasoning (Chain of Thought) | Complex generation |
+| `:nitro` | Ưu tiên throughput (tốc độ) | Quick regenerations |
+| `:floor` | Ưu tiên giá thấp nhất | Cost optimization |
+| `:extended` | Context length dài hơn | Very long passages |
+
+### 1.7 Pricing Transparency
+
+OpenRouter pass-through pricing từ các providers. Admin có thể xem giá realtime:
+
+**Sample Pricing (tham khảo, có thể thay đổi):**
+
+| Model | Input ($/1M tokens) | Output ($/1M tokens) | Reasoning | Notes |
+|-------|---------------------|----------------------|-----------|-------|
+| `deepseek/deepseek-r1` | $0.55 | $2.19 | $0.55 | Best for complex tasks |
+| `deepseek/deepseek-chat` | $0.14 | $0.28 | N/A | Fast, cheap |
+| `anthropic/claude-3.5-sonnet` | $3.00 | $15.00 | N/A | High quality |
+| `google/gemini-2.5-pro-preview` | $1.25 | $10.00 | N/A | Good balance |
+| `openai/gpt-4o` | $2.50 | $10.00 | N/A | Reliable |
+| `meta-llama/llama-3.1-70b-instruct:free` | $0.00 | $0.00 | N/A | Free tier |
+
+**Ước tính chi phí cho ABTS (với deepseek-r1):**
 
 | Use Case | Input Tokens | Output Tokens | Est. Cost |
-|----------|--------------|---------------|----------|
-| 1 Reading passage + 13 questions | ~3K | ~5K | ~$0.003 |
-| 1 Listening part (transcript + 10 questions) | ~2.5K | ~4K | ~$0.002 |
-| Writing Task 1 + Task 2 | ~2K | ~3K | ~$0.002 |
+|----------|--------------|---------------|-----------|
+| 1 Reading passage + 13 questions | ~5K | ~8K | ~$0.02 |
+| 1 Listening part (transcript + 10 questions) | ~4K | ~6K | ~$0.015 |
+| Writing Task 1 + Task 2 | ~3K | ~5K | ~$0.012 |
 
-> **Lưu ý về Cache:** DeepSeek có hệ thống caching tự động. Khi cùng một prompt (hoặc prefix của prompt) được gửi nhiều lần, cache sẽ hit và chi phí input giảm 10 lần. Templates và schemas sẽ thường xuyên được cache.
+> **💰 Cost Optimization:** Sử dụng `:floor` variant hoặc free models cho testing. Chỉ dùng models premium cho final generation.
 
-> **Tham khảo:** Chi tiết API tại [Appendix A: DeepSeek API Reference](#appendix-a-deepseek-api-reference)
+### 1.8 Streaming - Real-time Generation View
+
+> **🎯 Key Feature:** ABTS mặc định bật **streaming** để admin có thể:
+> - Xem AI "suy nghĩ" trực tiếp (reasoning tokens)
+> - Theo dõi progress của generation
+> - Cancel sớm nếu output không như mong đợi
+> - Trải nghiệm interactive hơn
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  🔄 GENERATING... (Streaming enabled)                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  💭 AI Reasoning (live):                                                 │
+│  ┌────────────────────────────────────────────────────────────────────┐  │
+│  │ First, I need to analyze the provided facts about solar energy...  │  │
+│  │ The topic requires covering photovoltaic cells, efficiency, and    │  │
+│  │ global adoption trends...                                          │  │
+│  │                                                                    │  │
+│  │ For the passage structure, I'll use 7 paragraphs labeled A-G...   │  │
+│  │ Paragraph A will introduce the concept...                          │  │
+│  │ █                                                     [streaming]  │  │
+│  └────────────────────────────────────────────────────────────────────┘  │
+│                                                                          │
+│  📊 Progress: Section 1/3 - Generating passage...                        │
+│  ████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 35%                           │
+│                                                                          │
+│  [⏸️ Pause]  [⏹️ Cancel]  [⏩ Skip Reasoning View]                         │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Streaming Implementation:**
+
+| Aspect | Details |
+|--------|---------|
+| **Protocol** | Server-Sent Events (SSE) |
+| **Default State** | `stream: true` |
+| **Reasoning Display** | Show `reasoning` field content in real-time |
+| **Content Display** | Show final content as it generates |
+| **Cancel Support** | Admin can abort generation mid-stream |
+| **Fallback** | If SSE fails, fallback to polling |
+
+> **Tham khảo:** Chi tiết OpenRouter API tại [Appendix A: OpenRouter API Reference](#appendix-a-openrouter-api-reference)
 
 ---
 
@@ -135,9 +214,9 @@ ABTS là một **extension của Module Quản lý Nội dung** trong Cramer CMS
 │        │                   │                    │                │      │
 │        ▼                   ▼                    ▼                ▼      │
 │   ┌─────────┐        ┌─────────┐          ┌─────────┐      ┌─────────┐  │
-│   │ Topics  │──────▶│ DeepSeek│────────▶│ Preview │────▶│  Save   │  │
-│   │ Facts   │        │   V3    │          │ & Edit  │      │ to DB   │  │
-│   │ Settings│        │   API   │          │         │      │         │  │
+│   │ Topics  │──────▶│OpenRouter│────────▶│ Preview │────▶│  Save   │  │
+│   │ Facts   │        │ 400+ AI │          │ & Edit  │      │ to DB   │  │
+│   │ Settings│        │ Models  │          │         │      │         │  │
 │   └─────────┘        └─────────┘          └─────────┘      └─────────┘  │
 │        │                   │                    │                │      │
 │        │              AUTOMATED            MANDATORY          MANUAL    │
@@ -257,9 +336,9 @@ Mọi nội dung generated phải tuân thủ:
 │  │  │         │                                                     │   │   │
 │  │  │         ▼                                                     │   │   │
 │  │  │  ┌─────────────┐  ┌─────────────────┐  ┌─────────────────┐    │   │   │
-│  │  │  │  DeepSeek   │  │   Content       │  │   Template      │    │   │   │
-│  │  │  │  API Client │  │   Transformer   │  │   Repository    │    │   │   │
-│  │  │  │             │  │                 │  │                 │    │   │   │
+│  │  │  │ OpenRouter  │  │   Content       │  │   Template      │    │   │   │
+│  │  │  │   Client    │  │   Transformer   │  │   Repository    │    │   │   │
+│  │  │  │  (400+ AI)  │  │                 │  │                 │    │   │   │
 │  │  │  └─────────────┘  └─────────────────┘  └─────────────────┘    │   │   │
 │  │  └───────────────────────────────────────────────────────────────┘   │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
@@ -269,8 +348,12 @@ Mọi nội dung generated phải tuân thủ:
 │  │                        EXTERNAL SERVICES                             │   │
 │  ├──────────────────────────────────────────────────────────────────────┤   │
 │  │  ┌─────────────────────┐        ┌─────────────────────┐              │   │
-│  │  │   DeepSeek API      │        │   Supabase          │              │   │
-│  │  │   (AI Generation)   │        │   (Database)        │              │   │
+│  │  │   OpenRouter API    │        │   Supabase          │              │   │
+│  │  │   (Unified AI)      │        │   (Database)        │              │   │
+│  │  │   ├─ DeepSeek R1    │        │                     │              │   │
+│  │  │   ├─ Claude 3.5     │        │                     │              │   │
+│  │  │   ├─ GPT-4o         │        │                     │              │   │
+│  │  │   └─ 400+ models    │        │                     │              │   │
 │  │  └─────────────────────┘        └─────────────────────┘              │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
@@ -324,7 +407,7 @@ admin/
 │   └── abts/
 │       ├── ABTSService.java         # Main orchestration service
 │       ├── PromptBuilderService.java # Build AI prompts
-│       ├── DeepSeekClient.java      # DeepSeek API client
+│       ├── OpenRouterClient.java    # OpenRouter unified API client
 │       ├── ContentTransformer.java  # Transform AI output to DB format
 │       └── JsonValidatorService.java # Validate AI JSON output
 │
@@ -333,7 +416,10 @@ admin/
 │       ├── GenerationRequestDTO.java
 │       ├── GenerationResponseDTO.java
 │       ├── TopicConfigDTO.java
-│       └── GeneratedContentDTO.java
+│       ├── GeneratedContentDTO.java
+│       ├── OpenRouterRequest.java   # OpenRouter API request DTO
+│       ├── OpenRouterModel.java     # Model metadata DTO
+│       └── ABTSModelConfig.java     # Model selection configuration
 │
 └── config/
     └── ABTSConfig.java              # ABTS configuration
@@ -364,10 +450,14 @@ admin/
 │     └─────────────────────────────────────────────────────────────────┘  │
 │                                      │                                   │
 │                                      ▼                                   │
-│  3. AI GENERATION                                                        │
+│  3. AI GENERATION (via OpenRouter)                                       │
 │     ┌─────────────────────────────────────────────────────────────────┐  │
-│     │ DeepSeekClient.generate(prompt, { response_format: "json" })    │  │
-│     │ → Returns raw JSON string                                       │  │
+│     │ OpenRouterClient.callChatCompletion(request)                    │  │
+│     │   → model: "deepseek/deepseek-r1:thinking"                      │  │
+│     │   → response_format: { type: "json_schema", json_schema: {...}} │  │
+│     │   → fallback_models: ["meta-llama/llama-3.1-70b-instruct"]      │  │
+│     │   → reasoning: { effort: "high" }                               │  │
+│     │ → Returns validated JSON with reasoning tokens                   │  │
 │     └─────────────────────────────────────────────────────────────────┘  │
 │                                      │                                   │
 │                                      ▼                                   │
@@ -409,13 +499,28 @@ COMMENT ON COLUMN sections.generation_metadata IS
 {
   "generated_by": "ABTS",
   "generated_at": "2025-12-17T20:00:00Z",
-  "version": "1.2.0",
+  "version": "2.0.0",
+  "api_provider": "openrouter",
   
   "model_config": {
-    "model": "deepseek-reasoner",
-    "model_version": "v3.2",
+    "model": "deepseek/deepseek-r1:thinking",
+    "variant": "thinking",
     "temperature": 1.0,
-    "max_tokens": 8192
+    "max_tokens": 8192,
+    "fallback_models": [
+      "anthropic/claude-3.5-sonnet",
+      "meta-llama/llama-3.1-70b-instruct:free"
+    ],
+    "provider_preferences": {
+      "allow_fallbacks": true,
+      "data_collection": "deny"
+    }
+  },
+  
+  "reasoning_config": {
+    "effort": "high",
+    "max_tokens": 16000,
+    "visible_to_user": true
   },
   
   "generation_config": {
@@ -439,12 +544,20 @@ COMMENT ON COLUMN sections.generation_metadata IS
   
   "chain_of_thought": "First, I need to create a passage about solar energy... The difficulty is intermediate, so I should use academic vocabulary but avoid overly complex structures... For the TRUE_FALSE_NOT_GIVEN questions, I'll base them on facts 1, 3, and 5...",
   
+  "usage": {
+    "prompt_tokens": 2340,
+    "completion_tokens": 4521,
+    "reasoning_tokens": 8234,
+    "total_cost_usd": 0.0127
+  },
+  
   "regeneration_history": [
     {
       "timestamp": "2025-12-17T20:15:00Z",
       "action": "regenerate_questions",
       "questions_affected": [5, 7],
-      "model_used": "deepseek-chat"
+      "model_used": "meta-llama/llama-3.1-70b-instruct:free",
+      "reasoning_effort": "medium"
     }
   ]
 }
@@ -1675,28 +1788,58 @@ Speaking Part 2 (Cue Card) yêu cầu thí sinh **kể câu chuyện cá nhân**
 
 ## 9. AI Prompt Engineering & Structured Output
 
-### 9.1 DeepSeek JSON Mode
+### 9.1 OpenRouter Structured Output (JSON Schema Mode)
 
-DeepSeek V3 hỗ trợ JSON mode thông qua `response_format` parameter:
+OpenRouter cung cấp **JSON Schema validation** mạnh mẽ hơn nhiều so với basic JSON mode. Schema được enforce ở server-side, đảm bảo output luôn đúng format.
+
+**Supported formats:**
+| Format | Description | Use Case |
+|--------|-------------|----------|
+| `json_object` | Basic JSON mode | Simple structured outputs |
+| `json_schema` | **Full JSON Schema validation** | Complex nested structures with strict types |
 
 ```java
-// DeepSeekClient.java
-public String generateWithJsonMode(String systemPrompt, String userPrompt) {
-    Map<String, Object> requestBody = Map.of(
-        "model", "deepseek-chat",
-        "messages", List.of(
-            Map.of("role", "system", "content", systemPrompt),
-            Map.of("role", "user", "content", userPrompt)
-        ),
-        "response_format", Map.of("type", "json_object"),
-        "temperature", 0.3,  // Lower for consistent structured output
-        "max_tokens", 8192
+// OpenRouterClient.java
+public String generateWithJsonSchema(String systemPrompt, String userPrompt, Map<String, Object> schema) {
+    Map<String, Object> responseFormat = Map.of(
+        "type", "json_schema",
+        "json_schema", Map.of(
+            "name", "ielts_reading_response",
+            "strict", true,
+            "schema", schema  // Full JSON Schema with properties, required, etc.
+        )
     );
     
-    // Make API call and return JSON string
-    return httpClient.post(DEEPSEEK_API_URL, requestBody);
+    OpenRouterRequest request = OpenRouterRequest.builder()
+        .model("deepseek/deepseek-r1:thinking")  // Primary model with reasoning
+        .messages(List.of(
+            Map.of("role", "system", "content", systemPrompt),
+            Map.of("role", "user", "content", userPrompt)
+        ))
+        .responseFormat(responseFormat)
+        .temperature(1.0)  // Use model defaults for creativity
+        .maxTokens(8192)
+        .fallbackModels(List.of(
+            "anthropic/claude-3.5-sonnet",
+            "meta-llama/llama-3.1-70b-instruct:free"
+        ))
+        .reasoning(Map.of("effort", "high"))  // Enable reasoning tokens
+        .build();
+    
+    return callChatCompletion(request);
 }
 ```
+
+**Lợi ích của JSON Schema mode:**
+
+| Feature | Basic JSON | JSON Schema |
+|---------|------------|-------------|
+| Type validation | ❌ | ✅ Strict types (string, integer, array, etc.) |
+| Required fields | ❌ | ✅ Enforced required properties |
+| Nested objects | ⚠️ Best-effort | ✅ Full nested validation |
+| Array items | ❌ | ✅ Validate each array item |
+| Enum values | ❌ | ✅ Restrict to specific values |
+| Min/Max constraints | ❌ | ✅ minLength, maxLength, minimum, maximum |
 
 ### 9.2 System Prompt Structure
 
@@ -1938,43 +2081,68 @@ Khi admin regenerate một câu hỏi đơn lẻ (e.g., Q5), **LUÔN gửi lại
 }
 ```
 
-### 9.8 Temperature Settings
+### 9.8 Temperature & Reasoning Settings
 
-**DeepSeek Official Recommendations:**
+**OpenRouter Model-Specific Recommendations:**
 
-| Use Case | Recommended Temperature |
-|----------|------------------------|
-| Coding / Math | 0.0 |
-| Data Cleaning / Data Analysis | 1.0 |
-| General Conversation | 1.3 |
-| Translation | 1.3 |
-| Creative Writing / Poetry | 1.5 |
+OpenRouter supports different temperature ranges and defaults per model. Use `supported_parameters` from the Models API to check.
 
-> **Default:** DeepSeek V3.2 có default temperature = **1.0**
+| Model Type | Default Temp | Range | Notes |
+|------------|-------------|-------|-------|
+| DeepSeek R1 (reasoning) | 1.0 | 0.0-2.0 | Use default for balanced output |
+| Claude 3.5 Sonnet | 1.0 | 0.0-2.0 | Stable across temperature range |
+| GPT-4o | 1.0 | 0.0-2.0 | Lower for structured output |
+| Llama 3.1 | 0.6 | 0.0-2.0 | Higher for creative tasks |
 
 **ABTS-specific Temperature Strategy:**
 
-Vì ABTS cần balance giữa creativeness (cho passage) và precision (cho JSON structure), chúng ta sử dụng **2 separate API calls**:
+Vì ABTS cần balance giữa creativeness (cho passage) và precision (cho JSON structure), chúng ta sử dụng **different settings per task type**:
 
-| Task | Temperature | Rationale | DeepSeek Context |
-|------|-------------|-----------|------------------|
-| **Full content generation** | 1.0 (default) | Balance creativity & structure | Data Analysis/Cleaning |
-| **Passage-only regeneration** | 1.3 | More varied vocabulary & style | General Conversation |
-| **Questions-only regeneration** | 0.7 | Structured but varied phrasing | Below default for consistency |
-| **JSON validation/fix** | 0.0 | Deterministic output needed | Coding/Math precision |
+| Task | Temperature | Reasoning Effort | Model Recommendation |
+|------|-------------|-----------------|----------------------|
+| **Full content generation** | 1.0 (default) | high | `deepseek/deepseek-r1:thinking` |
+| **Passage-only regeneration** | 1.3 | medium | `deepseek/deepseek-r1` |
+| **Questions-only regeneration** | 0.7 | high | `anthropic/claude-3.5-sonnet` |
+| **JSON validation/fix** | 0.0 | none | `meta-llama/llama-3.1-70b-instruct:free` |
 
-**Implementation Note:**
+**Reasoning Token Integration:**
+
+OpenRouter's unified `reasoning` parameter allows fine-grained control over Chain-of-Thought:
+
 ```java
-// Trong DeepSeekClient.java
-public Double getTemperatureForTask(GenerationTask task) {
+// Trong OpenRouterClient.java
+public Map<String, Object> getConfigForTask(GenerationTask task) {
     return switch (task) {
-        case FULL_GENERATION -> 1.0;
-        case PASSAGE_REGENERATION -> 1.3;
-        case QUESTIONS_REGENERATION -> 0.7;
-        case JSON_FIX -> 0.0;
+        case FULL_GENERATION -> Map.of(
+            "temperature", 1.0,
+            "reasoning", Map.of("effort", "high", "max_tokens", 16000)
+        );
+        case PASSAGE_REGENERATION -> Map.of(
+            "temperature", 1.3,
+            "reasoning", Map.of("effort", "medium")
+        );
+        case QUESTIONS_REGENERATION -> Map.of(
+            "temperature", 0.7,
+            "reasoning", Map.of("effort", "high")
+        );
+        case JSON_FIX -> Map.of(
+            "temperature", 0.0,
+            "reasoning", Map.of("effort", "none")  // No CoT needed
+        );
     };
 }
 ```
+
+**Reasoning Effort Levels:**
+
+| Effort | Description | Token Budget | Use Case |
+|--------|-------------|--------------|----------|
+| `xhigh` | Maximum reasoning | Unlimited | Complex multi-step problems |
+| `high` | Deep analysis | ~16K tokens | Full content generation |
+| `medium` | Balanced | ~8K tokens | Regeneration tasks |
+| `low` | Quick reasoning | ~4K tokens | Simple modifications |
+| `minimal` | Brief thinking | ~1K tokens | Minor edits |
+| `none` | No CoT | 0 tokens | Deterministic output |
 
 
 ### 9.6 Retry Logic for JSON Errors
@@ -2609,22 +2777,40 @@ public class ABTSController {
 public class ABTSService {
     
     private final PromptBuilderService promptBuilder;
-    private final DeepSeekClient deepSeekClient;
+    private final OpenRouterClient openRouterClient;
     private final JsonValidatorService jsonValidator;
     private final ContentTransformerService contentTransformer;
+    private final ABTSConfigService configService;
     
     public GenerationResponseDTO generate(GenerationRequestDTO request) {
         long startTime = System.currentTimeMillis();
         
         try {
-            // 1. Build prompt
+            // 1. Get model configuration
+            ABTSModelConfig modelConfig = configService.getConfigForTask(request.getSkill());
+            
+            // 2. Build prompt
             String prompt = promptBuilder.buildPrompt(request);
             
-            // 2. Call DeepSeek API
-            String jsonResponse = deepSeekClient.generateWithJsonMode(
-                getSystemPrompt(request.getSkill()),
-                prompt
-            );
+            // 3. Call OpenRouter API
+            OpenRouterRequest apiRequest = OpenRouterRequest.builder()
+                .model(modelConfig.getModel())        // e.g., "deepseek/deepseek-r1:thinking"
+                .messages(List.of(
+                    Map.of("role", "system", "content", getSystemPrompt(request.getSkill())),
+                    Map.of("role", "user", "content", prompt)
+                ))
+                .responseFormat(buildJsonSchema(request.getSkill()))
+                .temperature(modelConfig.getTemperature())
+                .maxTokens(modelConfig.getMaxTokens())
+                .fallbackModels(modelConfig.getFallbackModels())
+                .reasoning(Map.of("effort", modelConfig.getReasoningEffort()))
+                .providerPreferences(Map.of(
+                    "allow_fallbacks", true,
+                    "data_collection", "deny"
+                ))
+                .build();
+            
+            String jsonResponse = openRouterClient.callChatCompletion(apiRequest);
             
             // 3. Validate JSON
             ValidationResult<GeneratedContentDTO> validationResult = 
@@ -2670,39 +2856,42 @@ public class ABTSService {
 
 ## 14. Xử lý Lỗi & Edge Cases
 
-### 14.1 DeepSeek API Error Codes
+### 14.1 OpenRouter API Error Codes
 
-**Theo tài liệu chính thức của DeepSeek:**
+**OpenRouter Error Reference:**
 
 | HTTP Code | Error Type | Nguyên nhân | Xử lý trong ABTS |
 |-----------|------------|-------------|------------------|
-| **400** | Invalid Format | Request body format không hợp lệ | Log chi tiết, báo dev để fix prompt |
-| **401** | Authentication Fails | API key sai hoặc hết hạn | Thông báo admin kiểm tra config |
-| **402** | Insufficient Balance | Hết balance trong tài khoản DeepSeek | Thông báo admin top-up, disable ABTS tạm thời |
+| **400** | Bad Request | Request format không hợp lệ, schema error | Log chi tiết, báo dev để fix prompt |
+| **401** | Invalid Credentials | API key sai hoặc hết hạn | Thông báo admin kiểm tra config |
+| **402** | Insufficient Credits | Hết credits trong tài khoản OpenRouter | Thông báo admin top-up credits |
+| **403** | Moderation | Nội dung bị chặn bởi content filter | Log và điều chỉnh prompt |
+| **408** | Request Timeout | Request vượt quá thời gian chờ | Retry với timeout ngắn hơn |
 | **422** | Invalid Parameters | Params không hợp lệ (temperature, max_tokens, etc.) | Log chi tiết, báo dev để fix |
 | **429** | Rate Limit Reached | Gửi requests quá nhanh | Wait và retry với exponential backoff |
-| **500** | Server Error | DeepSeek server gặp lỗi | Retry sau 5-10 giây |
-| **503** | Server Overloaded | High traffic on DeepSeek | Retry với delay dài hơn |
+| **502** | Model Down | Model không khả dụng | **Auto-fallback** đến model khác |
+| **503** | No Providers | Không có provider khả dụng cho model | Try fallback models, notify admin |
 
-**Timeout Handling:**
+**OpenRouter Fallback Benefits:**
 
-> **Quan trọng:** DeepSeek API không có rate limit cứng, nhưng khi server quá tải:
-> - **Non-streaming requests:** Trả về empty lines liên tục
-> - **Streaming requests:** Trả về `: keep-alive` SSE comments
-> - **Maximum wait time:** 30 phút trước khi server đóng connection
->
-> **ABTS Timeout Strategy:** Đặt timeout 60s cho mỗi request, thông báo user nếu quá lâu.
+> **✅ Quan trọng:** OpenRouter tự động fallback khi model fails:
+> - **502 (Model Down):** Tự động thử model tiếp theo trong `models` list
+> - **503 (No Providers):** Tự động route đến provider khả dụng
+> - **Pricing transparency:** Trả về model thực sự được sử dụng trong response
+> - **No extra code:** Fallback logic được xử lý bởi OpenRouter
 
 ### 14.2 ABTS Error Categories
 
 | Category | HTTP Codes | Description | Handling |
 |----------|------------|-------------|----------|
 | **Authentication** | 401 | API key issues | Show config error, stop ABTS |
-| **Balance** | 402 | Insufficient funds | Disable generations, notify admin |
+| **Credits** | 402 | Insufficient funds | Disable generations, notify admin |
+| **Moderation** | 403 | Content filtered | Log, adjust prompt, retry |
 | **Client Error** | 400, 422 | Invalid request | Log for debugging, show user-friendly error |
 | **Rate Limit** | 429 | Too many requests | Exponential backoff retry |
-| **Server Error** | 500, 503 | DeepSeek issues | Retry with delay |
-| **Timeout** | N/A | Request takes too long | Cancel after 60s, allow retry |
+| **Model Down** | 502 | Primary model unavailable | **Auto-fallback** (handled by OpenRouter) |
+| **No Providers** | 503 | All providers offline | Try different model, notify admin |
+| **Timeout** | 408 | Request takes too long | Cancel after 120s, allow retry |
 | **JSON Parse** | N/A (200) | AI returned invalid JSON | Retry with stricter prompt |
 | **Validation** | N/A (200) | JSON valid but content wrong | Show warnings, allow edit |
 
@@ -2742,9 +2931,11 @@ public class ABTSService {
 
 ```java
 @Component
-public class DeepSeekErrorHandler {
+public class OpenRouterErrorHandler {
     
-    public GenerationResponseDTO handleDeepSeekError(HttpClientErrorException ex) {
+    private static final Logger log = LoggerFactory.getLogger(OpenRouterErrorHandler.class);
+    
+    public GenerationResponseDTO handleOpenRouterError(HttpClientErrorException ex) {
         int statusCode = ex.getStatusCode().value();
         String errorMessage = parseErrorMessage(ex.getResponseBodyAsString());
         
@@ -2760,10 +2951,18 @@ public class DeepSeekErrorHandler {
                 false
             );
             case 402 -> GenerationResponseDTO.error(
-                "INSUFFICIENT_BALANCE",
-                "Hết balance DeepSeek. Vui lòng liên hệ admin để top-up.",
+                "INSUFFICIENT_CREDITS",
+                "Hết credits OpenRouter. Vui lòng liên hệ admin để top-up.",
                 false
             );
+            case 403 -> {
+                log.warn("Content moderation triggered: {}", errorMessage);
+                yield GenerationResponseDTO.error(
+                    "CONTENT_FILTERED",
+                    "Nội dung bị từ chối bởi content filter. Vui lòng điều chỉnh chủ đề.",
+                    true  // Retry với nội dung khác
+                );
+            }
             case 422 -> GenerationResponseDTO.error(
                 "INVALID_PARAMS",
                 "Parameters không hợp lệ: " + errorMessage,
@@ -2774,9 +2973,18 @@ public class DeepSeekErrorHandler {
                 "Đang có quá nhiều requests. Vui lòng đợi vài giây.",
                 true  // Có thể retry
             );
-            case 500, 503 -> GenerationResponseDTO.error(
-                "SERVER_ERROR",
-                "DeepSeek server đang gặp vấn đề. Vui lòng thử lại sau.",
+            case 502 -> {
+                // Model down - OpenRouter should auto-fallback, but if all fail:
+                log.warn("Primary model unavailable, all fallbacks failed");
+                yield GenerationResponseDTO.error(
+                    "MODEL_UNAVAILABLE",
+                    "Model đang không khả dụng. Hệ thống đã thử các model dự phòng.",
+                    true  // Retry sau
+                );
+            }
+            case 503 -> GenerationResponseDTO.error(
+                "NO_PROVIDERS",
+                "Không có AI provider khả dụng. Vui lòng thử lại sau.",
                 true  // Retry với delay
             );
             default -> GenerationResponseDTO.error(
@@ -2785,6 +2993,24 @@ public class DeepSeekErrorHandler {
                 false
             );
         };
+    }
+    
+    // Parse error details from OpenRouter response
+    private String parseErrorMessage(String responseBody) {
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            if (root.has("error")) {
+                JsonNode error = root.get("error");
+                String message = error.has("message") ? error.get("message").asText() : "Unknown error";
+                String code = error.has("code") ? error.get("code").asText() : null;
+                String metadata = error.has("metadata") ? error.get("metadata").toString() : null;
+                
+                return code != null ? code + ": " + message : message;
+            }
+            return responseBody;
+        } catch (Exception e) {
+            return responseBody;
+        }
     }
 }
 ```
@@ -2934,7 +3160,7 @@ public GenerationResponseDTO generateWithRetry(GenerationRequestDTO request) {
 Trước khi bắt đầu ABTS, cần hoàn thành:
 - [ ] CMS Admin shell (Phase 1 của CMS specs)
 - [ ] Content Management UI cơ bản (Phase 4 của CMS specs)
-- [ ] DeepSeek API integration đã test với chat feature
+- [ ] OpenRouter API key configured và đã test
 
 ### 15.2 ABTS Development Phases
 
@@ -2961,16 +3187,18 @@ Trước khi bắt đầu ABTS, cần hoàn thành:
 | # | Task | Priority |
 |---|------|----------|
 | 1.1 | Setup ABTS folder structure | 🔴 Cao |
-| 1.2 | Create DeepSeekClient with JSON mode | 🔴 Cao |
+| 1.2 | Create OpenRouterClient with JSON Schema mode | 🔴 Cao |
 | 1.3 | Create PromptBuilderService | 🔴 Cao |
 | 1.4 | Create JsonValidatorService | 🔴 Cao |
 | 1.5 | Create ABTSController (stubs) | 🔴 Cao |
 | 1.6 | Create ABTSService (stubs) | 🔴 Cao |
 | 1.7 | Setup topic templates | 🟡 Trung bình |
 | 1.8 | Create frontend ABTS API client | 🟡 Trung bình |
+| 1.9 | Create ABTSConfigPage for model selection | 🟡 Trung bình |
 
 **Deliverables:**
-- [ ] DeepSeek API can be called with JSON mode
+- [ ] OpenRouter API can be called with JSON Schema mode
+- [ ] Model selection UI for admins (ABTSConfigPage)
 - [ ] Basic prompt templates ready
 - [ ] JSON validation framework in place
 
@@ -3059,18 +3287,13 @@ Trước khi bắt đầu ABTS, cần hoàn thành:
 | **Selective Regeneration** | Regenerate specific items while keeping others |
 | **Human-in-the-Loop** | Human verification required before final save |
 
-### 16.2 Related Documentation
+### 16.2 References
 
-**Internal:**
-- `CRAMER_CMS_ADMIN_SPECS.md` - Parent CMS specifications
-- `DATA_INGESTION_GUIDE_READING.md` - Reading JSON structure
-- `DATA_INGESTION_GUIDE_LISTENING.md` - Listening JSON structure
-- `DATABASE_SCHEMA.md` - Database table structures
-- `IELTS_W_Band_Descriptors.md` - Writing marking criteria
-
-**External:**
-- `docs/backend/deepseek_api/` - DeepSeek API documentation (local copy)
-- [DeepSeek API Official Docs](https://api-docs.deepseek.com/)
+- `/docs/cramer_CMS_specs.md` - CMS Foundation specs
+- `/docs/openrouter_docs/` - OpenRouter API documentation (local copy)
+- [OpenRouter Official Docs](https://openrouter.ai/docs)
+- [OpenRouter Models](https://openrouter.ai/models)
+- [OpenRouter Pricing](https://openrouter.ai/credits)
 
 ### 16.3 Version History
 
@@ -3079,51 +3302,59 @@ Trước khi bắt đầu ABTS, cần hoàn thành:
 | 1.0.0 | 17/12/2025 | Initial draft |
 | 1.1.0 | 17/12/2025 | Added DeepSeek API Reference appendix, updated error handling with official error codes, enhanced temperature settings |
 | 1.2.0 | 17/12/2025 | Q&A Enhancements: Speaking Keywords/Idea Outline input, Generation Metadata storage, Model Selection Strategy (reasoner vs chat), Chain of Thought visibility, Chart diversity (20+ types) with rasterization, Fail-hard 3-retry strategy, Appendix B Chart Styling Guidelines |
+| **2.0.0** | **20/12/2025** | **OpenRouter Migration**: Migrated from DeepSeek direct API to OpenRouter unified API. 400+ model support, JSON Schema validation, automatic fallbacks, reasoning tokens, streaming, model selection UI, provider routing, pricing transparency |
 
 ---
 
-## Appendix A: DeepSeek API Reference
+## Appendix A: OpenRouter API Reference
 
-> **Nguồn:** Tổng hợp từ `docs/backend/deepseek_api/` và tài liệu chính thức của DeepSeek
+> **Nguồn:** Tổng hợp từ `/docs/openrouter_docs/` và [OpenRouter Official Docs](https://openrouter.ai/docs)
 
 ### A.1 API Overview
 
-**DeepSeek API** tương thích với OpenAI API format. Có thể sử dụng OpenAI SDK hoặc bất kỳ client nào compatible với OpenAI API.
+**OpenRouter API** là một unified AI gateway cho phép truy cập 400+ models từ nhiều providers (OpenAI, Anthropic, Google, DeepSeek, Meta, Mistral, etc.) thông qua một single API.
 
 | Parameter | Value |
 |-----------|-------|
-| **Base URL** | `https://api.deepseek.com` |
-| **Alternative URL** | `https://api.deepseek.com/v1` (OpenAI-compatible) |
-| **Authentication** | Bearer token (`Authorization: Bearer ${DEEPSEEK_API_KEY}`) |
+| **Base URL** | `https://openrouter.ai/api/v1` |
+| **Authentication** | Bearer token (`Authorization: Bearer ${OPENROUTER_API_KEY}`) |
+| **App Attribution** | `HTTP-Referer: ${YOUR_SITE_URL}` (optional, for rankings) |
+| **App Name** | `X-Title: ${YOUR_APP_NAME}` (optional, for rankings) |
 | **Content-Type** | `application/json` |
 
-### A.2 Available Models
+### A.2 Key Features for ABTS
 
-| Feature | deepseek-chat<br>(Non-thinking) | deepseek-reasoner<br>(Thinking Mode) |
-|---------|--------------------------------|--------------------------------------|
-| **Base Model** | DeepSeek-V3.2 | DeepSeek-V3.2 |
-| **Context Length** | 128K | 128K |
-| **Default Output** | 4K | 32K |
-| **Maximum Output** | 8K | 64K |
-| **JSON Output** | ✅ | ✅ |
-| **Tool Calls** | ✅ | ✅ |
-| **Chat Prefix** | ✅ | ✅ |
-| **FIM Completion** | ✅ | ❌ |
+| Feature | Description | ABTS Benefit |
+|---------|-------------|--------------|
+| **400+ Models** | Access to OpenAI, Anthropic, Google, DeepSeek, Meta, Mistral, etc. | Flexible model selection per task |
+| **Model Fallbacks** | Automatic fallback to alternative models | High reliability |
+| **JSON Schema** | Server-side JSON Schema validation | Strict structured output |
+| **Reasoning Tokens** | Unified `reasoning` parameter for CoT | Visible AI thinking process |
+| **Streaming** | Real-time streaming with SSE | Live generation progress |
+| **Provider Routing** | Control provider selection and preferences | Cost/performance optimization |
+| **Free Models** | `:free` variant for testing | Zero-cost development |
 
-> **Lưu ý:** ABTS sử dụng `deepseek-chat` vì:
-> 1. Hỗ trợ JSON mode tốt
-> 2. Default output 4K đủ cho hầu hết use cases
-> 3. Thinking mode không cần thiết cho content generation
+### A.3 Recommended Models for ABTS
 
-### A.3 Basic API Call Example
+| Task | Primary Model | Fallback Models |
+|------|---------------|-----------------|
+| **Reading Generation** | `deepseek/deepseek-r1:thinking` | `anthropic/claude-3.5-sonnet` |
+| **Listening Generation** | `deepseek/deepseek-r1:thinking` | `anthropic/claude-3.5-sonnet` |
+| **Writing Generation** | `deepseek/deepseek-r1:thinking` | `anthropic/claude-3.5-sonnet` |
+| **Question Regeneration** | `anthropic/claude-3.5-sonnet` | `openai/gpt-4o-mini` |
+| **JSON Fix** | `meta-llama/llama-3.1-70b-instruct:free` | `deepseek/deepseek-chat:free` |
+
+### A.4 Basic API Call Example
 
 **cURL:**
 ```bash
-curl https://api.deepseek.com/chat/completions \
+curl https://openrouter.ai/api/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ${DEEPSEEK_API_KEY}" \
+  -H "Authorization: Bearer ${OPENROUTER_API_KEY}" \
+  -H "HTTP-Referer: https://cramer.vn" \
+  -H "X-Title: Cramer ABTS" \
   -d '{
-        "model": "deepseek-chat",
+        "model": "deepseek/deepseek-r1:thinking",
         "messages": [
           {"role": "system", "content": "You are a helpful assistant."},
           {"role": "user", "content": "Hello!"}
@@ -3135,161 +3366,251 @@ curl https://api.deepseek.com/chat/completions \
 **Java (RestTemplate):**
 ```java
 @Service
-public class DeepSeekClient {
+public class OpenRouterClient {
     
-    private static final String BASE_URL = "https://api.deepseek.com";
+    private static final String BASE_URL = "https://openrouter.ai/api/v1";
     private static final String CHAT_ENDPOINT = "/chat/completions";
+    private static final String MODELS_ENDPOINT = "/models";
     
-    @Value("${deepseek.api-key}")
+    @Value("${openrouter.api-key}")
     private String apiKey;
     
-    private final RestTemplate restTemplate;
+    @Value("${app.site-url:https://cramer.vn}")
+    private String siteUrl;
     
-    public String callChatCompletion(String systemPrompt, String userPrompt, 
-                                      boolean jsonMode, double temperature) {
+    @Value("${app.site-name:Cramer ABTS}")
+    private String siteName;
+    
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
+    
+    public String callChatCompletion(OpenRouterRequest request) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(apiKey);
+        headers.set("HTTP-Referer", siteUrl);  // For OpenRouter rankings
+        headers.set("X-Title", siteName);       // For OpenRouter rankings
         
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "deepseek-chat");
-        requestBody.put("messages", List.of(
-            Map.of("role", "system", "content", systemPrompt),
-            Map.of("role", "user", "content", userPrompt)
-        ));
-        requestBody.put("stream", false);
-        requestBody.put("temperature", temperature);
-        
-        if (jsonMode) {
-            requestBody.put("response_format", Map.of("type", "json_object"));
-        }
+        Map<String, Object> requestBody = buildRequestBody(request);
         
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
         
-        ResponseEntity<DeepSeekResponse> response = restTemplate.exchange(
+        ResponseEntity<String> response = restTemplate.exchange(
             BASE_URL + CHAT_ENDPOINT,
             HttpMethod.POST,
             entity,
-            DeepSeekResponse.class
+            String.class
         );
         
-        return response.getBody().getChoices().get(0).getMessage().getContent();
+        return response.getBody();
+    }
+    
+    private Map<String, Object> buildRequestBody(OpenRouterRequest request) {
+        Map<String, Object> body = new HashMap<>();
+        
+        // Model selection with variant support
+        body.put("model", request.getModel()); // e.g., "deepseek/deepseek-r1:thinking"
+        body.put("messages", request.getMessages());
+        body.put("temperature", request.getTemperature());
+        body.put("max_tokens", request.getMaxTokens());
+        body.put("stream", request.isStream());
+        
+        // JSON Schema validation (enhanced structured output)
+        if (request.getResponseFormat() != null) {
+            body.put("response_format", request.getResponseFormat());
+        }
+        
+        // Model fallbacks for reliability
+        if (request.getFallbackModels() != null && !request.getFallbackModels().isEmpty()) {
+            body.put("models", request.getFallbackModels());
+        }
+        
+        // Provider routing preferences
+        if (request.getProviderPreferences() != null) {
+            body.put("provider", request.getProviderPreferences());
+        }
+        
+        // Reasoning tokens (for thinking models)
+        if (request.getReasoning() != null) {
+            body.put("reasoning", request.getReasoning());
+        }
+        
+        return body;
+    }
+    
+    public List<OpenRouterModel> getAvailableModels() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(apiKey);
+        
+        ResponseEntity<String> response = restTemplate.exchange(
+            BASE_URL + MODELS_ENDPOINT,
+            HttpMethod.GET,
+            new HttpEntity<>(headers),
+            String.class
+        );
+        
+        // Parse and return model list
+        return parseModelsResponse(response.getBody());
     }
 }
 ```
 
-### A.4 JSON Mode
+### A.5 JSON Schema Mode (Structured Outputs)
 
-Để enable JSON mode, add `response_format` parameter:
+OpenRouter hỗ trợ **JSON Schema validation**, mạnh mẽ hơn nhiều so với basic JSON mode:
 
 ```json
 {
-  "model": "deepseek-chat",
+  "model": "deepseek/deepseek-r1:thinking",
   "messages": [...],
   "response_format": {
-    "type": "json_object"
+    "type": "json_schema",
+    "json_schema": {
+      "name": "ielts_reading_response",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "section": {
+            "type": "object",
+            "properties": {
+              "passage_text": { "type": "string" },
+              "word_count": { "type": "integer" }
+            },
+            "required": ["passage_text", "word_count"]
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "question_type": { "type": "string" },
+                "question_text": { "type": "string" },
+                "correct_answer": { "type": "array" }
+              },
+              "required": ["question_type", "question_text", "correct_answer"]
+            }
+          }
+        },
+        "required": ["section", "questions"]
+      }
+    }
   }
 }
 ```
 
-**Quan trọng khi dùng JSON mode:**
-1. System prompt **PHẢI** yêu cầu AI trả về JSON
-2. Nên cung cấp JSON schema trong prompt
-3. Nên cung cấp ví dụ output
+**Lợi ích của JSON Schema mode:**
+- ✅ **Server-side validation**: Schema được validate ở OpenRouter, không phải client
+- ✅ **Type safety**: Đảm bảo đúng type (string, integer, array, etc.)
+- ✅ **Required fields**: Enforce required properties
+- ✅ **Nested validation**: Full nested object/array validation
 
-**Ví dụ System Prompt cho JSON mode:**
-```
-You are a helpful assistant that ALWAYS responds in valid JSON format.
+### A.6 Model Fallbacks
 
-Your response MUST be a valid JSON object matching this schema:
+Khi primary model fails (502, 503), OpenRouter tự động fallback:
+
+```json
 {
-  "section": { "passage_text": "string", "word_count": number },
-  "questions": [...]
+  "model": "deepseek/deepseek-r1:thinking",
+  "models": [
+    "deepseek/deepseek-r1:thinking",
+    "anthropic/claude-3.5-sonnet",
+    "meta-llama/llama-3.1-70b-instruct:free"
+  ],
+  "messages": [...],
+  "route": "fallback"
 }
-
-Do NOT include any text outside the JSON object.
 ```
 
-### A.5 Pricing
-
-| Token Type | Price (USD per 1M tokens) |
-|------------|---------------------------|
-| **Input (Cache Hit)** | $0.028 |
-| **Input (Cache Miss)** | $0.28 |
-| **Output** | $0.42 |
-
-**Cách tính chi phí:**
-```
-Cost = (Input Tokens × Input Price) + (Output Tokens × Output Price)
+**Response includes actual model used:**
+```json
+{
+  "id": "gen-xxx",
+  "model": "anthropic/claude-3.5-sonnet",  // Fallback model was used
+  "choices": [...]
+}
 ```
 
-**Cache Hit Conditions:**
-- Cùng prompt prefix được gửi nhiều lần
-- Cache tự động, không cần configure
-- Tiết kiệm ~10x cho input tokens
+### A.7 Reasoning Tokens (Chain-of-Thought)
 
-### A.6 Temperature Settings
+Enable structured reasoning for complex tasks:
 
-| Use Case | Recommended Temperature |
-|----------|------------------------|
-| Coding / Math | 0.0 |
-| Data Cleaning / Data Analysis | 1.0 |
-| General Conversation | 1.3 |
-| Translation | 1.3 |
-| Creative Writing / Poetry | 1.5 |
+```json
+{
+  "model": "deepseek/deepseek-r1:thinking",
+  "messages": [...],
+  "reasoning": {
+    "effort": "high",      // xhigh, high, medium, low, minimal, none
+    "max_tokens": 16000    // Optional: limit reasoning tokens
+  }
+}
+```
 
-> **Default temperature:** 1.0
+**Response includes reasoning:**
+```json
+{
+  "choices": [{
+    "message": {
+      "role": "assistant",
+      "content": "{...json response...}",
+      "reasoning": "First, I analyze the passage structure...\\nThen I identify key facts..."
+    }
+  }]
+}
+```
 
-### A.7 Error Codes
+### A.8 Streaming with SSE
 
-| HTTP Code | Error Type | Cause | Solution |
-|-----------|------------|-------|----------|
-| **400** | Invalid Format | Invalid request body | Check request format |
-| **401** | Authentication Fails | Wrong API key | Verify API key |
-| **402** | Insufficient Balance | Out of credits | Top up account |
-| **422** | Invalid Parameters | Bad parameters | Check parameter values |
-| **429** | Rate Limit Reached | Too many requests | Slow down requests |
-| **500** | Server Error | Server issue | Retry after delay |
-| **503** | Server Overloaded | High traffic | Retry later |
+Enable real-time streaming with Server-Sent Events:
 
-### A.8 Rate Limits & Keep-Alive
+```java
+// OpenRouterClient.java - Streaming support
+public Flux<String> streamChatCompletion(OpenRouterRequest request) {
+    request.setStream(true);
+    
+    return webClient.post()
+        .uri(BASE_URL + CHAT_ENDPOINT)
+        .headers(h -> {
+            h.setBearerAuth(apiKey);
+            h.set("HTTP-Referer", siteUrl);
+            h.set("X-Title", siteName);
+        })
+        .bodyValue(buildRequestBody(request))
+        .retrieve()
+        .bodyToFlux(String.class)
+        .filter(line -> line.startsWith("data: ") && !line.equals("data: [DONE]"))
+        .map(line -> parseStreamChunk(line.substring(6)));
+}
+```
 
-**DeepSeek không có rate limit cứng.** Tuy nhiên, khi server quá tải:
+### A.9 Pricing Reference
 
-**Non-streaming requests:**
-- Server trả về empty lines liên tục
-- Client nên ignore empty lines
+OpenRouter pricing varies by model. Key models for ABTS:
 
-**Streaming requests:**
-- Server trả về SSE keep-alive comments: `: keep-alive`
-- OpenAI SDK tự động handle
+| Model | Input (per 1M tokens) | Output (per 1M tokens) |
+|-------|----------------------|------------------------|
+| `deepseek/deepseek-r1` | $0.55 | $2.19 |
+| `deepseek/deepseek-r1:thinking` | $0.55 + reasoning | $2.19 |
+| `anthropic/claude-3.5-sonnet` | $3.00 | $15.00 |
+| `openai/gpt-4o-mini` | $0.15 | $0.60 |
+| `meta-llama/llama-3.1-70b-instruct:free` | $0.00 | $0.00 |
 
-**Timeout:**
-- Sau 30 phút không complete, server đóng connection
-- ABTS nên set timeout 60 giây và retry
-
-### A.9 Best Practices cho ABTS
-
-1. **Sử dụng JSON mode** cho tất cả content generation
-2. **Cache prompt templates** bằng cách đặt schema/examples ở đầu prompt
-3. **Set timeout 60s** và implement retry logic
-4. **Log token usage** để monitor costs
-5. **Validate JSON response** trước khi parse
-6. **Sử dụng temperature phù hợp:**
-   - 1.0 cho full generation
-   - 1.3 cho regenerate passage only
-   - 0.0 cho JSON fix
-7. **Handle empty lines** trong non-streaming response
-8. **Monitor HTTP 402** để alert về balance issues
+> **💡 Tip:** Sử dụng `:free` variants cho testing và JSON fix tasks để tiết kiệm chi phí.
 
 ### A.10 Sample Request for ABTS Reading Generation
 
 ```bash
-curl https://api.deepseek.com/chat/completions \
+curl https://openrouter.ai/api/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ${DEEPSEEK_API_KEY}" \
+  -H "Authorization: Bearer ${OPENROUTER_API_KEY}" \
+  -H "HTTP-Referer: https://cramer.vn" \
+  -H "X-Title: Cramer ABTS" \
   -d '{
-        "model": "deepseek-chat",
+        "model": "deepseek/deepseek-r1:thinking",
+        "models": [
+          "deepseek/deepseek-r1:thinking",
+          "anthropic/claude-3.5-sonnet"
+        ],
         "messages": [
           {
             "role": "system", 
@@ -3300,12 +3621,37 @@ curl https://api.deepseek.com/chat/completions \
             "content": "Create a Reading passage with 13 questions about Solar Energy. Use only these facts: [fact1, fact2, ...]. Output JSON with section and questions arrays."
           }
         ],
-        "response_format": {"type": "json_object"},
+        "response_format": {
+          "type": "json_schema",
+          "json_schema": {
+            "name": "ielts_reading",
+            "strict": true,
+            "schema": {...}
+          }
+        },
+        "reasoning": {"effort": "high"},
         "temperature": 1.0,
         "max_tokens": 8192,
-        "stream": false
+        "stream": false,
+        "provider": {
+          "allow_fallbacks": true,
+          "data_collection": "deny"
+        }
       }'
 ```
+
+### A.11 Best Practices for ABTS
+
+1. **Sử dụng JSON Schema mode** cho tất cả content generation (không dùng basic json_object)
+2. **Configure fallback models** để đảm bảo reliability
+3. **Set timeout 120s** và implement retry logic với exponential backoff
+4. **Log token usage và costs** từ response để monitor expenses
+5. **Sử dụng `:free` variants** cho testing và JSON fix tasks
+6. **Enable reasoning tokens** (effort: high) cho complex generation tasks
+7. **Set `data_collection: deny`** trong provider preferences để privacy
+8. **Monitor HTTP 402** để alert về credits issues
+9. **Cache model list** - gọi `/models` API 1 lần/ngày
+10. **Use streaming** cho better UX với production users
 
 ---
 
