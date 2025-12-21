@@ -1,0 +1,128 @@
+/* Passage Preview Styles */
+
+.preview-passage-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.preview-passage-header {
+    flex-shrink: 0;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.preview-passage-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #a855f7;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.preview-passage-meta {
+    margin-top: 8px;
+    display: flex;
+    gap: 16px;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.preview-passage-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.preview-passage-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    font-size: 1rem;
+    line-height: 1.8;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.preview-passage-content p {
+    margin-bottom: 1.5em;
+}
+
+/* Transcript Styles */
+.preview-transcript-container {
+    padding: 20px;
+}
+
+.transcript-line {
+    margin-bottom: 16px;
+    display: flex;
+    gap: 12px;
+}
+
+.transcript-speaker {
+    font-weight: 700;
+    color: #a855f7;
+    min-width: 80px;
+    text-align: right;
+    font-size: 0.9rem;
+}
+
+.transcript-text {
+    flex: 1;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.transcript-timestamp {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+    min-width: 45px;
+}
+
+/* Writing Task Styles */
+.preview-writing-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    height: 100%;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.writing-prompt-card,
+.writing-data-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.writing-prompt-card h4,
+.writing-data-card h4 {
+    color: #a855f7;
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+}
+
+.data-table th,
+.data-table td {
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.data-table th {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 600;
+}
