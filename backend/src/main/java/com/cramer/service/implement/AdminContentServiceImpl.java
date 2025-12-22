@@ -207,6 +207,8 @@ public class AdminContentServiceImpl implements AdminContentService {
     @Override
     public Map<String, Object> getTestDetails(String examSource, Integer testNumber) {
         try {
+            logger.info("Fetching details for test: source='{}', number={}", examSource, testNumber);
+
             // OPTIMIZED: Single query for test details
             String sql = """
                     WITH skill_stats AS (
@@ -227,8 +229,15 @@ public class AdminContentServiceImpl implements AdminContentService {
                     """;
 
             List<Map<String, Object>> skillRows = jdbcTemplate.queryForList(sql, examSource, testNumber);
+            logger.info("Found {} skill rows for {}/{}", skillRows.size(), examSource, testNumber);
 
             if (skillRows.isEmpty()) {
+                // Secondary check: Does the test exist at all?
+                Integer checkCount = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM public.sections WHERE exam_source = ? AND test_number = ?",
+                        Integer.class, examSource, testNumber);
+                logger.info("Double check count for {}/{}: {}", examSource, testNumber, checkCount);
+
                 return null;
             }
 
@@ -279,6 +288,7 @@ public class AdminContentServiceImpl implements AdminContentService {
                     Long.class, examSource, String.valueOf(testNumber));
             test.put("totalAttempts", attempts != null ? attempts : 0);
 
+            logger.info("Successfully built test details for {}/{}", examSource, testNumber);
             return test;
 
         } catch (Exception e) {
@@ -297,13 +307,19 @@ public class AdminContentServiceImpl implements AdminContentService {
                         s.test_number,
                         s.skill,
                         s.part_number,
+                        s.passage_text,
                         s.audio_url,
                         s.display_content_url,
+                        s.image_description,
+                        s.section_layout,
+                        s.status,
                         COUNT(q.id) as question_count
                     FROM public.sections s
                     LEFT JOIN public.questions q ON q.section_id = s.id
                     WHERE s.exam_source = ? AND s.test_number = ? AND s.skill = ?
-                    GROUP BY s.id, s.exam_source, s.test_number, s.skill, s.part_number, s.audio_url, s.display_content_url
+                    GROUP BY s.id, s.exam_source, s.test_number, s.skill, s.part_number,
+                             s.passage_text, s.audio_url, s.display_content_url,
+                             s.image_description, s.section_layout, s.status
                     ORDER BY s.part_number ASC
                     """;
 
@@ -314,8 +330,12 @@ public class AdminContentServiceImpl implements AdminContentService {
                 section.put("testNumber", rs.getInt("test_number"));
                 section.put("skill", rs.getString("skill"));
                 section.put("partNumber", rs.getInt("part_number"));
+                section.put("passageText", rs.getString("passage_text"));
                 section.put("audioUrl", rs.getString("audio_url"));
                 section.put("displayContentUrl", rs.getString("display_content_url"));
+                section.put("imageDescription", rs.getString("image_description"));
+                section.put("sectionLayout", rs.getString("section_layout"));
+                section.put("status", rs.getString("status"));
                 section.put("questionCount", rs.getInt("question_count"));
                 return section;
             }, examSource, testNumber, skill);
@@ -336,7 +356,11 @@ public class AdminContentServiceImpl implements AdminContentService {
                         question_number,
                         question_uid,
                         question_type,
-                        correct_answer
+                        question_content,
+                        correct_answer,
+                        explanation,
+                        image_url,
+                        word_limit
                     FROM public.questions
                     WHERE section_id = ?
                     ORDER BY question_number ASC
@@ -349,7 +373,11 @@ public class AdminContentServiceImpl implements AdminContentService {
                 question.put("questionNumber", rs.getInt("question_number"));
                 question.put("questionUid", rs.getString("question_uid"));
                 question.put("questionType", rs.getString("question_type"));
+                question.put("questionContent", rs.getString("question_content"));
                 question.put("correctAnswer", rs.getString("correct_answer"));
+                question.put("explanation", rs.getString("explanation"));
+                question.put("imageUrl", rs.getString("image_url"));
+                question.put("wordLimit", rs.getObject("word_limit"));
                 return question;
             }, sectionId);
 
@@ -794,6 +822,69 @@ public class AdminContentServiceImpl implements AdminContentService {
         } catch (Exception e) {
             logger.error("Error updating test status for {} Test {}", examSource, testNumber, e);
             throw new RuntimeException("Không thể cập nhật trạng thái: " + e.getMessage());
+        }
+    }
+
+    @Override
+
+    public Map<String, Object> createTest(Map<String, Object> testData, String adminUserId) {
+        String examSource = (String) testData.get("examSource");
+        Object testNumberObj = testData.get("testNumber");
+        Integer testNumber = testNumberObj instanceof String ? Integer.parseInt((String) testNumberObj)
+                : (Integer) testNumberObj;
+
+        try {
+            logger.info("Attempting to create test: {} / {}", examSource, testNumber);
+
+            // Check if test already exists
+            Integer count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM public.sections WHERE exam_source = ? AND test_number = ?",
+                    Integer.class, examSource, testNumber);
+
+            if (count != null && count > 0) {
+                logger.info("Test already exists: {} / {}", examSource, testNumber);
+                Map<String, Object> result = new HashMap<>();
+                result.put("success", true);
+                result.put("examSource", examSource);
+                result.put("testNumber", testNumber);
+                result.put("message", "Test already exists");
+                return result;
+            }
+
+            // Create a dummy Reading Part 1 section
+            String sql = """
+                    INSERT INTO public.sections (exam_source, test_number, skill, part_number, passage_text, status, created_at, updated_at)
+                    VALUES (?, ?, 'reading', 1, 'Placeholder passage for initialization', 'DRAFT', NOW(), NOW())
+                    RETURNING id
+                    """;
+
+            Long sectionId = jdbcTemplate.queryForObject(sql, Long.class, examSource, testNumber);
+            logger.info("Created placeholder section ID: {}", sectionId);
+
+            // Verify insertion immediately
+            Integer verifyCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM public.sections WHERE exam_source = ? AND test_number = ?",
+                    Integer.class, examSource, testNumber);
+            logger.info("Verification count after insert: {}", verifyCount);
+
+            if (verifyCount == null || verifyCount == 0) {
+                throw new RuntimeException("Insert appeared successful but verification failed (count=0)");
+            }
+
+            // Invalidate cache
+            cachedOverview = null;
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", true);
+            result.put("sectionId", sectionId);
+            result.put("examSource", examSource);
+            result.put("testNumber", testNumber);
+            result.put("message", "Đã tạo test mới thành công");
+            return result;
+
+        } catch (Exception e) {
+            logger.error("Error creating test {}/{}", examSource, testNumber, e);
+            throw new RuntimeException("Không thể tạo test: " + e.getMessage());
         }
     }
 }

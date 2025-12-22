@@ -15,7 +15,8 @@ import {
     FiUsers,
     FiRefreshCw,
     FiClock,
-    FiX
+    FiX,
+    FiZap
 } from 'react-icons/fi';
 import StatusBadge from '../../components/StatusBadge';
 import MetricCard from '../../components/MetricCard';
@@ -221,6 +222,14 @@ export default function ContentListPage() {
                     >
                         <FiRefreshCw size={16} className={isLoading ? 'spinning' : ''} />
                         <span>Làm mới</span>
+                    </button>
+                    <button
+                        className="admin-btn admin-btn--ai"
+                        onClick={() => navigate('/admin/content/generate')}
+                        title="Tạo đề thi bằng AI"
+                    >
+                        <FiZap size={16} />
+                        <span>Tạo bằng AI</span>
                     </button>
                     <button
                         className="admin-btn admin-btn--primary"

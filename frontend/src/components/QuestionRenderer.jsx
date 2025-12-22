@@ -4,9 +4,28 @@ import '../css/question-renderer.css';
 
 const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, groupOptions, partId }) => {
     const { id, questionType, questionContent, questionNumber } = question;
-    
+
     // Create a unique content ID prefix that includes partId to prevent cross-part collisions
     const contentIdPrefix = partId ? `p${partId}-q${id}` : `q${id}`;
+
+    // Helper to extract text from various backend field names
+    const getQuestionText = () => {
+        if (!questionContent) return '';
+        if (typeof questionContent === 'string') return questionContent;
+
+        return questionContent.text ||
+            questionContent.statement ||
+            questionContent.question ||
+            questionContent.sentence ||
+            questionContent.incomplete_sentence ||
+            questionContent.prompt ||
+            questionContent.item ||
+            questionContent.paragraph ||
+            questionContent.heading ||
+            '';
+    };
+
+    const questionText = getQuestionText();
 
     const handleSingleValueChange = (e) => {
         onAnswerChange(id, e.target.value);
@@ -23,6 +42,7 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
     };
 
     const renderTextWithInput = (text) => {
+        if (!text) return null;
         const parts = text.split(/____/g);
         return (
             <p className="question-text-interactive">
@@ -41,17 +61,31 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
     };
 
     const renderTextWithSelect = (text, options) => {
+        if (!text) return null;
+        // Safety check: if options is not an array, use empty array or show text input instead
+        const safeOptions = Array.isArray(options) ? options : [];
+
         const parts = text.split('____');
         return (
             <p className="question-text-interactive">
                 <HighlightableHtmlContent htmlString={parts[0].replace(/(\b\d+\b)/g, '<strong>$1</strong>')} contentId={`${contentIdPrefix}-part0`} />
-                {parts.length > 1 && (
+                {parts.length > 1 && safeOptions.length > 0 && (
                     <select value={userAnswer || ''} onChange={handleSingleValueChange} className="fill-in-blank-select">
                         <option value="">Select...</option>
-                        {options.map((opt) => (
+                        {safeOptions.map((opt) => (
                             <option key={opt.letter} value={opt.letter}>{opt.letter}. {opt.text}</option>
                         ))}
                     </select>
+                )}
+                {/* Fallback to text input if no options */}
+                {parts.length > 1 && safeOptions.length === 0 && (
+                    <input
+                        type="text"
+                        className="fill-in-blank-input"
+                        value={userAnswer || ''}
+                        placeholder="Type answer..."
+                        onChange={handleSingleValueChange}
+                    />
                 )}
                 {parts.length > 1 && parts[1] && <HighlightableHtmlContent htmlString={parts[1]} contentId={`${contentIdPrefix}-part1`} />}
             </p>
@@ -73,12 +107,12 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                 );
 
             case 'FILL_IN_BLANK':
-                return renderTextWithInput(questionContent.text);
+                return renderTextWithInput(questionText);
 
             case 'MATCHING':
                 return (
                     <div className="matching-question-container">
-                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
+                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionText} contentId={`${contentIdPrefix}-text`} /></p>
                         <select value={userAnswer || ''} onChange={handleSingleValueChange} className="matching-select">
                             <option value="">Select...</option>
                             {groupOptions && groupOptions.map(opt => (
@@ -91,9 +125,9 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
             case 'MULTIPLE_CHOICE':
                 return (
                     <div>
-                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
+                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionText} contentId={`${contentIdPrefix}-text`} /></p>
                         <div className="mcq-options">
-                            {questionContent.options.map((opt, index) => (
+                            {questionContent.options && questionContent.options.map((opt, index) => (
                                 <label key={index}>
                                     <input type="radio" name={`q_${id}`} value={opt.charAt(0)} checked={userAnswer === opt.charAt(0)} onChange={handleSingleValueChange} />
                                     <strong>{opt.charAt(0)}.</strong> {opt.substring(1).trim()}
@@ -102,14 +136,14 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                         </div>
                     </div>
                 );
-            
+
             case 'MULTIPLE_CHOICE_MULTIPLE_ANSWERS':
                 const currentAnswers = userAnswer || [];
                 return (
                     <div>
-                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
+                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionText} contentId={`${contentIdPrefix}-text`} /></p>
                         <div className="mcq-options">
-                            {questionContent.options.map((opt, index) => (
+                            {questionContent.options && questionContent.options.map((opt, index) => (
                                 <label key={index}>
                                     <input type="checkbox" name={`q_${id}`} value={opt.charAt(0)} checked={currentAnswers.includes(opt.charAt(0))} onChange={handleMultiValueChange} />
                                     <strong>{opt.charAt(0)}.</strong> {opt.substring(1).trim()}
@@ -121,11 +155,11 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
 
             default:
                 // Fallback for old Reading types
-                switch(questionType) {
+                switch (questionType) {
                     case 'TRUE_FALSE_NOT_GIVEN':
                         return (
                             <div>
-                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
+                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionText} contentId={`${contentIdPrefix}-text`} /></p>
                                 <div className="tfn-options">
                                     <label><input type="radio" name={`q_${id}`} value="TRUE" checked={userAnswer === 'TRUE'} onChange={handleSingleValueChange} /> True</label>
                                     <label><input type="radio" name={`q_${id}`} value="FALSE" checked={userAnswer === 'FALSE'} onChange={handleSingleValueChange} /> False</label>
@@ -134,9 +168,9 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                             </div>
                         );
                     case 'YES_NO_NOT_GIVEN':
-                         return (
+                        return (
                             <div>
-                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
+                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionText} contentId={`${contentIdPrefix}-text`} /></p>
                                 <div className="tfn-options">
                                     <label><input type="radio" name={`q_${id}`} value="YES" checked={userAnswer === 'YES'} onChange={handleSingleValueChange} /> Yes</label>
                                     <label><input type="radio" name={`q_${id}`} value="NO" checked={userAnswer === 'NO'} onChange={handleSingleValueChange} /> No</label>
@@ -145,14 +179,14 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                             </div>
                         );
                     case 'SUMMARY_COMPLETION':
-                        return renderTextWithInput(questionContent.text);
+                        return renderTextWithInput(questionText);
                     case 'MATCHING_INFORMATION':
                     case 'MATCHING_FEATURES':
                     case 'MATCHING_HEADINGS':
                         const options = questionContent.options || [];
                         return (
                             <div>
-                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
+                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionText} contentId={`${contentIdPrefix}-text`} /></p>
                                 <select value={userAnswer || ''} onChange={handleSingleValueChange} className="matching-select">
                                     <option value="">Select...</option>
                                     {options.map((opt, index) => {
@@ -165,8 +199,11 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                             </div>
                         );
                     case 'SUMMARY_COMPLETION_OPTIONS':
-                        return renderTextWithSelect(questionContent.text, questionContent.options);
+                        return renderTextWithSelect(questionText, questionContent.options);
                     case 'TABLE_COMPLETION':
+                    case 'FLOW_CHART_COMPLETION':
+                    case 'DIAGRAM_LABEL_COMPLETION':
+                    case 'NOTE_COMPLETION':
                         return (
                             <p className="question-text-interactive">
                                 <span className="question-number"><strong>{questionNumber}</strong></span>
@@ -179,7 +216,7 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                             </p>
                         );
                     default:
-                         return <p>Unsupported question type: {questionType}</p>;
+                        return <p>Unsupported question type: {questionType}</p>;
                 }
         }
     };

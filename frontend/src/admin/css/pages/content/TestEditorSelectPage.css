@@ -285,7 +285,8 @@
 /* Header Actions */
 .header-actions {
   display: flex;
-  gap: var(--admin-spacing-sm);
+  align-items: center;
+  gap: var(--admin-spacing-md);
 }
 
 /* Loading State */

@@ -4,10 +4,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Admin Content Service Interface - Xử lý logic quản lý nội dung đề thi cho Admin CMS
+ * Admin Content Service Interface - Xử lý logic quản lý nội dung đề thi cho
+ * Admin CMS
  */
 public interface AdminContentService {
-    
+
     /**
      * Lấy danh sách topics với các tests
      * 
@@ -16,14 +17,15 @@ public interface AdminContentService {
      * @return Danh sách topics với thông tin chi tiết
      */
     List<Map<String, Object>> getTopicsWithTests(String search, String status);
-    
+
     /**
      * Lấy thống kê tổng quan về nội dung
      * 
-     * @return Map chứa các metric: totalTests, publishedTests, draftTests, totalAttempts, etc.
+     * @return Map chứa các metric: totalTests, publishedTests, draftTests,
+     *         totalAttempts, etc.
      */
     Map<String, Object> getContentOverview();
-    
+
     /**
      * Lấy chi tiết một test cụ thể
      * 
@@ -32,17 +34,17 @@ public interface AdminContentService {
      * @return Chi tiết test bao gồm các skills
      */
     Map<String, Object> getTestDetails(String examSource, Integer testNumber);
-    
+
     /**
      * Lấy danh sách sections của một skill
      * 
      * @param examSource Nguồn đề
      * @param testNumber Số test
-     * @param skill Kỹ năng
+     * @param skill      Kỹ năng
      * @return Danh sách sections
      */
     List<Map<String, Object>> getSections(String examSource, Integer testNumber, String skill);
-    
+
     /**
      * Lấy danh sách questions của một section
      * 
@@ -50,7 +52,7 @@ public interface AdminContentService {
      * @return Danh sách questions
      */
     List<Map<String, Object>> getQuestionsBySection(Long sectionId);
-    
+
     /**
      * Lấy hoạt động gần đây
      * 
@@ -98,4 +100,9 @@ public interface AdminContentService {
      * Cập nhật trạng thái của test (tất cả sections)
      */
     Map<String, Object> updateTestStatus(String examSource, Integer testNumber, String status, String adminUserId);
+
+    /**
+     * Tạo test mới
+     */
+    Map<String, Object> createTest(Map<String, Object> testData, String adminUserId);
 }
