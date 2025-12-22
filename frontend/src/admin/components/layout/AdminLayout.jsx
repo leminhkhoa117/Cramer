@@ -43,6 +43,10 @@ export default function AdminLayout() {
         return breadcrumbs;
     };
 
+    // Full-width pages that should have no padding
+    const isFullWidthPage = location.pathname.includes('/content/generate') ||
+        location.pathname.includes('/ai-studio');
+
     return (
         <ToastProvider>
             <div className="admin-root">
@@ -55,7 +59,7 @@ export default function AdminLayout() {
                         breadcrumbs={getBreadcrumbs()}
                         collapsed={sidebarCollapsed}
                     />
-                    <div className="admin-content">
+                    <div className={`admin-content ${isFullWidthPage ? 'admin-content--full' : ''}`}>
                         <Outlet />
                     </div>
                 </div>

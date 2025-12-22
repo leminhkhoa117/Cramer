@@ -16,7 +16,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/admin/content")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:5173" })
 public class AdminContentController {
 
     @Autowired
@@ -32,8 +32,7 @@ public class AdminContentController {
     public ResponseEntity<List<Map<String, Object>>> getTopics(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
-            @RequestHeader("X-User-Id") String adminUserId
-    ) {
+            @RequestHeader("X-User-Id") String adminUserId) {
         List<Map<String, Object>> topics = adminContentService.getTopicsWithTests(search, status);
         return ResponseEntity.ok(topics);
     }
@@ -43,8 +42,7 @@ public class AdminContentController {
      */
     @GetMapping("/overview")
     public ResponseEntity<Map<String, Object>> getContentOverview(
-            @RequestHeader("X-User-Id") String adminUserId
-    ) {
+            @RequestHeader("X-User-Id") String adminUserId) {
         Map<String, Object> overview = adminContentService.getContentOverview();
         return ResponseEntity.ok(overview);
     }
@@ -59,8 +57,7 @@ public class AdminContentController {
     public ResponseEntity<Map<String, Object>> getTestDetails(
             @PathVariable String examSource,
             @PathVariable Integer testNumber,
-            @RequestHeader("X-User-Id") String adminUserId
-    ) {
+            @RequestHeader("X-User-Id") String adminUserId) {
         Map<String, Object> testDetails = adminContentService.getTestDetails(examSource, testNumber);
         if (testDetails == null) {
             return ResponseEntity.notFound().build();
@@ -73,15 +70,14 @@ public class AdminContentController {
      * 
      * @param examSource Nguồn đề
      * @param testNumber Số test
-     * @param skill Kỹ năng (reading, listening, writing, speaking)
+     * @param skill      Kỹ năng (reading, listening, writing, speaking)
      */
     @GetMapping("/tests/{examSource}/{testNumber}/{skill}/sections")
     public ResponseEntity<List<Map<String, Object>>> getSections(
             @PathVariable String examSource,
             @PathVariable Integer testNumber,
             @PathVariable String skill,
-            @RequestHeader("X-User-Id") String adminUserId
-    ) {
+            @RequestHeader("X-User-Id") String adminUserId) {
         List<Map<String, Object>> sections = adminContentService.getSections(examSource, testNumber, skill);
         return ResponseEntity.ok(sections);
     }
@@ -94,8 +90,7 @@ public class AdminContentController {
     @GetMapping("/sections/{sectionId}/questions")
     public ResponseEntity<List<Map<String, Object>>> getQuestions(
             @PathVariable Long sectionId,
-            @RequestHeader("X-User-Id") String adminUserId
-    ) {
+            @RequestHeader("X-User-Id") String adminUserId) {
         List<Map<String, Object>> questions = adminContentService.getQuestionsBySection(sectionId);
         return ResponseEntity.ok(questions);
     }
@@ -106,8 +101,7 @@ public class AdminContentController {
     @GetMapping("/activities")
     public ResponseEntity<List<Map<String, Object>>> getRecentActivities(
             @RequestParam(defaultValue = "10") int limit,
-            @RequestHeader("X-User-Id") String adminUserId
-    ) {
+            @RequestHeader("X-User-Id") String adminUserId) {
         List<Map<String, Object>> activities = adminContentService.getRecentActivities(limit);
         return ResponseEntity.ok(activities);
     }
@@ -118,8 +112,7 @@ public class AdminContentController {
     @PostMapping("/sections")
     public ResponseEntity<Map<String, Object>> createSection(
             @RequestBody Map<String, Object> sectionData,
-            @RequestHeader("X-User-Id") String adminUserId
-    ) {
+            @RequestHeader("X-User-Id") String adminUserId) {
         try {
             Map<String, Object> result = adminContentService.createSection(sectionData, adminUserId);
             return ResponseEntity.ok(result);
@@ -135,8 +128,7 @@ public class AdminContentController {
     public ResponseEntity<Map<String, Object>> updateSection(
             @PathVariable Long sectionId,
             @RequestBody Map<String, Object> sectionData,
-            @RequestHeader("X-User-Id") String adminUserId
-    ) {
+            @RequestHeader("X-User-Id") String adminUserId) {
         try {
             Map<String, Object> result = adminContentService.updateSection(sectionId, sectionData, adminUserId);
             return ResponseEntity.ok(result);
@@ -152,8 +144,7 @@ public class AdminContentController {
     public ResponseEntity<Map<String, Object>> createQuestion(
             @PathVariable Long sectionId,
             @RequestBody Map<String, Object> questionData,
-            @RequestHeader("X-User-Id") String adminUserId
-    ) {
+            @RequestHeader("X-User-Id") String adminUserId) {
         try {
             Map<String, Object> result = adminContentService.createQuestion(sectionId, questionData, adminUserId);
             return ResponseEntity.ok(result);
@@ -169,8 +160,7 @@ public class AdminContentController {
     public ResponseEntity<Map<String, Object>> updateQuestion(
             @PathVariable Long questionId,
             @RequestBody Map<String, Object> questionData,
-            @RequestHeader("X-User-Id") String adminUserId
-    ) {
+            @RequestHeader("X-User-Id") String adminUserId) {
         try {
             Map<String, Object> result = adminContentService.updateQuestion(questionId, questionData, adminUserId);
             return ResponseEntity.ok(result);
@@ -185,8 +175,7 @@ public class AdminContentController {
     @DeleteMapping("/questions/{questionId}")
     public ResponseEntity<Map<String, Object>> deleteQuestion(
             @PathVariable Long questionId,
-            @RequestHeader("X-User-Id") String adminUserId
-    ) {
+            @RequestHeader("X-User-Id") String adminUserId) {
         try {
             adminContentService.deleteQuestion(questionId, adminUserId);
             return ResponseEntity.ok(Map.of("success", true, "message", "Đã xóa câu hỏi"));
@@ -200,18 +189,18 @@ public class AdminContentController {
      * 
      * @param examSource Nguồn đề
      * @param testNumber Số test
-     * @param status Trạng thái mới (DRAFT, PUBLISHED, ARCHIVED)
+     * @param status     Trạng thái mới (DRAFT, PUBLISHED, ARCHIVED)
      */
     @PatchMapping("/tests/{examSource}/{testNumber}/status")
     public ResponseEntity<Map<String, Object>> updateTestStatus(
             @PathVariable String examSource,
             @PathVariable Integer testNumber,
             @RequestBody Map<String, String> body,
-            @RequestHeader("X-User-Id") String adminUserId
-    ) {
+            @RequestHeader("X-User-Id") String adminUserId) {
         try {
             String status = body.get("status");
-            Map<String, Object> result = adminContentService.updateTestStatus(examSource, testNumber, status, adminUserId);
+            Map<String, Object> result = adminContentService.updateTestStatus(examSource, testNumber, status,
+                    adminUserId);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -224,8 +213,7 @@ public class AdminContentController {
     @GetMapping("/sections/{sectionId}")
     public ResponseEntity<Map<String, Object>> getSectionById(
             @PathVariable Long sectionId,
-            @RequestHeader("X-User-Id") String adminUserId
-    ) {
+            @RequestHeader("X-User-Id") String adminUserId) {
         Map<String, Object> section = adminContentService.getSectionById(sectionId);
         if (section == null) {
             return ResponseEntity.notFound().build();
@@ -239,12 +227,26 @@ public class AdminContentController {
     @GetMapping("/questions/{questionId}")
     public ResponseEntity<Map<String, Object>> getQuestionById(
             @PathVariable Long questionId,
-            @RequestHeader("X-User-Id") String adminUserId
-    ) {
+            @RequestHeader("X-User-Id") String adminUserId) {
         Map<String, Object> question = adminContentService.getQuestionById(questionId);
         if (question == null) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(question);
+    }
+
+    /**
+     * Tạo test mới
+     */
+    @PostMapping("/tests")
+    public ResponseEntity<Map<String, Object>> createTest(
+            @RequestBody Map<String, Object> testData,
+            @RequestHeader("X-User-Id") String adminUserId) {
+        try {
+            Map<String, Object> result = adminContentService.createTest(testData, adminUserId);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }

@@ -46,7 +46,7 @@ const adminApi = {
         getList: async (params = {}) => {
             const headers = await getAuthHeaders();
             const queryParams = new URLSearchParams();
-            
+
             if (params.page !== undefined) queryParams.append('page', params.page);
             if (params.size !== undefined) queryParams.append('size', params.size);
             if (params.search) queryParams.append('search', params.search);
@@ -54,7 +54,7 @@ const adminApi = {
             if (params.subscription && params.subscription !== 'ALL') queryParams.append('subscription', params.subscription);
             if (params.sortBy) queryParams.append('sortBy', params.sortBy);
             if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
-            
+
             const response = await axios.get(
                 `${API_BASE_URL}/api/admin/users?${queryParams.toString()}`,
                 { headers }
@@ -168,14 +168,14 @@ const adminApi = {
         getTransactions: async (params = {}) => {
             const headers = await getAuthHeaders();
             const queryParams = new URLSearchParams();
-            
+
             if (params.page !== undefined) queryParams.append('page', params.page);
             if (params.size !== undefined) queryParams.append('size', params.size);
             if (params.status) queryParams.append('status', params.status);
             if (params.type) queryParams.append('type', params.type);
             if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
             if (params.dateTo) queryParams.append('dateTo', params.dateTo);
-            
+
             const response = await axios.get(
                 `${API_BASE_URL}/api/admin/finance/transactions?${queryParams.toString()}`,
                 { headers }
@@ -201,11 +201,11 @@ const adminApi = {
         getExportData: async (dateFrom, dateTo, status) => {
             const headers = await getAuthHeaders();
             const queryParams = new URLSearchParams();
-            
+
             if (dateFrom) queryParams.append('dateFrom', dateFrom);
             if (dateTo) queryParams.append('dateTo', dateTo);
             if (status && status !== 'ALL') queryParams.append('status', status);
-            
+
             const response = await axios.get(
                 `${API_BASE_URL}/api/admin/finance/export?${queryParams.toString()}`,
                 { headers }
@@ -227,10 +227,10 @@ const adminApi = {
         getTopics: async (params = {}) => {
             const headers = await getAuthHeaders();
             const queryParams = new URLSearchParams();
-            
+
             if (params.search) queryParams.append('search', params.search);
             if (params.status) queryParams.append('status', params.status);
-            
+
             const response = await axios.get(
                 `${API_BASE_URL}/api/admin/content/topics?${queryParams.toString()}`,
                 { headers }
@@ -417,6 +417,20 @@ const adminApi = {
                 { headers }
             );
             return response.data;
+        },
+
+        /**
+         * Create a new test
+         * @param {Object} testData - Test data (examSource, testNumber)
+         */
+        createTest: async (testData) => {
+            const headers = await getAuthHeaders();
+            const response = await axios.post(
+                `${API_BASE_URL}/api/admin/content/tests`,
+                testData,
+                { headers }
+            );
+            return response.data;
         }
     },
     /**
@@ -431,10 +445,10 @@ const adminApi = {
         getUserActivities: async (userId, params = {}) => {
             const headers = await getAuthHeaders();
             const queryParams = new URLSearchParams();
-            
+
             if (params.page !== undefined) queryParams.append('page', params.page);
             if (params.size !== undefined) queryParams.append('size', params.size);
-            
+
             const response = await axios.get(
                 `${API_BASE_URL}/api/admin/activities/users/${userId}?${queryParams.toString()}`,
                 { headers }
@@ -464,10 +478,10 @@ const adminApi = {
         getAuditLogs: async (userId, params = {}) => {
             const headers = await getAuthHeaders();
             const queryParams = new URLSearchParams();
-            
+
             if (params.page !== undefined) queryParams.append('page', params.page);
             if (params.size !== undefined) queryParams.append('size', params.size);
-            
+
             const response = await axios.get(
                 `${API_BASE_URL}/api/admin/activities/audit/users/${userId}?${queryParams.toString()}`,
                 { headers }
@@ -482,10 +496,10 @@ const adminApi = {
         getAllAuditLogs: async (params = {}) => {
             const headers = await getAuthHeaders();
             const queryParams = new URLSearchParams();
-            
+
             if (params.page !== undefined) queryParams.append('page', params.page);
             if (params.size !== undefined) queryParams.append('size', params.size);
-            
+
             const response = await axios.get(
                 `${API_BASE_URL}/api/admin/activities/audit?${queryParams.toString()}`,
                 { headers }

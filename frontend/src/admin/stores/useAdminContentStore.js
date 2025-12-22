@@ -14,7 +14,7 @@ const useAdminContentStore = create((set, get) => ({
     // Topics and tests data
     topics: [],
     selectedTest: null,
-    
+
     // Overview stats
     overview: {
         totalTopics: 0,
@@ -25,32 +25,32 @@ const useAdminContentStore = create((set, get) => ({
         totalQuestions: 0,
         totalAttempts: 0
     },
-    
+
     // Filters
     searchQuery: '',
     statusFilter: 'ALL',
     viewMode: 'tree', // 'tree' | 'grid'
-    
+
     // Expanded topics (for tree view)
     expandedTopics: [],
-    
+
     // Loading states
     isLoading: false,
     isLoadingOverview: false,
     isLoadingTest: false,
-    
+
     // Error
     error: null,
-    
+
     // Cache timestamps
     lastTopicsFetch: null,
     lastOverviewFetch: null,
     isInitialized: false,
-    
+
     // =====================
     // ACTIONS
     // =====================
-    
+
     /**
      * Fetch topics with tests from API
      * @param {boolean} force - Force refresh regardless of cache
@@ -58,31 +58,31 @@ const useAdminContentStore = create((set, get) => ({
     fetchTopics: async (force = false) => {
         const { lastTopicsFetch, isLoading, searchQuery: prevSearch, statusFilter: prevStatus } = get();
         const now = Date.now();
-        
+
         // Skip if already loading
         if (isLoading) return;
-        
+
         // Skip if cache is still valid (only for initial load, not for filter changes)
         if (!force && lastTopicsFetch && (now - lastTopicsFetch) < CACHE_DURATION_MS) {
             return;
         }
-        
+
         set({ isLoading: true, error: null });
-        
+
         try {
             const { searchQuery, statusFilter } = get();
             const topics = await adminApi.content.getTopics({
                 search: searchQuery || undefined,
                 status: statusFilter !== 'ALL' ? statusFilter : undefined
             });
-            
+
             // Auto-expand first 2 topics if not already expanded
             const { expandedTopics } = get();
             let newExpandedTopics = [...expandedTopics];
             if (expandedTopics.length === 0 && topics.length > 0) {
                 newExpandedTopics = topics.slice(0, 2).map(t => t.id);
             }
-            
+
             set({
                 topics,
                 expandedTopics: newExpandedTopics,
@@ -98,7 +98,7 @@ const useAdminContentStore = create((set, get) => ({
             });
         }
     },
-    
+
     /**
      * Fetch content overview stats
      * @param {boolean} force - Force refresh regardless of cache
@@ -106,17 +106,17 @@ const useAdminContentStore = create((set, get) => ({
     fetchOverview: async (force = false) => {
         const { lastOverviewFetch, isLoadingOverview } = get();
         const now = Date.now();
-        
+
         // Skip if already loading
         if (isLoadingOverview) return;
-        
+
         // Skip if cache is still valid
         if (!force && lastOverviewFetch && (now - lastOverviewFetch) < CACHE_DURATION_MS) {
             return;
         }
-        
+
         set({ isLoadingOverview: true });
-        
+
         try {
             const overview = await adminApi.content.getOverview();
             set({
@@ -129,7 +129,7 @@ const useAdminContentStore = create((set, get) => ({
             set({ isLoadingOverview: false });
         }
     },
-    
+
     /**
      * Initialize content page - uses cache if available
      */
@@ -140,13 +140,13 @@ const useAdminContentStore = create((set, get) => ({
             fetchOverview()
         ]);
     },
-    
+
     /**
      * Fetch test details
      */
     fetchTestDetails: async (examSource, testNumber) => {
         set({ isLoadingTest: true, selectedTest: null, error: null });
-        
+
         try {
             const testDetails = await adminApi.content.getTestDetails(examSource, testNumber);
             set({
@@ -163,14 +163,14 @@ const useAdminContentStore = create((set, get) => ({
             return null;
         }
     },
-    
+
     /**
      * Set search query
      */
     setSearchQuery: (query) => {
         set({ searchQuery: query });
     },
-    
+
     /**
      * Set status filter and refetch
      */
@@ -178,14 +178,14 @@ const useAdminContentStore = create((set, get) => ({
         set({ statusFilter: status, lastTopicsFetch: null }); // Invalidate cache
         get().fetchTopics(true);
     },
-    
+
     /**
      * Set view mode
      */
     setViewMode: (mode) => {
         set({ viewMode: mode });
     },
-    
+
     /**
      * Toggle topic expansion
      */
@@ -196,7 +196,7 @@ const useAdminContentStore = create((set, get) => ({
                 : [...state.expandedTopics, topicId]
         }));
     },
-    
+
     /**
      * Expand all topics
      */
@@ -205,21 +205,21 @@ const useAdminContentStore = create((set, get) => ({
             expandedTopics: state.topics.map(t => t.id)
         }));
     },
-    
+
     /**
      * Collapse all topics
      */
     collapseAll: () => {
         set({ expandedTopics: [] });
     },
-    
+
     /**
      * Clear selected test
      */
     clearSelectedTest: () => {
         set({ selectedTest: null });
     },
-    
+
     /**
      * Reset all filters
      */
@@ -231,7 +231,7 @@ const useAdminContentStore = create((set, get) => ({
         });
         get().fetchTopics(true);
     },
-    
+
     /**
      * Get all tests as flat list (for grid view)
      */
@@ -250,17 +250,17 @@ const useAdminContentStore = create((set, get) => ({
         });
         return tests;
     },
-    
+
     /**
      * Get filtered tests based on search (client-side filtering)
      */
     getFilteredTopics: () => {
         const { topics, searchQuery, statusFilter } = get();
-        
+
         if (!searchQuery && statusFilter === 'ALL') {
             return topics;
         }
-        
+
         return topics.map(topic => ({
             ...topic,
             tests: (topic.tests || []).filter(test => {
@@ -271,6 +271,26 @@ const useAdminContentStore = create((set, get) => ({
                 return matchesSearch && matchesStatus;
             })
         })).filter(topic => topic.tests.length > 0 || !searchQuery);
+    },
+
+    /**
+     * Create a new test
+     */
+    createTest: async (testData) => {
+        set({ isLoading: true, error: null });
+        try {
+            const result = await adminApi.content.createTest(testData);
+            set({ lastTopicsFetch: null }); // Invalidate cache
+            await get().fetchTopics(true); // Refresh list
+            return result;
+        } catch (error) {
+            console.error('Error creating test:', error);
+            set({
+                error: error.response?.data?.error || 'Không thể tạo đề thi',
+                isLoading: false
+            });
+            throw error;
+        }
     }
 }));
 

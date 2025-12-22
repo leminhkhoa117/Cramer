@@ -2,14 +2,14 @@
  * ABTS Components Index
  * Exports all AI-Based Test Generation System components.
  * 
- * @since 2025-12-20 - ABTS v2.0
+ * @since 2025-12-21 - V4.0 Studio Rewrite
  */
 
-// Main wizard
-export { default as GenerationWizard } from './GenerationWizard';
+// Studio Components (New)
+export { default as StudioModal } from './StudioModal';
+export { default as StudioConfigView } from './StudioConfigView';
 
-// Steps
-export { default as UnifiedConfigStep } from './UnifiedConfigStep';
+// Steps (Legacy/Shared)
 export { default as StepPreview } from './StepPreview';
 
 // Preview components

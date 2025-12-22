@@ -8,7 +8,8 @@ import {
     FiCheck,
     FiClock,
     FiAlertCircle,
-    FiRefreshCw
+    FiRefreshCw,
+    FiZap
 } from 'react-icons/fi';
 import StatusBadge from '../../components/StatusBadge';
 import CreateTestModal from '../../components/CreateTestModal';
@@ -42,7 +43,8 @@ export default function TestEditorSelectPage() {
         isLoading,
         error,
         fetchTopics,
-        getAllTests
+        getAllTests,
+        createTest
     } = useAdminContentStore();
 
     // Fetch data on mount
@@ -82,12 +84,17 @@ export default function TestEditorSelectPage() {
     };
 
     // Handle create test
-    const handleCreateTest = (data) => {
-        console.log('Creating test:', data);
-        // TODO: Call API to create test
-        toast.success(`Đã tạo đề thi "${data.test.name}" thành công!`);
-        setShowCreateModal(false);
-        fetchTopics(); // Refresh the list
+    const handleCreateTest = async (data) => {
+        try {
+            const result = await createTest(data);
+            if (result && result.success) {
+                toast.success(`Đã tạo đề thi "${data.testName}" thành công!`);
+                setShowCreateModal(false);
+                navigate(`/admin/content/editor/${result.examSource}/${result.testNumber}`);
+            }
+        } catch (err) {
+            toast.error(err.message || "Lỗi khi tạo đề thi");
+        }
     };
 
     // Handle refresh
@@ -112,6 +119,13 @@ export default function TestEditorSelectPage() {
                     >
                         <FiRefreshCw size={16} className={isLoading ? 'spinning' : ''} />
                         <span>Làm mới</span>
+                    </button>
+                    <button
+                        className="admin-btn admin-btn--ai"
+                        onClick={() => navigate('/admin/content/generate')}
+                    >
+                        <FiZap size={16} />
+                        <span>Tạo bằng AI</span>
                     </button>
                     <button
                         className="admin-btn admin-btn--primary"

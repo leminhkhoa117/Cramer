@@ -1,0 +1,444 @@
+/* ==========================================================================
+   PASSAGE PREVIEW - Shared CSS for Read-Only Passage Display
+   Used by ABTS Preview, Test Editor Preview, and Content Review
+   Reuses styling similar to test-taking page but optimized for admin dark theme
+   ========================================================================== */
+
+/* Container - Card-like wrapper for passage content */
+.admin-passage-preview {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border: 1px solid var(--admin-border-primary, rgba(255, 255, 255, 0.1));
+    border-radius: var(--admin-radius-lg, 12px);
+    overflow: hidden;
+}
+
+/* Header with title and stats */
+.admin-passage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--admin-spacing-md, 16px) var(--admin-spacing-lg, 24px);
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--admin-border-secondary, rgba(255, 255, 255, 0.05));
+}
+
+.admin-passage-header h4 {
+    margin: 0;
+    color: var(--admin-text-primary, #F8FAFC);
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-passage-stats {
+    display: flex;
+    align-items: center;
+    gap: var(--admin-spacing-md, 16px);
+}
+
+.admin-passage-stat {
+    font-size: 0.85rem;
+    color: var(--admin-text-secondary, #94A3B8);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.admin-passage-stat.valid {
+    color: var(--admin-success, #10B981);
+}
+
+.admin-passage-stat.invalid {
+    color: var(--admin-danger, #EF4444);
+}
+
+/* Main content area - the actual passage text */
+.admin-passage-content {
+    padding: var(--admin-spacing-lg, 24px);
+    max-height: 400px;
+    overflow-y: auto;
+    color: var(--admin-text-primary, #F8FAFC);
+    font-size: 0.95rem;
+    line-height: 1.8;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    letter-spacing: 0.01em;
+}
+
+/* Mimic test-taking page reading passage typography */
+.admin-passage-content p {
+    margin-bottom: 1.25em;
+    text-align: justify;
+    hyphens: auto;
+}
+
+.admin-passage-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* Paragraph markers (A, B, C...) */
+.admin-passage-content strong,
+.admin-passage-content b {
+    color: var(--admin-primary, #8B5CF6);
+    font-weight: 700;
+}
+
+/* Headers within passage */
+.admin-passage-content h1,
+.admin-passage-content h2,
+.admin-passage-content h3,
+.admin-passage-content h4 {
+    color: var(--admin-text-primary, #F8FAFC);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    margin-top: 1.5em;
+    margin-bottom: 0.75em;
+}
+
+.admin-passage-content h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+/* Italics for emphasis */
+.admin-passage-content em,
+.admin-passage-content i {
+    color: var(--admin-text-secondary, #94A3B8);
+    font-style: italic;
+}
+
+/* Block quotes (used for citations or references) */
+.admin-passage-content blockquote {
+    border-left: 3px solid var(--admin-primary, #8B5CF6);
+    margin: 1em 0;
+    padding-left: 1em;
+    color: var(--admin-text-secondary, #94A3B8);
+    font-style: italic;
+}
+
+/* Scrollbar styling */
+.admin-passage-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.admin-passage-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 3px;
+}
+
+.admin-passage-content::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.3);
+    border-radius: 3px;
+}
+
+.admin-passage-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.5);
+}
+
+/* Edit mode styling */
+.admin-passage-editor {
+    width: 100%;
+    min-height: 400px;
+    padding: var(--admin-spacing-lg, 24px);
+    border: none;
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.3);
+    color: var(--admin-text-primary, #F8FAFC);
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 0.95rem;
+    line-height: 1.8;
+    resize: vertical;
+}
+
+.admin-passage-editor:focus {
+    outline: none;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+/* Action buttons in header */
+.admin-passage-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--admin-spacing-sm, 8px);
+}
+
+.admin-passage-btn {
+    padding: 6px 12px;
+    border-radius: var(--admin-radius-sm, 6px);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--admin-transition-fast, 150ms ease);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--admin-border-primary, rgba(255, 255, 255, 0.1));
+    color: var(--admin-text-primary, #F8FAFC);
+}
+
+.admin-passage-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.admin-passage-btn.btn-success {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: var(--admin-success, #10B981);
+    color: var(--admin-success, #10B981);
+}
+
+.admin-passage-btn.btn-success:hover {
+    background: rgba(16, 185, 129, 0.25);
+}
+
+.admin-passage-btn.btn-primary {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: var(--admin-primary, #8B5CF6);
+    color: var(--admin-primary, #8B5CF6);
+}
+
+.admin-passage-btn.btn-primary:hover {
+    background: rgba(139, 92, 246, 0.25);
+}
+
+/* ==========================================================================
+   QUESTIONS PREVIEW - Read-only question display
+   ========================================================================== */
+
+.admin-questions-preview {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border: 1px solid var(--admin-border-primary, rgba(255, 255, 255, 0.1));
+    border-radius: var(--admin-radius-lg, 12px);
+    overflow: hidden;
+}
+
+/* Question group styling */
+.admin-question-group {
+    border-bottom: 1px solid var(--admin-border-secondary, rgba(255, 255, 255, 0.05));
+}
+
+.admin-question-group:last-child {
+    border-bottom: none;
+}
+
+.admin-question-group-header {
+    padding: var(--admin-spacing-md, 16px) var(--admin-spacing-lg, 24px);
+    background: rgba(0, 0, 0, 0.15);
+    border-bottom: 1px solid var(--admin-border-secondary, rgba(255, 255, 255, 0.05));
+}
+
+.admin-question-group-header h5 {
+    margin: 0 0 4px 0;
+    color: var(--admin-text-primary, #F8FAFC);
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.admin-question-group-instructions {
+    margin: 0;
+    color: var(--admin-text-secondary, #94A3B8);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+/* Individual question item */
+.admin-question-item {
+    padding: var(--admin-spacing-md, 16px) var(--admin-spacing-lg, 24px);
+    border-bottom: 1px solid var(--admin-border-secondary, rgba(255, 255, 255, 0.03));
+    cursor: pointer;
+    transition: var(--admin-transition-fast, 150ms ease);
+}
+
+.admin-question-item:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.admin-question-item.expanded {
+    background: rgba(139, 92, 246, 0.08);
+}
+
+.admin-question-item:last-child {
+    border-bottom: none;
+}
+
+/* Question header with number and type badge */
+.admin-question-header {
+    display: flex;
+    align-items: center;
+    gap: var(--admin-spacing-md, 12px);
+    margin-bottom: var(--admin-spacing-sm, 8px);
+}
+
+.admin-question-number {
+    background: linear-gradient(135deg, var(--admin-primary, #8B5CF6) 0%, #6366F1 100%);
+    color: white;
+    padding: 4px 10px;
+    border-radius: var(--admin-radius-sm, 6px);
+    font-size: 0.8rem;
+    font-weight: 600;
+    min-width: 36px;
+    text-align: center;
+}
+
+.admin-question-type {
+    color: var(--admin-text-muted, #64748B);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+/* Question text content */
+.admin-question-text {
+    color: var(--admin-text-primary, #F8FAFC);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-bottom: var(--admin-spacing-sm, 8px);
+}
+
+/* Options display (for MCQ, matching, etc.) */
+.admin-question-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--admin-spacing-sm, 8px);
+    margin-top: var(--admin-spacing-sm, 8px);
+}
+
+.admin-question-options.tfng {
+    /* True/False/Not Given style - inline badges */
+    flex-direction: row;
+    gap: var(--admin-spacing-sm, 8px);
+}
+
+.admin-question-options.mcq {
+    flex-direction: column;
+    gap: var(--admin-spacing-xs, 4px);
+}
+
+.admin-question-option {
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--admin-border-secondary, rgba(255, 255, 255, 0.05));
+    border-radius: var(--admin-radius-sm, 6px);
+    color: var(--admin-text-secondary, #94A3B8);
+    font-size: 0.85rem;
+}
+
+.admin-question-option strong {
+    color: var(--admin-text-primary, #F8FAFC);
+    margin-right: 6px;
+}
+
+/* Answer and explanation section */
+.admin-question-answer-section {
+    margin-top: var(--admin-spacing-md, 16px);
+    padding-top: var(--admin-spacing-md, 16px);
+    border-top: 1px solid var(--admin-border-secondary, rgba(255, 255, 255, 0.05));
+}
+
+.admin-question-answer {
+    margin-bottom: var(--admin-spacing-sm, 8px);
+}
+
+.admin-question-answer strong {
+    color: var(--admin-success, #10B981);
+    margin-right: 8px;
+}
+
+.admin-question-answer span {
+    color: var(--admin-success, #10B981);
+    font-weight: 600;
+}
+
+.admin-question-explanation {
+    padding: var(--admin-spacing-md, 12px);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--admin-radius-sm, 6px);
+    border-left: 3px solid var(--admin-info, #3B82F6);
+}
+
+.admin-question-explanation strong {
+    color: var(--admin-info, #3B82F6);
+    margin-right: 8px;
+}
+
+.admin-question-explanation span {
+    color: var(--admin-text-secondary, #94A3B8);
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+/* Question action buttons */
+.admin-question-actions {
+    display: flex;
+    gap: var(--admin-spacing-sm, 8px);
+    margin-top: var(--admin-spacing-md, 12px);
+}
+
+/* Matching question placeholder */
+.admin-matching-placeholder {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px dashed var(--admin-border-primary, rgba(255, 255, 255, 0.1));
+    border-radius: var(--admin-radius-sm, 6px);
+    color: var(--admin-text-muted, #64748B);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+/* Input placeholder for fill-in-blank */
+.admin-input-placeholder {
+    display: inline-block;
+    padding: 4px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--admin-border-primary, rgba(255, 255, 255, 0.1));
+    border-radius: var(--admin-radius-sm, 6px);
+    color: var(--admin-text-muted, #64748B);
+    font-size: 0.8rem;
+    min-width: 80px;
+    text-align: center;
+}
+
+/* ==========================================================================
+   INLINE EDIT MODE
+   ========================================================================== */
+
+.admin-question-edit-mode {
+    padding: var(--admin-spacing-md, 16px);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--admin-radius-md, 8px);
+    margin-top: var(--admin-spacing-sm, 8px);
+}
+
+.admin-question-edit-field {
+    margin-bottom: var(--admin-spacing-md, 12px);
+}
+
+.admin-question-edit-field label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--admin-text-muted, #64748B);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+}
+
+.admin-question-edit-field input,
+.admin-question-edit-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--admin-border-primary, rgba(255, 255, 255, 0.1));
+    border-radius: var(--admin-radius-sm, 6px);
+    color: var(--admin-text-primary, #F8FAFC);
+    font-size: 0.9rem;
+}
+
+.admin-question-edit-field input:focus,
+.admin-question-edit-field textarea:focus {
+    outline: none;
+    border-color: var(--admin-primary, #8B5CF6);
+}
+
+.admin-question-edit-actions {
+    display: flex;
+    gap: var(--admin-spacing-sm, 8px);
+    justify-content: flex-end;
+}

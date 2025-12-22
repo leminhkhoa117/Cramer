@@ -38,6 +38,7 @@ import ReportsPage from './admin/pages/finance/ReportsPage';
 import ContentListPage from './admin/pages/content/ContentListPage';
 import TestEditorSelectPage from './admin/pages/content/TestEditorSelectPage';
 import TestEditorPage from './admin/pages/content/TestEditorPage';
+import AIGenerationPage from './admin/pages/content/AIGenerationPage';
 
 // This component waits for the initial auth loading to complete
 function AuthInitializer({ children }) {
@@ -243,6 +244,7 @@ function AppContent() {
               <Route path="finance/transactions" element={<TransactionHistoryPage />} />
               <Route path="finance/reports" element={<ReportsPage />} />
               <Route path="content" element={<ContentListPage />} />
+              <Route path="content/generate" element={<AIGenerationPage />} />
               <Route path="content/editor" element={<TestEditorSelectPage />} />
               <Route path="content/editor/:examSource/:testNumber" element={<TestEditorPage />} />
             </Route>

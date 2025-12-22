@@ -72,18 +72,27 @@ export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = []
 
     const handleSubmit = () => {
         if (validateStep2()) {
+            let examSource = '';
+
+            if (mode === 'existing') {
+                const selectedTopic = topics.find(t => t.id === parseInt(formData.topicId));
+                examSource = selectedTopic?.source || '';
+            } else {
+                // Generate URL-safe slug from input source
+                // e.g. "Cambridge IELTS 19" -> "cambridge-ielts-19"
+                examSource = formData.newTopicSource
+                    .trim()
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric chars with hyphens
+                    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+            }
+
             onSubmit({
-                mode,
-                topicId: mode === 'existing' ? formData.topicId : null,
-                newTopic: mode === 'new' ? {
-                    name: formData.newTopicName,
-                    source: formData.newTopicSource,
-                } : null,
-                test: {
-                    name: formData.testName,
-                    number: formData.testNumber || null,
-                },
+                examSource: examSource,
+                testNumber: formData.testNumber || (Math.floor(Math.random() * 1000) + 1), // Fallback if empty
+                testName: formData.testName
             });
+
             // Reset form
             setStep(1);
             setMode('existing');
