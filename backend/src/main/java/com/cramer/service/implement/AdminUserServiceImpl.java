@@ -216,7 +216,7 @@ public class AdminUserServiceImpl implements AdminUserService {
 
             // Active users (users who have test attempts in last 30 days)
             Long activeUsers = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(DISTINCT user_id) FROM public.test_attempts WHERE created_at > NOW() - INTERVAL '30 days'",
+                    "SELECT COUNT(DISTINCT user_id) FROM public.test_attempts WHERE started_at > NOW() - INTERVAL '30 days'",
                     Long.class);
             stats.put("activeUsers", activeUsers);
 
