@@ -46,15 +46,20 @@ export default function AdminLayout() {
     return (
         <ToastProvider>
             <div className="admin-root">
+                {/* Header - fixed at top, full width */}
+                <AdminHeader
+                    breadcrumbs={getBreadcrumbs()}
+                    collapsed={sidebarCollapsed}
+                />
+
+                {/* Sidebar - below header */}
                 <AdminSidebar
                     collapsed={sidebarCollapsed}
                     onToggle={toggleSidebar}
                 />
+
+                {/* Main content area */}
                 <div className={`admin-main ${sidebarCollapsed ? 'admin-main--collapsed' : ''}`}>
-                    <AdminHeader
-                        breadcrumbs={getBreadcrumbs()}
-                        collapsed={sidebarCollapsed}
-                    />
                     <div className="admin-content">
                         <Outlet />
                     </div>

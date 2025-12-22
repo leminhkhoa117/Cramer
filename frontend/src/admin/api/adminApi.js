@@ -42,7 +42,11 @@ const adminApi = {
          * @param {string} params.subscription - Subscription filter
          * @param {string} params.sortBy - Sort field
          * @param {string} params.sortOrder - Sort order (asc/desc)
-         */
+         * @param {string} userId - User UUID
+         * @param {string} tierCode - New tier code (cramerie, cramerich)
+         * @param {string} reason - Reason for change (optional)
+     */
+        
         getList: async (params = {}) => {
             const headers = await getAuthHeaders();
             const queryParams = new URLSearchParams();
@@ -115,6 +119,15 @@ const adminApi = {
             const response = await axios.patch(
                 `${API_BASE_URL}/api/admin/users/${userId}/credits`,
                 { amount, action, reason },
+                { headers }
+            );
+            return response.data;
+        },
+        updateSubscription: async (userId, tierCode, durationMonths, reason) => {
+            const headers = await getAuthHeaders();
+            const response = await axios.patch(
+                `${API_BASE_URL}/api/admin/users/${userId}/subscription`,
+                { tierCode, durationMonths, reason },
                 { headers }
             );
             return response.data;
@@ -208,6 +221,63 @@ const adminApi = {
             
             const response = await axios.get(
                 `${API_BASE_URL}/api/admin/finance/export?${queryParams.toString()}`,
+                { headers }
+            );
+            return response.data;
+        },
+
+        /**
+         * Get reports data with date range and granularity
+         * @param {string} dateFrom - Start date (YYYY-MM-DD)
+         * @param {string} dateTo - End date (YYYY-MM-DD)
+         * @param {string} granularity - daily, weekly, monthly
+         */
+        getReports: async (dateFrom, dateTo, granularity = 'daily') => {
+            const headers = await getAuthHeaders();
+            const queryParams = new URLSearchParams();
+            
+            queryParams.append('dateFrom', dateFrom);
+            queryParams.append('dateTo', dateTo);
+            queryParams.append('granularity', granularity);
+            
+            const response = await axios.get(
+                `${API_BASE_URL}/api/admin/finance/reports?${queryParams.toString()}`,
+                { headers }
+            );
+            return response.data;
+        },
+
+        /**
+         * Get subscription analysis data
+         */
+        getSubscriptionAnalysis: async (dateFrom, dateTo) => {
+            const headers = await getAuthHeaders();
+            const response = await axios.get(
+                `${API_BASE_URL}/api/admin/finance/reports/subscriptions?dateFrom=${dateFrom}&dateTo=${dateTo}`,
+                { headers }
+            );
+            return response.data;
+        },
+
+        /**
+         * Get Lua economy data
+         */
+        getLuaEconomy: async (dateFrom, dateTo) => {
+            const headers = await getAuthHeaders();
+            const response = await axios.get(
+                `${API_BASE_URL}/api/admin/finance/reports/lua-economy?dateFrom=${dateFrom}&dateTo=${dateTo}`,
+                { headers }
+            );
+            return response.data;
+        },
+
+        /**
+         * Get user acquisition data
+         */
+        getAcquisition: async (dateFrom, dateTo) => {
+            const headers = await getAuthHeaders();
+            const response = await axios.get(
+                `${API_BASE_URL}/api/admin/finance/reports/acquisition?dateFrom=${dateFrom}&dateTo=${dateTo}`,
                 { headers }
             );
             return response.data;

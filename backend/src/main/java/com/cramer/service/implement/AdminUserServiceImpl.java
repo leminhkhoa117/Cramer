@@ -1,18 +1,25 @@
 package com.cramer.service.implement;
 
-import com.cramer.dto.AdminUserDTO;
-import com.cramer.dto.AdminUserListResponse;
-import com.cramer.service.AdminUserService;
-import com.cramer.service.UserActivityService;
-import com.cramer.service.AdminAuditService;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
+
+import com.cramer.dto.AdminUserDTO;
+import com.cramer.dto.AdminUserListResponse;
+import com.cramer.service.AdminAuditService;
+import com.cramer.service.AdminUserService;
+import com.cramer.service.UserActivityService;
 
 /**
  * Admin User Service Implementation - Xử lý logic quản lý users cho Admin CMS
@@ -377,6 +384,117 @@ public class AdminUserServiceImpl implements AdminUserService {
         } catch (Exception e) {
             logger.error("Error updating credits for user: " + userId, e);
             return getUserById(userId);
+        }
+    }
+
+    @Override
+    public AdminUserDTO updateUserSubscription(String userId, String newTierCode, int durationMonths, String reason, String adminId) {
+        try {
+            logger.info("Admin {} changing subscription for user {} to tier: {} for {} months", adminId, userId, newTierCode, durationMonths);
+
+            // Get admin email for audit logging
+            String adminEmail = null;
+            try {
+                adminEmail = jdbcTemplate.queryForObject(
+                        "SELECT email FROM auth.users WHERE id = ?::uuid",
+                        String.class, adminId);
+            } catch (Exception e) {
+                logger.warn("Could not get admin email: " + e.getMessage());
+            }
+
+            // Get old tier info
+            String oldTierCode = "cramerie";
+            try {
+                oldTierCode = jdbcTemplate.queryForObject(
+                        "SELECT COALESCE(st.code, 'cramerie') FROM public.user_subscriptions us " +
+                        "JOIN public.subscription_tiers st ON us.tier_id = st.id " +
+                        "WHERE us.user_id = ?::uuid",
+                        String.class, userId);
+            } catch (Exception e) {
+                logger.info("No existing subscription for user, assuming cramerie");
+            }
+
+            // Get new tier ID
+            Long newTierId;
+            try {
+                newTierId = jdbcTemplate.queryForObject(
+                        "SELECT id FROM public.subscription_tiers WHERE code = ? AND is_active = true",
+                        Long.class, newTierCode);
+            } catch (Exception e) {
+                logger.error("Tier not found: " + newTierCode);
+                throw new IllegalArgumentException("Invalid tier code: " + newTierCode);
+            }
+
+            // Calculate expiry date based on duration for paid tiers, far future for free tier
+            java.sql.Timestamp expiresAt = null;
+            if ("cramerich".equalsIgnoreCase(newTierCode)) {
+                // Validate duration: 1, 3, or 6 months
+                int validDuration = (durationMonths == 1 || durationMonths == 3 || durationMonths == 6) ? durationMonths : 1;
+                java.time.OffsetDateTime expiry = java.time.OffsetDateTime.now().plusMonths(validDuration);
+                expiresAt = java.sql.Timestamp.from(expiry.toInstant());
+                logger.info("Setting subscription expiry to {} ({} months from now)", expiry, validDuration);
+            } else {
+                // Free tier: set expiry to far future (effectively never expires)
+                java.time.OffsetDateTime farFuture = java.time.OffsetDateTime.of(2099, 12, 31, 23, 59, 59, 0, java.time.ZoneOffset.UTC);
+                expiresAt = java.sql.Timestamp.from(farFuture.toInstant());
+                logger.info("Setting free tier subscription with far future expiry: {}", farFuture);
+            }
+
+            // Check if user has existing subscription
+            Integer existingSubCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM public.user_subscriptions WHERE user_id = ?::uuid",
+                    Integer.class, userId);
+
+            if (existingSubCount != null && existingSubCount > 0) {
+                // Update existing subscription
+                jdbcTemplate.update(
+                        "UPDATE public.user_subscriptions " +
+                        "SET tier_id = ?, status = 'ACTIVE', started_at = NOW(), expires_at = ?, " +
+                        "attempts_used = 0, attempt_ais_used = 0, chatbot_used = 0, " +
+                        "ai_gradings_used = 0, auto_renew = false " +
+                        "WHERE user_id = ?::uuid",
+                        newTierId, expiresAt, userId);
+            } else {
+                // Insert new subscription
+                jdbcTemplate.update(
+                        "INSERT INTO public.user_subscriptions " +
+                        "(user_id, tier_id, status, started_at, expires_at, attempts_used, attempt_ais_used, " +
+                        "chatbot_used, ai_gradings_used, auto_renew) " +
+                        "VALUES (?::uuid, ?, 'ACTIVE', NOW(), ?, 0, 0, 0, 0, false)",
+                        userId, newTierId, expiresAt);
+            }
+
+            // Log to User Activities
+            try {
+                userActivityService.logSubscriptionChanged(
+                        UUID.fromString(userId),
+                        oldTierCode,
+                        newTierCode);
+            } catch (Exception e) {
+                logger.warn("Could not log user activity: " + e.getMessage());
+            }
+
+            // Log to Admin Audit
+            try {
+                adminAuditService.logSubscriptionChange(
+                        UUID.fromString(adminId),
+                        adminEmail,
+                        userId,
+                        oldTierCode,
+                        newTierCode,
+                        null);
+            } catch (Exception e) {
+                logger.warn("Could not log admin audit: " + e.getMessage());
+            }
+
+            logger.info("Successfully changed subscription for user {} from {} to {} (expires: {})",
+                    userId, oldTierCode, newTierCode, expiresAt);
+
+            return getUserById(userId);
+
+        } catch (Exception e) {
+            logger.error("Error updating subscription for user: " + userId, e);
+            throw new RuntimeException("Failed to update subscription: " + e.getMessage(), e);
         }
     }
 

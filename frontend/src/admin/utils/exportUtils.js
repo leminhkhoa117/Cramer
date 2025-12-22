@@ -166,7 +166,140 @@ function formatDateTime(dateStr) {
     }
 }
 
+/**
+ * Export data to CSV file
+ */
+export const exportToCsv = (data, filename) => {
+    if (!data || data.length === 0) {
+        alert('Không có dữ liệu để xuất');
+        return false;
+    }
+
+    try {
+        // Get headers from first row
+        const headers = Object.keys(data[0]);
+        
+        // Create CSV content
+        const csvContent = [
+            // Header row
+            headers.join(','),
+            // Data rows
+            ...data.map(row => 
+                headers.map(header => {
+                    let value = row[header];
+                    // Handle special characters and commas
+                    if (value === null || value === undefined) {
+                        return '';
+                    }
+                    value = String(value);
+                    // Escape quotes and wrap in quotes if contains comma
+                    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+                        value = '"' + value.replace(/"/g, '""') + '"';
+                    }
+                    return value;
+                }).join(',')
+            )
+        ].join('\n');
+
+        // Add BOM for UTF-8
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+        
+        // Download
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${filename}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        return true;
+    } catch (error) {
+        console.error('Error exporting to CSV:', error);
+        alert('Lỗi khi xuất file CSV: ' + error.message);
+        return false;
+    }
+};
+
+/**
+ * Export data to PDF file
+ * Note: This creates a simple HTML-to-PDF approach
+ */
+export const exportToPdf = (data, title, filename) => {
+    if (!data || data.length === 0) {
+        alert('Không có dữ liệu để xuất');
+        return false;
+    }
+
+    try {
+        // Get headers from first row
+        const headers = Object.keys(data[0]);
+        
+        // Create HTML content
+        let htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>${title}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    h1 { color: #333; margin-bottom: 20px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #8B5CF6; color: white; }
+                    tr:nth-child(even) { background-color: #f9f9f9; }
+                    .date { color: #666; font-size: 12px; margin-bottom: 20px; }
+                </style>
+            </head>
+            <body>
+                <h1>${title}</h1>
+                <p class="date">Ngày xuất: ${new Date().toLocaleString('vi-VN')}</p>
+                <table>
+                    <thead>
+                        <tr>
+                            ${headers.map(h => `<th>${h}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(row => `
+                            <tr>
+                                ${headers.map(h => `<td>${row[h] !== null && row[h] !== undefined ? row[h] : ''}</td>`).join('')}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `;
+
+        // Open print dialog
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        
+        // Wait for content to load then print
+        printWindow.onload = () => {
+            printWindow.print();
+            // Close window after printing
+            printWindow.onafterprint = () => {
+                printWindow.close();
+            };
+        };
+
+        return true;
+    } catch (error) {
+        console.error('Error exporting to PDF:', error);
+        alert('Lỗi khi xuất file PDF: ' + error.message);
+        return false;
+    }
+};
+
 export default {
     exportToExcel,
-    exportFinanceReport
+    exportFinanceReport,
+    exportToCsv,
+    exportToPdf
 };

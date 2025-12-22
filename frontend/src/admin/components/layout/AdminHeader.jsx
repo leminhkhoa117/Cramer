@@ -24,30 +24,42 @@ export default function AdminHeader({ breadcrumbs = [], collapsed }) {
     };
 
     return (
-        <header className={`admin-header ${collapsed ? 'admin-header--collapsed' : ''}`}>
-            {/* Breadcrumb */}
-            <nav className="admin-header__breadcrumb" aria-label="Breadcrumb">
-                {breadcrumbs.map((crumb, index) => (
-                    <React.Fragment key={index}>
-                        {index > 0 && (
-                            <span className="admin-header__breadcrumb-separator">
-                                <FiChevronRight size={14} />
-                            </span>
-                        )}
-                        {crumb.isLast ? (
-                            <span className="admin-header__breadcrumb-current">
-                                {crumb.label}
-                            </span>
-                        ) : (
-                            <span className="admin-header__breadcrumb-item">
-                                {crumb.label}
-                            </span>
-                        )}
-                    </React.Fragment>
-                ))}
-            </nav>
+        <header className="admin-header">
+            {/* Left section: Logo + Breadcrumb */}
+            <div className="admin-header__left">
+                {/* Logo */}
+                <div className="admin-header__logo">
+                    <img
+                        src="/pictures/logo/Icon.png"
+                        alt="Cramer Logo"
+                        className="admin-header__logo-img"
+                    />
+                </div>
 
-            {/* Actions */}
+                {/* Breadcrumb */}
+                <nav className="admin-header__breadcrumb" aria-label="Breadcrumb">
+                    {breadcrumbs.map((crumb, index) => (
+                        <React.Fragment key={index}>
+                            {index > 0 && (
+                                <span className="admin-header__breadcrumb-separator">
+                                    <FiChevronRight size={14} />
+                                </span>
+                            )}
+                            {crumb.isLast ? (
+                                <span className="admin-header__breadcrumb-current">
+                                    {crumb.label}
+                                </span>
+                            ) : (
+                                <span className="admin-header__breadcrumb-item">
+                                    {crumb.label}
+                                </span>
+                            )}
+                        </React.Fragment>
+                    ))}
+                </nav>
+            </div>
+
+            {/* Right section: Actions */}
             <div className="admin-header__actions">
                 {/* Link to user site */}
                 <Link to="/" className="admin-header__back-link" target="_blank">
