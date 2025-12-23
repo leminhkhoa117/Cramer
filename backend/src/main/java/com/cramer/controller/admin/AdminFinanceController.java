@@ -199,6 +199,7 @@ public class AdminFinanceController {
                 SELECT 
                     po.id,
                     po.order_code,
+                    po.user_id,
                     p.username,
                     po.description as product_name,
                     po.amount_vnd as amount,

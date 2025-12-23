@@ -43,11 +43,10 @@ export const QUESTION_TYPES = [
 // FINANCE MANAGEMENT
 // =====================
 
-// Transaction types
+// Transaction types - values must match database payment_orders.type column
 export const TRANSACTION_TYPES = [
-    { value: 'SUBSCRIPTION_NEW', label: 'Đăng ký mới', color: 'success' },
-    { value: 'SUBSCRIPTION_RENEW', label: 'Gia hạn', color: 'info' },
-    { value: 'LUA_PURCHASE', label: 'Mua Lúa', color: 'warning' },
+    { value: 'SUBSCRIPTION', label: 'Đăng ký/Gia hạn', color: 'success' },
+    { value: 'LUA_PACK', label: 'Mua Lúa', color: 'warning' },
     { value: 'REFUND', label: 'Hoàn tiền', color: 'danger' },
 ];
 

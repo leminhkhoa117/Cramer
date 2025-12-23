@@ -58,7 +58,7 @@ export default function UserListPage() {
     const [sortOrder, setSortOrder] = useState('desc');
     const [currentPage, setCurrentPage] = useState(0);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const pageSize = 10;
+    const pageSize = 50;
 
     // Action menu state
     const [actionMenuOpen, setActionMenuOpen] = useState(null);
