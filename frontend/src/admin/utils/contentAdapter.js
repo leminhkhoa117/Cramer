@@ -112,7 +112,8 @@ function transformSection(content, skill) {
     const section = content.section || {};
 
     // Get passage text from various possible locations
-    let passageText = section.passageText
+    let passageText = section.taskText
+        || section.passageText
         || content.passageText
         || content.passage?.text
         || content.passage
@@ -127,6 +128,7 @@ function transformSection(content, skill) {
         passageText: passageText,
         audioUrl: section.audioUrl || content.audioUrl || null,
         sectionLayout: section.sectionLayout || content.sectionLayout || null,
+        audioPlaceholder: section.audioPlaceholder || content.audioPlaceholder || null,
         imageDescription: section.imageDescription || content.imageDescription || null,
         displayContentUrl: section.displayContentUrl || content.displayContentUrl || null,
         partNumber: section.partNumber || content.partNumber || 1,
@@ -190,14 +192,17 @@ function transformQuestion(question, index) {
         correctAnswer = JSON.stringify(correctAnswer);
     }
 
+    const wordLimit = question.wordLimit || question.word_limit || null;
+    const imageUrl = question.imageUrl || question.image_url || null;
+
     return {
         questionNumber: question.questionNumber || index + 1,
         questionType: questionType,
         questionContent: JSON.stringify(questionContent),
         correctAnswer: correctAnswer,
         explanation: question.explanation || null,
-        wordLimit: question.wordLimit || null,
-        imageUrl: question.imageUrl || null
+        wordLimit: wordLimit,
+        imageUrl: imageUrl
     };
 }
 
@@ -208,7 +213,7 @@ function normalizeQuestionType(type) {
     if (!type) return 'FILL_IN_BLANK';
 
     // Already in correct format
-    if (type === type.toUpperCase() && type.includes('_')) {
+    if (type === type.toUpperCase() && (type.includes('_') || type === 'MATCHING')) {
         return type;
     }
 
@@ -220,17 +225,19 @@ function normalizeQuestionType(type) {
         'ynng': 'YES_NO_NOT_GIVEN',
         'multiple_choice': 'MULTIPLE_CHOICE',
         'mcq': 'MULTIPLE_CHOICE',
-        'matching': 'MATCHING_INFORMATION',
+        'matching': 'MATCHING',
         'matching_headings': 'MATCHING_HEADINGS',
         'matching_information': 'MATCHING_INFORMATION',
         'matching_features': 'MATCHING_FEATURES',
         'fill_in_blank': 'FILL_IN_BLANK',
         'fill_in_the_blank': 'FILL_IN_BLANK',
+        'note_completion': 'FILL_IN_BLANK',
         'sentence_completion': 'SENTENCE_COMPLETION',
         'summary_completion': 'SUMMARY_COMPLETION',
         'short_answer': 'SHORT_ANSWER',
         'table_completion': 'TABLE_COMPLETION',
-        'diagram_completion': 'DIAGRAM_COMPLETION',
+        'diagram_completion': 'DIAGRAM_LABEL_COMPLETION',
+        'diagram_label_completion': 'DIAGRAM_LABEL_COMPLETION',
         'flow_chart_completion': 'FLOW_CHART_COMPLETION',
     };
 

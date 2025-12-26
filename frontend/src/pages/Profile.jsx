@@ -63,7 +63,6 @@ const ProfilePage = () => {
 
 
   // Security states (mock data for now - will be replaced with API calls)
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [sessions, setSessions] = useState([
     {
       id: '1',
@@ -738,30 +737,20 @@ const ProfilePage = () => {
                     <FiChevronRight style={{ color: 'var(--text-muted)' }} />
                   </div>
 
-                  <div className="security-item">
+                  <div className="security-item" style={{ opacity: 0.6, cursor: 'not-allowed' }}>
                     <div className="security-item__info">
                       <div className="security-item__icon">
                         <FiShield />
                       </div>
                       <div className="security-item__text">
                         <h4>Xác thực hai yếu tố (2FA)</h4>
-                        <p>Thêm một lớp bảo mật cho tài khoản của bạn</p>
+                        <p>Tính năng đang được phát triển</p>
                       </div>
                     </div>
                     <div className="security-item__status">
-                      {twoFactorEnabled ? (
-                        <span className="security-badge security-badge--enabled">
-                          <FiCheck /> Đã bật
-                        </span>
-                      ) : (
-                        <span className="security-badge security-badge--disabled">
-                          Chưa bật
-                        </span>
-                      )}
-                      <div
-                        className={`toggle-switch ${twoFactorEnabled ? 'active' : ''}`}
-                        onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}
-                      />
+                      <span className="security-badge security-badge--disabled">
+                        Sắp ra mắt
+                      </span>
                     </div>
                   </div>
                 </div>

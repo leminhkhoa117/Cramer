@@ -2,12 +2,15 @@ package com.cramer.controller.admin;
 
 import com.cramer.dto.abts.GenerationRequestDTO;
 import com.cramer.dto.abts.GenerationResponseDTO;
+import com.cramer.dto.abts.SaveContentRequestDTO;
+import com.cramer.dto.abts.SaveContentResponseDTO;
 import com.cramer.dto.abts.StreamEventDTO;
 import com.cramer.service.abts.ABTSService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -70,11 +73,24 @@ public class ABTSController {
 
         request.setSkill(GenerationRequestDTO.SkillType.READING);
 
+        // Cancellation flag for stop generation feature
+        final java.util.concurrent.atomic.AtomicBoolean cancelled = new java.util.concurrent.atomic.AtomicBoolean(
+                false);
+
         // Run generation in background thread
-        CompletableFuture.runAsync(() -> {
+        Runnable task = new DelegatingSecurityContextRunnable(() -> {
             try {
-                abtsService.generateWithStream(request, emitter);
+                abtsService.generateWithStream(request, emitter, cancelled);
             } catch (Exception e) {
+                if (cancelled.get()) {
+                    logger.info("Generation was cancelled by user");
+                    return;
+                }
+                // Check if this is a connection-related error (user disconnected)
+                if (e instanceof IOException || (e.getCause() != null && e.getCause() instanceof IOException)) {
+                    logger.info("SSE connection closed by client: {}", e.getMessage());
+                    return;
+                }
                 logger.error("Streaming generation failed: {}", e.getMessage());
                 try {
                     emitter.send(SseEmitter.event()
@@ -82,18 +98,30 @@ public class ABTSController {
                             .data(StreamEventDTO.failed(e.getMessage())));
                     emitter.complete();
                 } catch (IOException ex) {
-                    emitter.completeWithError(ex);
+                    // Client already disconnected, just log and return silently
+                    logger.debug("Cannot send error to client (already disconnected): {}", ex.getMessage());
+                } catch (IllegalStateException ex) {
+                    // Emitter already completed
+                    logger.debug("Emitter already completed: {}", ex.getMessage());
                 }
             }
         });
+        CompletableFuture.runAsync(task);
 
         emitter.onTimeout(() -> {
             logger.warn("SSE connection timed out");
+            cancelled.set(true);
             emitter.complete();
         });
 
         emitter.onCompletion(() -> {
             logger.info("SSE connection completed");
+            cancelled.set(true);
+        });
+
+        emitter.onError((ex) -> {
+            logger.info("SSE connection error (client disconnected): {}", ex.getMessage());
+            cancelled.set(true);
         });
 
         return emitter;
@@ -130,10 +158,23 @@ public class ABTSController {
 
         request.setSkill(GenerationRequestDTO.SkillType.LISTENING);
 
-        CompletableFuture.runAsync(() -> {
+        // Cancellation flag for stop generation feature
+        final java.util.concurrent.atomic.AtomicBoolean cancelled = new java.util.concurrent.atomic.AtomicBoolean(
+                false);
+
+        Runnable task = new DelegatingSecurityContextRunnable(() -> {
             try {
-                abtsService.generateWithStream(request, emitter);
+                abtsService.generateWithStream(request, emitter, cancelled);
             } catch (Exception e) {
+                if (cancelled.get()) {
+                    logger.info("Listening generation was cancelled by user");
+                    return;
+                }
+                // Check if this is a connection-related error (user disconnected)
+                if (e instanceof IOException || (e.getCause() != null && e.getCause() instanceof IOException)) {
+                    logger.info("SSE Listening connection closed by client: {}", e.getMessage());
+                    return;
+                }
                 logger.error("Streaming Listening generation failed: {}", e.getMessage());
                 try {
                     emitter.send(SseEmitter.event()
@@ -141,14 +182,27 @@ public class ABTSController {
                             .data(StreamEventDTO.failed(e.getMessage())));
                     emitter.complete();
                 } catch (IOException ex) {
-                    emitter.completeWithError(ex);
+                    logger.debug("Cannot send error to Listening client (already disconnected): {}", ex.getMessage());
+                } catch (IllegalStateException ex) {
+                    logger.debug("Listening emitter already completed: {}", ex.getMessage());
                 }
             }
         });
+        CompletableFuture.runAsync(task);
 
         emitter.onTimeout(() -> {
             logger.warn("SSE connection timed out for Listening");
+            cancelled.set(true);
             emitter.complete();
+        });
+
+        emitter.onCompletion(() -> {
+            cancelled.set(true);
+        });
+
+        emitter.onError((ex) -> {
+            logger.info("SSE Listening connection error (client disconnected): {}", ex.getMessage());
+            cancelled.set(true);
         });
 
         return emitter;
@@ -185,10 +239,23 @@ public class ABTSController {
 
         request.setSkill(GenerationRequestDTO.SkillType.WRITING);
 
-        CompletableFuture.runAsync(() -> {
+        // Cancellation flag for stop generation feature
+        final java.util.concurrent.atomic.AtomicBoolean cancelled = new java.util.concurrent.atomic.AtomicBoolean(
+                false);
+
+        Runnable task = new DelegatingSecurityContextRunnable(() -> {
             try {
-                abtsService.generateWithStream(request, emitter);
+                abtsService.generateWithStream(request, emitter, cancelled);
             } catch (Exception e) {
+                if (cancelled.get()) {
+                    logger.info("Writing generation was cancelled by user");
+                    return;
+                }
+                // Check if this is a connection-related error (user disconnected)
+                if (e instanceof IOException || (e.getCause() != null && e.getCause() instanceof IOException)) {
+                    logger.info("SSE Writing connection closed by client: {}", e.getMessage());
+                    return;
+                }
                 logger.error("Streaming Writing generation failed: {}", e.getMessage());
                 try {
                     emitter.send(SseEmitter.event()
@@ -196,14 +263,27 @@ public class ABTSController {
                             .data(StreamEventDTO.failed(e.getMessage())));
                     emitter.complete();
                 } catch (IOException ex) {
-                    emitter.completeWithError(ex);
+                    logger.debug("Cannot send error to Writing client (already disconnected): {}", ex.getMessage());
+                } catch (IllegalStateException ex) {
+                    logger.debug("Writing emitter already completed: {}", ex.getMessage());
                 }
             }
         });
+        CompletableFuture.runAsync(task);
 
         emitter.onTimeout(() -> {
             logger.warn("SSE connection timed out for Writing");
+            cancelled.set(true);
             emitter.complete();
+        });
+
+        emitter.onCompletion(() -> {
+            cancelled.set(true);
+        });
+
+        emitter.onError((ex) -> {
+            logger.info("SSE Writing connection error (client disconnected): {}", ex.getMessage());
+            cancelled.set(true);
         });
 
         return emitter;
@@ -219,7 +299,12 @@ public class ABTSController {
 
         logger.info("ABTS question regeneration requested by admin: {}", adminUserId);
 
-        if (request.getExistingPassageText() == null || request.getExistingPassageText().isEmpty()) {
+        boolean requiresPassage = request.getSkill() == null
+                || request.getSkill() == GenerationRequestDTO.SkillType.READING
+                || request.getSkill() == GenerationRequestDTO.SkillType.LISTENING;
+
+        if (requiresPassage
+                && (request.getExistingPassageText() == null || request.getExistingPassageText().isEmpty())) {
             return ResponseEntity.badRequest().body(
                     GenerationResponseDTO.error("MISSING_PASSAGE",
                             "Existing passage text is required for question regeneration", false));
@@ -245,6 +330,37 @@ public class ABTSController {
 
         Map<String, Object> validationResult = abtsService.validateContent(content);
         return ResponseEntity.ok(validationResult);
+    }
+
+    // ==================== SAVE ENDPOINT ====================
+
+    /**
+     * Save generated content to the database.
+     * Creates a new section and all associated questions.
+     */
+    @PostMapping("/save")
+    public ResponseEntity<SaveContentResponseDTO> saveContent(
+            @Valid @RequestBody SaveContentRequestDTO request,
+            @RequestHeader("X-User-Id") String adminUserId) {
+
+        logger.info("ABTS save content requested by admin: {} for skill: {}",
+                adminUserId, request.getSkill());
+
+        try {
+            SaveContentResponseDTO response = abtsService.saveContent(request, adminUserId);
+
+            if (response.isSuccess()) {
+                logger.info("ABTS content saved successfully: sectionId={}, questions={}",
+                        response.getSectionId(), response.getQuestionsCreated());
+            } else {
+                logger.warn("ABTS content save failed: {}", response.getMessage());
+            }
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ABTS save failed: {}", e.getMessage(), e);
+            return ResponseEntity.ok(SaveContentResponseDTO.error(e.getMessage()));
+        }
     }
 
     // ==================== TEMPLATE ENDPOINTS ====================

@@ -11,7 +11,9 @@ import {
     FiList,
     FiPieChart,
     FiEdit3,
-    FiArrowLeft
+    FiArrowLeft,
+    FiTag,
+    FiFolder
 } from 'react-icons/fi';
 
 /**
@@ -72,9 +74,14 @@ export default function AdminSidebar({ collapsed, onToggle }) {
             title: 'Nội dung',
             items: [
                 {
-                    to: '/admin/content/editor',
+                    to: '/admin/content/hub',
                     icon: <FiEdit3 size={20} />,
-                    label: 'Soạn đề thi'
+                    label: 'Quản lý đề thi'
+                },
+                {
+                    to: '/admin/content/hashtags',
+                    icon: <FiTag size={20} />,
+                    label: 'Quản lý Hashtag'
                 },
             ]
         },

@@ -19,6 +19,7 @@ import {
     getTemplateCategories,
     getTemplatesByCategory,
     getStatus,
+    saveGeneratedTest,
     SKILL_TYPES,
     GENERATION_SCOPES
 } from '../services/abtsApi';
@@ -84,6 +85,14 @@ const useABTSStore = create((set, get) => ({
     // ==================== TIMESTAMPS ====================
     lastModelsFetch: null,
     lastStatusFetch: null,
+
+    // ==================== SAVE STATE ====================
+    isSaving: false,
+    saveResult: null,
+    saveError: null,
+    selectedSetId: null,
+    selectedSetCode: null,
+    selectedTestId: null,
 
     // ==================== WIZARD ACTIONS ====================
 
@@ -620,6 +629,84 @@ const useABTSStore = create((set, get) => ({
                 });
             }
         }
+    },
+
+    // ==================== SAVE ACTIONS ====================
+
+    /**
+     * Set save target options (TestSet, Test, etc.)
+     */
+    setSaveOptions: (options) => {
+        set(state => ({
+            selectedSetId: options.setId ?? state.selectedSetId,
+            selectedSetCode: options.setCode ?? state.selectedSetCode,
+            selectedTestId: options.testId ?? state.selectedTestId
+        }));
+    },
+
+    /**
+     * Save the generated content to the database using the test hierarchy.
+     */
+    saveGeneratedContent: async (options = {}) => {
+        const { generationResult, formData, selectedSetId, selectedSetCode, selectedTestId } = get();
+
+        if (!generationResult?.content) {
+            throw new Error('No generated content to save');
+        }
+
+        set({ isSaving: true, saveError: null });
+
+        try {
+            const saveRequest = {
+                skill: formData.skill?.toLowerCase() || 'reading',
+                partNumber: formData.partNumber || 1,
+                content: generationResult.content,
+                setId: options.setId ?? selectedSetId,
+                setCode: options.setCode ?? selectedSetCode ?? 'ai_generated',
+                testId: options.testId ?? selectedTestId,
+                topic: formData.topic || null,
+                hashtagCodes: formData.hashtags || [],
+                generationConfig: {
+                    topic: formData.topic,
+                    facts: formData.facts,
+                    difficulty: formData.difficulty,
+                    testType: formData.testType,
+                    questionTypes: formData.questionTypes,
+                    model: formData.model,
+                    temperature: formData.temperature
+                },
+                examSource: options.examSource || 'ai_generated',
+                testNumber: options.testNumber || null
+            };
+
+            const result = await saveGeneratedTest(saveRequest);
+
+            set({
+                isSaving: false,
+                saveResult: result,
+                saveError: null
+            });
+
+            return result;
+
+        } catch (error) {
+            console.error('Failed to save generated content:', error);
+            set({
+                isSaving: false,
+                saveError: error.message || 'Failed to save content'
+            });
+            throw error;
+        }
+    },
+
+    /**
+     * Clear save result and error
+     */
+    clearSaveResult: () => {
+        set({
+            saveResult: null,
+            saveError: null
+        });
     },
 
     // ==================== DATA FETCHING ====================

@@ -15,6 +15,7 @@ export { default as StepPreview } from './StepPreview';
 // Preview components
 export { default as QuestionPreviewRenderer } from './QuestionPreviewRenderer';
 export { default as QuestionGroupRenderer } from './QuestionGroupRenderer';
+export { default as DiagramUploadPanel } from './DiagramUploadPanel';
 
 // Form components
 export { default as ModelSelector } from './ModelSelector';

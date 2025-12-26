@@ -11,9 +11,10 @@ import adminApi from '../api/adminApi';
 const CACHE_DURATION_MS = 5 * 60 * 1000;
 
 const useAdminContentStore = create((set, get) => ({
-    // Topics and tests data
+    // Topics and tests data (Hierarchical: Topic/TestSet -> Tests)
     topics: [],
     selectedTest: null,
+    selectedSet: null,
 
     // Overview stats
     overview: {
@@ -38,6 +39,7 @@ const useAdminContentStore = create((set, get) => ({
     isLoading: false,
     isLoadingOverview: false,
     isLoadingTest: false,
+    isLoadingSet: false,
 
     // Error
     error: null,
@@ -48,7 +50,7 @@ const useAdminContentStore = create((set, get) => ({
     isInitialized: false,
 
     // =====================
-    // ACTIONS
+    // TOPIC / TEST SET ACTIONS
     // =====================
 
     /**
@@ -56,16 +58,11 @@ const useAdminContentStore = create((set, get) => ({
      * @param {boolean} force - Force refresh regardless of cache
      */
     fetchTopics: async (force = false) => {
-        const { lastTopicsFetch, isLoading, searchQuery: prevSearch, statusFilter: prevStatus } = get();
+        const { lastTopicsFetch, isLoading } = get();
         const now = Date.now();
 
-        // Skip if already loading
         if (isLoading) return;
-
-        // Skip if cache is still valid (only for initial load, not for filter changes)
-        if (!force && lastTopicsFetch && (now - lastTopicsFetch) < CACHE_DURATION_MS) {
-            return;
-        }
+        if (!force && lastTopicsFetch && (now - lastTopicsFetch) < CACHE_DURATION_MS) return;
 
         set({ isLoading: true, error: null });
 
@@ -76,11 +73,11 @@ const useAdminContentStore = create((set, get) => ({
                 status: statusFilter !== 'ALL' ? statusFilter : undefined
             });
 
-            // Auto-expand first 2 topics if not already expanded
+            // Auto-expand first few topics if not already expanded
             const { expandedTopics } = get();
             let newExpandedTopics = [...expandedTopics];
             if (expandedTopics.length === 0 && topics.length > 0) {
-                newExpandedTopics = topics.slice(0, 2).map(t => t.id);
+                newExpandedTopics = topics.slice(0, 3).map(t => t.id);
             }
 
             set({
@@ -93,188 +90,83 @@ const useAdminContentStore = create((set, get) => ({
         } catch (error) {
             console.error('Error fetching topics:', error);
             set({
-                error: 'Không thể tải danh sách đề thi',
+                error: 'Không thể tải danh sách bộ đề',
                 isLoading: false
             });
         }
     },
 
     /**
-     * Fetch content overview stats
-     * @param {boolean} force - Force refresh regardless of cache
+     * Create a new test set (Topic)
      */
-    fetchOverview: async (force = false) => {
-        const { lastOverviewFetch, isLoadingOverview } = get();
-        const now = Date.now();
-
-        // Skip if already loading
-        if (isLoadingOverview) return;
-
-        // Skip if cache is still valid
-        if (!force && lastOverviewFetch && (now - lastOverviewFetch) < CACHE_DURATION_MS) {
-            return;
-        }
-
-        set({ isLoadingOverview: true });
-
+    createTestSet: async (setData) => {
+        set({ isLoadingSet: true, error: null });
         try {
-            const overview = await adminApi.content.getOverview();
-            set({
-                overview,
-                isLoadingOverview: false,
-                lastOverviewFetch: Date.now()
-            });
+            const result = await adminApi.testSetsApi.create(setData);
+            set({ lastTopicsFetch: null }); // Invalidate topics cache
+            await get().fetchTopics(true);
+            set({ isLoadingSet: false });
+            return result;
         } catch (error) {
-            console.error('Error fetching overview:', error);
-            set({ isLoadingOverview: false });
+            console.error('Error creating test set:', error);
+            set({
+                error: error.response?.data?.error || 'Không thể tạo bộ đề mới',
+                isLoadingSet: false
+            });
+            throw error;
         }
     },
 
     /**
-     * Initialize content page - uses cache if available
+     * Update an existing test set
      */
-    initializeContent: async () => {
-        const { fetchTopics, fetchOverview } = get();
-        await Promise.all([
-            fetchTopics(),
-            fetchOverview()
-        ]);
-    },
-
-    /**
-     * Fetch test details
-     */
-    fetchTestDetails: async (examSource, testNumber) => {
-        set({ isLoadingTest: true, selectedTest: null, error: null });
-
+    updateTestSet: async (setId, setData) => {
+        set({ isLoadingSet: true, error: null });
         try {
-            const testDetails = await adminApi.content.getTestDetails(examSource, testNumber);
-            set({
-                selectedTest: testDetails,
-                isLoadingTest: false
-            });
-            return testDetails;
+            const result = await adminApi.testSetsApi.update(setId, setData);
+            set(state => ({
+                topics: state.topics.map(t => t.id === setId ? { ...t, ...result } : t),
+                isLoadingSet: false
+            }));
+            return result;
         } catch (error) {
-            console.error('Error fetching test details:', error);
+            console.error('Error updating test set:', error);
             set({
-                error: 'Không tìm thấy đề thi',
-                isLoadingTest: false
+                error: error.response?.data?.error || 'Không thể cập nhật bộ đề',
+                isLoadingSet: false
             });
-            return null;
+            throw error;
         }
     },
 
     /**
-     * Set search query
+     * Delete a test set
      */
-    setSearchQuery: (query) => {
-        set({ searchQuery: query });
-    },
-
-    /**
-     * Set status filter and refetch
-     */
-    setStatusFilter: (status) => {
-        set({ statusFilter: status, lastTopicsFetch: null }); // Invalidate cache
-        get().fetchTopics(true);
-    },
-
-    /**
-     * Set view mode
-     */
-    setViewMode: (mode) => {
-        set({ viewMode: mode });
-    },
-
-    /**
-     * Toggle topic expansion
-     */
-    toggleExpand: (topicId) => {
-        set(state => ({
-            expandedTopics: state.expandedTopics.includes(topicId)
-                ? state.expandedTopics.filter(id => id !== topicId)
-                : [...state.expandedTopics, topicId]
-        }));
-    },
-
-    /**
-     * Expand all topics
-     */
-    expandAll: () => {
-        set(state => ({
-            expandedTopics: state.topics.map(t => t.id)
-        }));
-    },
-
-    /**
-     * Collapse all topics
-     */
-    collapseAll: () => {
-        set({ expandedTopics: [] });
-    },
-
-    /**
-     * Clear selected test
-     */
-    clearSelectedTest: () => {
-        set({ selectedTest: null });
-    },
-
-    /**
-     * Reset all filters
-     */
-    resetFilters: () => {
-        set({
-            searchQuery: '',
-            statusFilter: 'ALL',
-            lastTopicsFetch: null // Invalidate cache
-        });
-        get().fetchTopics(true);
-    },
-
-    /**
-     * Get all tests as flat list (for grid view)
-     */
-    getAllTests: () => {
-        const { topics } = get();
-        const tests = [];
-        topics.forEach(topic => {
-            (topic.tests || []).forEach(test => {
-                tests.push({
-                    ...test,
-                    topicId: topic.id,
-                    topicName: topic.displayName,
-                    topicSource: topic.source
-                });
+    deleteTestSet: async (setId) => {
+        set({ isLoadingSet: true, error: null });
+        try {
+            await adminApi.testSetsApi.delete(setId);
+            set(state => ({
+                topics: state.topics.filter(t => t.id !== setId),
+                isLoadingSet: false,
+                lastTopicsFetch: null
+            }));
+        } catch (error) {
+            console.error('Error deleting test set:', error);
+            set({
+                error: error.response?.data?.error || 'Không thể xóa bộ đề',
+                isLoadingSet: false
             });
-        });
-        return tests;
-    },
-
-    /**
-     * Get filtered tests based on search (client-side filtering)
-     */
-    getFilteredTopics: () => {
-        const { topics, searchQuery, statusFilter } = get();
-
-        if (!searchQuery && statusFilter === 'ALL') {
-            return topics;
+            throw error;
         }
-
-        return topics.map(topic => ({
-            ...topic,
-            tests: (topic.tests || []).filter(test => {
-                const matchesSearch = !searchQuery ||
-                    test.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    topic.displayName.toLowerCase().includes(searchQuery.toLowerCase());
-                const matchesStatus = statusFilter === 'ALL' || test.status === statusFilter;
-                return matchesSearch && matchesStatus;
-            })
-        })).filter(topic => topic.tests.length > 0 || !searchQuery);
     },
 
+    // =====================
+    // TEST ACTIONS
+    // =====================
+
     /**
-     * Create a new test
+     * Create a new test within a set
      */
     createTest: async (testData) => {
         set({ isLoading: true, error: null });
@@ -291,6 +183,159 @@ const useAdminContentStore = create((set, get) => ({
             });
             throw error;
         }
+    },
+
+    /**
+     * Update test information
+     */
+    updateTest: async (testId, testData) => {
+        set({ isLoadingTest: true, error: null });
+        try {
+            const result = await adminApi.testsApi.update(testId, testData);
+            // Refresh hierarchical list to show updates
+            await get().fetchTopics(true);
+            set({ isLoadingTest: false });
+            return result;
+        } catch (error) {
+            console.error('Error updating test:', error);
+            set({
+                error: error.response?.data?.error || 'Không thể cập nhật đề thi',
+                isLoadingTest: false
+            });
+            throw error;
+        }
+    },
+
+    /**
+     * Delete a test
+     */
+    deleteTest: async (testId) => {
+        set({ isLoading: true, error: null });
+        try {
+            await adminApi.testsApi.delete(testId);
+            set({ lastTopicsFetch: null });
+            await get().fetchTopics(true);
+        } catch (error) {
+            console.error('Error deleting test:', error);
+            set({
+                error: error.response?.data?.error || 'Không thể xóa đề thi',
+                isLoading: false
+            });
+            throw error;
+        }
+    },
+
+    /**
+     * Update test hashtags
+     */
+    updateTestHashtags: async (testId, hashtagIds, primaryHashtagId) => {
+        try {
+            const result = await adminApi.testsApi.updateHashtags(testId, hashtagIds, primaryHashtagId);
+            await get().fetchTopics(true);
+            return result;
+        } catch (error) {
+            console.error('Error updating hashtags:', error);
+            throw error;
+        }
+    },
+
+    // =====================
+    // CORE / SELECTOR ACTIONS
+    // =====================
+
+    /**
+     * Fetch content overview stats
+     */
+    fetchOverview: async (force = false) => {
+        const { lastOverviewFetch, isLoadingOverview } = get();
+        if (isLoadingOverview) return;
+        if (!force && lastOverviewFetch && (Date.now() - lastOverviewFetch) < CACHE_DURATION_MS) return;
+
+        set({ isLoadingOverview: true });
+        try {
+            const overview = await adminApi.content.getOverview();
+            set({
+                overview,
+                isLoadingOverview: false,
+                lastOverviewFetch: Date.now()
+            });
+        } catch (error) {
+            console.error('Error fetching overview:', error);
+            set({ isLoadingOverview: false });
+        }
+    },
+
+    initializeContent: async () => {
+        const { fetchTopics, fetchOverview } = get();
+        await Promise.all([fetchTopics(), fetchOverview()]);
+    },
+
+    fetchTestDetails: async (examSource, testNumber) => {
+        set({ isLoadingTest: true, selectedTest: null, error: null });
+        try {
+            const testDetails = await adminApi.content.getTestDetails(examSource, testNumber);
+            set({ selectedTest: testDetails, isLoadingTest: false });
+            return testDetails;
+        } catch (error) {
+            console.error('Error fetching test details:', error);
+            set({ error: 'Không tìm thấy đề thi', isLoadingTest: false });
+            return null;
+        }
+    },
+
+    setSearchQuery: (query) => set({ searchQuery: query }),
+    setStatusFilter: (status) => {
+        set({ statusFilter: status, lastTopicsFetch: null });
+        get().fetchTopics(true);
+    },
+    setViewMode: (mode) => set({ viewMode: mode }),
+    toggleExpand: (topicId) => set(state => ({
+        expandedTopics: state.expandedTopics.includes(topicId)
+            ? state.expandedTopics.filter(id => id !== topicId)
+            : [...state.expandedTopics, topicId]
+    })),
+    expandAll: () => set(state => ({ expandedTopics: state.topics.map(t => t.id) })),
+    collapseAll: () => set({ expandedTopics: [] }),
+    clearSelectedTest: () => set({ selectedTest: null }),
+    resetFilters: () => {
+        set({ searchQuery: '', statusFilter: 'ALL', lastTopicsFetch: null });
+        get().fetchTopics(true);
+    },
+
+    getAllTests: () => {
+        const { topics } = get();
+        const tests = [];
+        topics.forEach(topic => {
+            (topic.tests || []).forEach(test => {
+                tests.push({
+                    ...test,
+                    topicId: topic.id,
+                    topicName: topic.nameVi || topic.code,
+                    topicSource: topic.code
+                });
+            });
+        });
+        return tests;
+    },
+
+    getFilteredTopics: () => {
+        const { topics, searchQuery, statusFilter } = get();
+        if (!searchQuery && statusFilter === 'ALL') return topics;
+
+        return topics.map(topic => ({
+            ...topic,
+            tests: (topic.tests || []).filter(test => {
+                const matchesSearch = !searchQuery ||
+                    (test.nameVi && test.nameVi.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (test.nameEn && test.nameEn.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (topic.nameVi && topic.nameVi.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    topic.code.toLowerCase().includes(searchQuery.toLowerCase());
+
+                const testStatus = test.isPublished ? 'PUBLISHED' : 'DRAFT';
+                const matchesStatus = statusFilter === 'ALL' || testStatus === statusFilter;
+                return matchesSearch && matchesStatus;
+            })
+        })).filter(topic => topic.tests.length > 0 || !searchQuery);
     }
 }));
 

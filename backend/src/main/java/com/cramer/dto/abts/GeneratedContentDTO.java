@@ -28,6 +28,22 @@ public class GeneratedContentDTO {
     private JsonNode chartData;
 
     /**
+     * For Writing: Task type and word requirement.
+     */
+    private String taskType;
+    private Integer wordRequirement;
+
+    /**
+     * For Writing Task 1 (GT): Letter context details.
+     */
+    private JsonNode letterContext;
+
+    /**
+     * For Writing Task 2: Essay metadata.
+     */
+    private JsonNode essayMetadata;
+
+    /**
      * Detailed description for figures (maps, diagrams, process flows).
      */
     private JsonNode figureDescription;
@@ -49,6 +65,7 @@ public class GeneratedContentDTO {
      */
     public static class GeneratedSectionDTO {
         private String passageText;
+        private String taskText;
         private Integer wordCount;
         private Boolean wordCountValid;
         private String wordCountMessage;
@@ -61,6 +78,14 @@ public class GeneratedContentDTO {
 
         public void setPassageText(String passageText) {
             this.passageText = passageText;
+        }
+
+        public String getTaskText() {
+            return taskText;
+        }
+
+        public void setTaskText(String taskText) {
+            this.taskText = taskText;
         }
 
         public Integer getWordCount() {
@@ -183,6 +208,7 @@ public class GeneratedContentDTO {
         private String accentRecommendation;
         private String pacingNotes;
         private String backgroundAmbient;
+        private Boolean ttsReady;
 
         public String getDurationEstimate() {
             return durationEstimate;
@@ -230,6 +256,14 @@ public class GeneratedContentDTO {
 
         public void setBackgroundAmbient(String backgroundAmbient) {
             this.backgroundAmbient = backgroundAmbient;
+        }
+
+        public Boolean getTtsReady() {
+            return ttsReady;
+        }
+
+        public void setTtsReady(Boolean ttsReady) {
+            this.ttsReady = ttsReady;
         }
     }
 
@@ -299,6 +333,38 @@ public class GeneratedContentDTO {
 
     public void setChartData(JsonNode chartData) {
         this.chartData = chartData;
+    }
+
+    public String getTaskType() {
+        return taskType;
+    }
+
+    public void setTaskType(String taskType) {
+        this.taskType = taskType;
+    }
+
+    public Integer getWordRequirement() {
+        return wordRequirement;
+    }
+
+    public void setWordRequirement(Integer wordRequirement) {
+        this.wordRequirement = wordRequirement;
+    }
+
+    public JsonNode getLetterContext() {
+        return letterContext;
+    }
+
+    public void setLetterContext(JsonNode letterContext) {
+        this.letterContext = letterContext;
+    }
+
+    public JsonNode getEssayMetadata() {
+        return essayMetadata;
+    }
+
+    public void setEssayMetadata(JsonNode essayMetadata) {
+        this.essayMetadata = essayMetadata;
     }
 
     public JsonNode getFigureDescription() {

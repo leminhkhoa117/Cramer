@@ -166,6 +166,25 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle OperationNotAllowedException.
+     */
+    @ExceptionHandler(OperationNotAllowedException.class)
+    public ResponseEntity<Object> handleOperationNotAllowedException(
+            OperationNotAllowedException ex, WebRequest request) {
+        
+        logger.warn("Operation not allowed: {}", ex.getMessage());
+        
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.FORBIDDEN.value());
+        body.put("error", "Operation Not Allowed");
+        body.put("message", ex.getMessage());
+        body.put("path", request.getDescription(false).replace("uri=", ""));
+        
+        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+    }
+
+    /**
      * Handle QuotaExceededException (quota billing blocked).
      * Returns 402 Payment Required with block type for frontend handling.
      */

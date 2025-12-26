@@ -39,6 +39,9 @@ import ContentListPage from './admin/pages/content/ContentListPage';
 import TestEditorSelectPage from './admin/pages/content/TestEditorSelectPage';
 import TestEditorPage from './admin/pages/content/TestEditorPage';
 import AIGenerationPage from './admin/pages/content/AIGenerationPage';
+import HashtagManagementPage from './admin/pages/content/HashtagManagementPage';
+import SetListPage from './admin/pages/content/SetListPage';
+import SetDetailPage from './admin/pages/content/SetDetailPage';
 
 // This component waits for the initial auth loading to complete
 function AuthInitializer({ children }) {
@@ -244,8 +247,15 @@ function AppContent() {
               <Route path="finance/transactions" element={<TransactionHistoryPage />} />
               <Route path="finance/reports" element={<ReportsPage />} />
               <Route path="content" element={<ContentListPage />} />
+              <Route path="content/hub" element={<TestEditorSelectPage />} />
+              <Route path="content/hashtags" element={<HashtagManagementPage />} />
               <Route path="content/generate" element={<AIGenerationPage />} />
-              <Route path="content/editor" element={<TestEditorSelectPage />} />
+              {/* Editor Routes */}
+              <Route path="content/editor" element={<Navigate to="/admin/content/hub" replace />} />
+              <Route path="content/sets" element={<Navigate to="/admin/content/hub" replace />} />
+              <Route path="content/editor/:testId" element={<TestEditorPage />} />
+              <Route path="content/tests/:testId" element={<TestEditorPage />} />
+              {/* Legacy Editor Route Support */}
               <Route path="content/editor/:examSource/:testNumber" element={<TestEditorPage />} />
             </Route>
           </Routes>

@@ -41,6 +41,32 @@ export default function StepPreview({ onBack }) {
   // Use onBack if provided, otherwise fallback to store's goToStep
   const handleGoBack = onBack || (() => goToStep(1));
 
+  const content = generationResult?.content || {};
+  const warnings = generationResult?.warnings || [];
+  const validation = generationResult?.validation || null;
+  const metadata = generationResult?.metadata || null;
+  const questions = content.questions || [];
+  const section = content.section || {};
+  const isWriting = formData.skill === 'WRITING';
+  const reasoningText = generationResult?.reasoning || reasoning;
+
+  const questionIssues = new Map();
+  const addIssue = (message) => {
+    if (!message) return;
+    const match = message.match(/Question\s+(\d+)/i);
+    if (!match) return;
+    const num = parseInt(match[1], 10);
+    if (!questionIssues.has(num)) questionIssues.set(num, []);
+    questionIssues.get(num).push(message);
+  };
+
+  (warnings || []).forEach(addIssue);
+  if (validation) {
+    (validation.schemaErrors || []).forEach(addIssue);
+    (validation.contentErrors || []).forEach(addIssue);
+    (validation.businessRuleErrors || []).forEach(addIssue);
+  }
+
   // 1. Loading / Streaming State
   if (isGenerating) {
     return (
@@ -76,10 +102,6 @@ export default function StepPreview({ onBack }) {
     );
   }
 
-  const { content, metadata } = generationResult;
-  const { questions = [], section = {} } = content;
-  const isWriting = formData.skill === 'WRITING';
-
   const handleAnswerChange = (questionId, value) => {
     setPreviewAnswers(prev => ({
       ...prev,
@@ -104,27 +126,73 @@ export default function StepPreview({ onBack }) {
     const grouped = [];
     if (!questions || questions.length === 0) return grouped;
 
+    // Additional safety: filter out invalid questions
+    const validQuestions = questions.filter(q => q && typeof q === 'object');
+    if (validQuestions.length === 0) return grouped;
+
+    const layoutBlocks = section.sectionLayout?.blocks
+      || (Array.isArray(section.sectionLayout) ? section.sectionLayout : null);
+
+    if (layoutBlocks && Array.isArray(layoutBlocks)) {
+      return layoutBlocks.map((block, idx) => {
+        const numbers = block.question_numbers || block.questionNumbers || [];
+        const blockQuestions = numbers.length > 0
+          ? numbers.map(num => validQuestions.find(q => q.questionNumber === num)).filter(Boolean)
+          : validQuestions;
+
+        // Handle empty block questions
+        if (blockQuestions.length === 0) {
+          return {
+            type: block.block_type || 'UNKNOWN',
+            blockType: block.block_type,
+            blockContent: block.content || {},
+            questions: [],
+            startNum: 1,
+            endNum: 1,
+            blockIndex: idx
+          };
+        }
+
+        const startNum = blockQuestions[0]?.questionNumber || 1;
+        const endNum = blockQuestions[blockQuestions.length - 1]?.questionNumber || startNum;
+
+        return {
+          type: block.block_type || blockQuestions[0]?.questionType || 'UNKNOWN',
+          blockType: block.block_type,
+          blockContent: block.content || {},
+          questions: blockQuestions,
+          startNum,
+          endNum,
+          blockIndex: idx
+        };
+      }).filter(g => g.questions.length > 0);  // Filter out empty groups
+    }
+
+    // No layout blocks - group by question type
+    const firstQuestion = validQuestions[0];
     let currentGroup = {
-      type: questions[0].questionType,
-      questions: [questions[0]],
-      startNum: questions[0].questionNumber || 1
+      type: firstQuestion?.questionType || 'UNKNOWN',
+      questions: [firstQuestion],
+      startNum: firstQuestion?.questionNumber || 1
     };
 
-    for (let i = 1; i < questions.length; i++) {
-      const q = questions[i];
+    for (let i = 1; i < validQuestions.length; i++) {
+      const q = validQuestions[i];
+      if (!q) continue;  // Skip null/undefined questions
+
       if (q.questionType === currentGroup.type) {
         currentGroup.questions.push(q);
       } else {
-        currentGroup.endNum = currentGroup.questions[currentGroup.questions.length - 1].questionNumber || i;
+        currentGroup.endNum = currentGroup.questions[currentGroup.questions.length - 1]?.questionNumber || i;
         grouped.push(currentGroup);
         currentGroup = {
-          type: q.questionType,
+          type: q.questionType || 'UNKNOWN',
           questions: [q],
           startNum: q.questionNumber || i + 1
         };
       }
     }
-    currentGroup.endNum = currentGroup.questions[currentGroup.questions.length - 1].questionNumber || questions.length;
+    currentGroup.endNum = currentGroup.questions[currentGroup.questions.length - 1]?.questionNumber || validQuestions.length;
     grouped.push(currentGroup);
     return grouped;
   };
@@ -195,7 +263,7 @@ export default function StepPreview({ onBack }) {
 
   // Left Panel Content (Passage/Transcript)
   const renderLeftPanel = () => {
-    const passageText = section.passageText || section.transcript || section.taskText || '';
+    const passageText = section.taskText || section.passageText || section.transcript || '';
     const displayWordCount = section.wordCount ||
       (passageText ? passageText.replace(/<[^>]*>/g, '').split(/\s+/).filter(w => w.length > 0).length : 0);
 
@@ -214,7 +282,7 @@ export default function StepPreview({ onBack }) {
         </div>
 
         <div className="studio-panel__content">
-          {formData.skill === 'LISTENING' && section.audio_placeholder && (
+          {formData.skill === 'LISTENING' && content.audioPlaceholder && (
             <div className="studio-audio-card">
               <div className="studio-audio-card__icon">
                 <FiCpu size={24} />
@@ -222,9 +290,9 @@ export default function StepPreview({ onBack }) {
               <div className="studio-audio-card__info">
                 <strong>Audio Specification</strong>
                 <p>
-                  {section.audio_placeholder.speakers || 'Unknown'} speakers |
-                  {section.audio_placeholder.accents || 'Standard'} accent |
-                  ~{section.audio_placeholder.duration || '0:00'}
+                  {content.audioPlaceholder.speakerCount || 'Unknown'} speakers |
+                  {content.audioPlaceholder.accentRecommendation || 'Standard'} accent |
+                  ~{content.audioPlaceholder.durationEstimate || '0:00'}
                 </p>
               </div>
             </div>
@@ -268,10 +336,81 @@ export default function StepPreview({ onBack }) {
                 onRegenerateQuestion={regenerateQuestions ? handleRegenerateQuestion : null}
                 isGenerating={isGenerating}
                 regeneratingQuestionId={regeneratingQuestionId}
+                questionIssues={questionIssues}
               />
             ))
           )}
         </div>
+      </div>
+    );
+  };
+
+  const renderValidationPanel = () => {
+    const schemaErrors = validation?.schemaErrors || [];
+    const contentErrors = validation?.contentErrors || [];
+    const businessErrors = validation?.businessRuleErrors || [];
+    const allWarnings = warnings || [];
+
+    if (schemaErrors.length === 0 && contentErrors.length === 0
+      && businessErrors.length === 0 && allWarnings.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="studio-alerts">
+        {schemaErrors.length > 0 && (
+          <div className="studio-alerts__section">
+            <h4 className="studio-alerts__title">Schema Errors</h4>
+            <ul>
+              {schemaErrors.map((err, idx) => <li key={`schema-${idx}`}>{err}</li>)}
+            </ul>
+          </div>
+        )}
+        {contentErrors.length > 0 && (
+          <div className="studio-alerts__section">
+            <h4 className="studio-alerts__title">Content Errors</h4>
+            <ul>
+              {contentErrors.map((err, idx) => <li key={`content-${idx}`}>{err}</li>)}
+            </ul>
+          </div>
+        )}
+        {businessErrors.length > 0 && (
+          <div className="studio-alerts__section">
+            <h4 className="studio-alerts__title">Business Rule Errors</h4>
+            <ul>
+              {businessErrors.map((err, idx) => <li key={`business-${idx}`}>{err}</li>)}
+            </ul>
+          </div>
+        )}
+        {allWarnings.length > 0 && (
+          <div className="studio-alerts__section studio-alerts__section--warning">
+            <h4 className="studio-alerts__title">Warnings</h4>
+            <ul>
+              {allWarnings.map((warn, idx) => <li key={`warn-${idx}`}>{warn}</li>)}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderReasoningPanel = () => {
+    if (!reasoningText) return null;
+
+    return (
+      <div className="studio-reasoning">
+        <div className="studio-reasoning__header">
+          <span>AI Reasoning</span>
+          <button
+            className="studio-reasoning__toggle"
+            onClick={() => setShowReasoningPanel(!showReasoningPanel)}
+          >
+            {showReasoningPanel ? 'Hide' : 'Show'}
+          </button>
+        </div>
+        {showReasoningPanel && (
+          <pre className="studio-reasoning__content">{reasoningText}</pre>
+        )}
       </div>
     );
   };
@@ -281,15 +420,22 @@ export default function StepPreview({ onBack }) {
     return (
       <div className="studio-preview">
         <MetadataBar />
+        {renderValidationPanel()}
+        {renderReasoningPanel()}
         <div className="studio-panel__content" style={{ flex: 1, overflow: 'auto' }}>
           {renderLeftPanel()}
-          {section.chart_data && (
+          {(content.chartData || content.figureDescription || content.letterContext || content.essayMetadata) && (
             <div className="studio-json-panel" style={{ margin: '16px' }}>
               <div className="studio-json-header">
-                <span className="studio-json-header__title">Chart Data</span>
+                <span className="studio-json-header__title">Writing Details</span>
               </div>
               <div className="studio-json-content">
-                <pre>{JSON.stringify(section.chart_data, null, 2)}</pre>
+                {content.taskType && <pre>task_type: {content.taskType}</pre>}
+                {content.wordRequirement && <pre>word_requirement: {content.wordRequirement}</pre>}
+                {content.chartData && <pre>{JSON.stringify(content.chartData, null, 2)}</pre>}
+                {content.figureDescription && <pre>{JSON.stringify(content.figureDescription, null, 2)}</pre>}
+                {content.letterContext && <pre>{JSON.stringify(content.letterContext, null, 2)}</pre>}
+                {content.essayMetadata && <pre>{JSON.stringify(content.essayMetadata, null, 2)}</pre>}
               </div>
             </div>
           )}
@@ -303,6 +449,8 @@ export default function StepPreview({ onBack }) {
     <HighlightProvider>
       <div className="studio-preview">
         <MetadataBar />
+        {renderValidationPanel()}
+        {renderReasoningPanel()}
 
         <div className="studio-split">
           <PanelGroup direction="horizontal">

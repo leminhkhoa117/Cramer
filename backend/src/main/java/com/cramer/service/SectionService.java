@@ -247,4 +247,27 @@ public class SectionService {
         logger.info("Getting total section count");
         return sectionRepository.count();
     }
+
+    // -------------------------------------------------------------------------
+    // New methods for Test Hierarchy
+    // -------------------------------------------------------------------------
+
+    /**
+     * Get sections by Test ID.
+     */
+    @Transactional(readOnly = true)
+    public List<Section> getSectionsByTestId(Long testId) {
+        logger.info("Fetching sections for Test ID: {}", testId);
+        return sectionRepository.findByIeltsTestId(testId);
+    }
+
+    /**
+     * Get sections by Test ID and Skill (ordered).
+     */
+    @Transactional(readOnly = true)
+    public List<Section> getSectionsByTestIdAndSkill(Long testId, String skill) {
+        logger.info("Fetching sections for Test ID: {}, Skill: {}", testId, skill);
+        return sectionRepository.findSectionsForTestId(testId, skill);
+    }
 }
+

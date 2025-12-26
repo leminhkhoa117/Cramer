@@ -75,6 +75,48 @@ export default function StreamingDisplay({
 
     const currentStage = getCurrentStage();
 
+    // Deduplicate events to prevent overlapping log entries
+    // Only show first and last of consecutive PROGRESS events with same message
+    const deduplicatedEvents = React.useMemo(() => {
+        if (events.length <= 1) return events;
+
+        const result = [];
+        let i = 0;
+
+        while (i < events.length) {
+            const event = events[i];
+
+            // For PROGRESS type events, skip duplicates with same message
+            if (event.type === 'PROGRESS' || event.type === 'AI_CHUNK') {
+                // Find all consecutive events with same type and message
+                let j = i;
+                while (j < events.length - 1 &&
+                    events[j + 1].type === event.type &&
+                    events[j + 1].message === event.message) {
+                    j++;
+                }
+
+                // Only add the first one if there are duplicates
+                if (j > i) {
+                    // Add first with updated progress from last
+                    result.push({
+                        ...event,
+                        progress: events[j].progress // Use latest progress
+                    });
+                    i = j + 1;
+                } else {
+                    result.push(event);
+                    i++;
+                }
+            } else {
+                result.push(event);
+                i++;
+            }
+        }
+
+        return result;
+    }, [events]);
+
     // Format reasoning for display (extract from <think> tags if present)
     const formatReasoning = (text) => {
         if (!text) return '';
@@ -146,7 +188,7 @@ export default function StreamingDisplay({
 
             {/* Event log */}
             <div className="streaming-log" ref={logRef}>
-                {events.map((event, index) => {
+                {deduplicatedEvents.map((event, index) => {
                     const stage = STAGES[event.type] || { icon: '*' };
                     // Namespaced class to avoid global .progress conflicts
                     const typeClass = `type-${(event.type || 'unknown').toLowerCase()}`;

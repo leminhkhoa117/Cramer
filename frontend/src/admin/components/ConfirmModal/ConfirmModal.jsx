@@ -1,19 +1,9 @@
 import React from 'react';
 import { FiAlertTriangle, FiX, FiCheck, FiTrash, FiAlertCircle } from 'react-icons/fi';
-import './ConfirmModal.css';
+import '../common/AdminModal.css';
 
 /**
  * ConfirmModal - Modal xác nhận cho các hành động quan trọng
- * 
- * @param {boolean} isOpen - Trạng thái hiển thị modal
- * @param {function} onClose - Callback khi đóng modal
- * @param {function} onConfirm - Callback khi xác nhận
- * @param {string} title - Tiêu đề modal
- * @param {string} message - Nội dung thông báo
- * @param {string} type - Loại modal: 'danger' | 'warning' | 'info'
- * @param {string} confirmText - Text nút xác nhận
- * @param {string} cancelText - Text nút hủy
- * @param {boolean} loading - Trạng thái loading
  */
 export default function ConfirmModal({
     isOpen,
@@ -30,9 +20,9 @@ export default function ConfirmModal({
     if (!isOpen) return null;
 
     const icons = {
-        danger: <FiTrash size={24} />,
-        warning: <FiAlertTriangle size={24} />,
-        info: <FiAlertCircle size={24} />,
+        danger: <FiTrash />,
+        warning: <FiAlertTriangle />,
+        info: <FiAlertCircle />,
     };
 
     const handleOverlayClick = (e) => {
@@ -53,44 +43,59 @@ export default function ConfirmModal({
     }, [loading]);
 
     return (
-        <div className="confirm-modal-overlay" onClick={handleOverlayClick}>
-            <div className={`confirm-modal confirm-modal--${type}`}>
+        <div className="modal-overlay" onClick={handleOverlayClick}>
+            <div className={`modal-content modal-confirm confirm-${type}`}>
                 <button
-                    className="confirm-modal__close"
+                    className="modal-close"
                     onClick={onClose}
                     disabled={loading}
+                    style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 10 }}
                 >
                     <FiX size={20} />
                 </button>
 
-                <div className={`confirm-modal__icon confirm-modal__icon--${type}`}>
-                    {icons[type]}
+                <div className="modal-body">
+                    <div className={`confirm-icon ${type}`}>
+                        {icons[type]}
+                    </div>
+
+                    <h2 className="modal-title" style={{ justifyContent: 'center', fontSize: '1.5rem', marginBottom: '8px' }}>
+                        {title}
+                    </h2>
+
+                    <p className="confirm-message">
+                        {message}
+                    </p>
+
+                    {children && (
+                        <div style={{
+                            textAlign: 'left',
+                            background: 'rgba(0,0,0,0.2)',
+                            padding: '16px',
+                            borderRadius: '8px',
+                            marginTop: '16px'
+                        }}>
+                            {children}
+                        </div>
+                    )}
                 </div>
 
-                <h2 className="confirm-modal__title">{title}</h2>
-                <p className="confirm-modal__message">{message}</p>
-
-                {children && (
-                    <div className="confirm-modal__content">
-                        {children}
-                    </div>
-                )}
-
-                <div className="confirm-modal__actions">
+                <div className="modal-footer">
                     <button
-                        className="confirm-modal__btn confirm-modal__btn--cancel"
+                        className="modal-btn modal-btn-secondary"
                         onClick={onClose}
                         disabled={loading}
                     >
                         {cancelText}
                     </button>
                     <button
-                        className={`confirm-modal__btn confirm-modal__btn--confirm confirm-modal__btn--${type}`}
+                        className={`modal-btn modal-btn-${type === 'danger' ? 'danger' : (type === 'warning' ? 'warning' : 'primary')}`}
                         onClick={onConfirm}
                         disabled={loading}
+                        style={type === 'warning' ? { background: 'var(--admin-warning)', color: '#1a1a2e' } : {}}
                     >
                         {loading ? (
-                            <span className="confirm-modal__loading"></span>
+                            <span className="modal-spinner"></span>
                         ) : (
                             <>
                                 <FiCheck size={16} />

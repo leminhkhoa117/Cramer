@@ -59,6 +59,62 @@ export async function validateContent(content) {
 }
 
 /**
+ * Save AI-generated content to the database.
+ * Creates a new section and all associated questions using the test hierarchy.
+ * 
+ * @param {Object} params - Save parameters
+ * @param {string} [params.examSource] - Exam source identifier (legacy, optional)
+ * @param {string} [params.testNumber] - Test number (auto-generated if not provided)
+ * @param {string} params.skill - Skill type: "reading", "listening", "writing"
+ * @param {number} params.partNumber - Part number (1, 2, 3, etc.)
+ * @param {string} [params.topic] - Optional topic name
+ * @param {Object} params.content - The GeneratedContentDTO to save
+ * @param {number} [params.setId] - Optional: existing TestSet ID
+ * @param {string} [params.setCode] - Optional: TestSet code to find or create (default: "ai_generated")
+ * @param {number} [params.testId] - Optional: existing Test ID to add section to
+ * @param {string[]} [params.hashtagCodes] - Optional: hashtag codes to associate
+ * @param {number[]} [params.hashtagIds] - Optional: hashtag IDs to associate
+ * @param {Object} [params.generationConfig] - Optional: generation inputs for reproducibility
+ * @returns {Promise<Object>} Save result with sectionId, testId, setId and questionsCreated
+ */
+export async function saveGeneratedTest({ 
+    examSource, 
+    testNumber, 
+    skill, 
+    partNumber, 
+    topic, 
+    content,
+    // New hierarchy fields
+    setId,
+    setCode,
+    testId,
+    hashtagCodes,
+    hashtagIds,
+    generationConfig
+}) {
+    const response = await fetch(`${API_BASE}/save`, {
+        method: 'POST',
+        headers: await getHeaders(),
+        body: JSON.stringify({
+            examSource,
+            testNumber,
+            skill,
+            partNumber,
+            topic,
+            content,
+            // New fields
+            setId,
+            setCode,
+            testId,
+            hashtagCodes,
+            hashtagIds,
+            generationConfig
+        })
+    });
+    return handleResponse(response);
+}
+
+/**
  * Get all topic template categories.
  * @returns {Promise<Array>} List of categories with id, name, emoji.
  */
@@ -131,6 +187,7 @@ export async function generateReadingStream(request, { onProgress, onComplete, o
     const abortController = new AbortController();
     let timeoutId = null;
     let lastEventTime = Date.now();
+    let hasWarned = false;
 
     // IMMEDIATELY provide abort function to caller
     onAbort?.(() => {
@@ -147,12 +204,13 @@ export async function generateReadingStream(request, { onProgress, onComplete, o
     // Timeout handler - if no events received for 2 minutes, show warning
     const checkTimeout = () => {
         const elapsed = (Date.now() - lastEventTime) / 1000;
-        if (elapsed > 120) {
+        if (elapsed > 120 && !hasWarned) {
             onProgress?.({
                 type: 'TIMEOUT_WARNING',
                 message: `No response for ${Math.floor(elapsed)}s - model may be slow or unavailable`,
                 progress: null
             });
+            hasWarned = true;
         }
     };
 
@@ -198,6 +256,7 @@ export async function generateReadingStream(request, { onProgress, onComplete, o
             }
 
             lastEventTime = Date.now();
+            hasWarned = false;
             buffer += decoder.decode(value, { stream: true });
 
             // Parse SSE events from buffer
@@ -322,6 +381,7 @@ async function generateStreamInternal(skill, request, { onProgress, onComplete, 
     const abortController = new AbortController();
     let timeoutId = null;
     let lastEventTime = Date.now();
+    let hasWarned = false;
 
     // IMMEDIATELY provide abort function to caller
     onAbort?.(() => {
@@ -336,12 +396,13 @@ async function generateStreamInternal(skill, request, { onProgress, onComplete, 
 
     const checkTimeout = () => {
         const elapsed = (Date.now() - lastEventTime) / 1000;
-        if (elapsed > 120) {
+        if (elapsed > 120 && !hasWarned) {
             onProgress?.({
                 type: 'TIMEOUT_WARNING',
                 message: `No response for ${Math.floor(elapsed)}s - model may be slow`,
                 progress: null
             });
+            hasWarned = true;
         }
     };
 
@@ -384,6 +445,7 @@ async function generateStreamInternal(skill, request, { onProgress, onComplete, 
             if (done) break;
 
             lastEventTime = Date.now();
+            hasWarned = false;
             buffer += decoder.decode(value, { stream: true });
 
             const lines = buffer.split('\n');
@@ -532,6 +594,7 @@ export default {
     generateWriting,
     regenerateQuestions,
     validateContent,
+    saveGeneratedTest,
     getTemplateCategories,
     getTemplatesByCategory,
     getAvailableModels,

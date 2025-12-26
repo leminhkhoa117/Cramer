@@ -123,12 +123,82 @@ public class OpenRouterClient {
             String userPrompt,
             Map<String, Object> jsonSchema) {
 
-        return callChatCompletion(
+        return callChatCompletionWithFeatures(
                 model, systemPrompt, userPrompt, jsonSchema,
                 List.of("anthropic/claude-3.5-sonnet", "meta-llama/llama-3.1-70b-instruct:free"),
                 Map.of("effort", "high"),
                 1.0,
-                8192);
+                8192,
+                false, // enableWebSearch
+                false); // enableContextCaching
+    }
+
+    /**
+     * Full-featured call with web search and context caching support.
+     *
+     * @param model                Primary model to use
+     * @param systemPrompt         System message content
+     * @param userPrompt           User message content
+     * @param jsonSchema           JSON Schema for structured output
+     * @param fallbackModels       Optional fallback models
+     * @param reasoningConfig      Reasoning configuration
+     * @param temperature          Temperature (0.0-2.0)
+     * @param maxTokens            Maximum output tokens
+     * @param enableWebSearch      Enable OpenRouter web plugin for real-time search
+     * @param enableContextCaching Enable prompt caching for faster responses
+     * @return API response
+     */
+    public OpenRouterResponse callChatCompletionWithFeatures(
+            String model,
+            String systemPrompt,
+            String userPrompt,
+            Map<String, Object> jsonSchema,
+            List<String> fallbackModels,
+            Map<String, Object> reasoningConfig,
+            Double temperature,
+            Integer maxTokens,
+            boolean enableWebSearch,
+            boolean enableContextCaching) {
+
+        if (!config.hasApiKey()) {
+            throw new OpenRouterException("OPENROUTER_API_KEY not configured", "AUTH_FAILED", false);
+        }
+
+        String url = config.getBaseUrl() + CHAT_ENDPOINT;
+
+        HttpHeaders headers = buildHeaders();
+        Map<String, Object> requestBody = buildRequestBodyWithFeatures(
+                model, systemPrompt, userPrompt, jsonSchema,
+                fallbackModels, reasoningConfig, temperature, maxTokens,
+                enableWebSearch, enableContextCaching);
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+        try {
+            long startTime = System.currentTimeMillis();
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                    url, HttpMethod.POST, entity, String.class);
+
+            long duration = System.currentTimeMillis() - startTime;
+            logger.info("OpenRouter API call completed in {}ms (webSearch={}, caching={})",
+                    duration, enableWebSearch, enableContextCaching);
+
+            if (response.getStatusCode() != HttpStatus.OK) {
+                throw new OpenRouterException(
+                        "OpenRouter API returned status: " + response.getStatusCode(),
+                        "API_ERROR",
+                        true);
+            }
+
+            return parseResponse(response.getBody(), duration);
+
+        } catch (HttpClientErrorException e) {
+            return handleHttpError(e);
+        } catch (Exception e) {
+            logger.error("OpenRouter API call failed: {}", e.getMessage(), e);
+            throw new OpenRouterException("Failed to call OpenRouter API: " + e.getMessage(), "UNKNOWN_ERROR", false);
+        }
     }
 
     /**
@@ -158,7 +228,8 @@ public class OpenRouterClient {
             Map<String, Object> reasoningConfig,
             Double temperature,
             Integer maxTokens,
-            StreamCallback callback) {
+            StreamCallback callback,
+            java.util.concurrent.atomic.AtomicBoolean cancelled) {
 
         if (!config.hasApiKey()) {
             callback.onError("OpenRouter API key not configured");
@@ -218,6 +289,9 @@ public class OpenRouterClient {
                 int chunkCount = 0;
 
                 while ((line = reader.readLine()) != null) {
+                    if (cancelled != null && cancelled.get()) {
+                        throw new OpenRouterException("Generation cancelled by user", "CANCELLED", false);
+                    }
                     if (line.isEmpty())
                         continue;
                     if (!line.startsWith("data: "))
@@ -243,17 +317,21 @@ public class OpenRouterClient {
                             JsonNode delta = choices.get(0).path("delta");
 
                             // Reasoning tokens
-                            if (delta.has("reasoning")) {
+                            if (delta.hasNonNull("reasoning")) {
                                 String reasoningDelta = delta.get("reasoning").asText();
-                                reasoningBuilder.append(reasoningDelta);
-                                callback.onReasoningChunk(reasoningDelta);
+                                if (reasoningDelta != null && !reasoningDelta.equals("null")) {
+                                    reasoningBuilder.append(reasoningDelta);
+                                    callback.onReasoningChunk(reasoningDelta);
+                                }
                             }
 
                             // Content tokens
-                            if (delta.has("content")) {
+                            if (delta.hasNonNull("content")) {
                                 String contentDelta = delta.get("content").asText();
-                                contentBuilder.append(contentDelta);
-                                callback.onContentChunk(contentDelta);
+                                if (contentDelta != null && !contentDelta.equals("null")) {
+                                    contentBuilder.append(contentDelta);
+                                    callback.onContentChunk(contentDelta);
+                                }
                             }
                         }
 
@@ -428,6 +506,89 @@ public class OpenRouterClient {
         // Provider preferences
         // Note: "data_collection" set to "allow" to support free/community models
         // that require training data. For privacy-sensitive use cases, set to "deny"
+        body.put("provider", Map.of(
+                "allow_fallbacks", true,
+                "data_collection", "allow"));
+
+        // Reasoning tokens (for thinking models)
+        if (reasoningConfig != null && !reasoningConfig.isEmpty()) {
+            body.put("reasoning", reasoningConfig);
+        }
+
+        return body;
+    }
+
+    /**
+     * Build request body with web search and context caching support.
+     */
+    private Map<String, Object> buildRequestBodyWithFeatures(
+            String model,
+            String systemPrompt,
+            String userPrompt,
+            Map<String, Object> jsonSchema,
+            List<String> fallbackModels,
+            Map<String, Object> reasoningConfig,
+            Double temperature,
+            Integer maxTokens,
+            boolean enableWebSearch,
+            boolean enableContextCaching) {
+
+        Map<String, Object> body = new HashMap<>();
+
+        // Model selection - append :online suffix for web search if enabled
+        String effectiveModel = enableWebSearch ? model + ":online" : model;
+        body.put("model", effectiveModel);
+
+        // Messages array
+        List<Map<String, Object>> messages = new ArrayList<>();
+        messages.add(Map.of("role", "system", "content", systemPrompt));
+        messages.add(Map.of("role", "user", "content", userPrompt));
+        body.put("messages", messages);
+
+        // Generation parameters
+        body.put("temperature", temperature != null ? temperature : 1.0);
+        body.put("max_tokens", maxTokens != null ? maxTokens : 8192);
+        body.put("stream", false);
+
+        // Context caching for faster repeated prompts
+        if (enableContextCaching) {
+            body.put("cache_prompt", true);
+            logger.debug("Context caching enabled for model: {}", effectiveModel);
+        }
+
+        // JSON Schema mode for structured output
+        if (jsonSchema != null && !jsonSchema.isEmpty()) {
+            body.put("response_format", Map.of(
+                    "type", "json_schema",
+                    "json_schema", Map.of(
+                            "name", "ielts_content_response",
+                            "strict", true,
+                            "schema", jsonSchema)));
+            logger.debug("Using JSON schema mode for model: {}", effectiveModel);
+        } else {
+            body.put("response_format", Map.of("type", "json_object"));
+            logger.debug("Using basic JSON object mode for model: {}", effectiveModel);
+        }
+
+        // Web search plugin configuration (when not using :online suffix)
+        // Note: Using :online suffix is simpler and recommended
+        if (enableWebSearch) {
+            logger.info("Web search enabled for AI fact research on model: {}", effectiveModel);
+            // The :online suffix handles this automatically
+            // But we can also explicitly add plugins if needed:
+            // body.put("plugins", List.of(Map.of("id", "web", "max_results", 5)));
+        }
+
+        // Model fallbacks for reliability
+        if (fallbackModels != null && !fallbackModels.isEmpty()) {
+            List<String> allModels = new ArrayList<>();
+            allModels.add(effectiveModel);
+            allModels.addAll(fallbackModels);
+            body.put("models", allModels);
+            body.put("route", "fallback");
+        }
+
+        // Provider preferences
         body.put("provider", Map.of(
                 "allow_fallbacks", true,
                 "data_collection", "allow"));

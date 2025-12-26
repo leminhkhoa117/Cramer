@@ -3,7 +3,6 @@ package com.cramer.service.implement;
 import com.cramer.dto.*;
 import com.cramer.entity.CreditTransaction;
 import com.cramer.entity.UserCredit;
-import com.cramer.entity.UserStreak;
 
 import com.cramer.repository.*;
 import com.cramer.repository.ChatbotUsageRepository;
@@ -33,7 +32,6 @@ public class CreditServiceImpl implements CreditService {
 
     private final UserCreditRepository creditRepository;
     private final CreditTransactionRepository transactionRepository;
-    private final UserStreakRepository streakRepository;
     private final VocabularyRepository vocabularyRepository;
     private final ChatbotUsageRepository chatbotUsageRepository;
     private final SubscriptionService subscriptionService;
@@ -42,13 +40,11 @@ public class CreditServiceImpl implements CreditService {
     public CreditServiceImpl(
             UserCreditRepository creditRepository,
             CreditTransactionRepository transactionRepository,
-            UserStreakRepository streakRepository,
             VocabularyRepository vocabularyRepository,
             ChatbotUsageRepository chatbotUsageRepository,
             @Lazy SubscriptionService subscriptionService) {
         this.creditRepository = creditRepository;
         this.transactionRepository = transactionRepository;
-        this.streakRepository = streakRepository;
         this.vocabularyRepository = vocabularyRepository;
         this.chatbotUsageRepository = chatbotUsageRepository;
         this.subscriptionService = subscriptionService;
@@ -179,9 +175,6 @@ public class CreditServiceImpl implements CreditService {
         // Get credits
         UserCreditDTO credits = getBalance(userId);
 
-        // Get streak
-        UserStreak streak = streakRepository.findByUserId(userId).orElse(null);
-
         // Get vocabulary stats
         long totalVocabulary = vocabularyRepository.countByUserId(userId);
         long masteredVocabulary = vocabularyRepository.countByUserIdAndIsMastered(userId, true);
@@ -206,9 +199,9 @@ public class CreditServiceImpl implements CreditService {
                 .luaBalance(credits.getBalance())
                 .lifetimeEarned(credits.getLifetimeEarned())
                 .lifetimeSpent(credits.getLifetimeSpent())
-                .currentStreak(streak != null ? streak.getCurrentStreak() : 0)
-                .longestStreak(streak != null ? streak.getLongestStreak() : 0)
-                .lastLoginDate(streak != null ? streak.getLastLoginDate() : null)
+                .currentStreak(0)  // Streak feature removed
+                .longestStreak(0)  // Streak feature removed
+                .lastLoginDate(null)  // Streak feature removed
                 .totalVocabulary(totalVocabulary)
                 .masteredVocabulary(masteredVocabulary)
                 .build();

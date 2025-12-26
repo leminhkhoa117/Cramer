@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiZap, FiSave } from 'react-icons/fi';
+import { FiArrowLeft, FiZap, FiSave, FiDatabase } from 'react-icons/fi';
 import StudioConfigView from '../../components/abts/StudioConfigView';
 import StepPreview from '../../components/abts/StepPreview';
 import useABTSStore from '../../stores/useABTSStore';
-import useAdminContentStore from '../../stores/useAdminContentStore';
+import { saveGeneratedTest } from '../../services/abtsApi';
 import { useToast } from '../../components/Toast';
 import '../../components/abts/AIStudio.css';
 
@@ -21,18 +21,18 @@ import '../../components/abts/AIStudio.css';
  */
 export default function AIGenerationPage() {
     const navigate = useNavigate();
-    const { createTest } = useAdminContentStore();
     const {
         generateStreaming,
         isGenerating,
         generationResult,
-        abortGeneration
+        abortGeneration,
+        formData
     } = useABTSStore();
     const toast = useToast();
 
     // View State: 'config' | 'preview'
     const [view, setView] = useState('config');
-    const [isCreating, setIsCreating] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     const handleGenerate = async () => {
         setView('preview');
@@ -56,49 +56,68 @@ export default function AIGenerationPage() {
         }
     };
 
+    /**
+     * Save generated content directly to the database.
+     * Creates a new section and all associated questions.
+     */
     const handleSave = async () => {
         if (!generationResult?.content) return;
 
-        setIsCreating(true);
+        setIsSaving(true);
         const generatedContent = generationResult.content;
 
         try {
-            const timestamp = new Date().getTime();
-            const skill = generatedContent.skill || 'reading';
-            const topic = generatedContent.topic || 'General';
+            // Determine skill from formData or content
+            const skill = formData.skill || generatedContent.skill || 'reading';
+            const skillLower = String(skill).toLowerCase();
 
-            const testData = {
+            // Get topic from various sources
+            const topic = formData.topic ||
+                generatedContent.metadata?.topic ||
+                'AI Generated';
+
+            // Build save request
+            const saveRequest = {
                 examSource: 'AI-GEN',
-                testNumber: timestamp.toString(),
-                name: `AI Test: ${topic} (${new Date().toLocaleDateString()})`,
-                topicName: topic,
-                skills: {
-                    [skill.toLowerCase()]: { status: 'draft' }
-                }
+                testNumber: null, // Auto-generate
+                skill: skillLower,
+                partNumber: formData.partNumber || 1,
+                topic: topic,
+                content: generatedContent
             };
 
-            const result = await createTest(testData);
+            const result = await saveGeneratedTest(saveRequest);
 
-            if (result && result.success) {
-                toast.success('Test created! Redirecting...');
-                navigate(
-                    `/admin/content/editor/${result.examSource}/${result.testNumber}`,
-                    {
+            if (result.success) {
+                toast.success(`✅ Saved! Section ID: ${result.sectionId}, ${result.questionsCreated} questions created.`);
+
+                // Show any warnings
+                if (result.warnings?.length > 0) {
+                    result.warnings.forEach(w => toast.warning(w));
+                }
+
+                // Navigate to content list after short delay
+                setTimeout(() => {
+                    navigate('/admin/content', {
                         state: {
-                            generatedContent: generatedContent,
-                            autoApply: true
+                            refreshList: true,
+                            savedSection: {
+                                id: result.sectionId,
+                                examSource: result.examSource,
+                                testNumber: result.testNumber
+                            }
                         }
-                    }
-                );
+                    });
+                }, 1500);
             } else {
-                toast.error('Failed to create test container.');
-                setIsCreating(false);
+                toast.error(`Save failed: ${result.message}`);
+                setIsSaving(false);
             }
 
         } catch (error) {
-            console.error('Error creating test:', error);
+            console.error('Error saving content:', error);
             toast.error('Error saving content: ' + error.message);
-            setIsCreating(false);
+            setIsSaving(false);
         }
     };
 
@@ -128,11 +147,11 @@ export default function AIGenerationPage() {
                         <button
                             className="studio-btn studio-btn--primary"
                             onClick={handleSave}
-                            disabled={!generationResult || isCreating || isGenerating}
+                            disabled={!generationResult || isSaving || isGenerating}
                         >
-                            {isCreating ? 'Saving...' : (
+                            {isSaving ? 'Saving...' : (
                                 <>
-                                    <FiSave size={14} /> Save to Editor
+                                    <FiDatabase size={14} /> Save to Database
                                 </>
                             )}
                         </button>
@@ -150,12 +169,12 @@ export default function AIGenerationPage() {
             </div>
 
             {/* Saving Overlay */}
-            {isCreating && (
+            {isSaving && (
                 <div className="studio-overlay">
                     <div className="studio-overlay__content">
                         <div className="studio-spinner" />
                         <p style={{ marginTop: '16px', color: 'var(--studio-text-secondary)' }}>
-                            Finalizing and saving to editor...
+                            Saving to database...
                         </p>
                     </div>
                 </div>

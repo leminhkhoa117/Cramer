@@ -86,6 +86,23 @@
 
 ## Recent Agent Notes
 
+- 2025-12-26: **Test Storage Management System Overhaul** ✅ **COMPLETED:**
+  - **Goal:** Structure tests into a proper hierarchy (Sets -> Tests -> Sections) and add tagging.
+  - **Database Changes:**
+    - Created `test_sets` table for test collections (e.g., "Cambridge 17").
+    - Created `tests` table for individual tests.
+    - Created `hashtags` and `test_hashtags` for categorization.
+    - Updated `sections` table with `test_id` FK and `status`.
+  - **Backend Changes:**
+    - New Entities: `TestSet`, `IeltsTest`, `Hashtag`.
+    - New Services: `TestSetService`, `TestManagementService`, `HashtagService`.
+    - New Controller: `TestHierarchyController` (Admin API).
+    - Updated `ABTSService` to save generated tests into new hierarchy.
+  - **Frontend Changes:**
+    - New Admin Pages: `SetListPage`, `SetDetailPage`, `HashtagManagementPage`.
+    - New Stores: `useTestSetStore`, `useHashtagStore`.
+  - **Documentation:** Updated `DATABASE_SCHEMA.md` with new tables.
+
 - 2025-12-14: **Subscription System Revamp (2-tier + ATTEMPT System)** ✅ **COMPLETED:**
   - **Goal:** Simplify to 2 tiers (Cramerie free, Cramerich 69,000đ/mo) with ATTEMPT-based limits
   - **Database Changes:**

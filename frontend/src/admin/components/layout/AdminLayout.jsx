@@ -30,7 +30,10 @@ export default function AdminLayout() {
             'content': 'Nội dung',
             'transactions': 'Giao dịch',
             'reports': 'Báo cáo',
-            'editor': 'editor',
+            'editor': 'Soạn đề',
+            'sets': 'Bộ đề',
+            'hashtags': 'Hashtag',
+            'generate': 'Tạo AI',
         };
 
         paths.forEach((path, index) => {

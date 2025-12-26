@@ -75,7 +75,7 @@ const useTestEditorStore = create((set, get) => ({
     // ==================== ACTIONS ====================
 
     /**
-     * Initialize editor with test data.
+     * Initialize editor with test data (Legacy).
      */
     initializeEditor: async (examSource, testNumber) => {
         set({ isLoading: true, error: null });
@@ -93,9 +93,57 @@ const useTestEditorStore = create((set, get) => ({
     },
 
     /**
+     * Initialize editor with Test ID (New).
+     */
+    initializeEditorByTestId: async (testId) => {
+        set({ isLoading: true, error: null });
+
+        try {
+            const dto = await adminApi.testsApi.getById(testId);
+            
+            // Transform DTO to match store state shape
+            const test = {
+                id: dto.id,
+                examSource: dto.setCode,
+                testNumber: dto.testNumber,
+                name: dto.nameVi || dto.nameEn || `Test ${dto.testNumber}`,
+                status: dto.isPublished ? 'PUBLISHED' : 'DRAFT',
+                skills: {
+                    reading: { status: dto.skillSectionCounts?.reading > 0 ? 'full' : 'empty' },
+                    listening: { status: dto.skillSectionCounts?.listening > 0 ? 'full' : 'empty' },
+                    writing: { status: dto.skillSectionCounts?.writing > 0 ? 'full' : 'empty' },
+                    speaking: { status: dto.skillSectionCounts?.speaking > 0 ? 'full' : 'empty' }
+                }
+            };
+
+            set({ test, isLoading: false });
+
+            // Fetch sections for active skill (using new API or from DTO)
+            const { activeSkill } = get();
+            
+            // If DTO has sections, use them
+            if (dto.sectionsBySkill && dto.sectionsBySkill[activeSkill]) {
+                set({ sections: dto.sectionsBySkill[activeSkill] });
+                // Auto-select first section
+                if (dto.sectionsBySkill[activeSkill].length > 0) {
+                    get().setActiveSection(dto.sectionsBySkill[activeSkill][0].id);
+                }
+            } else {
+                // Otherwise fetch
+                get().fetchSections(dto.setCode, dto.testNumber, activeSkill);
+            }
+
+        } catch (error) {
+            console.error('Failed to initialize editor by ID:', error);
+            set({ error: error.message || 'Failed to load test', isLoading: false });
+        }
+    },
+
+    /**
      * Set active skill and fetch its sections.
      */
     setActiveSkill: async (skill, examSource, testNumber) => {
+
         set({
             activeSkill: skill,
             activeSection: null,
@@ -110,13 +158,23 @@ const useTestEditorStore = create((set, get) => ({
      */
     fetchSections: async (examSource, testNumber, skill) => {
         set({ isLoadingSections: true });
+        const { test } = get();
 
         try {
-            const sections = await adminApi.content.getSections(
-                examSource,
-                parseInt(testNumber),
-                skill
-            );
+            let sections;
+            
+            // If we have a Test ID, use the new API
+            if (test && test.id) {
+                sections = await adminApi.testsApi.getSections(test.id, skill);
+            } else {
+                // Fallback to legacy API
+                sections = await adminApi.content.getSections(
+                    examSource,
+                    parseInt(testNumber),
+                    skill
+                );
+            }
+            
             set({ sections: sections || [], isLoadingSections: false });
 
             // Auto-select first section
@@ -128,6 +186,7 @@ const useTestEditorStore = create((set, get) => ({
             set({ sections: [], isLoadingSections: false });
         }
     },
+
 
     /**
      * Set active section and fetch its questions.

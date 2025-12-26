@@ -2,7 +2,7 @@ import React from 'react';
 import HighlightableHtmlContent from './HighlightableHtmlContent'; // Import the new component
 import '../css/question-renderer.css';
 
-const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, groupOptions, partId }) => {
+const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, groupOptions, partId, groupedQuestions = [], groupAnswers = {} }) => {
     const { id, questionType, questionContent, questionNumber } = question;
 
     // Create a unique content ID prefix that includes partId to prevent cross-part collisions
@@ -44,19 +44,49 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
     const renderTextWithInput = (text) => {
         if (!text) return null;
         const parts = text.split(/____/g);
+
         return (
-            <p className="question-text-interactive">
-                <HighlightableHtmlContent htmlString={parts[0].replace(/(\b\d+\b)/g, '<strong>$1</strong>')} contentId={`${contentIdPrefix}-part0`} />
-                {parts.length > 1 && (
-                    <input
-                        type="text"
-                        className="fill-in-blank-input"
-                        value={userAnswer || ''}
-                        onChange={handleSingleValueChange}
-                    />
-                )}
-                {parts.length > 1 && parts[1] && <HighlightableHtmlContent htmlString={parts[1]} contentId={`${contentIdPrefix}-part1`} />}
-            </p>
+            <div className="question-text-interactive">
+                {parts.map((part, index) => {
+                    const isLast = index === parts.length - 1;
+                    let targetQId = null;
+                    let currentValue = '';
+                    let showInput = !isLast;
+
+                    if (!isLast) {
+                        if (index === 0) {
+                            targetQId = id;
+                            currentValue = typeof userAnswer !== 'undefined' ? userAnswer : '';
+                        } else {
+                            const subQ = groupedQuestions && groupedQuestions[index - 1];
+                            if (subQ) {
+                                targetQId = subQ.id !== undefined ? subQ.id : `temp-sub-${index}`;
+                                currentValue = groupAnswers && groupAnswers[targetQId] !== undefined ? groupAnswers[targetQId] : '';
+                            } else {
+                                showInput = false;
+                            }
+                        }
+                    }
+
+                    return (
+                        <React.Fragment key={index}>
+                            <HighlightableHtmlContent
+                                htmlString={part.replace(/(\b\d+\b)/g, '<strong>$1</strong>')}
+                                contentId={`${contentIdPrefix}-part${index}`}
+                            />
+                            {showInput && (
+                                <input
+                                    type="text"
+                                    className="fill-in-blank-input"
+                                    value={currentValue}
+                                    onChange={(e) => onAnswerChange(targetQId, e.target.value)}
+                                    placeholder={index === 0 ? (questionNumber ? `${questionNumber}` : '') : (groupedQuestions?.[index - 1]?.questionNumber ? `${groupedQuestions[index - 1].questionNumber}` : '')}
+                                />
+                            )}
+                        </React.Fragment>
+                    );
+                })}
+            </div>
         );
     };
 
@@ -64,31 +94,63 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
         if (!text) return null;
         // Safety check: if options is not an array, use empty array or show text input instead
         const safeOptions = Array.isArray(options) ? options : [];
+        const parts = text.split(/____/g);
 
-        const parts = text.split('____');
         return (
-            <p className="question-text-interactive">
-                <HighlightableHtmlContent htmlString={parts[0].replace(/(\b\d+\b)/g, '<strong>$1</strong>')} contentId={`${contentIdPrefix}-part0`} />
-                {parts.length > 1 && safeOptions.length > 0 && (
-                    <select value={userAnswer || ''} onChange={handleSingleValueChange} className="fill-in-blank-select">
-                        <option value="">Select...</option>
-                        {safeOptions.map((opt) => (
-                            <option key={opt.letter} value={opt.letter}>{opt.letter}. {opt.text}</option>
-                        ))}
-                    </select>
-                )}
-                {/* Fallback to text input if no options */}
-                {parts.length > 1 && safeOptions.length === 0 && (
-                    <input
-                        type="text"
-                        className="fill-in-blank-input"
-                        value={userAnswer || ''}
-                        placeholder="Type answer..."
-                        onChange={handleSingleValueChange}
-                    />
-                )}
-                {parts.length > 1 && parts[1] && <HighlightableHtmlContent htmlString={parts[1]} contentId={`${contentIdPrefix}-part1`} />}
-            </p>
+            <div className="question-text-interactive">
+                {parts.map((part, index) => {
+                    const isLast = index === parts.length - 1;
+
+                    let targetQId = null;
+                    let currentValue = '';
+                    let showInput = !isLast;
+
+                    if (!isLast) {
+                        if (index === 0) {
+                            targetQId = id;
+                            currentValue = userAnswer || '';
+                        } else {
+                            const subQ = groupedQuestions && groupedQuestions[index - 1];
+                            if (subQ) {
+                                targetQId = subQ.id !== undefined ? subQ.id : `temp-sub-${index}`;
+                                currentValue = groupAnswers && groupAnswers[targetQId] !== undefined ? groupAnswers[targetQId] : '';
+                            } else {
+                                showInput = false;
+                            }
+                        }
+                    }
+
+                    return (
+                        <React.Fragment key={index}>
+                            <HighlightableHtmlContent
+                                htmlString={part.replace(/(\b\d+\b)/g, '<strong>$1</strong>')}
+                                contentId={`${contentIdPrefix}-part${index}`}
+                            />
+                            {showInput && safeOptions.length > 0 && (
+                                <select
+                                    value={currentValue}
+                                    onChange={(e) => onAnswerChange(targetQId, e.target.value)}
+                                    className="fill-in-blank-select"
+                                >
+                                    <option value="">Select...</option>
+                                    {safeOptions.map((opt) => (
+                                        <option key={opt.letter} value={opt.letter}>{opt.letter}. {opt.text.replace(/^[A-Z]\.?\s*/, '')}</option>
+                                    ))}
+                                </select>
+                            )}
+                            {showInput && safeOptions.length === 0 && (
+                                <input
+                                    type="text"
+                                    className="fill-in-blank-input"
+                                    value={currentValue}
+                                    onChange={(e) => onAnswerChange(targetQId, e.target.value)}
+                                    placeholder="Type answer..."
+                                />
+                            )}
+                        </React.Fragment>
+                    );
+                })}
+            </div>
         );
     };
 
@@ -115,9 +177,17 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                         <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionText} contentId={`${contentIdPrefix}-text`} /></p>
                         <select value={userAnswer || ''} onChange={handleSingleValueChange} className="matching-select">
                             <option value="">Select...</option>
-                            {groupOptions && groupOptions.map(opt => (
-                                <option key={opt.letter} value={opt.letter}>{opt.letter}. {opt.text}</option>
-                            ))}
+                            {Array.isArray(groupOptions) && groupOptions.map((opt, index) => {
+                                const isObject = typeof opt === 'object' && opt !== null;
+                                const letter = isObject ? opt.letter : String(opt).charAt(0);
+                                const text = isObject ? opt.text : String(opt);
+                                const value = letter || text || String(index);
+                                return (
+                                    <option key={value} value={value}>
+                                        {letter ? `${letter}. ` : ''}{text}
+                                    </option>
+                                );
+                            })}
                         </select>
                     </div>
                 );
@@ -127,12 +197,16 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                     <div>
                         <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionText} contentId={`${contentIdPrefix}-text`} /></p>
                         <div className="mcq-options">
-                            {questionContent.options && questionContent.options.map((opt, index) => (
-                                <label key={index}>
-                                    <input type="radio" name={`q_${id}`} value={opt.charAt(0)} checked={userAnswer === opt.charAt(0)} onChange={handleSingleValueChange} />
-                                    <strong>{opt.charAt(0)}.</strong> {opt.substring(1).trim()}
-                                </label>
-                            ))}
+                            {questionContent.options && questionContent.options.map((opt, index) => {
+                                const letter = String.fromCharCode(65 + index);
+                                const text = opt.replace(/^[A-Z]\.?\s*/, '');
+                                return (
+                                    <label key={index}>
+                                        <input type="radio" name={`q_${id}`} value={letter} checked={userAnswer === letter} onChange={handleSingleValueChange} />
+                                        <strong>{letter}.</strong> {text}
+                                    </label>
+                                );
+                            })}
                         </div>
                     </div>
                 );
@@ -143,12 +217,16 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                     <div>
                         <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionText} contentId={`${contentIdPrefix}-text`} /></p>
                         <div className="mcq-options">
-                            {questionContent.options && questionContent.options.map((opt, index) => (
-                                <label key={index}>
-                                    <input type="checkbox" name={`q_${id}`} value={opt.charAt(0)} checked={currentAnswers.includes(opt.charAt(0))} onChange={handleMultiValueChange} />
-                                    <strong>{opt.charAt(0)}.</strong> {opt.substring(1).trim()}
-                                </label>
-                            ))}
+                            {questionContent.options && questionContent.options.map((opt, index) => {
+                                const letter = String.fromCharCode(65 + index);
+                                const text = opt.replace(/^[A-Z]\.?\s*/, '');
+                                return (
+                                    <label key={index}>
+                                        <input type="checkbox" name={`q_${id}`} value={letter} checked={currentAnswers.includes(letter)} onChange={handleMultiValueChange} />
+                                        <strong>{letter}.</strong> {text}
+                                    </label>
+                                );
+                            })}
                         </div>
                     </div>
                 );
@@ -183,6 +261,7 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                     case 'MATCHING_INFORMATION':
                     case 'MATCHING_FEATURES':
                     case 'MATCHING_HEADINGS':
+                    case 'MATCHING_SENTENCE_ENDINGS':
                         const options = questionContent.options || [];
                         return (
                             <div>

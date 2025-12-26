@@ -90,17 +90,17 @@ This section details the required `jsonb` format for `question_content` and `cor
   ["population"]
   ```
 
-### `SUMMARY_COMPLETION`, `TABLE_COMPLETION`, and `FLOW_CHART_COMPLETION`
-- **Description:** These types involve filling in blanks within a larger block of text, a table, or a chart. They now share a common, robust rendering logic.
-- **Frontend Rendering Logic (CRITICAL):**
+### `TABLE_COMPLETION` and `FLOW_CHART_COMPLETION`
+- **Description:** These types involve filling in blanks within a complex visual structure like a table or a flowchart.
+- **Frontend Rendering Logic (Block Style):**
   1.  The frontend identifies a group of consecutive questions with one of these types.
-  2.  It takes the `text` content **only from the first question** in the group. This content (which can be a `<table>`, a summary title, etc.) is rendered **once** at the top of the group.
-  3.  **Crucially, any `____` placeholders within this initial text ARE displayed**, allowing the user to see where the blanks are in the context of the table or summary.
-  4.  The frontend then loops through **all** questions in the group (including the first one) and renders a simple, numbered list of text input boxes below the main content block. The `text` fields of subsequent questions (`q2`, `q3`, etc.) are ignored.
+  2.  It takes the `text` content **only from the first question** in the group. This content (e.g., a `<table>` HTML string) is rendered **once** at the top of the group.
+  3.  **Crucially, any `____` placeholders within this initial text ARE displayed**, allowing the user to see where the blanks are in the context of the table.
+  4.  The frontend then loops through **all** questions in the group and renders a simple, numbered list of text input boxes below. The `text` fields of subsequent questions are ignored.
 - **Data Authoring Rules:**
-  - **First Question:** The `text` field must contain the full HTML `<table>`, summary title, or other contextual block.
-  - **Subsequent Questions:** The `text` field for all other questions in the group should be an empty string (`""`).
-- **`question_content` Example (for a `TABLE_COMPLETION` group):**
+  - **First Question:** The `text` field must contain the full HTML `<table>` or chart structure.
+  - **Subsequent Questions:** The `text` field must be an empty string (`""`).
+- **`question_content` Example:**
   ```json
   // For the FIRST question in the group (e.g., Q7)
   {
@@ -109,6 +109,26 @@ This section details the required `jsonb` format for `question_content` and `cor
   // For subsequent questions in the group (e.g., Q8, Q9)
   {
     "text": ""
+  }
+  ```
+
+### `SUMMARY_COMPLETION`
+- **Description:** User fills in blanks within a paragraph of text.
+- **Frontend Rendering Logic (Inline Style):**
+  - Unlike tables, summary completion questions are rendered individually (inline).
+  - **CRITICAL:** Every question record MUST contain the specific text fragment surrounding its blank.
+- **Data Authoring Rules:**
+  - Do NOT use the "Block" style. Do not leave subsequent questions empty.
+  - Each question's `text` field should contain the sentence or phrase containing that specific blank.
+- **`question_content` Example:**
+  ```json
+  // For Q1
+  {
+    "text": "The <strong>1</strong> ____ of London increased rapidly..."
+  }
+  // For Q2 (must include text)
+  {
+    "text": "...to move people to better housing in the <strong>2</strong> ____"
   }
   ```
 - **`correct_answer`**: An array containing the string for that question's blank.

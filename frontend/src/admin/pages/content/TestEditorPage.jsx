@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     FiArrowLeft,
     FiSave,
@@ -53,14 +53,10 @@ const QUESTION_TYPES = {
         { value: 'MULTIPLE_CHOICE_MULTIPLE', label: 'Multiple Choice (Multiple)' },
     ],
     listening: [
-        { value: 'FORM_COMPLETION', label: 'Form Completion' },
-        { value: 'NOTE_COMPLETION', label: 'Note Completion' },
-        { value: 'SENTENCE_COMPLETION', label: 'Sentence Completion' },
-        { value: 'SUMMARY_COMPLETION', label: 'Summary Completion' },
+        { value: 'FILL_IN_BLANK', label: 'Note Completion' },
         { value: 'MULTIPLE_CHOICE_SINGLE', label: 'Multiple Choice (Single)' },
         { value: 'MULTIPLE_CHOICE_MULTIPLE', label: 'Multiple Choice (Multiple)' },
-        { value: 'MATCHING', label: 'Matching' },
-        { value: 'MAP_LABELLING', label: 'Map/Plan Labelling' },
+        { value: 'MATCHING', label: 'Matching / Map / Plan' },
     ],
     writing: [
         { value: 'TASK_1', label: 'Task 1 - Charts/Graphs' },
@@ -87,7 +83,7 @@ const formatDisplayName = (examSource) => {
 };
 
 export default function TestEditorPage() {
-    const { examSource, testNumber } = useParams();
+    const { examSource: paramSource, testNumber: paramNumber, testId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -106,6 +102,7 @@ export default function TestEditorPage() {
         showAIGenerationModal,
         error,
         initializeEditor,
+        initializeEditorByTestId,
         setActiveSkill,
         setActiveSection,
         saveDraft,
@@ -119,8 +116,12 @@ export default function TestEditorPage() {
         generationContext,
         getSectionName,
         reset,
-        applyGeneratedContent // Ensure this is available from hook if possible, or use raw store
+        applyGeneratedContent
     } = useTestEditorStore();
+
+    // Derived values
+    const examSource = paramSource || test?.examSource;
+    const testNumber = paramNumber || test?.testNumber;
 
     // Modal state for uploading content
     const [showPassageModal, setShowPassageModal] = useState(false);
@@ -137,23 +138,22 @@ export default function TestEditorPage() {
     // Initialize on mount
     useEffect(() => {
         const init = async () => {
-            if (examSource && testNumber) {
+            if (testId) {
+                await initializeEditorByTestId(testId);
+            } else if (examSource && testNumber) {
                 await initializeEditor(examSource, testNumber);
+            }
 
-                // Auto-apply generated content if passed from AI Wizard
-                if (location.state?.generatedContent) {
-                    const { applyGeneratedContent } = useTestEditorStoreRaw.getState();
-                    await applyGeneratedContent(location.state.generatedContent, examSource, testNumber);
-                    // Clear the state to prevent re-applying on reload? 
-                    // React Router state persists on reload, so we might want to replace history.
-                    window.history.replaceState({}, document.title);
-                    // alert('✨ Nội dung AI đã được áp dụng!');
-                }
+            // Auto-apply generated content if passed from AI Wizard
+            if (location.state?.generatedContent && (testId || (examSource && testNumber))) {
+                const { applyGeneratedContent } = useTestEditorStoreRaw.getState();
+                await applyGeneratedContent(location.state.generatedContent, examSource, testNumber);
+                window.history.replaceState({}, document.title);
             }
         };
         init();
         return () => reset();
-    }, [examSource, testNumber, initializeEditor, reset]);
+    }, [testId, paramSource, paramNumber, initializeEditor, initializeEditorByTestId, reset]);
 
     // Handler: Change skill
     const handleSkillChange = useCallback((skillId) => {

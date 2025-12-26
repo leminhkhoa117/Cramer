@@ -106,4 +106,33 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
 
     @Query("SELECT DISTINCT s.testNumber FROM Section s WHERE s.examSource = :examSource ORDER BY s.testNumber ASC")
     List<Integer> findDistinctTestNumbersByExamSource(@Param("examSource") String examSource);
+
+    // -------------------------------------------------------------------------
+    // New methods for Test Hierarchy (using test_id)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Find all sections by Test ID.
+     */
+    List<Section> findByIeltsTestId(Long testId);
+
+    /**
+     * Find sections by Test ID and Skill.
+     */
+    List<Section> findByIeltsTestIdAndSkill(Long testId, String skill);
+
+    /**
+     * Find sections for a test and skill, ordered by part number.
+     */
+    @Query("SELECT s FROM Section s WHERE s.ieltsTest.id = :testId " +
+           "AND s.skill = :skill " +
+           "ORDER BY s.partNumber ASC")
+    List<Section> findSectionsForTestId(@Param("testId") Long testId,
+                                        @Param("skill") String skill);
+
+    /**
+     * Count sections by Test ID.
+     */
+    long countByIeltsTestId(Long testId);
 }
+

@@ -46,7 +46,7 @@ const adminApi = {
          * @param {string} tierCode - New tier code (cramerie, cramerich)
          * @param {string} reason - Reason for change (optional)
      */
-        
+
         getList: async (params = {}) => {
             const headers = await getAuthHeaders();
             const queryParams = new URLSearchParams();
@@ -235,11 +235,11 @@ const adminApi = {
         getReports: async (dateFrom, dateTo, granularity = 'daily') => {
             const headers = await getAuthHeaders();
             const queryParams = new URLSearchParams();
-            
+
             queryParams.append('dateFrom', dateFrom);
             queryParams.append('dateTo', dateTo);
             queryParams.append('granularity', granularity);
-            
+
             const response = await axios.get(
                 `${API_BASE_URL}/api/admin/finance/reports?${queryParams.toString()}`,
                 { headers }
@@ -501,6 +501,19 @@ const adminApi = {
                 { headers }
             );
             return response.data;
+        },
+
+        /**
+         * Delete a test
+         * @param {string} testId - Test ID (examSource-testNumber)
+         */
+        deleteTest: async (testId) => {
+            const headers = await getAuthHeaders();
+            const response = await axios.delete(
+                `${API_BASE_URL}/api/admin/content/tests/${testId}`,
+                { headers }
+            );
+            return response.data;
         }
     },
     /**
@@ -619,7 +632,395 @@ const adminApi = {
             return response.data;
         }
     },
+
+    // Secondary APIs exposed through adminApi
+    testSetsApi: null,
+    testsApi: null,
+    hashtagsApi: null
 };
 
-export default adminApi;
+// Assign secondary APIs after they are defined (moved to end of file)
 
+// ============ TEST SETS API ============
+export const testSetsApi = {
+    /**
+     * List all test sets
+     * @returns {Promise<Array>} List of test sets
+     */
+    getAll: async () => {
+        const headers = await getAuthHeaders();
+        const response = await axios.get(
+            `${API_BASE_URL}/api/admin/content/test-sets`,
+            { headers }
+        );
+        return response.data;
+    },
+
+    /**
+     * Get test set by ID (includes tests)
+     * @param {number} id - Test set ID
+     * @returns {Promise<Object>} Test set with tests
+     */
+    getById: async (id) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.get(
+            `${API_BASE_URL}/api/admin/content/test-sets/${id}`,
+            { headers }
+        );
+        return response.data;
+    },
+
+    /**
+     * Get test set by code
+     * @param {string} code - Test set code (e.g., "cam17")
+     * @returns {Promise<Object>} Test set
+     */
+    getByCode: async (code) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.get(
+            `${API_BASE_URL}/api/admin/content/test-sets/code/${code}`,
+            { headers }
+        );
+        return response.data;
+    },
+
+    /**
+     * Create test set
+     * @param {Object} data - Test set data
+     * @returns {Promise<Object>} Created test set
+     */
+    create: async (data) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.post(
+            `${API_BASE_URL}/api/admin/content/test-sets`,
+            data,
+            { headers }
+        );
+        return response.data;
+    },
+
+    /**
+     * Update test set
+     * @param {number} id - Test set ID
+     * @param {Object} data - Updated data
+     * @returns {Promise<Object>} Updated test set
+     */
+    update: async (id, data) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.put(
+            `${API_BASE_URL}/api/admin/content/test-sets/${id}`,
+            data,
+            { headers }
+        );
+        return response.data;
+    },
+
+    /**
+     * Delete test set
+     * @param {number} id - Test set ID
+     */
+    delete: async (id) => {
+        const headers = await getAuthHeaders();
+        await axios.delete(
+            `${API_BASE_URL}/api/admin/content/test-sets/${id}`,
+            { headers }
+        );
+    },
+
+    /**
+     * Publish test set
+     * @param {number} id - Test set ID
+     * @returns {Promise<Object>} Updated test set
+     */
+    publish: async (id) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.post(
+            `${API_BASE_URL}/api/admin/test-sets/${id}/publish`,
+            null,
+            { headers }
+        );
+        return response.data;
+    },
+
+    /**
+     * Unpublish test set
+     * @param {number} id - Test set ID
+     * @returns {Promise<Object>} Updated test set
+     */
+    unpublish: async (id) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.post(
+            `${API_BASE_URL}/api/admin/test-sets/${id}/unpublish`,
+            null,
+            { headers }
+        );
+        return response.data;
+    },
+};
+
+// ============ TESTS API ============
+export const testsApi = {
+    /**
+     * List tests in a set
+     * @param {number} setId - Test set ID
+     * @returns {Promise<Array>} List of tests
+     */
+    getBySetId: async (setId) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.get(
+            `${API_BASE_URL}/api/admin/test-sets/${setId}/tests`,
+            { headers }
+        );
+        return response.data;
+    },
+
+    /**
+     * Get test by ID (full details)
+     * @param {number} id - Test ID
+     * @returns {Promise<Object>} Test details
+     */
+    getById: async (id) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.get(
+            `${API_BASE_URL}/api/admin/tests/${id}`,
+            { headers }
+        );
+        return response.data;
+    },
+
+    /**
+     * Get test by set code and test number
+     * @param {string} setCode - Test set code (e.g., "cam17")
+     * @param {number} testNumber - Test number
+     * @returns {Promise<Object>} Test details
+     */
+    getBySetCodeAndNumber: async (setCode, testNumber) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.get(
+            `${API_BASE_URL}/api/admin/tests/lookup`,
+            {
+                headers,
+                params: { setCode, testNumber }
+            }
+        );
+        return response.data;
+    },
+
+
+
+
+    /**
+     * Update test
+     * @param {number} id - Test ID
+     * @param {Object} data - Updated data
+     * @returns {Promise<Object>} Updated test
+     */
+    update: async (id, data) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.put(
+            `${API_BASE_URL}/api/admin/content/tests/${id}`,
+            data,
+            { headers }
+        );
+        return response.data;
+    },
+
+
+
+    /**
+     * Publish test
+     * @param {number} id - Test ID
+     * @returns {Promise<Object>} Updated test
+     */
+    publish: async (id) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.post(
+            `${API_BASE_URL}/api/admin/content/tests/${id}/publish`,
+            null,
+            { headers }
+        );
+        return response.data;
+    },
+
+    /**
+     * Unpublish test
+     * @param {number} id - Test ID
+     * @returns {Promise<Object>} Updated test
+     */
+    unpublish: async (id) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.post(
+            `${API_BASE_URL}/api/admin/content/tests/${id}/unpublish`,
+            null,
+            { headers }
+        );
+        return response.data;
+    },
+
+    /**
+     * Update hashtags for a test
+     * @param {number} id - Test ID
+     * @param {Array<number>} hashtagIds - List of hashtag IDs
+     * @param {number|null} primaryHashtagId - Primary hashtag ID (optional)
+     * @returns {Promise<Object>} Updated test
+     */
+    updateHashtags: async (id, hashtagIds, primaryHashtagId = null) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.put(
+            `${API_BASE_URL}/api/admin/content/tests/${id}/hashtags`,
+            { hashtagIds, primaryHashtagId },
+            { headers }
+        );
+        return response.data;
+    },
+
+    /**
+     * Duplicate test
+     * @param {number} id - Test ID to duplicate
+     * @param {number} newTestNumber - Test number for the duplicate
+     * @returns {Promise<Object>} Created duplicate test
+     */
+    duplicate: async (id, newTestNumber) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.post(
+            `${API_BASE_URL}/api/admin/tests/${id}/duplicate`,
+            null,
+            {
+                headers,
+                params: { newTestNumber }
+            }
+        );
+        return response.data;
+    },
+
+    /**
+     * Get sections for a test
+     * @param {number} id - Test ID
+     * @param {string} skill - Skill (reading, listening, writing, speaking)
+     * @returns {Promise<Array>} List of sections
+     */
+    getSections: async (id, skill) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.get(
+            `${API_BASE_URL}/api/admin/tests/${id}/sections`,
+            {
+                headers,
+                params: { skill }
+            }
+        );
+        return response.data;
+    },
+};
+
+// ============ HASHTAGS API ============
+export const hashtagsApi = {
+    /**
+     * List all hashtags
+     * @returns {Promise<Array>} List of hashtags
+     */
+    getAll: async () => {
+        const headers = await getAuthHeaders();
+        const response = await axios.get(
+            `${API_BASE_URL}/api/admin/hashtags`,
+            { headers }
+        );
+        return response.data;
+    },
+
+    /**
+     * Get hashtags by category
+     * @param {string} category - Hashtag category (e.g., "topic", "theme", "difficulty")
+     * @returns {Promise<Array>} List of hashtags in category
+     */
+    getByCategory: async (category) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.get(
+            `${API_BASE_URL}/api/admin/hashtags/category/${category}`,
+            { headers }
+        );
+        return response.data;
+    },
+
+    /**
+     * Search hashtags
+     * @param {string} query - Search query
+     * @returns {Promise<Array>} Matching hashtags
+     */
+    search: async (query) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.get(
+            `${API_BASE_URL}/api/admin/hashtags/search`,
+            {
+                headers,
+                params: { q: query }
+            }
+        );
+        return response.data;
+    },
+
+    /**
+     * Get popular hashtags
+     * @param {number} limit - Maximum number of hashtags to return
+     * @returns {Promise<Array>} Popular hashtags
+     */
+    getPopular: async (limit = 10) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.get(
+            `${API_BASE_URL}/api/admin/hashtags/popular`,
+            {
+                headers,
+                params: { limit }
+            }
+        );
+        return response.data;
+    },
+
+    /**
+     * Create hashtag
+     * @param {Object} data - Hashtag data (name, category, code, displayName)
+     * @returns {Promise<Object>} Created hashtag
+     */
+    create: async (data) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.post(
+            `${API_BASE_URL}/api/admin/hashtags`,
+            data,
+            { headers }
+        );
+        return response.data;
+    },
+
+    /**
+     * Update hashtag
+     * @param {number} id - Hashtag ID
+     * @param {Object} data - Updated data
+     * @returns {Promise<Object>} Updated hashtag
+     */
+    update: async (id, data) => {
+        const headers = await getAuthHeaders();
+        const response = await axios.put(
+            `${API_BASE_URL}/api/admin/hashtags/${id}`,
+            data,
+            { headers }
+        );
+        return response.data;
+    },
+
+    /**
+     * Delete hashtag
+     * @param {number} id - Hashtag ID
+     */
+    delete: async (id) => {
+        const headers = await getAuthHeaders();
+        await axios.delete(
+            `${API_BASE_URL}/api/admin/hashtags/${id}`,
+            { headers }
+        );
+    },
+};
+// Assign secondary APIs to adminApi object
+adminApi.testSetsApi = testSetsApi;
+adminApi.testsApi = testsApi;
+adminApi.hashtagsApi = hashtagsApi;
+
+export default adminApi;

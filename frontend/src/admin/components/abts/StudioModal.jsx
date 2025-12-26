@@ -21,7 +21,8 @@ import './AIStudio.css';
 export default function StudioModal({ isOpen, onClose, onComplete, initialSkill, mode, context }) {
     const [view, setView] = useState('config');
     const {
-        resetGeneration,
+        resetForm,
+        clearResult,
         setFormField,
         updateFormData,
         generateStreaming,
@@ -32,7 +33,8 @@ export default function StudioModal({ isOpen, onClose, onComplete, initialSkill,
     // Reset and initialize when opening
     useEffect(() => {
         if (isOpen) {
-            resetGeneration();
+            resetForm();
+            clearResult();
             setView('config');
             if (initialSkill) setFormField('skill', initialSkill.toUpperCase());
             if (mode) updateFormData({ generationMode: mode });

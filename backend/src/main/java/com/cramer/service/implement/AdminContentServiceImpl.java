@@ -1,11 +1,14 @@
 package com.cramer.service.implement;
 
 import com.cramer.service.AdminContentService;
+import com.cramer.repository.*;
+import com.cramer.entity.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.Objects;
@@ -25,6 +28,18 @@ public class AdminContentServiceImpl implements AdminContentService {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private TestSetRepository testSetRepository;
+
+    @Autowired
+    private IeltsTestRepository ieltsTestRepository;
+
+    @Autowired
+    private SectionRepository sectionRepository;
+
+    @Autowired
+    private HashtagRepository hashtagRepository;
+
     // Simple in-memory cache for overview stats (expires after 5 minutes)
     private Map<String, Object> cachedOverview = null;
     private long overviewCacheTime = 0;
@@ -33,122 +48,86 @@ public class AdminContentServiceImpl implements AdminContentService {
     @Override
     public List<Map<String, Object>> getTopicsWithTests(String search, String status) {
         try {
-            // OPTIMIZED: Single query to get all test info with aggregated data
-            String sql = """
-                    WITH test_stats AS (
-                        SELECT
-                            s.exam_source,
-                            s.test_number,
-                            s.skill,
-                            COUNT(DISTINCT s.id) as section_count,
-                            COUNT(q.id) as question_count
-                        FROM public.sections s
-                        LEFT JOIN public.questions q ON q.section_id = s.id
-                        GROUP BY s.exam_source, s.test_number, s.skill
-                    ),
-                    test_attempts_count AS (
-                        SELECT
-                            exam_source,
-                            test_number,
-                            COUNT(*) as attempt_count
-                        FROM public.test_attempts
-                        GROUP BY exam_source, test_number
-                    ),
-                    aggregated_tests AS (
-                        SELECT
-                            ts.exam_source,
-                            ts.test_number,
-                            COALESCE(ta.attempt_count, 0) as total_attempts,
-                            MAX(CASE WHEN ts.skill = 'reading' THEN ts.question_count ELSE 0 END) as reading_questions,
-                            MAX(CASE WHEN ts.skill = 'listening' THEN ts.question_count ELSE 0 END) as listening_questions,
-                            MAX(CASE WHEN ts.skill = 'writing' THEN ts.question_count ELSE 0 END) as writing_questions,
-                            MAX(CASE WHEN ts.skill = 'speaking' THEN ts.section_count ELSE 0 END) as speaking_sections
-                        FROM test_stats ts
-                        LEFT JOIN test_attempts_count ta
-                            ON ts.exam_source = ta.exam_source
-                            AND ts.test_number::text = ta.test_number
-                        GROUP BY ts.exam_source, ts.test_number, ta.attempt_count
-                    )
-                    SELECT
-                        exam_source,
-                        test_number,
-                        total_attempts,
-                        reading_questions,
-                        listening_questions,
-                        writing_questions,
-                        speaking_sections,
-                        CASE
-                            WHEN (reading_questions >= 40 OR listening_questions >= 40)
-                                 AND (reading_questions > 0 OR listening_questions > 0)
-                            THEN 'PUBLISHED'
-                            WHEN reading_questions > 0 OR listening_questions > 0
-                                 OR writing_questions > 0 OR speaking_sections > 0
-                            THEN 'DRAFT'
-                            ELSE 'DRAFT'
-                        END as status
-                    FROM aggregated_tests
-                    ORDER BY exam_source, test_number
-                    """;
+            logger.info("Fetching hierarchical topics with tests. Search: {}, Status: {}", search, status);
 
-            List<Map<String, Object>> rawTests = jdbcTemplate.queryForList(sql);
+            List<TestSet> testSets;
+            if (search != null && !search.trim().isEmpty()) {
+                testSets = testSetRepository.searchByCodeOrName(search);
+            } else {
+                testSets = testSetRepository.findAllByOrderByDisplayOrderAsc();
+            }
 
-            // Group by exam_source (topic)
-            Map<String, List<Map<String, Object>>> groupedBySource = new LinkedHashMap<>();
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (TestSet testSet : testSets) {
+                Map<String, Object> setMap = new HashMap<>();
+                setMap.put("id", testSet.getId());
+                setMap.put("code", testSet.getCode());
+                setMap.put("nameVi", testSet.getNameVi());
+                setMap.put("nameEn", testSet.getNameEn());
+                setMap.put("description", testSet.getDescription());
+                setMap.put("coverImageUrl", testSet.getCoverImageUrl());
+                setMap.put("isPublished", testSet.getIsPublished());
+                setMap.put("isSystem", testSet.getIsSystem());
 
-            for (Map<String, Object> row : rawTests) {
-                String examSource = (String) row.get("exam_source");
+                // Add hashtags for Test Set
+                List<Map<String, Object>> setHashtags = new ArrayList<>();
+                for (Hashtag h : testSet.getHashtags()) {
+                    Map<String, Object> hMap = new HashMap<>();
+                    hMap.put("id", h.getId());
+                    hMap.put("code", h.getCode());
+                    hMap.put("nameVi", h.getNameVi());
+                    hMap.put("icon", h.getIcon());
+                    hMap.put("color", h.getColor());
+                    setHashtags.add(hMap);
+                }
+                setMap.put("hashtags", setHashtags);
 
-                // Apply search filter
-                if (search != null && !search.trim().isEmpty()) {
-                    String displayName = formatDisplayName(examSource);
-                    if (!displayName.toLowerCase().contains(search.toLowerCase()) &&
-                            !examSource.toLowerCase().contains(search.toLowerCase())) {
+                List<Map<String, Object>> testsList = new ArrayList<>();
+                for (IeltsTest test : testSet.getTests()) {
+                    // Filter by status if provided
+                    String testStatus = test.getIsPublished() ? "PUBLISHED" : "DRAFT";
+                    if (status != null && !status.equals("ALL") && !status.equalsIgnoreCase(testStatus)) {
                         continue;
                     }
-                }
 
-                // Apply status filter
-                String testStatus = (String) row.get("status");
-                if (status != null && !status.equals("ALL") && !status.equals(testStatus)) {
-                    continue;
-                }
+                    Map<String, Object> testMap = new HashMap<>();
+                    testMap.put("id", test.getId());
+                    testMap.put("testNumber", test.getTestNumber());
+                    testMap.put("nameVi", test.getNameVi());
+                    testMap.put("nameEn", test.getNameEn());
+                    testMap.put("difficulty", test.getDifficulty());
+                    testMap.put("isPublished", test.getIsPublished());
+                    testMap.put("isAiGenerated", test.getIsAiGenerated());
 
-                groupedBySource.computeIfAbsent(examSource, k -> new ArrayList<>()).add(row);
-            }
-
-            // Build topics list
-            List<Map<String, Object>> topics = new ArrayList<>();
-            int topicId = 1;
-
-            for (Map.Entry<String, List<Map<String, Object>>> entry : groupedBySource.entrySet()) {
-                String examSource = entry.getKey();
-                List<Map<String, Object>> testRows = entry.getValue();
-
-                Map<String, Object> topic = new HashMap<>();
-                topic.put("id", topicId++);
-                topic.put("source", examSource);
-                topic.put("displayName", formatDisplayName(examSource));
-
-                List<Map<String, Object>> tests = new ArrayList<>();
-                int publishedCount = 0;
-
-                for (Map<String, Object> row : testRows) {
-                    Map<String, Object> test = buildTestFromRow(row);
-                    tests.add(test);
-
-                    if ("PUBLISHED".equals(test.get("status"))) {
-                        publishedCount++;
+                    // Add hashtags
+                    List<Map<String, Object>> hashtags = new ArrayList<>();
+                    for (Hashtag h : test.getHashtags()) {
+                        Map<String, Object> hMap = new HashMap<>();
+                        hMap.put("id", h.getId());
+                        hMap.put("code", h.getCode());
+                        hMap.put("nameVi", h.getNameVi());
+                        hMap.put("icon", h.getIcon());
+                        hMap.put("color", h.getColor());
+                        hashtags.add(hMap);
                     }
+                    testMap.put("hashtags", hashtags);
+
+                    // Add skill stats
+                    Map<String, Integer> skillCounts = test.getSkillSectionCounts();
+                    testMap.put("skills", skillCounts);
+
+                    testsList.add(testMap);
                 }
 
-                topic.put("tests", tests);
-                topic.put("testsCount", tests.size());
-                topic.put("publishedTests", publishedCount);
+                setMap.put("tests", testsList);
+                setMap.put("testsCount", testsList.size());
 
-                topics.add(topic);
+                if (!testsList.isEmpty() || (search == null || search.trim().isEmpty())) {
+                    result.add(setMap);
+                }
             }
 
-            return topics;
+            return result;
 
         } catch (Exception e) {
             logger.error("Error fetching topics with tests", e);
@@ -167,11 +146,13 @@ public class AdminContentServiceImpl implements AdminContentService {
         Map<String, Object> overview = new HashMap<>();
 
         try {
-            // OPTIMIZED: Single query for all counts
+            // OPTIMIZED: Single query for all counts from the new unified tables
             String sql = """
                     SELECT
-                        (SELECT COUNT(DISTINCT exam_source) FROM public.sections) as total_topics,
-                        (SELECT COUNT(*) FROM (SELECT DISTINCT exam_source, test_number FROM public.sections) sub) as total_tests,
+                        (SELECT COUNT(*) FROM public.test_sets) as total_topics,
+                        (SELECT COUNT(*) FROM public.tests) as total_tests,
+                        (SELECT COUNT(*) FROM public.tests WHERE is_published = true) as published_tests,
+                        (SELECT COUNT(*) FROM public.tests WHERE is_published = false) as draft_tests,
                         (SELECT COUNT(*) FROM public.questions) as total_questions,
                         (SELECT COUNT(*) FROM public.test_attempts) as total_attempts
                     """;
@@ -180,8 +161,8 @@ public class AdminContentServiceImpl implements AdminContentService {
 
             overview.put("totalTopics", counts.get("total_topics"));
             overview.put("totalTests", counts.get("total_tests"));
-            overview.put("publishedTests", counts.get("total_tests")); // All with data are published
-            overview.put("draftTests", 0);
+            overview.put("publishedTests", counts.get("published_tests"));
+            overview.put("draftTests", counts.get("draft_tests"));
             overview.put("reviewTests", 0);
             overview.put("totalQuestions", counts.get("total_questions"));
             overview.put("totalAttempts", counts.get("total_attempts"));
@@ -455,47 +436,6 @@ public class AdminContentServiceImpl implements AdminContentService {
     // =====================
 
     /**
-     * Build test info from aggregated row data
-     */
-    private Map<String, Object> buildTestFromRow(Map<String, Object> row) {
-        Map<String, Object> test = new HashMap<>();
-
-        String examSource = (String) row.get("exam_source");
-        Integer testNumber = ((Number) row.get("test_number")).intValue();
-
-        test.put("id", examSource + "-" + testNumber);
-        test.put("examSource", examSource);
-        test.put("testNumber", testNumber);
-        test.put("name", "Test " + testNumber);
-        test.put("status", row.get("status"));
-        test.put("totalAttempts", row.get("total_attempts"));
-
-        // Build skills
-        Map<String, Object> skills = new HashMap<>();
-
-        int readingQ = ((Number) row.getOrDefault("reading_questions", 0)).intValue();
-        int listeningQ = ((Number) row.getOrDefault("listening_questions", 0)).intValue();
-        int writingQ = ((Number) row.getOrDefault("writing_questions", 0)).intValue();
-        int speakingS = ((Number) row.getOrDefault("speaking_sections", 0)).intValue();
-
-        skills.put("reading", createSkillInfo(readingQ, determineSkillStatus("reading", 0, readingQ)));
-        skills.put("listening", createSkillInfo(listeningQ, determineSkillStatus("listening", 0, listeningQ)));
-        skills.put("writing", createSkillInfo(writingQ, determineSkillStatus("writing", 0, writingQ)));
-        skills.put("speaking", createSkillInfo(speakingS, determineSkillStatus("speaking", speakingS, 0)));
-
-        test.put("skills", skills);
-
-        return test;
-    }
-
-    private Map<String, Object> createSkillInfo(int count, String status) {
-        Map<String, Object> info = new HashMap<>();
-        info.put("questionCount", count);
-        info.put("status", status);
-        return info;
-    }
-
-    /**
      * Determine skill completion status
      */
     private String determineSkillStatus(String skill, int sectionCount, int questionCount) {
@@ -515,25 +455,6 @@ public class AdminContentServiceImpl implements AdminContentService {
             default:
                 return questionCount > 0 ? "draft" : "empty";
         }
-    }
-
-    /**
-     * Format exam_source to display name
-     */
-    private String formatDisplayName(String examSource) {
-        if (examSource == null)
-            return "Unknown";
-
-        if (examSource.toLowerCase().startsWith("cam")) {
-            String number = examSource.substring(3);
-            return "Cambridge IELTS " + number;
-        }
-
-        if (examSource.toLowerCase().startsWith("real")) {
-            return "Real Tests";
-        }
-
-        return examSource.substring(0, 1).toUpperCase() + examSource.substring(1);
     }
 
     // =====================
@@ -799,24 +720,20 @@ public class AdminContentServiceImpl implements AdminContentService {
     public Map<String, Object> updateTestStatus(String examSource, Integer testNumber, String status,
             String adminUserId) {
         try {
-            // Validate status
-            if (!List.of("DRAFT", "PUBLISHED", "ARCHIVED").contains(status)) {
-                throw new RuntimeException("Trạng thái không hợp lệ: " + status);
-            }
-
-            // Update all sections of this test
             int updated = jdbcTemplate.update(
                     "UPDATE public.sections SET status = ?, updated_at = NOW() WHERE exam_source = ? AND test_number = ?",
                     status, examSource, testNumber);
 
-            logger.info("Admin {} updated status of {} Test {} to {} - {} sections affected",
-                    adminUserId, examSource, testNumber, status, updated);
+            logger.info("Admin {} updated status to {} for {} Test {} - {} sections affected",
+                    adminUserId, status, examSource, testNumber, updated);
+
+            // Invalidate cache
+            cachedOverview = null;
 
             Map<String, Object> result = new HashMap<>();
             result.put("success", true);
-            result.put("sectionsUpdated", updated);
-            result.put("status", status);
-            result.put("message", String.format("Đã cập nhật trạng thái thành %s cho %d sections", status, updated));
+            result.put("updated", updated);
+            result.put("message", "Đã cập nhật trạng thái đề thi");
             return result;
 
         } catch (Exception e) {
@@ -826,65 +743,376 @@ public class AdminContentServiceImpl implements AdminContentService {
     }
 
     @Override
+    public void deleteTest(String testId, String adminUserId) {
+        try {
+            // Parse composite ID "examSource-testNumber"
+            // Example: "cam17-1" -> examSource="cam17", testNumber=1
+            int lastHyphenIndex = testId.lastIndexOf('-');
+            if (lastHyphenIndex == -1) {
+                throw new IllegalArgumentException("ID đề thi không hợp lệ: " + testId);
+            }
 
+            String examSource = testId.substring(0, lastHyphenIndex);
+            String testNumberStr = testId.substring(lastHyphenIndex + 1);
+            int testNumber;
+
+            try {
+                testNumber = Integer.parseInt(testNumberStr);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Số đề thi không hợp lệ: " + testNumberStr);
+            }
+
+            // 1. Delete dependent user answers
+            String deleteUserAnswersSql = """
+                        DELETE FROM public.user_answers
+                        WHERE attempt_id IN (
+                            SELECT id FROM public.test_attempts
+                            WHERE exam_source = ? AND test_number = ?
+                        )
+                    """;
+            jdbcTemplate.update(deleteUserAnswersSql, examSource, String.valueOf(testNumber));
+
+            // 2. Delete writing submissions
+            String deleteSubmissionsSql = """
+                        DELETE FROM public.writing_submissions
+                        WHERE attempt_id IN (
+                            SELECT id FROM public.test_attempts
+                            WHERE exam_source = ? AND test_number = ?
+                        )
+                    """;
+            jdbcTemplate.update(deleteSubmissionsSql, examSource, String.valueOf(testNumber));
+
+            // 3. Delete vocabulary (linked to attempts)
+            String deleteVocabAttemptsSql = """
+                        DELETE FROM public.vocabulary
+                        WHERE source_test_id IN (
+                            SELECT id FROM public.test_attempts
+                            WHERE exam_source = ? AND test_number = ?
+                        )
+                    """;
+            jdbcTemplate.update(deleteVocabAttemptsSql, examSource, String.valueOf(testNumber));
+
+            // 4. Delete vocabulary (linked to sections)
+            String deleteVocabSectionsSql = """
+                        DELETE FROM public.vocabulary
+                        WHERE source_section_id IN (
+                            SELECT id FROM public.sections
+                            WHERE exam_source = ? AND test_number = ?
+                        )
+                    """;
+            jdbcTemplate.update(deleteVocabSectionsSql, examSource, testNumber);
+
+            // 5. Delete test attempts
+            jdbcTemplate.update("DELETE FROM public.test_attempts WHERE exam_source = ? AND test_number = ?",
+                    examSource, String.valueOf(testNumber));
+
+            // 6. Delete all questions in sections of this test
+            String deleteQuestionsSql = """
+                        DELETE FROM public.questions
+                        WHERE section_id IN (
+                            SELECT id FROM public.sections
+                            WHERE exam_source = ? AND test_number = ?
+                        )
+                    """;
+            jdbcTemplate.update(deleteQuestionsSql, examSource, testNumber);
+
+            // 7. Delete all sections of this test
+            String deleteSectionsSql = "DELETE FROM public.sections WHERE exam_source = ? AND test_number = ?";
+            int deletedSections = jdbcTemplate.update(deleteSectionsSql, examSource, testNumber);
+
+            // 8. Delete from tests table if exists
+            try {
+                jdbcTemplate.update("""
+                            DELETE FROM public.test_hashtags
+                            WHERE test_id IN (
+                                SELECT id FROM public.tests
+                                WHERE test_number = ? AND set_id IN (
+                                    SELECT id FROM public.test_sets WHERE code = ?
+                                )
+                            )
+                        """, testNumber, examSource);
+
+                jdbcTemplate.update("""
+                            DELETE FROM public.tests
+                            WHERE test_number = ? AND set_id IN (
+                                SELECT id FROM public.test_sets WHERE code = ?
+                            )
+                        """, testNumber, examSource);
+            } catch (Exception e) {
+                logger.warn("Could not delete from tests table for {}/{}: {}", examSource, testNumber, e.getMessage());
+            }
+
+            logger.info("Admin {} deleted test {} ({} sections)", adminUserId, testId, deletedSections);
+            cachedOverview = null;
+
+        } catch (Exception e) {
+            logger.error("Error deleting test {}", testId, e);
+            throw new RuntimeException("Không thể xóa đề thi: " + e.getMessage());
+        }
+    }
+
+    @Override
     public Map<String, Object> createTest(Map<String, Object> testData, String adminUserId) {
-        String examSource = (String) testData.get("examSource");
+        Long setId = ((Number) testData.get("setId")).longValue();
         Object testNumberObj = testData.get("testNumber");
         Integer testNumber = testNumberObj instanceof String ? Integer.parseInt((String) testNumberObj)
-                : (Integer) testNumberObj;
+                : ((Number) testNumberObj).intValue();
 
         try {
-            logger.info("Attempting to create test: {} / {}", examSource, testNumber);
+            logger.info("Attempting to create test in set {} with number {}", setId, testNumber);
 
-            // Check if test already exists
-            Integer count = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM public.sections WHERE exam_source = ? AND test_number = ?",
-                    Integer.class, examSource, testNumber);
+            TestSet testSet = testSetRepository.findById(setId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy bộ đề ID: " + setId));
 
-            if (count != null && count > 0) {
-                logger.info("Test already exists: {} / {}", examSource, testNumber);
+            // Check if test already exists in this set
+            Optional<IeltsTest> existingTest = ieltsTestRepository.findByTestSetIdAndTestNumber(setId, testNumber);
+
+            if (existingTest.isPresent()) {
+                logger.info("Test already exists: Set {} / Number {}", setId, testNumber);
                 Map<String, Object> result = new HashMap<>();
                 result.put("success", true);
-                result.put("examSource", examSource);
-                result.put("testNumber", testNumber);
+                result.put("testId", existingTest.get().getId());
                 result.put("message", "Test already exists");
                 return result;
             }
 
-            // Create a dummy Reading Part 1 section
-            String sql = """
-                    INSERT INTO public.sections (exam_source, test_number, skill, part_number, passage_text, status, created_at, updated_at)
-                    VALUES (?, ?, 'reading', 1, 'Placeholder passage for initialization', 'DRAFT', NOW(), NOW())
-                    RETURNING id
-                    """;
+            // Create new IeltsTest entry
+            IeltsTest test = IeltsTest.builder()
+                    .testSet(testSet)
+                    .testNumber(testNumber)
+                    .nameVi("Bài thi " + testNumber)
+                    .nameEn("Test " + testNumber)
+                    .isPublished(false)
+                    .isAiGenerated(false)
+                    .createdBy(UUID.fromString(adminUserId))
+                    .build();
 
-            Long sectionId = jdbcTemplate.queryForObject(sql, Long.class, examSource, testNumber);
-            logger.info("Created placeholder section ID: {}", sectionId);
+            test = ieltsTestRepository.save(test);
 
-            // Verify insertion immediately
-            Integer verifyCount = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM public.sections WHERE exam_source = ? AND test_number = ?",
-                    Integer.class, examSource, testNumber);
-            logger.info("Verification count after insert: {}", verifyCount);
+            // Handle hashtags if present
+            if (testData.containsKey("hashtagIds")) {
+                List<?> rawIds = (List<?>) testData.get("hashtagIds");
+                if (rawIds != null && !rawIds.isEmpty()) {
+                    List<Long> hashtagIds = rawIds.stream()
+                            .map(id -> Long.valueOf(id.toString()))
+                            .toList();
+                    List<Hashtag> hashtags = hashtagRepository.findAllById(hashtagIds);
+                    test.setHashtags(new HashSet<>(hashtags));
+                    hashtags.forEach(h -> {
+                        h.incrementUseCount();
+                        hashtagRepository.save(h);
+                    });
 
-            if (verifyCount == null || verifyCount == 0) {
-                throw new RuntimeException("Insert appeared successful but verification failed (count=0)");
+                    // Save again to persist relationship
+                    test = ieltsTestRepository.save(test);
+                }
             }
+
+            logger.info("Created new IeltsTest with ID: {}", test.getId());
+
+            // Create a dummy Reading Part 1 section to initialize the test data
+            Section placeholder = Section.builder()
+                    .ieltsTest(test)
+                    .examSource(testSet.getCode())
+                    .testNumber(testNumber)
+                    .skill("reading")
+                    .partNumber(1)
+                    .passageText("Placeholder passage for initialization")
+                    .status("DRAFT")
+                    .build();
+
+            sectionRepository.save(placeholder);
+            logger.info("Created placeholder section for first skill");
 
             // Invalidate cache
             cachedOverview = null;
 
             Map<String, Object> result = new HashMap<>();
             result.put("success", true);
-            result.put("sectionId", sectionId);
-            result.put("examSource", examSource);
+            result.put("testId", test.getId());
+            result.put("setId", setId);
             result.put("testNumber", testNumber);
             result.put("message", "Đã tạo test mới thành công");
             return result;
 
         } catch (Exception e) {
-            logger.error("Error creating test {}/{}", examSource, testNumber, e);
+            logger.error("Error creating test in set {}/{}", setId, testNumber, e);
             throw new RuntimeException("Không thể tạo test: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> updateTest(Long testId, Map<String, Object> testData, String adminUserId) {
+        logger.info("Updating test {}: {}", testId, testData);
+        try {
+            IeltsTest test = ieltsTestRepository.findById(testId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đề thi ID: " + testId));
+
+            if (testData.containsKey("nameVi"))
+                test.setNameVi((String) testData.get("nameVi"));
+            if (testData.containsKey("nameEn"))
+                test.setNameEn((String) testData.get("nameEn"));
+            if (testData.containsKey("description"))
+                test.setDescription((String) testData.get("description"));
+            // Add other fields as needed
+
+            if (testData.containsKey("hashtagIds")) {
+                Set<Hashtag> oldHashtags = test.getHashtags();
+                if (oldHashtags == null)
+                    oldHashtags = new HashSet<>();
+
+                List<?> rawIds = (List<?>) testData.get("hashtagIds");
+                List<Long> newIds = rawIds == null ? new ArrayList<>()
+                        : rawIds.stream().map(id -> Long.valueOf(id.toString())).toList();
+                List<Hashtag> newHashtagsList = hashtagRepository.findAllById(newIds);
+                Set<Hashtag> newHashtags = new HashSet<>(newHashtagsList);
+
+                // Calculate removed
+                Set<Hashtag> finalOldHashtags = oldHashtags;
+                List<Hashtag> removed = oldHashtags.stream()
+                        .filter(h -> !newHashtags.contains(h))
+                        .toList();
+
+                // Calculate added
+                List<Hashtag> added = newHashtags.stream()
+                        .filter(h -> !finalOldHashtags.contains(h))
+                        .toList();
+
+                // Update counts
+                removed.forEach(h -> {
+                    h.decrementUseCount();
+                    hashtagRepository.save(h);
+                });
+                added.forEach(h -> {
+                    h.incrementUseCount();
+                    hashtagRepository.save(h);
+                });
+
+                test.setHashtags(newHashtags);
+            }
+
+            test = ieltsTestRepository.save(test);
+            cachedOverview = null; // Invalidate cache
+
+            return Map.of("success", true, "message", "Cập nhật đề thi thành công");
+        } catch (Exception e) {
+            logger.error("Error updating test {}", testId, e);
+            throw new RuntimeException("Lỗi khi cập nhật đề thi: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> createTestSet(Map<String, Object> setData, String adminUserId) {
+        logger.info("Creating new test set: {}", setData);
+        try {
+            TestSet testSet = TestSet.builder()
+                    .code((String) setData.get("code"))
+                    .nameVi((String) setData.get("nameVi"))
+                    .nameEn((String) setData.get("nameEn"))
+                    .description((String) setData.get("description"))
+                    .sourceType((String) setData.getOrDefault("sourceType", "custom"))
+                    .displayOrder((Integer) setData.getOrDefault("displayOrder", 0))
+                    .isPublished(false)
+                    .isSystem(false)
+                    .createdBy(UUID.fromString(adminUserId))
+                    .build();
+
+            if (setData.containsKey("hashtagIds")) {
+                List<?> rawIds = (List<?>) setData.get("hashtagIds");
+                if (rawIds != null && !rawIds.isEmpty()) {
+                    List<Long> hashtagIds = rawIds.stream()
+                            .map(id -> Long.valueOf(id.toString()))
+                            .toList();
+                    List<Hashtag> hashtags = hashtagRepository.findAllById(hashtagIds);
+                    testSet.setHashtags(hashtags);
+                    hashtags.forEach(h -> {
+                        h.incrementUseCount();
+                        hashtagRepository.save(h);
+                    });
+                }
+            }
+
+            testSet = testSetRepository.save(testSet);
+            cachedOverview = null;
+            return Map.of("success", true, "id", testSet.getId());
+        } catch (Exception e) {
+            logger.error("Error creating test set", e);
+            throw new RuntimeException("Lỗi khi tạo bộ đề: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> updateTestSet(Long setId, Map<String, Object> setData, String adminUserId) {
+        logger.info("Updating test set {}: {}", setId, setData);
+        try {
+            TestSet testSet = testSetRepository.findById(setId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy bộ đề ID: " + setId));
+
+            if (setData.containsKey("nameVi"))
+                testSet.setNameVi((String) setData.get("nameVi"));
+            if (setData.containsKey("nameEn"))
+                testSet.setNameEn((String) setData.get("nameEn"));
+            if (setData.containsKey("description"))
+                testSet.setDescription((String) setData.get("description"));
+            if (setData.containsKey("sourceType"))
+                testSet.setSourceType((String) setData.get("sourceType"));
+            if (setData.containsKey("displayOrder"))
+                testSet.setDisplayOrder((Integer) setData.get("displayOrder"));
+
+            if (setData.containsKey("hashtagIds")) {
+                List<Hashtag> oldHashtags = new ArrayList<>(testSet.getHashtags());
+
+                List<?> rawIds = (List<?>) setData.get("hashtagIds");
+                List<Long> newIds = rawIds == null ? new ArrayList<>()
+                        : rawIds.stream().map(id -> Long.valueOf(id.toString())).toList();
+                List<Hashtag> newHashtags = hashtagRepository.findAllById(newIds);
+
+                // Calculate removed
+                List<Hashtag> removed = oldHashtags.stream()
+                        .filter(h -> !newHashtags.contains(h))
+                        .toList();
+
+                // Calculate added
+                List<Hashtag> added = newHashtags.stream()
+                        .filter(h -> !oldHashtags.contains(h))
+                        .toList();
+
+                // Update counts
+                removed.forEach(h -> {
+                    h.decrementUseCount();
+                    hashtagRepository.save(h);
+                });
+                added.forEach(h -> {
+                    h.incrementUseCount();
+                    hashtagRepository.save(h);
+                });
+
+                testSet.setHashtags(newHashtags);
+            }
+
+            testSetRepository.save(testSet);
+            cachedOverview = null;
+            return Map.of("success", true);
+        } catch (Exception e) {
+            logger.error("Error updating test set", e);
+            throw new RuntimeException("Lỗi khi cập nhật bộ đề: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void deleteTestSet(Long setId, String adminUserId) {
+        logger.info("Admin {} is deleting test set {}", adminUserId, setId);
+        try {
+            testSetRepository.deleteById(setId);
+            cachedOverview = null;
+            logger.info("Successfully deleted test set {}", setId);
+        } catch (Exception e) {
+            logger.error("Error deleting test set", e);
+            throw new RuntimeException("Lỗi khi xóa bộ đề: " + e.getMessage());
         }
     }
 }

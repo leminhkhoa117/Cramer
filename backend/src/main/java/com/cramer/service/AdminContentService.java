@@ -105,4 +105,29 @@ public interface AdminContentService {
      * Tạo test mới
      */
     Map<String, Object> createTest(Map<String, Object> testData, String adminUserId);
+
+    /**
+     * Xóa test
+     */
+    void deleteTest(String testId, String adminUserId);
+
+    /**
+     * Cập nhật thông tin test (tên, hashtags, ...)
+     */
+    Map<String, Object> updateTest(Long testId, Map<String, Object> testData, String adminUserId);
+
+    /**
+     * Tạo bộ đề mới
+     */
+    Map<String, Object> createTestSet(Map<String, Object> setData, String adminUserId);
+
+    /**
+     * Cập nhật bộ đề
+     */
+    Map<String, Object> updateTestSet(Long setId, Map<String, Object> setData, String adminUserId);
+
+    /**
+     * Xóa bộ đề
+     */
+    void deleteTestSet(Long setId, String adminUserId);
 }

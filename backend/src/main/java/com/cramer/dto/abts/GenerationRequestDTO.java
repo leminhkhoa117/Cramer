@@ -3,6 +3,7 @@ package com.cramer.dto.abts;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * DTO for ABTS generation requests.
@@ -155,6 +156,50 @@ public class GenerationRequestDTO {
      * Default: 1.0
      */
     private Double temperature = 1.0;
+
+    /**
+     * Custom question counts per type (power-user override).
+     * Example: { "TRUE_FALSE_NOT_GIVEN": 6, "FILL_IN_BLANK": 7 }
+     */
+    private Map<String, Integer> questionTypeCounts;
+
+    /**
+     * Target total questions (power-user override).
+     */
+    private Integer totalQuestions;
+
+    /**
+     * Passage length preference: SHORT | MEDIUM | LONG.
+     */
+    private String passageLength;
+
+    /**
+     * Custom prompt instructions appended to user prompt.
+     */
+    private String customInstructions;
+
+    /**
+     * Max output tokens for AI generation.
+     */
+    private Integer maxTokens;
+
+    /**
+     * Enable web search for auto-generated facts mode.
+     * When true, uses OpenRouter's web plugin to fetch real-time information.
+     */
+    private Boolean enableWebSearch = false;
+
+    /**
+     * Enable context caching to reduce response delay and cost.
+     * Uses OpenRouter's cache_prompt feature.
+     */
+    private Boolean enableContextCaching = false;
+
+    /**
+     * Writing Task 2 essay type.
+     * Options: OPINION, DISCUSSION, PROBLEM_SOLUTION, TWO_PART
+     */
+    private String writingEssayType;
 
     // ==================== INNER CLASSES ====================
 
@@ -334,5 +379,69 @@ public class GenerationRequestDTO {
 
     public void setTemperature(Double temperature) {
         this.temperature = temperature;
+    }
+
+    public Map<String, Integer> getQuestionTypeCounts() {
+        return questionTypeCounts;
+    }
+
+    public void setQuestionTypeCounts(Map<String, Integer> questionTypeCounts) {
+        this.questionTypeCounts = questionTypeCounts;
+    }
+
+    public Integer getTotalQuestions() {
+        return totalQuestions;
+    }
+
+    public void setTotalQuestions(Integer totalQuestions) {
+        this.totalQuestions = totalQuestions;
+    }
+
+    public String getPassageLength() {
+        return passageLength;
+    }
+
+    public void setPassageLength(String passageLength) {
+        this.passageLength = passageLength;
+    }
+
+    public String getCustomInstructions() {
+        return customInstructions;
+    }
+
+    public void setCustomInstructions(String customInstructions) {
+        this.customInstructions = customInstructions;
+    }
+
+    public Integer getMaxTokens() {
+        return maxTokens;
+    }
+
+    public void setMaxTokens(Integer maxTokens) {
+        this.maxTokens = maxTokens;
+    }
+
+    public Boolean getEnableWebSearch() {
+        return enableWebSearch;
+    }
+
+    public void setEnableWebSearch(Boolean enableWebSearch) {
+        this.enableWebSearch = enableWebSearch;
+    }
+
+    public Boolean getEnableContextCaching() {
+        return enableContextCaching;
+    }
+
+    public void setEnableContextCaching(Boolean enableContextCaching) {
+        this.enableContextCaching = enableContextCaching;
+    }
+
+    public String getWritingEssayType() {
+        return writingEssayType;
+    }
+
+    public void setWritingEssayType(String writingEssayType) {
+        this.writingEssayType = writingEssayType;
     }
 }

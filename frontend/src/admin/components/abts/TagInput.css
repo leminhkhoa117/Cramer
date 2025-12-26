@@ -13,35 +13,41 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 500;
     color: var(--studio-text-secondary, rgba(255, 255, 255, 0.8));
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .tag-input-label svg {
     color: var(--studio-accent, #8B5CF6);
 }
 
-/* Match .studio-input styling from AIStudio.css */
+/* Match .form-input styling from AdminModal.css */
 .tag-input-container {
-    background: var(--studio-bg-input, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--studio-border, rgba(255, 255, 255, 0.08));
-    border-radius: var(--studio-radius-sm, 8px);
-    padding: 8px 12px;
-    min-height: 40px;
+    background: rgba(15, 17, 26, 0.8);
+    /* Darker input bg */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    /* Slightly more rounded */
+    padding: 10px 14px;
+    min-height: auto;
+    height: auto;
     cursor: text;
-    transition: var(--studio-transition, all 0.2s ease);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
 }
 
 .tag-input-container:hover {
-    border-color: var(--studio-border-hover, rgba(255, 255, 255, 0.15));
+    border-color: var(--admin-primary, #6366f1);
 }
 
 .tag-input-container.focused {
-    border-color: var(--studio-border-focus, rgba(139, 92, 246, 0.5));
-    background: var(--studio-bg-input-focus, rgba(255, 255, 255, 0.05));
-    box-shadow: 0 0 0 2px var(--studio-accent-glow, rgba(139, 92, 246, 0.15));
+    outline: none;
+    border-color: var(--admin-primary, #6366f1);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    background: rgba(15, 17, 26, 0.9);
 }
 
 .tag-input-container.disabled {
@@ -54,6 +60,7 @@
     flex-wrap: wrap;
     gap: 8px;
     align-items: center;
+    width: 100%;
 }
 
 /* Individual tag */
@@ -118,8 +125,8 @@
     border: none;
     outline: none;
     color: white;
-    font-size: 0.95rem;
-    padding: 4px 0;
+    font-size: 0.9375rem;
+    padding: 0;
 }
 
 .tag-input::placeholder {

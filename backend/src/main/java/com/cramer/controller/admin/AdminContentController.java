@@ -249,4 +249,83 @@ public class AdminContentController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    /**
+     * Cập nhật test
+     */
+    @PutMapping("/tests/{testId}")
+    public ResponseEntity<Map<String, Object>> updateTest(
+            @PathVariable Long testId,
+            @RequestBody Map<String, Object> testData,
+            @RequestHeader("X-User-Id") String adminUserId) {
+        try {
+            Map<String, Object> result = adminContentService.updateTest(testId, testData, adminUserId);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Xóa test
+     * 
+     * @param testId ID của test
+     */
+    @DeleteMapping("/tests/{testId}")
+    public ResponseEntity<Map<String, Object>> deleteTest(
+            @PathVariable String testId,
+            @RequestHeader("X-User-Id") String adminUserId) {
+        try {
+            adminContentService.deleteTest(testId, adminUserId);
+            return ResponseEntity.ok(Map.of("success", true, "message", "Đã xóa đề thi"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Tạo bộ đề mới
+     */
+    @PostMapping("/test-sets")
+    public ResponseEntity<Map<String, Object>> createTestSet(
+            @RequestBody Map<String, Object> setData,
+            @RequestHeader("X-User-Id") String adminUserId) {
+        try {
+            Map<String, Object> result = adminContentService.createTestSet(setData, adminUserId);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Cập nhật bộ đề
+     */
+    @PutMapping("/test-sets/{setId}")
+    public ResponseEntity<Map<String, Object>> updateTestSet(
+            @PathVariable Long setId,
+            @RequestBody Map<String, Object> setData,
+            @RequestHeader("X-User-Id") String adminUserId) {
+        try {
+            Map<String, Object> result = adminContentService.updateTestSet(setId, setData, adminUserId);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Xóa bộ đề
+     */
+    @DeleteMapping("/test-sets/{setId}")
+    public ResponseEntity<Map<String, Object>> deleteTestSet(
+            @PathVariable Long setId,
+            @RequestHeader("X-User-Id") String adminUserId) {
+        try {
+            adminContentService.deleteTestSet(setId, adminUserId);
+            return ResponseEntity.ok(Map.of("success", true, "message", "Đã xóa bộ đề"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

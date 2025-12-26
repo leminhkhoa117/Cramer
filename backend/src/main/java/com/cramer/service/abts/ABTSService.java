@@ -6,14 +6,30 @@ import com.cramer.dto.abts.GenerationRequestDTO;
 import com.cramer.dto.abts.GenerationResponseDTO;
 import com.cramer.dto.abts.GenerationResponseDTO.GenerationMetadataDTO;
 import com.cramer.dto.abts.GenerationResponseDTO.ValidationResultDTO;
+import com.cramer.dto.abts.SaveContentRequestDTO;
+import com.cramer.dto.abts.SaveContentResponseDTO;
 import com.cramer.dto.abts.StreamEventDTO;
+import com.cramer.entity.Hashtag;
+import com.cramer.entity.IeltsTest;
+import com.cramer.entity.Section;
+import com.cramer.entity.TestSet;
+import com.cramer.exception.ResourceNotFoundException;
+import com.cramer.repository.HashtagRepository;
+import com.cramer.repository.IeltsTestRepository;
+import com.cramer.repository.SectionRepository;
+import com.cramer.repository.TestSetRepository;
+import com.cramer.service.HashtagService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -44,17 +60,36 @@ public class ABTSService {
     private final JsonValidatorService jsonValidatorService;
     private final JdbcTemplate jdbcTemplate;
 
+    // New dependencies for test hierarchy support
+    private final TestSetRepository testSetRepository;
+    private final IeltsTestRepository ieltsTestRepository;
+    private final HashtagRepository hashtagRepository;
+    private final HashtagService hashtagService;
+    private final SectionRepository sectionRepository;
+    private final ObjectMapper objectMapper;
+
     public ABTSService(
             OpenRouterConfig config,
             OpenRouterClient openRouterClient,
             PromptBuilderService promptBuilderService,
             JsonValidatorService jsonValidatorService,
-            JdbcTemplate jdbcTemplate) {
+            JdbcTemplate jdbcTemplate,
+            TestSetRepository testSetRepository,
+            IeltsTestRepository ieltsTestRepository,
+            HashtagRepository hashtagRepository,
+            HashtagService hashtagService,
+            SectionRepository sectionRepository) {
         this.config = config;
         this.openRouterClient = openRouterClient;
         this.promptBuilderService = promptBuilderService;
         this.jsonValidatorService = jsonValidatorService;
         this.jdbcTemplate = jdbcTemplate;
+        this.testSetRepository = testSetRepository;
+        this.ieltsTestRepository = ieltsTestRepository;
+        this.hashtagRepository = hashtagRepository;
+        this.hashtagService = hashtagService;
+        this.sectionRepository = sectionRepository;
+        this.objectMapper = new ObjectMapper();
     }
 
     /**
@@ -106,9 +141,18 @@ public class ABTSService {
     /**
      * Generate content with streaming progress updates.
      * Sends SSE events to the emitter during the generation process.
+     * Supports cancellation via the provided AtomicBoolean flag.
      */
-    public void generateWithStream(GenerationRequestDTO request, SseEmitter emitter) throws IOException {
+    public void generateWithStream(GenerationRequestDTO request, SseEmitter emitter,
+            java.util.concurrent.atomic.AtomicBoolean cancelled) throws IOException {
         try {
+            // Check cancellation at start
+            if (cancelled != null && cancelled.get()) {
+                sendEvent(emitter, StreamEventDTO.aborted());
+                emitter.complete();
+                return;
+            }
+
             // Send started event
             sendEvent(emitter, StreamEventDTO.started());
 
@@ -119,11 +163,18 @@ public class ABTSService {
                 return;
             }
 
+            // Check cancellation before starting generation
+            if (cancelled != null && cancelled.get()) {
+                sendEvent(emitter, StreamEventDTO.aborted());
+                emitter.complete();
+                return;
+            }
+
             // Route to skill-specific streaming generation
             switch (request.getSkill()) {
-                case READING -> generateReadingWithStream(request, emitter);
-                case LISTENING -> generateListeningWithStream(request, emitter);
-                case WRITING -> generateWritingWithStream(request, emitter);
+                case READING -> generateReadingWithStream(request, emitter, cancelled);
+                case LISTENING -> generateListeningWithStream(request, emitter, cancelled);
+                case WRITING -> generateWritingWithStream(request, emitter, cancelled);
                 case SPEAKING -> {
                     sendEvent(emitter, StreamEventDTO.failed("Speaking generation is not yet implemented"));
                     emitter.complete();
@@ -131,10 +182,18 @@ public class ABTSService {
             }
 
         } catch (OpenRouterClient.OpenRouterException e) {
+            if (cancelled != null && cancelled.get()) {
+                logger.info("Generation was cancelled by user");
+                return;
+            }
             logger.error("OpenRouter API error during streaming generation: {}", e.getMessage());
             sendEvent(emitter, StreamEventDTO.failed(e.getMessage()));
             emitter.complete();
         } catch (Exception e) {
+            if (cancelled != null && cancelled.get()) {
+                logger.info("Generation was cancelled by user");
+                return;
+            }
             logger.error("Streaming generation failed: {}", e.getMessage(), e);
             sendEvent(emitter, StreamEventDTO.failed(e.getMessage()));
             emitter.complete();
@@ -142,9 +201,17 @@ public class ABTSService {
     }
 
     /**
+     * Backward-compatible overload for generateWithStream
+     */
+    public void generateWithStream(GenerationRequestDTO request, SseEmitter emitter) throws IOException {
+        generateWithStream(request, emitter, null);
+    }
+
+    /**
      * Generate Reading content with streaming updates.
      */
-    private void generateReadingWithStream(GenerationRequestDTO request, SseEmitter emitter) throws IOException {
+    private void generateReadingWithStream(GenerationRequestDTO request, SseEmitter emitter,
+            java.util.concurrent.atomic.AtomicBoolean cancelled) throws IOException {
         logger.info("Starting Reading generation (streaming) for topic: {}", request.getTopic());
 
         int attempts = 0;
@@ -165,9 +232,7 @@ public class ABTSService {
                 Map<String, Object> jsonSchema = promptBuilderService.getReadingJsonSchema();
 
                 // 2. Determine model to use
-                String model = request.getModel() != null
-                        ? request.getModel()
-                        : config.getGenerationModel();
+                String model = resolveModel(request, false);
                 logger.info("Requested model: {}", model);
 
                 // 3. Send AI calling event with model name
@@ -187,6 +252,8 @@ public class ABTSService {
                 final Object lock = new Object();
                 final boolean[] completed = { false };
 
+                Integer maxTokens = resolveMaxTokens(request, 16384);
+
                 openRouterClient.callChatCompletionStreaming(
                         model,
                         systemPrompt,
@@ -194,7 +261,7 @@ public class ABTSService {
                         jsonSchema,
                         reasoningConfig,
                         request.getTemperature(),
-                        16384,
+                        maxTokens,
                         new OpenRouterClient.StreamCallback() {
                             @Override
                             public void onReasoningChunk(String reasoningDelta) {
@@ -230,7 +297,8 @@ public class ABTSService {
                                     lock.notify();
                                 }
                             }
-                        });
+                        },
+                        cancelled);
 
                 // Wait for streaming to complete (blocking)
                 synchronized (lock) {
@@ -246,6 +314,14 @@ public class ABTSService {
 
                 // Check for errors
                 if (errorHolder[0] != null) {
+                    if (shouldFallbackToNonStreaming(errorHolder[0])) {
+                        sendEvent(emitter, StreamEventDTO.progress(25,
+                                "Streaming JSON schema unsupported. Switching to non-streaming."));
+                        GenerationResponseDTO fallback = generateReading(request);
+                        sendEvent(emitter, StreamEventDTO.completed(fallback));
+                        emitter.complete();
+                        return;
+                    }
                     throw errorHolder[0];
                 }
 
@@ -264,15 +340,16 @@ public class ABTSService {
                     sendEvent(emitter, StreamEventDTO.validationResult(false, validationResult.getAllErrors()));
                     logger.warn("Validation failed on attempt {}: {}", attempts, lastError);
 
-                    if (attempts < MAX_RETRIES) {
-                        continue; // Retry
+                    // RELAXED VALIDATION: Only retry on FATAL Schema errors (invalid JSON
+                    // structure)
+                    // Content/Business errors (word count, etc.) are treated as warnings ->
+                    // PARTIAL_SUCCESS
+                    if (!validationResult.getSchemaErrors().isEmpty()) {
+                        if (attempts < MAX_RETRIES) {
+                            continue; // Retry only for broken JSON
+                        }
                     }
-
-                    // Failed after all retries -> FORCE ACCEPT WITH WARNINGS (Soft Fail)
-                    // This fixes UX flaw where user gets nothing after waiting.
-                    logger.warn("Max retries reached. Forcing acceptance of invalid content as PARTIAL_SUCCESS.");
-                    // We don't return here. We proceed to step 8-10 but will mark validation status
-                    // as warning.
+                    // Else: PROCEED with warnings
                 }
 
                 // 8. Send validation success
@@ -286,10 +363,15 @@ public class ABTSService {
                 response.setStatus(GenerationResponseDTO.GenerationStatus.SUCCESS);
                 response.setContent(content);
                 response.setReasoning(aiResponse.getReasoning());
+                response.setValidation(buildValidationDto(validationResult));
 
-                // Add warnings if any
-                if (!validationResult.getWarnings().isEmpty()) {
-                    response.setWarnings(validationResult.getWarnings());
+                // Add warnings (include validation errors if invalid)
+                List<String> allWarnings = new ArrayList<>(validationResult.getWarnings());
+                if (!validationResult.isValid()) {
+                    allWarnings.addAll(validationResult.getAllErrors());
+                }
+                if (!allWarnings.isEmpty()) {
+                    response.setWarnings(allWarnings);
                     response.setStatus(GenerationResponseDTO.GenerationStatus.PARTIAL_SUCCESS);
                 }
 
@@ -308,6 +390,15 @@ public class ABTSService {
                 lastError = e.getMessage();
                 logger.error("OpenRouter error on attempt {}: {}", attempts, lastError);
                 sendEvent(emitter, StreamEventDTO.progress(20, "Error: " + lastError));
+
+                if (shouldFallbackToNonStreaming(e)) {
+                    sendEvent(emitter, StreamEventDTO.progress(25,
+                            "Streaming JSON schema unsupported. Switching to non-streaming."));
+                    GenerationResponseDTO fallback = generateListening(request);
+                    sendEvent(emitter, StreamEventDTO.completed(fallback));
+                    emitter.complete();
+                    return;
+                }
 
                 if (!e.isRetryable()) {
                     sendEvent(emitter, StreamEventDTO.failed(e.getMessage()));
@@ -328,7 +419,8 @@ public class ABTSService {
     /**
      * Generate Listening content with streaming updates.
      */
-    private void generateListeningWithStream(GenerationRequestDTO request, SseEmitter emitter) throws IOException {
+    private void generateListeningWithStream(GenerationRequestDTO request, SseEmitter emitter,
+            java.util.concurrent.atomic.AtomicBoolean cancelled) throws IOException {
         logger.info("Starting Listening generation (streaming) for topic: {}", request.getTopic());
 
         int attempts = 0;
@@ -342,6 +434,11 @@ public class ABTSService {
             }
 
             try {
+                // Check cancellation
+                if (cancelled != null && cancelled.get()) {
+                    throw new IOException("Generation cancelled by user");
+                }
+
                 // 1. Build prompts
                 sendEvent(emitter, StreamEventDTO.promptBuilt());
                 String systemPrompt = promptBuilderService.buildListeningSystemPrompt();
@@ -349,7 +446,7 @@ public class ABTSService {
                 Map<String, Object> jsonSchema = promptBuilderService.getListeningJsonSchema();
 
                 // 2. Determine model
-                String model = request.getModel() != null ? request.getModel() : config.getGenerationModel();
+                String model = resolveModel(request, false);
                 logger.info("Listening generation using model: {}", model);
 
                 // 3. Send AI calling event
@@ -364,9 +461,83 @@ public class ABTSService {
                 }
 
                 // 5. Call OpenRouter API with progress updates
-                OpenRouterClient.OpenRouterResponse aiResponse = callWithProgressUpdates(
-                        emitter, model, systemPrompt, userPrompt, jsonSchema,
-                        reasoningConfig, request.getTemperature(), 16384);
+                // 5. Use TRUE SSE STREAMING to receive tokens as they arrive
+                Integer maxTokens = resolveMaxTokens(request, 16384);
+
+                // We need to capture the response from the streaming client
+                // Using array wrappers to allow modification from inner class/lambda if needed
+                // (though StreamResult returns it)
+                // Actually callChatCompletionStreaming returns the full response object after
+                // stream ends
+                final OpenRouterClient.OpenRouterResponse[] responseHolder = new OpenRouterClient.OpenRouterResponse[1];
+                final Exception[] errorHolder = new Exception[1];
+                final Object lock = new Object();
+                final boolean[] streamCompleted = { false };
+
+                openRouterClient.callChatCompletionStreaming(
+                        model,
+                        systemPrompt,
+                        userPrompt,
+                        jsonSchema,
+                        reasoningConfig,
+                        request.getTemperature(),
+                        maxTokens,
+                        new OpenRouterClient.StreamCallback() {
+                            @Override
+                            public void onReasoningChunk(String reasoningDelta) {
+                                sendEvent(emitter, StreamEventDTO.aiThinking(reasoningDelta));
+                            }
+
+                            @Override
+                            public void onContentChunk(String contentDelta) {
+                                sendEvent(emitter, StreamEventDTO.aiChunk(contentDelta));
+                            }
+
+                            @Override
+                            public void onProgress(int percent, String message) {
+                                sendEvent(emitter, StreamEventDTO.progress(percent, message));
+                            }
+
+                            @Override
+                            public void onComplete(OpenRouterClient.OpenRouterResponse response) {
+                                synchronized (lock) {
+                                    responseHolder[0] = response;
+                                    streamCompleted[0] = true;
+                                    lock.notifyAll();
+                                }
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                synchronized (lock) {
+                                    errorHolder[0] = new java.io.IOException(error);
+                                    streamCompleted[0] = true;
+                                    lock.notifyAll();
+                                }
+                            }
+                        },
+                        cancelled);
+
+                // Wait for completion
+                synchronized (lock) {
+                    while (!streamCompleted[0]) {
+                        try {
+                            lock.wait(500);
+                            if (cancelled != null && cancelled.get()) {
+                                throw new java.io.IOException("Generation cancelled by user");
+                            }
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new java.io.IOException("Generation interrupted", e);
+                        }
+                    }
+                }
+
+                if (errorHolder[0] != null) {
+                    throw errorHolder[0];
+                }
+
+                OpenRouterClient.OpenRouterResponse aiResponse = responseHolder[0];
 
                 // 6. Send AI completed event
                 sendEvent(emitter, StreamEventDTO.aiCompleted(aiResponse.getDurationMs()));
@@ -381,11 +552,13 @@ public class ABTSService {
                     sendEvent(emitter, StreamEventDTO.validationResult(false, validationResult.getAllErrors()));
                     logger.warn("Listening validation failed on attempt {}: {}", attempts, lastError);
 
-                    if (attempts < MAX_RETRIES) {
-                        continue;
+                    // RELAXED VALIDATION: Only retry on FATAL Schema errors
+                    if (!validationResult.getSchemaErrors().isEmpty()) {
+                        if (attempts < MAX_RETRIES) {
+                            continue;
+                        }
                     }
-                    // SOFT-FAIL: Force accept with warnings
-                    logger.warn("Max retries reached. Forcing PARTIAL_SUCCESS for Listening.");
+                    // Else: PROCEED with warnings
                 }
 
                 // 8. Send validation success
@@ -401,6 +574,7 @@ public class ABTSService {
                         : GenerationResponseDTO.GenerationStatus.PARTIAL_SUCCESS);
                 response.setContent(content);
                 response.setReasoning(aiResponse.getReasoning());
+                response.setValidation(buildValidationDto(validationResult));
 
                 List<String> allWarnings = new ArrayList<>(validationResult.getWarnings());
                 if (!validationResult.isValid()) {
@@ -424,6 +598,15 @@ public class ABTSService {
                 logger.error("OpenRouter error on attempt {}: {}", attempts, lastError);
                 sendEvent(emitter, StreamEventDTO.progress(20, "Error: " + lastError));
 
+                if (shouldFallbackToNonStreaming(e)) {
+                    sendEvent(emitter, StreamEventDTO.progress(25,
+                            "Streaming JSON schema unsupported. Switching to non-streaming."));
+                    GenerationResponseDTO fallback = generateWriting(request);
+                    sendEvent(emitter, StreamEventDTO.completed(fallback));
+                    emitter.complete();
+                    return;
+                }
+
                 if (!e.isRetryable()) {
                     sendEvent(emitter, StreamEventDTO.failed(e.getMessage()));
                     emitter.complete();
@@ -444,7 +627,8 @@ public class ABTSService {
     /**
      * Generate Writing content with streaming updates.
      */
-    private void generateWritingWithStream(GenerationRequestDTO request, SseEmitter emitter) throws IOException {
+    private void generateWritingWithStream(GenerationRequestDTO request, SseEmitter emitter,
+            java.util.concurrent.atomic.AtomicBoolean cancelled) throws IOException {
         logger.info("Starting Writing generation (streaming) for topic: {}", request.getTopic());
 
         int attempts = 0;
@@ -458,6 +642,11 @@ public class ABTSService {
             }
 
             try {
+                // Check cancellation
+                if (cancelled != null && cancelled.get()) {
+                    throw new IOException("Generation cancelled by user");
+                }
+
                 // 1. Build prompts
                 sendEvent(emitter, StreamEventDTO.promptBuilt());
                 String systemPrompt = promptBuilderService.buildWritingSystemPrompt();
@@ -465,7 +654,7 @@ public class ABTSService {
                 Map<String, Object> jsonSchema = promptBuilderService.getWritingJsonSchema();
 
                 // 2. Determine model
-                String model = request.getModel() != null ? request.getModel() : config.getGenerationModel();
+                String model = resolveModel(request, false);
                 logger.info("Writing generation using model: {}", model);
 
                 // 3. Send AI calling event
@@ -482,7 +671,8 @@ public class ABTSService {
                 // 5. Call OpenRouter API with progress updates
                 OpenRouterClient.OpenRouterResponse aiResponse = callWithProgressUpdates(
                         emitter, model, systemPrompt, userPrompt, jsonSchema,
-                        reasoningConfig, request.getTemperature(), 16384);
+                        reasoningConfig, request.getTemperature(), resolveMaxTokens(request, 16384),
+                        cancelled);
 
                 // 6. Send AI completed event
                 sendEvent(emitter, StreamEventDTO.aiCompleted(aiResponse.getDurationMs()));
@@ -497,11 +687,13 @@ public class ABTSService {
                     sendEvent(emitter, StreamEventDTO.validationResult(false, validationResult.getAllErrors()));
                     logger.warn("Writing validation failed on attempt {}: {}", attempts, lastError);
 
-                    if (attempts < MAX_RETRIES) {
-                        continue;
+                    // RELAXED VALIDATION: Only retry on FATAL Schema errors
+                    if (!validationResult.getSchemaErrors().isEmpty()) {
+                        if (attempts < MAX_RETRIES) {
+                            continue;
+                        }
                     }
-                    // SOFT-FAIL: Force accept with warnings
-                    logger.warn("Max retries reached. Forcing PARTIAL_SUCCESS for Writing.");
+                    // Else: PROCEED
                 }
 
                 // 8. Send validation success
@@ -517,6 +709,7 @@ public class ABTSService {
                         : GenerationResponseDTO.GenerationStatus.PARTIAL_SUCCESS);
                 response.setContent(content);
                 response.setReasoning(aiResponse.getReasoning());
+                response.setValidation(buildValidationDto(validationResult));
 
                 List<String> allWarnings = new ArrayList<>(validationResult.getWarnings());
                 if (!validationResult.isValid()) {
@@ -588,7 +781,8 @@ public class ABTSService {
             Map<String, Object> jsonSchema,
             Map<String, Object> reasoningConfig,
             Double temperature,
-            Integer maxTokens) throws Exception {
+            Integer maxTokens,
+            java.util.concurrent.atomic.AtomicBoolean cancelled) throws Exception {
 
         // Track progress (starts at 20%, ends at 80% when AI completes)
         final int[] progressCounter = { 20 };
@@ -660,13 +854,7 @@ public class ABTSService {
                 Map<String, Object> jsonSchema = promptBuilderService.getReadingJsonSchema();
 
                 // 2. Determine model to use
-                String model = request.getModel() != null
-                        ? request.getModel()
-                        : config.getGenerationModel();
-
-                if (request.getModelVariant() != null) {
-                    model = model + request.getModelVariant();
-                }
+                String model = resolveModel(request, false);
 
                 // 3. Build reasoning config
                 Map<String, Object> reasoningConfig = new HashMap<>();
@@ -676,17 +864,22 @@ public class ABTSService {
                             : "high");
                 }
 
-                // 4. Call OpenRouter API
-                OpenRouterClient.OpenRouterResponse aiResponse = openRouterClient.callChatCompletion(
+                // 4. Call OpenRouter API with optional web search and context caching
+                boolean enableWebSearch = Boolean.TRUE.equals(request.getEnableWebSearch())
+                        && (request.getFacts() == null || request.getFacts().isEmpty());
+                boolean enableCaching = Boolean.TRUE.equals(request.getEnableContextCaching());
+
+                OpenRouterClient.OpenRouterResponse aiResponse = openRouterClient.callChatCompletionWithFeatures(
                         model,
                         systemPrompt,
                         userPrompt,
                         jsonSchema,
                         List.of("anthropic/claude-3.5-sonnet", "deepseek/deepseek-chat"),
                         reasoningConfig,
-                        1.0,
-                        16384 // Higher token limit for full passage + questions
-                );
+                        request.getTemperature(),
+                        resolveMaxTokens(request, 16384),
+                        enableWebSearch,
+                        enableCaching);
 
                 // 5. Validate response
                 JsonValidatorService.ValidationResult validationResult = jsonValidatorService
@@ -716,12 +909,7 @@ public class ABTSService {
                 response.setReasoning(aiResponse.getReasoning());
 
                 // Add validation result
-                ValidationResultDTO validationDTO = new ValidationResultDTO();
-                validationDTO.setValid(validationResult.isValid());
-                validationDTO.setSchemaErrors(validationResult.getSchemaErrors());
-                validationDTO.setContentErrors(validationResult.getContentErrors());
-                validationDTO.setBusinessRuleErrors(validationResult.getBusinessRuleErrors());
-                response.setValidation(validationDTO);
+                response.setValidation(buildValidationDto(validationResult));
 
                 // Add warnings if any (including validation errors as warnings for soft-fail)
                 List<String> allWarnings = new ArrayList<>(validationResult.getWarnings());
@@ -779,11 +967,31 @@ public class ABTSService {
                 String userPrompt = promptBuilderService.buildListeningPrompt(request);
                 Map<String, Object> jsonSchema = promptBuilderService.getListeningJsonSchema();
 
-                String model = request.getModel() != null ? request.getModel() : config.getGenerationModel();
+                String model = resolveModel(request, false);
 
-                // Call API
-                OpenRouterClient.OpenRouterResponse aiResponse = openRouterClient.callChatCompletion(
-                        model, systemPrompt, userPrompt, jsonSchema);
+                Map<String, Object> reasoningConfig = new HashMap<>();
+                if (Boolean.TRUE.equals(request.getEnableReasoning())) {
+                    reasoningConfig.put("effort", request.getReasoningEffort() != null
+                            ? request.getReasoningEffort()
+                            : "high");
+                }
+
+                // Call API with optional web search and context caching
+                boolean enableWebSearch = Boolean.TRUE.equals(request.getEnableWebSearch())
+                        && (request.getFacts() == null || request.getFacts().isEmpty());
+                boolean enableCaching = Boolean.TRUE.equals(request.getEnableContextCaching());
+
+                OpenRouterClient.OpenRouterResponse aiResponse = openRouterClient.callChatCompletionWithFeatures(
+                        model,
+                        systemPrompt,
+                        userPrompt,
+                        jsonSchema,
+                        List.of("anthropic/claude-3.5-sonnet", "deepseek/deepseek-chat"),
+                        reasoningConfig,
+                        request.getTemperature(),
+                        resolveMaxTokens(request, 16384),
+                        enableWebSearch,
+                        enableCaching);
 
                 // Validate
                 JsonValidatorService.ValidationResult validationResult = jsonValidatorService
@@ -807,6 +1015,7 @@ public class ABTSService {
                 response.setContent(content);
                 response.setReasoning(aiResponse.getReasoning());
                 response.setMetadata(buildMetadata(request, aiResponse, content));
+                response.setValidation(buildValidationDto(validationResult));
 
                 List<String> allWarnings = new ArrayList<>(validationResult.getWarnings());
                 if (!validationResult.isValid()) {
@@ -849,11 +1058,31 @@ public class ABTSService {
                 String userPrompt = promptBuilderService.buildWritingPrompt(request);
                 Map<String, Object> jsonSchema = promptBuilderService.getWritingJsonSchema();
 
-                String model = request.getModel() != null ? request.getModel() : config.getGenerationModel();
+                String model = resolveModel(request, false);
 
-                // Call API
-                OpenRouterClient.OpenRouterResponse aiResponse = openRouterClient.callChatCompletion(
-                        model, systemPrompt, userPrompt, jsonSchema);
+                Map<String, Object> reasoningConfig = new HashMap<>();
+                if (Boolean.TRUE.equals(request.getEnableReasoning())) {
+                    reasoningConfig.put("effort", request.getReasoningEffort() != null
+                            ? request.getReasoningEffort()
+                            : "high");
+                }
+
+                // Call API with optional web search and context caching
+                boolean enableWebSearch = Boolean.TRUE.equals(request.getEnableWebSearch())
+                        && (request.getFacts() == null || request.getFacts().isEmpty());
+                boolean enableCaching = Boolean.TRUE.equals(request.getEnableContextCaching());
+
+                OpenRouterClient.OpenRouterResponse aiResponse = openRouterClient.callChatCompletionWithFeatures(
+                        model,
+                        systemPrompt,
+                        userPrompt,
+                        jsonSchema,
+                        List.of("anthropic/claude-3.5-sonnet", "deepseek/deepseek-chat"),
+                        reasoningConfig,
+                        request.getTemperature(),
+                        resolveMaxTokens(request, 16384),
+                        enableWebSearch,
+                        enableCaching);
 
                 // Validate
                 JsonValidatorService.ValidationResult validationResult = jsonValidatorService
@@ -877,6 +1106,7 @@ public class ABTSService {
                 response.setContent(content);
                 response.setReasoning(aiResponse.getReasoning());
                 response.setMetadata(buildMetadata(request, aiResponse, content));
+                response.setValidation(buildValidationDto(validationResult));
 
                 List<String> allWarnings = new ArrayList<>(validationResult.getWarnings());
                 if (!validationResult.isValid()) {
@@ -908,11 +1138,36 @@ public class ABTSService {
         logger.info("Starting question regeneration for {} question(s)",
                 request.getQuestionsToRegenerate() != null ? request.getQuestionsToRegenerate().size() : "all");
 
-        // Build specialized prompt for question regeneration
+        try {
+            GenerationRequestDTO.SkillType skill = request.getSkill() != null
+                    ? request.getSkill()
+                    : GenerationRequestDTO.SkillType.READING;
+
+            return switch (skill) {
+                case READING -> regenerateReadingQuestions(request);
+                case LISTENING -> regenerateListeningQuestions(request);
+                case WRITING -> generateWriting(request);
+                case SPEAKING -> GenerationResponseDTO.error(
+                        "NOT_IMPLEMENTED",
+                        "Speaking regeneration is not yet implemented.",
+                        false);
+            };
+
+        } catch (OpenRouterClient.OpenRouterException e) {
+            logger.error("Question regeneration failed: {}", e.getMessage());
+            return buildErrorResponse(e.getErrorCode(), e.getMessage(), 1, false);
+        } catch (Exception e) {
+            logger.error("Question regeneration failed: {}", e.getMessage());
+            return GenerationResponseDTO.error("REGENERATION_FAILED", e.getMessage(), true);
+        }
+    }
+
+    private GenerationResponseDTO regenerateReadingQuestions(GenerationRequestDTO request) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("## TASK: Regenerate IELTS Questions for Existing Passage\n\n");
         prompt.append("### Existing Passage\n");
         prompt.append(request.getExistingPassageText()).append("\n\n");
+        prompt.append("You MUST include the original passage in the output without any changes.\n");
 
         if (request.getQuestionsToRegenerate() != null && !request.getQuestionsToRegenerate().isEmpty()) {
             prompt.append("### Questions to Regenerate\n");
@@ -920,35 +1175,85 @@ public class ABTSService {
             prompt.append(request.getQuestionsToRegenerate().stream()
                     .map(String::valueOf)
                     .reduce((a, b) -> a + ", " + b).orElse(""));
-            prompt.append("\n\n");
+            prompt.append("\n");
+            prompt.append("Return ONLY the specified questions in the questions array.\n\n");
         }
 
+        String model = resolveModel(request, true);
+        Map<String, Object> jsonSchema = promptBuilderService.getReadingJsonSchema();
+
+        OpenRouterClient.OpenRouterResponse aiResponse = openRouterClient.callChatCompletion(
+                model,
+                promptBuilderService.buildReadingSystemPrompt(),
+                prompt.toString(),
+                jsonSchema,
+                List.of("anthropic/claude-3.5-sonnet", "deepseek/deepseek-chat"),
+                Map.of("effort", "high"),
+                request.getTemperature(),
+                resolveMaxTokens(request, 8192));
+
+        GeneratedContentDTO content;
         try {
-            String model = request.getModel() != null
-                    ? request.getModel()
-                    : config.getRegenerationModel(); // Use faster model for regeneration
-
-            Map<String, Object> jsonSchema = promptBuilderService.getReadingJsonSchema();
-
-            OpenRouterClient.OpenRouterResponse aiResponse = openRouterClient.callChatCompletion(
-                    model,
-                    promptBuilderService.buildReadingSystemPrompt(),
-                    prompt.toString(),
-                    jsonSchema);
-
-            GeneratedContentDTO content = jsonValidatorService.parseGeneratedContent(aiResponse.getContent());
-
-            GenerationResponseDTO response = new GenerationResponseDTO();
-            response.setStatus(GenerationResponseDTO.GenerationStatus.SUCCESS);
-            response.setContent(content);
-            response.setMetadata(buildMetadata(request, aiResponse, content));
-
-            return response;
-
+            content = jsonValidatorService.parseGeneratedContent(aiResponse.getContent());
         } catch (Exception e) {
-            logger.error("Question regeneration failed: {}", e.getMessage());
-            return GenerationResponseDTO.error("REGENERATION_FAILED", e.getMessage(), true);
+            logger.error("Failed to parse regenerated Reading content: {}", e.getMessage());
+            return GenerationResponseDTO.error("PARSE_ERROR", e.getMessage(), false);
         }
+
+        GenerationResponseDTO response = new GenerationResponseDTO();
+        response.setStatus(GenerationResponseDTO.GenerationStatus.SUCCESS);
+        response.setContent(content);
+        response.setReasoning(aiResponse.getReasoning());
+        response.setMetadata(buildMetadata(request, aiResponse, content));
+
+        return response;
+    }
+
+    private GenerationResponseDTO regenerateListeningQuestions(GenerationRequestDTO request) {
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("## TASK: Regenerate IELTS Listening Questions for Existing Transcript\n\n");
+        prompt.append("### Existing Transcript (DO NOT MODIFY)\n");
+        prompt.append(request.getExistingPassageText()).append("\n\n");
+        prompt.append("You MUST include the original transcript in the output without any changes.\n");
+
+        if (request.getQuestionsToRegenerate() != null && !request.getQuestionsToRegenerate().isEmpty()) {
+            prompt.append("### Questions to Regenerate\n");
+            prompt.append("Regenerate ONLY questions: ");
+            prompt.append(request.getQuestionsToRegenerate().stream()
+                    .map(String::valueOf)
+                    .reduce((a, b) -> a + ", " + b).orElse(""));
+            prompt.append("\n");
+            prompt.append("Return ONLY the specified questions in the questions array.\n\n");
+        }
+
+        String model = resolveModel(request, true);
+        Map<String, Object> jsonSchema = promptBuilderService.getListeningJsonSchema();
+
+        OpenRouterClient.OpenRouterResponse aiResponse = openRouterClient.callChatCompletion(
+                model,
+                promptBuilderService.buildListeningSystemPrompt(),
+                prompt.toString(),
+                jsonSchema,
+                List.of("anthropic/claude-3.5-sonnet", "deepseek/deepseek-chat"),
+                Map.of("effort", "high"),
+                request.getTemperature(),
+                resolveMaxTokens(request, 8192));
+
+        GeneratedContentDTO content;
+        try {
+            content = jsonValidatorService.parseGeneratedContent(aiResponse.getContent());
+        } catch (Exception e) {
+            logger.error("Failed to parse regenerated Listening content: {}", e.getMessage());
+            return GenerationResponseDTO.error("PARSE_ERROR", e.getMessage(), false);
+        }
+
+        GenerationResponseDTO response = new GenerationResponseDTO();
+        response.setStatus(GenerationResponseDTO.GenerationStatus.SUCCESS);
+        response.setContent(content);
+        response.setReasoning(aiResponse.getReasoning());
+        response.setMetadata(buildMetadata(request, aiResponse, content));
+
+        return response;
     }
 
     // ==================== HELPER METHODS ====================
@@ -1005,6 +1310,15 @@ public class ABTSService {
         return metadata;
     }
 
+    private ValidationResultDTO buildValidationDto(JsonValidatorService.ValidationResult validationResult) {
+        ValidationResultDTO validationDTO = new ValidationResultDTO();
+        validationDTO.setValid(validationResult.isValid());
+        validationDTO.setSchemaErrors(validationResult.getSchemaErrors());
+        validationDTO.setContentErrors(validationResult.getContentErrors());
+        validationDTO.setBusinessRuleErrors(validationResult.getBusinessRuleErrors());
+        return validationDTO;
+    }
+
     /**
      * Estimate API cost based on tokens used.
      */
@@ -1017,20 +1331,120 @@ public class ABTSService {
         return Math.round((inputCost + outputCost + reasoningCost) * 10000.0) / 10000.0;
     }
 
+    private String resolveModel(GenerationRequestDTO request, boolean forRegeneration) {
+        String base = request.getModel() != null
+                ? request.getModel()
+                : (forRegeneration ? config.getRegenerationModel() : config.getGenerationModel());
+
+        if (request.getModelVariant() != null && !request.getModelVariant().isBlank()) {
+            return base + request.getModelVariant();
+        }
+
+        return base;
+    }
+
+    private Integer resolveMaxTokens(GenerationRequestDTO request, int defaultValue) {
+        Integer requested = request.getMaxTokens();
+        if (requested != null && requested > 0) {
+            return requested;
+        }
+        return defaultValue;
+    }
+
+    private boolean shouldFallbackToNonStreaming(Exception e) {
+        String message = e != null && e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+        return message.contains("response_format")
+                || message.contains("json_schema")
+                || message.contains("stream")
+                || message.contains("streaming")
+                || message.contains("not supported")
+                || message.contains("unsupported");
+    }
+
     /**
      * Validate content against JSON schemas and business rules.
      */
     public Map<String, Object> validateContent(Map<String, Object> content) {
         Map<String, Object> result = new HashMap<>();
-        result.put("valid", true);
-        result.put("schemaErrors", List.of());
-        result.put("contentErrors", List.of());
-        result.put("businessRuleErrors", List.of());
 
-        // Parse content and validate using JsonValidatorService
-        // Full implementation depends on content type detection
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.valueToTree(content);
+
+            GenerationRequestDTO request = new GenerationRequestDTO();
+            request.setDifficulty(GenerationRequestDTO.DifficultyLevel.INTERMEDIATE);
+            request.setTestType(GenerationRequestDTO.TestType.ACADEMIC);
+
+            if (root.has("explanation_language")) {
+                String lang = root.get("explanation_language").asText();
+                request.setExplanationLanguage("EN".equalsIgnoreCase(lang)
+                        ? GenerationRequestDTO.ExplanationLanguage.EN
+                        : GenerationRequestDTO.ExplanationLanguage.VI);
+            }
+
+            JsonValidatorService.ValidationResult validationResult;
+
+            if (root.has("task_prompt")) {
+                request.setSkill(GenerationRequestDTO.SkillType.WRITING);
+                request.setPartNumber(detectWritingPart(root));
+                validationResult = jsonValidatorService.validateWritingContent(root.toString(), request);
+            } else if (root.has("transcript")) {
+                request.setSkill(GenerationRequestDTO.SkillType.LISTENING);
+                request.setPartNumber(detectListeningPart(root));
+                validationResult = jsonValidatorService.validateListeningContent(root.toString(), request);
+            } else {
+                request.setSkill(GenerationRequestDTO.SkillType.READING);
+                validationResult = jsonValidatorService.validateReadingContent(root.toString(), request);
+            }
+
+            result.put("valid", validationResult.isValid());
+            result.put("schemaErrors", validationResult.getSchemaErrors());
+            result.put("contentErrors", validationResult.getContentErrors());
+            result.put("businessRuleErrors", validationResult.getBusinessRuleErrors());
+            result.put("warnings", validationResult.getWarnings());
+
+        } catch (Exception e) {
+            result.put("valid", false);
+            result.put("schemaErrors", List.of("Invalid content: " + e.getMessage()));
+            result.put("contentErrors", List.of());
+            result.put("businessRuleErrors", List.of());
+            result.put("warnings", List.of());
+        }
 
         return result;
+    }
+
+    private Integer detectListeningPart(JsonNode root) {
+        if (root.has("part_number")) {
+            return root.get("part_number").asInt();
+        }
+        if (root.has("partNumber")) {
+            return root.get("partNumber").asInt();
+        }
+        JsonNode questions = root.get("questions");
+        if (questions != null && questions.isArray() && !questions.isEmpty()) {
+            int min = Integer.MAX_VALUE;
+            for (JsonNode q : questions) {
+                if (q.has("question_number")) {
+                    min = Math.min(min, q.get("question_number").asInt());
+                }
+            }
+            if (min != Integer.MAX_VALUE) {
+                int part = ((min - 1) / 10) + 1;
+                return Math.max(1, Math.min(4, part));
+            }
+        }
+        return 1;
+    }
+
+    private Integer detectWritingPart(JsonNode root) {
+        if (root.has("task_type")) {
+            String taskType = root.get("task_type").asText().toUpperCase();
+            if (taskType.startsWith("TASK_2")) {
+                return 2;
+            }
+        }
+        return 1;
     }
 
     /**
@@ -1222,8 +1636,343 @@ public class ABTSService {
         status.put("streamingEnabled", config.isStreamingEnabled());
         status.put("timeoutMs", config.getTimeoutMs());
         status.put("version", "2.0.0-beta");
-        status.put("phase", "Phase 2 - Reading Generation");
+        status.put("phase", "Phase 4 - Reading/Listening/Writing Generation");
 
         return status;
+    }
+
+    // ==================== SAVE CONTENT ====================
+
+    /**
+     * Save AI-generated content to the database using the new test hierarchy.
+     * Creates TestSet, IeltsTest, Section, and Questions as needed.
+     * 
+     * @param request     The save request containing exam metadata and generated content
+     * @param adminUserId The admin user ID for audit logging
+     * @return SaveContentResponseDTO with results including new IDs
+     * 
+     * @since 2025-12-26 - Phase 3.5/6: Updated for test hierarchy
+     */
+    @Transactional
+    public SaveContentResponseDTO saveContent(SaveContentRequestDTO request, String adminUserId) {
+        logger.info("Saving ABTS content: skill={}, partNumber={}, setCode={}, testId={}",
+                request.getSkill(), request.getPartNumber(), request.getSetCode(), request.getTestId());
+
+        try {
+            GeneratedContentDTO content = request.getContent();
+            if (content == null) {
+                return SaveContentResponseDTO.error("Content is null");
+            }
+
+            // Parse admin user ID to UUID if possible
+            UUID createdBy = null;
+            if (adminUserId != null && !adminUserId.isBlank()) {
+                try {
+                    createdBy = UUID.fromString(adminUserId);
+                } catch (IllegalArgumentException e) {
+                    logger.warn("Invalid admin user ID format: {}", adminUserId);
+                }
+            }
+
+            // 1. Resolve or create TestSet
+            TestSet testSet = resolveTestSet(request, createdBy);
+            logger.info("Using TestSet: id={}, code={}", testSet.getId(), testSet.getCode());
+
+            // 2. Resolve or create IeltsTest
+            IeltsTest ieltsTest = resolveTest(request, testSet, createdBy);
+            logger.info("Using IeltsTest: id={}, testNumber={}", ieltsTest.getId(), ieltsTest.getTestNumber());
+
+            // 3. Associate hashtags with the test
+            if (request.getHashtagCodes() != null && !request.getHashtagCodes().isEmpty()) {
+                Set<Hashtag> hashtags = hashtagService.findOrCreateByCodes(request.getHashtagCodes());
+                ieltsTest.setHashtags(hashtags);
+                hashtagService.incrementUseCounts(hashtags);
+                logger.info("Associated {} hashtags with test", hashtags.size());
+            } else if (request.getHashtagIds() != null && !request.getHashtagIds().isEmpty()) {
+                Set<Hashtag> hashtags = new HashSet<>(hashtagRepository.findAllById(request.getHashtagIds()));
+                ieltsTest.setHashtags(hashtags);
+                hashtagService.incrementUseCounts(hashtags);
+                logger.info("Associated {} hashtags (by ID) with test", hashtags.size());
+            }
+
+            // 4. Store generation metadata
+            if (request.getGenerationConfig() != null) {
+                Map<String, Object> metadata = buildGenerationMetadata(request);
+                try {
+                    JsonNode metadataJson = objectMapper.valueToTree(metadata);
+                    ieltsTest.setGenerationMetadata(metadataJson);
+                } catch (Exception e) {
+                    logger.warn("Failed to set generation metadata: {}", e.getMessage());
+                }
+            }
+            ieltsTest.setIsAiGenerated(true);
+
+            // 5. Save the test (cascades updates)
+            ieltsTest = ieltsTestRepository.save(ieltsTest);
+
+            // 6. Create section with test_id FK
+            Section section = createSection(request, content, ieltsTest);
+            section = sectionRepository.save(section);
+            logger.info("Created section with ID: {}, linked to test ID: {}", section.getId(), ieltsTest.getId());
+
+            // 7. Insert questions using JDBC for performance
+            int questionsCreated = createQuestions(content, section, ieltsTest);
+            logger.info("Created {} questions for section {}", questionsCreated, section.getId());
+
+            // 8. Return success response with new hierarchy IDs
+            SaveContentResponseDTO response = SaveContentResponseDTO.success(
+                    section.getId(),
+                    ieltsTest.getId(),
+                    testSet.getId(),
+                    testSet.getCode(),
+                    ieltsTest.getTestNumber(),
+                    request.getSkill().toLowerCase(),
+                    request.getPartNumber(),
+                    questionsCreated);
+
+            // Add warnings if question count mismatch
+            if (content.getQuestions() != null && questionsCreated < content.getQuestions().size()) {
+                response.setWarnings(List.of(
+                        String.format("Only %d of %d questions were saved",
+                                questionsCreated, content.getQuestions().size())));
+            }
+
+            return response;
+
+        } catch (Exception e) {
+            logger.error("Failed to save ABTS content: {}", e.getMessage(), e);
+            return SaveContentResponseDTO.error("Database error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Resolve or create a TestSet based on request parameters.
+     */
+    private TestSet resolveTestSet(SaveContentRequestDTO request, UUID createdBy) {
+        // If setId provided, use it
+        if (request.getSetId() != null) {
+            return testSetRepository.findById(request.getSetId())
+                    .orElseThrow(() -> new ResourceNotFoundException("TestSet", "id", request.getSetId()));
+        }
+
+        // If setCode provided, find or create
+        String setCode = request.getSetCode();
+        if (setCode == null || setCode.isEmpty()) {
+            // Default to AI-generated set
+            setCode = "ai_generated";
+        }
+
+        // Try to find existing
+        Optional<TestSet> existing = testSetRepository.findByCode(setCode);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        // Create new TestSet
+        TestSet newSet = TestSet.builder()
+                .code(setCode)
+                .nameVi("Bộ đề " + formatCodeToName(setCode))
+                .nameEn("Test Set: " + formatCodeToName(setCode))
+                .sourceType("ai_generated")
+                .isPublished(false)
+                .isSystem(false)
+                .displayOrder(testSetRepository.findMaxDisplayOrder() + 1)
+                .createdBy(createdBy)
+                .build();
+
+        return testSetRepository.save(newSet);
+    }
+
+    /**
+     * Resolve or create an IeltsTest based on request parameters.
+     */
+    private IeltsTest resolveTest(SaveContentRequestDTO request, TestSet testSet, UUID createdBy) {
+        // If testId provided, use it
+        if (request.getTestId() != null) {
+            return ieltsTestRepository.findById(request.getTestId())
+                    .orElseThrow(() -> new ResourceNotFoundException("IeltsTest", "id", request.getTestId()));
+        }
+
+        // Determine test number
+        Integer testNumber = null;
+        if (request.getTestNumber() != null && !request.getTestNumber().isBlank()) {
+            try {
+                testNumber = Integer.parseInt(request.getTestNumber());
+            } catch (NumberFormatException e) {
+                // Will auto-generate below
+            }
+        }
+
+        if (testNumber == null) {
+            // Auto-generate: get next available test number for this set
+            Integer maxTestNumber = ieltsTestRepository.findMaxTestNumberByTestSetId(testSet.getId());
+            testNumber = (maxTestNumber != null ? maxTestNumber : 0) + 1;
+        }
+
+        // Check if test exists for this set + number
+        Optional<IeltsTest> existingTest = ieltsTestRepository.findByTestSetIdAndTestNumber(testSet.getId(), testNumber);
+        if (existingTest.isPresent()) {
+            return existingTest.get();
+        }
+
+        // Determine difficulty from content metadata
+        String difficulty = "INTERMEDIATE";
+        GeneratedContentDTO content = request.getContent();
+        if (content != null && content.getMetadata() != null && content.getMetadata().getDifficulty() != null) {
+            difficulty = content.getMetadata().getDifficulty();
+        }
+
+        // Create new test
+        String topic = request.getTopic() != null ? request.getTopic() : "AI Generated Test";
+        IeltsTest newTest = IeltsTest.builder()
+                .testSet(testSet)
+                .testNumber(testNumber)
+                .nameVi("AI Test " + testNumber + (topic != null ? " - " + topic : ""))
+                .nameEn("AI Generated Test " + testNumber)
+                .difficulty(difficulty)
+                .isPublished(false)
+                .isAiGenerated(true)
+                .createdBy(createdBy)
+                .build();
+
+        return ieltsTestRepository.save(newTest);
+    }
+
+    /**
+     * Create a Section entity linked to the IeltsTest.
+     */
+    private Section createSection(SaveContentRequestDTO request, GeneratedContentDTO content, IeltsTest ieltsTest) {
+        Section section = new Section();
+
+        // NEW: Set the test FK
+        section.setIeltsTest(ieltsTest);
+
+        // Backward compatibility: still set these for existing queries
+        section.setExamSource(ieltsTest.getTestSet().getCode());
+        section.setTestNumber(ieltsTest.getTestNumber());
+
+        section.setSkill(request.getSkill().toLowerCase());
+        section.setPartNumber(request.getPartNumber());
+        section.setStatus("DRAFT");
+
+        // Set content from generated data
+        if (content.getSection() != null) {
+            GeneratedContentDTO.GeneratedSectionDTO sectionData = content.getSection();
+            section.setPassageText(sectionData.getPassageText());
+
+            // Handle section_layout for Listening tests
+            if (sectionData.getSectionLayout() != null) {
+                section.setSectionLayout(sectionData.getSectionLayout());
+            }
+        }
+
+        // Handle figure_description for maps/diagrams
+        if (content.getFigureDescription() != null) {
+            try {
+                section.setImageDescription(objectMapper.writeValueAsString(content.getFigureDescription()));
+            } catch (Exception e) {
+                logger.warn("Failed to serialize figure_description: {}", e.getMessage());
+            }
+        }
+
+        return section;
+    }
+
+    /**
+     * Create questions for the section using JDBC for performance.
+     */
+    private int createQuestions(GeneratedContentDTO content, Section section, IeltsTest ieltsTest) {
+        if (content.getQuestions() == null || content.getQuestions().isEmpty()) {
+            return 0;
+        }
+
+        String insertQuestionSql = """
+                INSERT INTO questions (section_id, question_number, question_uid, question_type,
+                                      question_content, correct_answer, explanation, word_limit, image_url)
+                VALUES (?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, ?, ?)
+                """;
+
+        String skillCode = section.getSkill().substring(0, 1); // r, l, w
+        int questionsCreated = 0;
+
+        for (GeneratedContentDTO.GeneratedQuestionDTO q : content.getQuestions()) {
+            try {
+                // Generate question UID
+                String questionUid = String.format("%s-t%d-%s-q%d",
+                        ieltsTest.getTestSet().getCode().toLowerCase(),
+                        ieltsTest.getTestNumber(),
+                        skillCode,
+                        q.getQuestionNumber());
+
+                // Serialize question_content to JSON
+                String questionContentJson = null;
+                if (q.getQuestionContent() != null) {
+                    questionContentJson = objectMapper.writeValueAsString(q.getQuestionContent());
+                }
+
+                // Serialize correct_answer to JSON array
+                String correctAnswerJson = null;
+                if (q.getCorrectAnswer() != null) {
+                    correctAnswerJson = objectMapper.writeValueAsString(q.getCorrectAnswer());
+                }
+
+                jdbcTemplate.update(
+                        insertQuestionSql,
+                        section.getId(),
+                        q.getQuestionNumber(),
+                        questionUid,
+                        q.getQuestionType(),
+                        questionContentJson,
+                        correctAnswerJson,
+                        q.getExplanation(),
+                        q.getWordLimit(),
+                        q.getImageUrl());
+
+                questionsCreated++;
+            } catch (Exception e) {
+                logger.error("Failed to insert question {}: {}", q.getQuestionNumber(), e.getMessage());
+            }
+        }
+
+        return questionsCreated;
+    }
+
+    /**
+     * Build generation metadata for reproducibility.
+     */
+    private Map<String, Object> buildGenerationMetadata(SaveContentRequestDTO request) {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("generated_by", "ABTS");
+        metadata.put("version", "2.0.0");
+        metadata.put("generated_at", Instant.now().toString());
+
+        // Store the generation inputs for reproducibility
+        if (request.getGenerationConfig() != null) {
+            metadata.put("generation_config", request.getGenerationConfig());
+        }
+
+        // Store topic and hashtags
+        if (request.getTopic() != null) {
+            metadata.put("topic", request.getTopic());
+        }
+        if (request.getHashtagCodes() != null) {
+            metadata.put("hashtags", request.getHashtagCodes());
+        }
+
+        return metadata;
+    }
+
+    /**
+     * Format a code to a readable name.
+     * e.g., "ai_generated" -> "Ai Generated"
+     */
+    private String formatCodeToName(String code) {
+        if (code == null || code.isEmpty()) {
+            return code;
+        }
+        return Arrays.stream(code.split("[-_]"))
+                .map(word -> word.substring(0, 1).toUpperCase() + word.substring(1).toLowerCase())
+                .reduce((a, b) -> a + " " + b)
+                .orElse(code);
     }
 }

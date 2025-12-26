@@ -22,7 +22,8 @@ public class StreamEventDTO {
         RETRY, // Retrying due to validation error
         COMPLETED, // Generation successful
         FAILED, // Generation failed
-        PROGRESS // General progress update
+        PROGRESS, // General progress update
+        ABORTED // Generation was cancelled by user
     }
 
     private EventType type;
@@ -141,6 +142,17 @@ public class StreamEventDTO {
         event.setType(EventType.PROGRESS);
         event.setMessage(message);
         event.setProgress(progress);
+        return event;
+    }
+
+    /**
+     * Generation was cancelled/aborted by user.
+     */
+    public static StreamEventDTO aborted() {
+        StreamEventDTO event = new StreamEventDTO();
+        event.setType(EventType.ABORTED);
+        event.setMessage("Generation was cancelled");
+        event.setProgress(0);
         return event;
     }
 

@@ -143,6 +143,7 @@ export default function QuestionPreviewRenderer({
 
             case 'SUMMARY_COMPLETION':
             case 'FILL_IN_BLANK':
+            case 'NOTE_COMPLETION':
                 return (
                     <>
                         <div className="admin-question-text">
@@ -171,7 +172,7 @@ export default function QuestionPreviewRenderer({
                 );
 
             case 'TABLE_COMPLETION':
-            case 'DIAGRAM_COMPLETION':
+            case 'DIAGRAM_LABEL_COMPLETION':
             case 'FLOW_CHART_COMPLETION':
                 return (
                     <>

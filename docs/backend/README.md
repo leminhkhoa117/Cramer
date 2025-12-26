@@ -52,11 +52,11 @@ Located in the `./migrations/` folder:
 
 | Metric | Count |
 |--------|-------|
-| Total Tables | 21 |
-| Tables with RLS | 16 |
-| Applied Migrations | 14 |
-| Database Functions | 5 |
-| Triggers | 4 |
+| Total Tables | 22 |
+| Tables with RLS | 17 |
+| Applied Migrations | 15 |
+| Database Functions | 3 |
+| Triggers | 3 |
 
 ### Core Domain Tables
 
@@ -67,8 +67,8 @@ Located in the `./migrations/` folder:
 │  User Management        │  IELTS Content          │  Learning    │
 │  ─────────────────────  │  ─────────────────────  │  ─────────── │
 │  • profiles             │  • sections             │  • vocabulary│
-│  • user_two_factor_auth │  • questions            │  • target    │
-│  • user_streaks         │  • test_attempts        │              │
+│                         │  • questions            │  • target    │
+│                         │  • test_attempts        │              │
 │                         │  • user_answers         │              │
 │                         │  • writing_submissions  │              │
 ├──────────────────────────────────────────────────────────────────┤
@@ -175,4 +175,4 @@ When adding new backend documentation:
 
 ---
 
-*Last updated: 2025-12-15*
+*Last updated: 2025-12-26*
