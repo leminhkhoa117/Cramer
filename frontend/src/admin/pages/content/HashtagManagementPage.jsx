@@ -17,11 +17,11 @@ import '../../css/pages/content/HashtagManagementPage.css';
 
 // Category display mapping
 const CATEGORIES = {
-    topic: { label: 'Chu de', icon: '\u{1F4DA}' },
-    theme: { label: 'Chu diem', icon: '\u{1F3AF}' },
-    difficulty: { label: 'Do kho', icon: '\u{1F4CA}' },
-    source: { label: 'Nguon', icon: '\u{1F4C1}' },
-    skill_focus: { label: 'Ky nang', icon: '\u{1F393}' }
+    topic: { label: 'Chủ đề', icon: '\u{1F4DA}' },
+    theme: { label: 'Chủ điểm', icon: '\u{1F3AF}' },
+    difficulty: { label: 'Độ khó', icon: '\u{1F4CA}' },
+    source: { label: 'Nguồn', icon: '\u{1F4C1}' },
+    skill_focus: { label: 'Kỹ năng', icon: '\u{1F393}' }
 };
 
 // Common emojis for quick selection
@@ -142,8 +142,8 @@ const HashtagManagementPage = () => {
         <div className="admin-page hashtag-management-page">
             <header className="admin-page__header">
                 <div>
-                    <h1 className="admin-page__title">Quan ly Hashtag</h1>
-                    <p className="admin-page__subtitle">Phan loai va danh tag cho cac bai thi</p>
+                    <h1 className="admin-page__title">Quản lý Hashtag</h1>
+                    <p className="admin-page__subtitle">Phân loại và đánh dấu các bài thi</p>
                 </div>
                 <div className="hashtag-page__actions">
                     <button
@@ -152,14 +152,14 @@ const HashtagManagementPage = () => {
                         disabled={isLoading}
                     >
                         <FiRefreshCw size={16} className={isLoading ? 'spinning' : ''} />
-                        <span>Lam moi</span>
+                        <span>Làm mới</span>
                     </button>
                     <button
                         className="admin-btn admin-btn--primary"
                         onClick={() => setShowModal(true)}
                     >
                         <FiPlus size={16} />
-                        <span>Tao hashtag moi</span>
+                        <span>Tạo hashtag mới</span>
                     </button>
                 </div>
             </header>
@@ -176,15 +176,15 @@ const HashtagManagementPage = () => {
             <div className="hashtag-stats-row">
                 <div className="hashtag-stat-card">
                     <span className="hashtag-stat-value">{stats.total}</span>
-                    <span className="hashtag-stat-label">Tong hashtag</span>
+                    <span className="hashtag-stat-label">Tổng hashtag</span>
                 </div>
                 <div className="hashtag-stat-card">
                     <span className="hashtag-stat-value">{stats.active}</span>
-                    <span className="hashtag-stat-label">Dang hoat dong</span>
+                    <span className="hashtag-stat-label">Đang hoạt động</span>
                 </div>
                 <div className="hashtag-stat-card">
                     <span className="hashtag-stat-value">{stats.categories}</span>
-                    <span className="hashtag-stat-label">Danh muc</span>
+                    <span className="hashtag-stat-label">Danh mục</span>
                 </div>
             </div>
 
@@ -194,7 +194,7 @@ const HashtagManagementPage = () => {
                     <FiSearch className="hashtag-search-icon" />
                     <input
                         type="text"
-                        placeholder="Tim hashtag..."
+                        placeholder="Tìm hashtag..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="hashtag-search-input"
@@ -214,7 +214,7 @@ const HashtagManagementPage = () => {
                         className={categoryFilter === 'all' ? 'active' : ''}
                         onClick={() => setCategoryFilter('all')}
                     >
-                        Tat ca
+                        Tất cả
                     </button>
                     {Object.entries(CATEGORIES).map(([key, { label, icon }]) => (
                         <button
@@ -232,7 +232,7 @@ const HashtagManagementPage = () => {
             {isLoading ? (
                 <div className="hashtag-loading">
                     <div className="spinner"></div>
-                    <p>Dang tai hashtag...</p>
+                    <p>Đang tải hashtag...</p>
                 </div>
             ) : (
                 <div className="hashtags-container">
@@ -273,21 +273,21 @@ const HashtagManagementPage = () => {
                                         <div className="hashtag-card-meta">
                                             <span className="hashtag-code">#{hashtag.code}</span>
                                             <span className="hashtag-use-count">
-                                                {hashtag.useCount || 0} lan su dung
+                                                {hashtag.useCount || 0} lần sử dụng
                                             </span>
                                         </div>
 
                                         <div className="hashtag-card-actions">
                                             <button
                                                 onClick={() => setEditingHashtag(hashtag)}
-                                                title="Chinh sua"
+                                                title="Chỉnh sửa"
                                                 className="hashtag-action-btn"
                                             >
                                                 <FiEdit2 size={14} />
                                             </button>
                                             <button
                                                 onClick={() => setShowDeleteConfirm(hashtag)}
-                                                title="Xoa"
+                                                title="Xóa"
                                                 className="hashtag-action-btn delete"
                                             >
                                                 <FiTrash2 size={14} />
@@ -295,7 +295,7 @@ const HashtagManagementPage = () => {
                                         </div>
 
                                         {hashtag.isActive === false && (
-                                            <span className="hashtag-inactive-badge">Da an</span>
+                                            <span className="hashtag-inactive-badge">Đã ẩn</span>
                                         )}
                                     </div>
                                 ))}
@@ -306,13 +306,13 @@ const HashtagManagementPage = () => {
                     {Object.keys(groupedHashtags).length === 0 && (
                         <div className="hashtag-empty-state">
                             <FiTag size={48} />
-                            <p>Khong tim thay hashtag nao</p>
+                            <p>Không tìm thấy hashtag nào</p>
                             {searchQuery && (
                                 <button
                                     className="admin-btn admin-btn--secondary"
                                     onClick={() => setSearchQuery('')}
                                 >
-                                    Xoa bo loc
+                                    Xóa bộ lọc
                                 </button>
                             )}
                         </div>
@@ -340,10 +340,10 @@ const HashtagManagementPage = () => {
             {showDeleteConfirm && (
                 <div className="hashtag-modal-overlay" onClick={() => setShowDeleteConfirm(null)}>
                     <div className="hashtag-modal hashtag-confirm-modal" onClick={e => e.stopPropagation()}>
-                        <h3>Xoa hashtag</h3>
+                        <h3>Xóa hashtag</h3>
                         <p>
-                            Ban co chac muon an hashtag "<strong>{showDeleteConfirm.nameVi}</strong>"?
-                            Hashtag se khong hien thi nhung van duoc giu lai trong he thong.
+                            Bạn có chắc muốn ẩn hashtag "<strong>{showDeleteConfirm.nameVi}</strong>"?
+                            Hashtag sẽ không hiển thị nhưng vẫn được giữ lại trong hệ thống.
                         </p>
                         <div className="hashtag-modal-actions">
                             <button
@@ -351,14 +351,14 @@ const HashtagManagementPage = () => {
                                 onClick={() => setShowDeleteConfirm(null)}
                                 disabled={isSubmitting}
                             >
-                                Huy
+                                Hủy
                             </button>
                             <button
                                 className="admin-btn admin-btn--danger"
                                 onClick={() => handleDelete(showDeleteConfirm.id)}
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? 'Dang xoa...' : 'Xoa'}
+                                {isSubmitting ? 'Đang xóa...' : 'Xóa'}
                             </button>
                         </div>
                     </div>
@@ -386,12 +386,12 @@ const HashtagModal = ({ hashtag, onClose, onSubmit, isSubmitting }) => {
     const validateForm = () => {
         const newErrors = {};
         if (!formData.code.trim()) {
-            newErrors.code = 'Ma hashtag la bat buoc';
+            newErrors.code = 'Mã hashtag là bắt buộc';
         } else if (!/^[a-z0-9_]+$/.test(formData.code)) {
-            newErrors.code = 'Ma chi cho phep chu thuong, so va dau gach duoi';
+            newErrors.code = 'Mã chỉ cho phép chữ thường, số và dấu gạch dưới';
         }
         if (!formData.nameVi.trim()) {
-            newErrors.nameVi = 'Ten tieng Viet la bat buoc';
+            newErrors.nameVi = 'Tên tiếng Việt là bắt buộc';
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -413,7 +413,7 @@ const HashtagModal = ({ hashtag, onClose, onSubmit, isSubmitting }) => {
         <div className="hashtag-modal-overlay" onClick={onClose}>
             <div className="hashtag-modal" onClick={e => e.stopPropagation()}>
                 <div className="hashtag-modal-header">
-                    <h2>{hashtag ? 'Chinh sua hashtag' : 'Tao hashtag moi'}</h2>
+                    <h2>{hashtag ? 'Chỉnh sửa hashtag' : 'Tạo hashtag mới'}</h2>
                     <button className="hashtag-modal-close" onClick={onClose}>
                         <FiX size={20} />
                     </button>
@@ -422,7 +422,7 @@ const HashtagModal = ({ hashtag, onClose, onSubmit, isSubmitting }) => {
                 <form onSubmit={handleSubmit} className="hashtag-modal-form">
                     <div className="hashtag-form-row">
                         <div className="hashtag-form-group">
-                            <label>Ma (code) *</label>
+                            <label>Mã (code) *</label>
                             <input
                                 type="text"
                                 value={formData.code}
@@ -432,11 +432,11 @@ const HashtagModal = ({ hashtag, onClose, onSubmit, isSubmitting }) => {
                                 className={errors.code ? 'error' : ''}
                             />
                             {errors.code && <span className="hashtag-form-error">{errors.code}</span>}
-                            <span className="hashtag-form-hint">Chi su dung chu thuong, so va dau gach duoi</span>
+                            <span className="hashtag-form-hint">Chỉ sử dụng chữ thường, số và dấu gạch dưới</span>
                         </div>
 
                         <div className="hashtag-form-group">
-                            <label>Danh muc *</label>
+                            <label>Danh mục *</label>
                             <select
                                 value={formData.category}
                                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -450,19 +450,19 @@ const HashtagModal = ({ hashtag, onClose, onSubmit, isSubmitting }) => {
 
                     <div className="hashtag-form-row">
                         <div className="hashtag-form-group">
-                            <label>Ten tieng Viet *</label>
+                            <label>Tên tiếng Việt *</label>
                             <input
                                 type="text"
                                 value={formData.nameVi}
                                 onChange={(e) => setFormData({ ...formData, nameVi: e.target.value })}
-                                placeholder="Moi truong"
+                                placeholder="Môi trường"
                                 className={errors.nameVi ? 'error' : ''}
                             />
                             {errors.nameVi && <span className="hashtag-form-error">{errors.nameVi}</span>}
                         </div>
 
                         <div className="hashtag-form-group">
-                            <label>Ten tieng Anh</label>
+                            <label>Tên tiếng Anh</label>
                             <input
                                 type="text"
                                 value={formData.nameEn}
@@ -503,7 +503,7 @@ const HashtagModal = ({ hashtag, onClose, onSubmit, isSubmitting }) => {
                         </div>
 
                         <div className="hashtag-form-group">
-                            <label>Mau sac</label>
+                            <label>Màu sắc</label>
                             <div className="hashtag-color-picker">
                                 <input
                                     type="color"
@@ -544,7 +544,7 @@ const HashtagModal = ({ hashtag, onClose, onSubmit, isSubmitting }) => {
                                 />
                                 <span className="hashtag-toggle-slider"></span>
                                 <span className="hashtag-toggle-text">
-                                    {formData.isActive ? 'Dang hoat dong' : 'Da an'}
+                                    {formData.isActive ? 'Đang hoạt động' : 'Đã ẩn'}
                                 </span>
                             </label>
                         </div>
@@ -552,7 +552,7 @@ const HashtagModal = ({ hashtag, onClose, onSubmit, isSubmitting }) => {
 
                     {/* Preview */}
                     <div className="hashtag-form-group">
-                        <label>Xem truoc</label>
+                        <label>Xem trước</label>
                         <div
                             className="hashtag-preview-large"
                             style={{
@@ -561,7 +561,7 @@ const HashtagModal = ({ hashtag, onClose, onSubmit, isSubmitting }) => {
                                 border: `1px solid ${formData.color}`
                             }}
                         >
-                            {formData.icon || '\u{1F3F7}'} {formData.nameVi || 'Ten hashtag'}
+                            {formData.icon || '\u{1F3F7}'} {formData.nameVi || 'Tên hashtag'}
                         </div>
                     </div>
 
@@ -572,14 +572,14 @@ const HashtagModal = ({ hashtag, onClose, onSubmit, isSubmitting }) => {
                             onClick={onClose}
                             disabled={isSubmitting}
                         >
-                            Huy
+                            Hủy
                         </button>
                         <button
                             type="submit"
                             className="admin-btn admin-btn--primary"
                             disabled={isSubmitting}
                         >
-                            {isSubmitting ? 'Dang xu ly...' : (hashtag ? 'Cap nhat' : 'Tao')}
+                            {isSubmitting ? 'Đang xử lý...' : (hashtag ? 'Cập nhật' : 'Tạo')}
                         </button>
                     </div>
                 </form>
