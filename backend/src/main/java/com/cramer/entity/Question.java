@@ -45,7 +45,7 @@ public class Question {
     @JoinColumn(name = "section_id", insertable = false, updatable = false)
     private Section section;
 
-    @Column(name = "explanation")
+    @Column(name = "explanation", columnDefinition = "TEXT")
     private String explanation;
 
     @Column(name = "word_limit")
@@ -58,8 +58,8 @@ public class Question {
     public Question() {
     }
 
-    public Question(Long sectionId, Integer questionNumber, String questionUid, 
-                   String questionType, JsonNode questionContent, JsonNode correctAnswer) {
+    public Question(Long sectionId, Integer questionNumber, String questionUid,
+            String questionType, JsonNode questionContent, JsonNode correctAnswer) {
         this.sectionId = sectionId;
         this.questionNumber = questionNumber;
         this.questionUid = questionUid;

@@ -1380,8 +1380,11 @@ public class JsonValidatorService {
         if (group == null || group.isEmpty()) {
             return;
         }
-        String signature = null;
+
+        int expectedOptionCount = -1;
+        boolean firstOptionIsObject = false; // Track if options are {letter, text} objects
         int startNum = group.get(0).path("question_number").asInt(0);
+
         for (JsonNode question : group) {
             JsonNode options = question.path("question_content").path("options");
             if (options.isMissingNode() || !options.isArray() || options.isEmpty()) {
@@ -1390,14 +1393,28 @@ public class JsonValidatorService {
                         question.path("question_number").asInt(0), type));
                 continue;
             }
-            String current = options.toString();
-            if (signature == null) {
-                signature = current;
-            } else if (!signature.equals(current)) {
-                result.addContentError(String.format(
-                        "%s group starting at question %d has inconsistent options",
-                        type, startNum));
-                break;
+
+            int currentCount = options.size();
+            boolean currentIsObject = options.get(0).isObject();
+
+            if (expectedOptionCount == -1) {
+                // First question - establish baseline
+                expectedOptionCount = currentCount;
+                firstOptionIsObject = currentIsObject;
+            } else {
+                // Subsequent questions - check consistency
+                if (currentCount != expectedOptionCount) {
+                    result.addContentError(String.format(
+                            "%s group starting at question %d has inconsistent option counts (%d vs %d)",
+                            type, startNum, expectedOptionCount, currentCount));
+                    break;
+                }
+                if (currentIsObject != firstOptionIsObject) {
+                    result.addContentError(String.format(
+                            "%s group starting at question %d has inconsistent option format",
+                            type, startNum));
+                    break;
+                }
             }
         }
     }

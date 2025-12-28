@@ -215,6 +215,7 @@ const useAdminContentStore = create((set, get) => ({
             await adminApi.testsApi.delete(testId);
             set({ lastTopicsFetch: null });
             await get().fetchTopics(true);
+            set({ isLoading: false });
         } catch (error) {
             console.error('Error deleting test:', error);
             set({

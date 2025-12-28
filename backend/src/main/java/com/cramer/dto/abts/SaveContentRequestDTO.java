@@ -17,7 +17,8 @@ import java.util.Map;
  */
 public class SaveContentRequestDTO {
 
-    // ==================== LEGACY FIELDS (kept for backward compatibility) ====================
+    // ==================== LEGACY FIELDS (kept for backward compatibility)
+    // ====================
 
     /**
      * Exam source identifier (e.g., "AI-GEN", "custom").
@@ -67,6 +68,12 @@ public class SaveContentRequestDTO {
     private String setCode;
 
     /**
+     * Optional: Display name for new TestSet (Vietnamese).
+     * Used when creating a new test set.
+     */
+    private String setNameVi;
+
+    /**
      * Optional: existing Test ID to add this section to.
      * If provided, the section will be added to this existing test.
      */
@@ -92,10 +99,26 @@ public class SaveContentRequestDTO {
     private String topic;
 
     /**
+     * Optional explicit test name (Vietnamese).
+     */
+    private String testNameVi;
+
+    /**
+     * Optional explicit test name (English).
+     */
+    private String testNameEn;
+
+    /**
      * Optional: generation configuration for reproducibility.
      * Stores the inputs used for AI generation (topic, facts, model, etc.).
      */
     private Map<String, Object> generationConfig;
+
+    /**
+     * Optional: difficulty level for the test.
+     * Values: BEGINNER, INTERMEDIATE, ADVANCED.
+     */
+    private String difficulty;
 
     // ==================== GETTERS AND SETTERS ====================
 
@@ -139,6 +162,22 @@ public class SaveContentRequestDTO {
         this.topic = topic;
     }
 
+    public String getTestNameVi() {
+        return testNameVi;
+    }
+
+    public void setTestNameVi(String testNameVi) {
+        this.testNameVi = testNameVi;
+    }
+
+    public String getTestNameEn() {
+        return testNameEn;
+    }
+
+    public void setTestNameEn(String testNameEn) {
+        this.testNameEn = testNameEn;
+    }
+
     public GeneratedContentDTO getContent() {
         return content;
     }
@@ -161,6 +200,14 @@ public class SaveContentRequestDTO {
 
     public void setSetCode(String setCode) {
         this.setCode = setCode;
+    }
+
+    public String getSetNameVi() {
+        return setNameVi;
+    }
+
+    public void setSetNameVi(String setNameVi) {
+        this.setNameVi = setNameVi;
     }
 
     public Long getTestId() {
@@ -193,5 +240,13 @@ public class SaveContentRequestDTO {
 
     public void setGenerationConfig(Map<String, Object> generationConfig) {
         this.generationConfig = generationConfig;
+    }
+
+    public String getDifficulty() {
+        return difficulty;
+    }
+
+    public void setDifficulty(String difficulty) {
+        this.difficulty = difficulty;
     }
 }

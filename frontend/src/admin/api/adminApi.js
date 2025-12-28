@@ -650,7 +650,7 @@ export const testSetsApi = {
     getAll: async () => {
         const headers = await getAuthHeaders();
         const response = await axios.get(
-            `${API_BASE_URL}/api/admin/content/test-sets`,
+            `${API_BASE_URL}/api/admin/test-sets`,
             { headers }
         );
         return response.data;
@@ -664,7 +664,7 @@ export const testSetsApi = {
     getById: async (id) => {
         const headers = await getAuthHeaders();
         const response = await axios.get(
-            `${API_BASE_URL}/api/admin/content/test-sets/${id}`,
+            `${API_BASE_URL}/api/admin/test-sets/${id}`,
             { headers }
         );
         return response.data;
@@ -678,7 +678,7 @@ export const testSetsApi = {
     getByCode: async (code) => {
         const headers = await getAuthHeaders();
         const response = await axios.get(
-            `${API_BASE_URL}/api/admin/content/test-sets/code/${code}`,
+            `${API_BASE_URL}/api/admin/test-sets/code/${code}`,
             { headers }
         );
         return response.data;
@@ -692,7 +692,7 @@ export const testSetsApi = {
     create: async (data) => {
         const headers = await getAuthHeaders();
         const response = await axios.post(
-            `${API_BASE_URL}/api/admin/content/test-sets`,
+            `${API_BASE_URL}/api/admin/test-sets`,
             data,
             { headers }
         );
@@ -708,7 +708,7 @@ export const testSetsApi = {
     update: async (id, data) => {
         const headers = await getAuthHeaders();
         const response = await axios.put(
-            `${API_BASE_URL}/api/admin/content/test-sets/${id}`,
+            `${API_BASE_URL}/api/admin/test-sets/${id}`,
             data,
             { headers }
         );
@@ -722,7 +722,7 @@ export const testSetsApi = {
     delete: async (id) => {
         const headers = await getAuthHeaders();
         await axios.delete(
-            `${API_BASE_URL}/api/admin/content/test-sets/${id}`,
+            `${API_BASE_URL}/api/admin/test-sets/${id}`,
             { headers }
         );
     },
@@ -810,6 +810,18 @@ export const testsApi = {
 
 
     /**
+     * Delete test
+     * @param {number} id - Test ID
+     */
+    delete: async (id) => {
+        const headers = await getAuthHeaders();
+        await axios.delete(
+            `${API_BASE_URL}/api/admin/tests/${id}`,
+            { headers }
+        );
+    },
+
+    /**
      * Update test
      * @param {number} id - Test ID
      * @param {Object} data - Updated data
@@ -818,7 +830,7 @@ export const testsApi = {
     update: async (id, data) => {
         const headers = await getAuthHeaders();
         const response = await axios.put(
-            `${API_BASE_URL}/api/admin/content/tests/${id}`,
+            `${API_BASE_URL}/api/admin/tests/${id}`,
             data,
             { headers }
         );
@@ -835,7 +847,7 @@ export const testsApi = {
     publish: async (id) => {
         const headers = await getAuthHeaders();
         const response = await axios.post(
-            `${API_BASE_URL}/api/admin/content/tests/${id}/publish`,
+            `${API_BASE_URL}/api/admin/tests/${id}/publish`,
             null,
             { headers }
         );
@@ -850,7 +862,7 @@ export const testsApi = {
     unpublish: async (id) => {
         const headers = await getAuthHeaders();
         const response = await axios.post(
-            `${API_BASE_URL}/api/admin/content/tests/${id}/unpublish`,
+            `${API_BASE_URL}/api/admin/tests/${id}/unpublish`,
             null,
             { headers }
         );
@@ -867,7 +879,7 @@ export const testsApi = {
     updateHashtags: async (id, hashtagIds, primaryHashtagId = null) => {
         const headers = await getAuthHeaders();
         const response = await axios.put(
-            `${API_BASE_URL}/api/admin/content/tests/${id}/hashtags`,
+            `${API_BASE_URL}/api/admin/tests/${id}/hashtags`,
             { hashtagIds, primaryHashtagId },
             { headers }
         );

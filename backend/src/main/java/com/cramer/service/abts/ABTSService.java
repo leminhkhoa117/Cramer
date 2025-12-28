@@ -1647,7 +1647,8 @@ public class ABTSService {
      * Save AI-generated content to the database using the new test hierarchy.
      * Creates TestSet, IeltsTest, Section, and Questions as needed.
      * 
-     * @param request     The save request containing exam metadata and generated content
+     * @param request     The save request containing exam metadata and generated
+     *                    content
      * @param adminUserId The admin user ID for audit logging
      * @return SaveContentResponseDTO with results including new IDs
      * 
@@ -1710,10 +1711,38 @@ public class ABTSService {
             // 5. Save the test (cascades updates)
             ieltsTest = ieltsTestRepository.save(ieltsTest);
 
-            // 6. Create section with test_id FK
-            Section section = createSection(request, content, ieltsTest);
+            // 6. Check if section already exists for this test + skill + part
+            String skillLower = request.getSkill().toLowerCase();
+            Optional<Section> existingSection = sectionRepository.findByIeltsTestIdAndSkillAndPartNumber(
+                    ieltsTest.getId(), skillLower, request.getPartNumber());
+
+            Section section;
+            boolean isUpdate = existingSection.isPresent();
+
+            if (isUpdate) {
+                // Update existing section
+                section = existingSection.get();
+                logger.info("Updating existing section ID: {} for test ID: {}", section.getId(), ieltsTest.getId());
+
+                // Update content
+                if (content.getSection() != null) {
+                    GeneratedContentDTO.GeneratedSectionDTO sectionData = content.getSection();
+                    section.setPassageText(sectionData.getPassageText());
+                    if (sectionData.getSectionLayout() != null) {
+                        section.setSectionLayout(sectionData.getSectionLayout());
+                    }
+                }
+
+                // Delete old questions before inserting new ones
+                jdbcTemplate.update("DELETE FROM questions WHERE section_id = ?", section.getId());
+            } else {
+                // Create new section
+                section = createSection(request, content, ieltsTest);
+            }
+
             section = sectionRepository.save(section);
-            logger.info("Created section with ID: {}, linked to test ID: {}", section.getId(), ieltsTest.getId());
+            logger.info("{} section with ID: {}, linked to test ID: {}",
+                    isUpdate ? "Updated" : "Created", section.getId(), ieltsTest.getId());
 
             // 7. Insert questions using JDBC for performance
             int questionsCreated = createQuestions(content, section, ieltsTest);
@@ -1768,11 +1797,17 @@ public class ABTSService {
             return existing.get();
         }
 
-        // Create new TestSet
+        // Create new TestSet - use explicit setNameVi if provided, otherwise format
+        // from code
+        String displayName = request.getSetNameVi();
+        if (displayName == null || displayName.isBlank()) {
+            displayName = formatCodeToName(setCode);
+        }
+
         TestSet newSet = TestSet.builder()
                 .code(setCode)
-                .nameVi("Bộ đề " + formatCodeToName(setCode))
-                .nameEn("Test Set: " + formatCodeToName(setCode))
+                .nameVi(displayName)
+                .nameEn("Test Set: " + displayName)
                 .sourceType("ai_generated")
                 .isPublished(false)
                 .isSystem(false)
@@ -1810,25 +1845,43 @@ public class ABTSService {
         }
 
         // Check if test exists for this set + number
-        Optional<IeltsTest> existingTest = ieltsTestRepository.findByTestSetIdAndTestNumber(testSet.getId(), testNumber);
+        Optional<IeltsTest> existingTest = ieltsTestRepository.findByTestSetIdAndTestNumber(testSet.getId(),
+                testNumber);
         if (existingTest.isPresent()) {
             return existingTest.get();
         }
 
-        // Determine difficulty from content metadata
+        // Determine difficulty - prefer explicit request difficulty, then content
+        // metadata, then default
         String difficulty = "INTERMEDIATE";
-        GeneratedContentDTO content = request.getContent();
-        if (content != null && content.getMetadata() != null && content.getMetadata().getDifficulty() != null) {
-            difficulty = content.getMetadata().getDifficulty();
+        if (request.getDifficulty() != null && !request.getDifficulty().isBlank()) {
+            difficulty = request.getDifficulty();
+        } else {
+            GeneratedContentDTO content = request.getContent();
+            if (content != null && content.getMetadata() != null && content.getMetadata().getDifficulty() != null) {
+                difficulty = content.getMetadata().getDifficulty();
+            }
         }
 
         // Create new test
+        // Create new test
         String topic = request.getTopic() != null ? request.getTopic() : "AI Generated Test";
+
+        String nameVi = request.getTestNameVi();
+        if (nameVi == null || nameVi.isBlank()) {
+            nameVi = "AI Test " + testNumber + (topic != null ? " - " + topic : "");
+        }
+
+        String nameEn = request.getTestNameEn();
+        if (nameEn == null || nameEn.isBlank()) {
+            nameEn = "AI Generated Test " + testNumber;
+        }
+
         IeltsTest newTest = IeltsTest.builder()
                 .testSet(testSet)
                 .testNumber(testNumber)
-                .nameVi("AI Test " + testNumber + (topic != null ? " - " + topic : ""))
-                .nameEn("AI Generated Test " + testNumber)
+                .nameVi(nameVi)
+                .nameEn(nameEn)
                 .difficulty(difficulty)
                 .isPublished(false)
                 .isAiGenerated(true)

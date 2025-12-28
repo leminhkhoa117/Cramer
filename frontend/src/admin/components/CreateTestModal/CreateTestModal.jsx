@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
-import { FiX, FiPlus, FiFolder, FiFileText, FiTag } from 'react-icons/fi';
+import { FiX, FiPlus, FiFolder, FiFileText, FiEdit2, FiSave } from 'react-icons/fi';
 import TagInput from '../abts/TagInput';
 import '../common/AdminModal.css';
 
 /**
- * CreateTestModal - Modal tạo đề thi mới
+ * CreateTestModal - Modal tạo/chỉnh sửa đề thi
  * 
  * @param {boolean} isOpen - Trạng thái mở modal
  * @param {function} onClose - Callback đóng modal
  * @param {function} onSubmit - Callback khi submit form
  * @param {Array} topics - Danh sách topics
+ * @param {Object} testToEdit - Test object khi ở chế độ sửa (null = tạo mới)
  */
 export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = [], testToEdit = null }) {
-    const [step, setStep] = useState(testToEdit ? 2 : 1); // If editing, start at step 2
+    const isEditMode = !!testToEdit;
+    const [step, setStep] = useState(isEditMode ? 2 : 1); // If editing, skip step 1
     const [mode, setMode] = useState('existing'); // 'existing' | 'new'
 
     // Initialize form data
@@ -22,6 +24,7 @@ export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = []
         newTopicSource: '',
         testName: '',
         testNumber: '',
+        difficulty: 'INTERMEDIATE',
         hashtagIds: []
     });
 
@@ -36,16 +39,16 @@ export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = []
                 setMode('existing');
 
                 // Find topic based on test's topic ID or similar linkage
-                // Note: testToEdit might need to contain topicId or we search for it
-                const parentTopic = topics.find(t => t.tests.some(test => test.id === testToEdit.id));
-                const topicId = parentTopic ? parentTopic.id : '';
+                const parentTopic = topics.find(t => t.tests?.some(test => test.id === testToEdit.id));
+                const topicId = parentTopic ? parentTopic.id : (testToEdit.setId || '');
 
                 setFormData({
                     topicId: topicId,
                     newTopicName: '',
                     newTopicSource: '',
-                    testName: testToEdit.nameEn || testToEdit.nameVi || '',
+                    testName: testToEdit.nameVi || testToEdit.nameEn || '',
                     testNumber: testToEdit.testNumber || '',
+                    difficulty: testToEdit.difficulty || 'INTERMEDIATE',
                     hashtagIds: testToEdit.hashtags ? testToEdit.hashtags.map(h => h.id) : []
                 });
             } else {
@@ -58,6 +61,7 @@ export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = []
                     newTopicSource: '',
                     testName: '',
                     testNumber: '',
+                    difficulty: 'INTERMEDIATE',
                     hashtagIds: []
                 });
             }
@@ -108,31 +112,35 @@ export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = []
     };
 
     const handleBack = () => {
-        setStep(1);
-        setErrors({});
+        if (isEditMode) {
+            // In edit mode, back = close
+            handleClose();
+        } else {
+            setStep(1);
+            setErrors({});
+        }
     };
 
     const handleSubmit = () => {
         if (validateStep2()) {
-            // If editing, we just submit the updated data
-            if (testToEdit) {
+            // If editing, submit updated data
+            if (isEditMode) {
                 onSubmit({
                     id: testToEdit.id,
-                    testName: formData.testName,
-                    testNumber: formData.testNumber,
+                    nameVi: formData.testName,
+                    testNumber: parseInt(formData.testNumber) || testToEdit.testNumber,
+                    difficulty: formData.difficulty,
                     hashtagIds: formData.hashtagIds,
-                    // We might allow moving topics later, but for now focus on metadata
-                    // topicId: formData.topicId 
                 });
                 return;
             }
 
-            // ... (Creation logic remains the same)
+            // Creation logic
             let examSource = '';
 
             if (mode === 'existing') {
                 const selectedTopic = topics.find(t => t.id === parseInt(formData.topicId));
-                examSource = selectedTopic?.source || '';
+                examSource = selectedTopic?.code || selectedTopic?.source || '';
             } else {
                 examSource = formData.newTopicSource
                     .trim()
@@ -143,8 +151,10 @@ export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = []
 
             onSubmit({
                 examSource: examSource,
+                topicId: formData.topicId,
                 testNumber: formData.testNumber || (Math.floor(Math.random() * 1000) + 1),
                 testName: formData.testName,
+                difficulty: formData.difficulty,
                 hashtagIds: formData.hashtagIds
             });
         }
@@ -158,6 +168,7 @@ export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = []
             newTopicSource: '',
             testName: '',
             testNumber: '',
+            difficulty: 'INTERMEDIATE',
             hashtagIds: []
         });
         setErrors({});
@@ -169,8 +180,8 @@ export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = []
             <div className="modal-content create-test-modal">
                 <div className="modal-header">
                     <h3 className="modal-title">
-                        <FiFolder className="title-icon" />
-                        Tạo đề thi mới
+                        {isEditMode ? <FiEdit2 className="title-icon" /> : <FiFolder className="title-icon" />}
+                        {isEditMode ? 'Chỉnh sửa đề thi' : 'Tạo đề thi mới'}
                     </h3>
                     <button className="modal-close" onClick={handleClose}>
                         <FiX size={20} />
@@ -269,21 +280,25 @@ export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = []
                     {step === 2 && (
                         <div className="step-content">
                             <p className="step-description" style={{ marginBottom: '20px', color: 'var(--admin-text-secondary)' }}>
-                                Nhập thông tin cho đề thi mới
+                                {isEditMode
+                                    ? 'Chỉnh sửa thông tin đề thi'
+                                    : 'Nhập thông tin cho đề thi mới'}
                             </p>
 
-                            <div className="selected-topic">
-                                <FiFolder size={16} />
-                                <span>
-                                    {mode === 'existing'
-                                        ? topics.find(t => t.id === parseInt(formData.topicId))?.displayName
-                                        : formData.newTopicName
-                                    }
-                                </span>
-                            </div>
+                            {!isEditMode && (
+                                <div className="selected-topic">
+                                    <FiFolder size={16} />
+                                    <span>
+                                        {mode === 'existing'
+                                            ? topics.find(t => t.id === parseInt(formData.topicId))?.displayName || topics.find(t => t.id === parseInt(formData.topicId))?.nameVi
+                                            : formData.newTopicName
+                                        }
+                                    </span>
+                                </div>
+                            )}
 
                             <div className="form-group">
-                                <label>Tên Test</label>
+                                <label>Tên đề thi</label>
                                 <input
                                     type="text"
                                     name="testName"
@@ -295,18 +310,33 @@ export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = []
                                 {errors.testName && <span className="error-text">{errors.testName}</span>}
                             </div>
 
-                            <div className="form-group">
-                                <label>Số thứ tự (tùy chọn)</label>
-                                <input
-                                    type="number"
-                                    name="testNumber"
-                                    value={formData.testNumber}
-                                    onChange={handleInputChange}
-                                    placeholder="vd: 1, 2, 3..."
-                                    min="1"
-                                    className="form-input"
-                                />
-                                <span className="help-text">Dùng để sắp xếp thứ tự hiển thị</span>
+                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                <div className="form-group">
+                                    <label>Số thứ tự</label>
+                                    <input
+                                        type="number"
+                                        name="testNumber"
+                                        value={formData.testNumber}
+                                        onChange={handleInputChange}
+                                        placeholder="1, 2, 3..."
+                                        min="1"
+                                        className="form-input"
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Độ khó</label>
+                                    <select
+                                        name="difficulty"
+                                        value={formData.difficulty}
+                                        onChange={handleInputChange}
+                                        className="form-select"
+                                    >
+                                        <option value="BEGINNER">Dễ (Beginner)</option>
+                                        <option value="INTERMEDIATE">Trung bình (Intermediate)</option>
+                                        <option value="ADVANCED">Khó (Advanced)</option>
+                                    </select>
+                                </div>
                             </div>
 
                             <div className="form-group">
@@ -318,13 +348,15 @@ export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = []
                                 />
                             </div>
 
-                            <div className="modal-info-box">
-                                <FiFileText size={16} />
-                                <p>
-                                    Đề thi mới sẽ được tạo với trạng thái <strong>DRAFT</strong>.
-                                    Bạn có thể thêm câu hỏi và xuất bản sau.
-                                </p>
-                            </div>
+                            {!isEditMode && (
+                                <div className="modal-info-box">
+                                    <FiFileText size={16} />
+                                    <p>
+                                        Đề thi mới sẽ được tạo với trạng thái <strong>DRAFT</strong>.
+                                        Bạn có thể thêm câu hỏi và xuất bản sau.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -342,11 +374,14 @@ export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = []
                     ) : (
                         <>
                             <button className="modal-btn modal-btn-secondary" onClick={handleBack}>
-                                Quay lại
+                                {isEditMode ? 'Hủy' : 'Quay lại'}
                             </button>
                             <button className="modal-btn modal-btn-primary" onClick={handleSubmit}>
-                                <FiPlus size={16} />
-                                Tạo đề thi
+                                {isEditMode ? (
+                                    <><FiSave size={16} /> Cập nhật</>
+                                ) : (
+                                    <><FiPlus size={16} /> Tạo đề thi</>
+                                )}
                             </button>
                         </>
                     )}

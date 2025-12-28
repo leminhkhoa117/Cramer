@@ -16,6 +16,7 @@ const useTestEditorStore = create((set, get) => ({
     test: null,
     sections: [],
     questions: [],
+    allQuestions: [], // All questions for all sections (for footer display)
 
     // Active selections
     activeSkill: 'reading',
@@ -100,7 +101,7 @@ const useTestEditorStore = create((set, get) => ({
 
         try {
             const dto = await adminApi.testsApi.getById(testId);
-            
+
             // Transform DTO to match store state shape
             const test = {
                 id: dto.id,
@@ -120,10 +121,14 @@ const useTestEditorStore = create((set, get) => ({
 
             // Fetch sections for active skill (using new API or from DTO)
             const { activeSkill } = get();
-            
+
             // If DTO has sections, use them
             if (dto.sectionsBySkill && dto.sectionsBySkill[activeSkill]) {
                 set({ sections: dto.sectionsBySkill[activeSkill] });
+
+                // Load all questions for footer
+                get().fetchAllQuestions();
+
                 // Auto-select first section
                 if (dto.sectionsBySkill[activeSkill].length > 0) {
                     get().setActiveSection(dto.sectionsBySkill[activeSkill][0].id);
@@ -148,6 +153,7 @@ const useTestEditorStore = create((set, get) => ({
             activeSkill: skill,
             activeSection: null,
             questions: [],
+            allQuestions: [],
             sections: []
         });
         await get().fetchSections(examSource, testNumber, skill);
@@ -157,12 +163,13 @@ const useTestEditorStore = create((set, get) => ({
      * Fetch sections for a skill.
      */
     fetchSections: async (examSource, testNumber, skill) => {
+        console.log('[TestEditor] fetchSections called:', { examSource, testNumber, skill });
         set({ isLoadingSections: true });
         const { test } = get();
 
         try {
             let sections;
-            
+
             // If we have a Test ID, use the new API
             if (test && test.id) {
                 sections = await adminApi.testsApi.getSections(test.id, skill);
@@ -174,11 +181,15 @@ const useTestEditorStore = create((set, get) => ({
                     skill
                 );
             }
-            
+
             set({ sections: sections || [], isLoadingSections: false });
 
-            // Auto-select first section
+            // Load all questions and auto-select first section
             if (sections && sections.length > 0) {
+                // Do not await this, let it run in background for footer
+                get().fetchAllQuestions();
+
+                // Auto-select first section immediately
                 get().setActiveSection(sections[0].id);
             }
         } catch (error) {
@@ -187,9 +198,55 @@ const useTestEditorStore = create((set, get) => ({
         }
     },
 
+    /**
+     * Fetch all questions for all current sections.
+     * Used to populate the footer with full test data.
+     */
+    fetchAllQuestions: async () => {
+        const { sections } = get();
+        if (!sections || sections.length === 0) return;
+
+        try {
+            const allQuestionsPromises = sections.map(s =>
+                adminApi.content.getQuestions(s.id).catch(() => [])
+            );
+            const allQuestionsArrays = await Promise.all(allQuestionsPromises);
+
+            // Safely parse each question's JSON fields
+            const allQuestions = allQuestionsArrays.flat().map(q => {
+                let parsedContent = q.questionContent;
+                let parsedAnswer = q.correctAnswer;
+
+                try {
+                    if (typeof q.questionContent === 'string') {
+                        parsedContent = JSON.parse(q.questionContent);
+                    }
+                } catch (e) {
+                    // console.warn('Failed to parse questionContent for question:', q.id);
+                }
+
+                try {
+                    if (typeof q.correctAnswer === 'string' && q.correctAnswer.startsWith('{')) {
+                        parsedAnswer = JSON.parse(q.correctAnswer);
+                    }
+                } catch (e) {
+                    // Keep as string
+                }
+
+                return { ...q, questionContent: parsedContent, correctAnswer: parsedAnswer };
+            });
+
+            console.log('[TestEditor] Loaded allQuestions:', allQuestions.length);
+            set({ allQuestions });
+        } catch (error) {
+            console.error('Failed to fetch all questions:', error);
+        }
+    },
+
 
     /**
      * Set active section and fetch its questions.
+     * Note: allQuestions is populated by fetchSections, not here.
      */
     setActiveSection: async (sectionId) => {
         set({ activeSection: sectionId, isLoadingQuestions: true });
@@ -201,7 +258,27 @@ const useTestEditorStore = create((set, get) => ({
 
         try {
             const questions = await adminApi.content.getQuestions(sectionId);
-            set({ questions: questions || [], isLoadingQuestions: false });
+            // Parse questionContent if it's a JSON string  
+            const parsedQuestions = (questions || []).map(q => {
+                let parsedContent = q.questionContent;
+                let parsedAnswer = q.correctAnswer;
+
+                try {
+                    if (typeof q.questionContent === 'string') {
+                        parsedContent = JSON.parse(q.questionContent);
+                    }
+                } catch (e) { /* keep as is */ }
+
+                try {
+                    if (typeof q.correctAnswer === 'string' && q.correctAnswer.startsWith('{')) {
+                        parsedAnswer = JSON.parse(q.correctAnswer);
+                    }
+                } catch (e) { /* keep as is */ }
+
+                return { ...q, questionContent: parsedContent, correctAnswer: parsedAnswer };
+            });
+
+            set({ questions: parsedQuestions, isLoadingQuestions: false });
         } catch (error) {
             console.error('Failed to fetch questions:', error);
             set({ questions: [], isLoadingQuestions: false });

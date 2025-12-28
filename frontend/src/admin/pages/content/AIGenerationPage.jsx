@@ -6,6 +6,7 @@ import StepPreview from '../../components/abts/StepPreview';
 import useABTSStore from '../../stores/useABTSStore';
 import { saveGeneratedTest } from '../../services/abtsApi';
 import { useToast } from '../../components/Toast';
+import SaveAIContentModal from '../../components/abts/SaveAIContentModal';
 import '../../components/abts/AIStudio.css';
 
 /**
@@ -33,6 +34,7 @@ export default function AIGenerationPage() {
     // View State: 'config' | 'preview'
     const [view, setView] = useState('config');
     const [isSaving, setIsSaving] = useState(false);
+    const [showSaveModal, setShowSaveModal] = useState(false);
 
     const handleGenerate = async () => {
         setView('preview');
@@ -57,12 +59,12 @@ export default function AIGenerationPage() {
     };
 
     /**
-     * Save generated content directly to the database.
-     * Creates a new section and all associated questions.
+     * Triggered when user confirms save in the modal.
      */
-    const handleSave = async () => {
+    const handleModalSave = async (saveConfig) => {
         if (!generationResult?.content) return;
 
+        setShowSaveModal(false); // Close modal
         setIsSaving(true);
         const generatedContent = generationResult.content;
 
@@ -76,14 +78,24 @@ export default function AIGenerationPage() {
                 generatedContent.metadata?.topic ||
                 'AI Generated';
 
-            // Build save request
+            // Build save request with modal data
             const saveRequest = {
-                examSource: 'AI-GEN',
+                examSource: 'AI-GEN', // Legacy field
                 testNumber: null, // Auto-generate
                 skill: skillLower,
                 partNumber: formData.partNumber || 1,
                 topic: topic,
-                content: generatedContent
+                content: generatedContent,
+
+                // New Metadata fields
+                // New hierarchy fields from modal
+                setId: saveConfig.setId,
+                setCode: saveConfig.setCode,
+                setNameVi: saveConfig.setNameVi,
+                testId: saveConfig.testId, // Existing test ID (if adding to existing)
+                testNameVi: saveConfig.testName, // Test name (for new test)
+                difficulty: saveConfig.difficulty,
+                hashtagIds: saveConfig.hashtagIds
             };
 
             const result = await saveGeneratedTest(saveRequest);
@@ -146,7 +158,7 @@ export default function AIGenerationPage() {
                     {view === 'preview' && (
                         <button
                             className="studio-btn studio-btn--primary"
-                            onClick={handleSave}
+                            onClick={() => setShowSaveModal(true)}
                             disabled={!generationResult || isSaving || isGenerating}
                         >
                             {isSaving ? 'Saving...' : (
@@ -179,6 +191,16 @@ export default function AIGenerationPage() {
                     </div>
                 </div>
             )}
+
+            {/* Save Config Modal */}
+            <SaveAIContentModal
+                isOpen={showSaveModal}
+                onClose={() => setShowSaveModal(false)}
+                onSave={handleModalSave}
+                initialTopic={formData.topic}
+                suggestedSkill={formData.skill}
+                partNumber={formData.partNumber || 1}
+            />
         </div>
     );
 }

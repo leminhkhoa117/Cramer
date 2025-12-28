@@ -1,0 +1,372 @@
+/* ==========================================================================
+   ADMIN PREVIEW CONTENT - Dark Mode Override
+   Overrides user CSS with admin dark theme for preview
+   ========================================================================== */
+
+/* Wrapper - apply admin dark theme, fill container */
+.admin-preview-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    flex: 1;
+    background: #0f0f14;
+    color: #e4e4e7;
+    overflow: hidden;
+}
+
+/* Custom Dark Scrollbar */
+.admin-preview-wrapper ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.admin-preview-wrapper ::-webkit-scrollbar-track {
+    background: #0f0f14;
+}
+
+.admin-preview-wrapper ::-webkit-scrollbar-thumb {
+    background: #2d2d44;
+    border-radius: 4px;
+}
+
+.admin-preview-wrapper ::-webkit-scrollbar-thumb:hover {
+    background: #3f3f5a;
+}
+
+/* Preview Header */
+.admin-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--admin-spacing-md) var(--admin-spacing-lg);
+    background: var(--admin-glass-bg);
+    border-bottom: 1px solid var(--admin-border-primary);
+    flex-shrink: 0;
+}
+
+.admin-preview-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--admin-text-primary);
+    margin: 0;
+}
+
+.admin-preview-info {
+    font-size: 0.8125rem;
+    color: var(--admin-text-muted);
+    background: var(--admin-bg-card);
+    padding: 4px 12px;
+    border-radius: var(--admin-radius-full);
+}
+
+/* Audio player for listening */
+.admin-preview-audio {
+    padding: var(--admin-spacing-md) var(--admin-spacing-lg);
+    background: var(--admin-bg-secondary);
+    border-bottom: 1px solid var(--admin-border-primary);
+}
+
+.admin-preview-audio audio {
+    width: 100%;
+}
+
+/* Empty states */
+.admin-preview-empty,
+.no-passage,
+.no-questions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--admin-spacing-xl);
+    color: var(--admin-text-muted);
+    text-align: center;
+}
+
+/* Override user CSS for dark mode */
+.admin-preview-wrapper .test-page-container {
+    background: var(--admin-bg-primary);
+    flex: 1;
+    overflow: hidden;
+}
+
+.admin-preview-wrapper .passage-container {
+    background: #0f0f14 !important;
+    color: #c8c8d0 !important;
+    padding: 24px;
+    overflow-y: auto;
+    border: none !important;
+}
+
+.admin-preview-wrapper .passage-title {
+    color: #f4f4f5 !important;
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.admin-preview-wrapper .passage-instructions {
+    color: #8b8b9e !important;
+    font-size: 0.875rem;
+    margin-bottom: 16px;
+    font-style: italic;
+}
+
+/* Passage text content */
+.admin-preview-wrapper .passage-content,
+.admin-preview-wrapper .highlightable-text,
+.admin-preview-wrapper .highlightable-content {
+    color: #c8c8d0 !important;
+    line-height: 1.9;
+    font-size: 0.9375rem;
+}
+
+/* Questions column */
+.admin-preview-wrapper .questions-column {
+    background: var(--admin-bg-primary);
+    height: 100%;
+    overflow-y: auto;
+    padding: var(--admin-spacing-lg);
+}
+
+.admin-preview-wrapper .questions-container {
+    max-width: 100%;
+}
+
+/* Question group styling */
+.admin-preview-wrapper .question-group {
+    background: var(--admin-glass-bg);
+    border: 1px solid var(--admin-border-primary);
+    border-radius: var(--admin-radius-md);
+    padding: var(--admin-spacing-lg);
+    margin-bottom: var(--admin-spacing-md);
+}
+
+.admin-preview-wrapper .group-instructions {
+    color: var(--admin-text-secondary);
+    margin-bottom: var(--admin-spacing-md);
+    padding-bottom: var(--admin-spacing-md);
+    border-bottom: 1px solid var(--admin-border-secondary);
+}
+
+.admin-preview-wrapper .group-instructions strong {
+    color: var(--admin-text-primary);
+}
+
+/* Question renderer */
+.admin-preview-wrapper .question-block {
+    background: transparent;
+    border: none;
+    padding: var(--admin-spacing-sm) 0;
+    color: var(--admin-text-primary);
+}
+
+.admin-preview-wrapper .question-number {
+    color: var(--admin-primary);
+    font-weight: 700;
+}
+
+/* Input fields - FORCE dark mode with !important */
+.admin-preview-wrapper input[type="text"],
+.admin-preview-wrapper input,
+.admin-preview-wrapper textarea,
+.admin-preview-wrapper select {
+    background: #1e1e2e !important;
+    border: 1px solid #3d3d5c !important;
+    border-radius: 6px !important;
+    color: #e4e4e7 !important;
+    padding: 8px 12px !important;
+}
+
+.admin-preview-wrapper input::placeholder,
+.admin-preview-wrapper textarea::placeholder {
+    color: #6b6b8a !important;
+}
+
+.admin-preview-wrapper input:focus,
+.admin-preview-wrapper textarea:focus,
+.admin-preview-wrapper select:focus {
+    outline: none !important;
+    border-color: #8B5CF6 !important;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2) !important;
+}
+
+/* Inline blank inputs (fill-in-blank questions) */
+.admin-preview-wrapper .inline-blank-input,
+.admin-preview-wrapper .fill-blank-input,
+.admin-preview-wrapper [class*="blank"] input {
+    background: #252538 !important;
+    border: 1px dashed #8B5CF6 !important;
+    color: #e4e4e7 !important;
+    min-width: 100px;
+    text-align: center;
+}
+
+/* Radio buttons and checkboxes */
+.admin-preview-wrapper .option-item {
+    background: var(--admin-bg-card);
+    border: 1px solid var(--admin-border-secondary);
+    border-radius: var(--admin-radius-sm);
+    padding: var(--admin-spacing-sm) var(--admin-spacing-md);
+    margin-bottom: 4px;
+    color: var(--admin-text-primary);
+    cursor: pointer;
+    transition: all var(--admin-transition-fast);
+}
+
+.admin-preview-wrapper .option-item:hover {
+    background: var(--admin-bg-card-hover);
+    border-color: var(--admin-primary);
+}
+
+/* Fix for label visibility (True/False, MCQ) */
+.admin-preview-wrapper label,
+.admin-preview-wrapper .mcq-options label,
+.admin-preview-wrapper .tfn-options label,
+.admin-preview-wrapper .ynn-options label {
+    color: #e4e4e7 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    margin-bottom: 6px !important;
+}
+
+.admin-preview-wrapper label strong {
+    color: #fff !important;
+}
+
+/* Options list box */
+.admin-preview-wrapper .matching-options-box {
+    background: var(--admin-bg-secondary);
+    border: 1px solid var(--admin-border-primary);
+    border-radius: var(--admin-radius-md);
+    padding: var(--admin-spacing-md);
+    margin: var(--admin-spacing-md) 0;
+}
+
+.admin-preview-wrapper .matching-options-box h4 {
+    color: var(--admin-text-primary);
+    margin: 0 0 var(--admin-spacing-sm) 0;
+}
+
+.admin-preview-wrapper .matching-options-box p {
+    color: var(--admin-text-secondary);
+    margin: 4px 0;
+}
+
+/* Resize handle - divider between panels */
+.admin-preview-wrapper .resize-handle {
+    background-color: #0f0f14 !important;
+    background-image: none !important;
+    border: none !important;
+    border-left: 1px solid #2d2d44 !important;
+    border-right: 1px solid #2d2d44 !important;
+    width: 15px !important;
+    /* Exact match with standard UI */
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.admin-preview-wrapper .resize-handle:hover {
+    background: #1e1e2e !important;
+}
+
+.admin-preview-wrapper .resize-handle-icon-container {
+    background: #27273a !important;
+    border: 1px solid #3f3f5a !important;
+    width: 28px !important;
+    /* Exact match with standard UI */
+    height: 28px !important;
+    /* Exact match with standard UI */
+    border-radius: 6px !important;
+    /* Exact match with standard UI */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+.admin-preview-wrapper .resize-handle-icon {
+    color: #a1a1aa !important;
+    font-size: 14px !important;
+    margin-top: -2px;
+    /* Slight alignment fix */
+}
+
+.admin-preview-wrapper .resize-handle:hover .resize-handle-icon-container {
+    background: #8B5CF6 !important;
+    border-color: #7c3aed !important;
+}
+
+.admin-preview-wrapper .resize-handle:hover .resize-handle-icon {
+    color: white !important;
+}
+
+/* ====== TestFooter Dark Mode Overrides ====== */
+.admin-preview-wrapper .test-page-footer {
+    position: sticky;
+    bottom: 0;
+    background: #0f0f14 !important;
+    border-top: 1px solid #2d2d44 !important;
+    flex-shrink: 0;
+    z-index: 10;
+    padding: 0 !important;
+}
+
+.admin-preview-wrapper .footer-part-section {
+    border-right-color: #2d2d44 !important;
+    background: transparent !important;
+    border-top-color: transparent !important;
+    padding: 8px 12px !important;
+    margin: 0 !important;
+}
+
+.admin-preview-wrapper .footer-part-section:hover {
+    background: rgba(139, 92, 246, 0.08) !important;
+}
+
+.admin-preview-wrapper .footer-part-section.active {
+    background: rgba(139, 92, 246, 0.12) !important;
+    border-top-color: #8B5CF6 !important;
+}
+
+.admin-preview-wrapper .footer-part-title {
+    color: #a0a0b8 !important;
+}
+
+.admin-preview-wrapper .footer-part-section.active .footer-part-title {
+    color: #8B5CF6 !important;
+}
+
+.admin-preview-wrapper .question-nav-btn {
+    background: #1e1e2e !important;
+    border-color: #3d3d5c !important;
+    color: #a0a0b8 !important;
+}
+
+.admin-preview-wrapper .question-nav-btn:hover {
+    background: #8B5CF6 !important;
+    border-color: #8B5CF6 !important;
+    color: white !important;
+}
+
+.admin-preview-wrapper .question-nav-btn.answered {
+    background: #8B5CF6 !important;
+    border-color: #8B5CF6 !important;
+    color: white !important;
+}
+
+/* Note completion styles */
+.admin-preview-wrapper .note-completion-wrapper h3 {
+    color: var(--admin-text-primary);
+}
+
+.admin-preview-wrapper .note-section-title {
+    color: var(--admin-primary);
+    font-size: 0.9375rem;
+}
+
+/* Highlightable text */
+.admin-preview-wrapper .highlightable-text {
+    color: var(--admin-text-secondary);
+    line-height: 1.8;
+}

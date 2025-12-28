@@ -23,6 +23,7 @@ import { useTestEditorStore } from '../../stores';
 import useTestEditorStoreRaw from '../../stores/useTestEditorStore';
 import adminApi from '../../api/adminApi';
 import { sanitizeHtml } from '../../utils/htmlSanitizer';
+import AdminPreviewContent from '../../components/content/AdminPreviewContent';
 import '../../css/pages/content/TestEditorPage.css';
 
 // Test status configurations
@@ -92,6 +93,7 @@ export default function TestEditorPage() {
         test,
         sections,
         questions,
+        allQuestions,
         activeSkill,
         activeSection,
         isLoading,
@@ -292,14 +294,24 @@ export default function TestEditorPage() {
     // Get active section data
     const activeSectionData = sections.find(s => s.id === activeSection);
 
-    // Get question range for section
+    // Get question range for section based on actual data
     const getQuestionRange = (section, index) => {
         if (activeSkill === 'writing' || activeSkill === 'speaking') {
             return getSectionName(section);
         }
-        const questionsPerSection = activeSkill === 'listening' ? 10 : 13;
-        const start = index * questionsPerSection + 1;
-        const end = Math.min(start + (section.questionCount || questionsPerSection) - 1, 40);
+
+        // Calculate start based on previous sections' question counts
+        let start = 1;
+        for (let i = 0; i < index; i++) {
+            start += sections[i]?.questionCount || 0;
+        }
+
+        const count = section.questionCount || 0;
+        if (count === 0) {
+            return `Q${start}+`;
+        }
+
+        const end = start + count - 1;
         return `Q${start}-${end}`;
     };
 
@@ -409,365 +421,17 @@ export default function TestEditorPage() {
 
             {/* Editor Content */}
             <div className="editor-content">
-                {/* Left Panel - Section Navigator */}
-                <div className="editor-sidebar">
-                    <div className="editor-sidebar__header">
-                        <h3>Sections</h3>
-                        <div className="editor-sidebar__actions">
-                            <button
-                                className="add-section-btn"
-                                title="Thêm Section"
-                                onClick={handleAddSection}
-                            >
-                                <FiPlus size={16} />
-                            </button>
-                            <button
-                                className="ai-section-btn"
-                                title="Tạo Section bằng AI"
-                                onClick={openAIGeneration}
-                            >
-                                <FiZap size={16} />
-                            </button>
-                        </div>
-                    </div>
-
-                    {isLoadingSections ? (
-                        <div className="sidebar-loading">
-                            <div className="spinner small"></div>
-                            <span>Đang tải...</span>
-                        </div>
-                    ) : sections.length === 0 ? (
-                        <div className="sidebar-empty">
-                            <p>Chưa có section nào</p>
-                            <div className="sidebar-empty__actions">
-                                <button
-                                    className="admin-btn admin-btn--primary admin-btn--small"
-                                    onClick={handleAddSection}
-                                >
-                                    <FiPlus size={14} />
-                                    <span>Thêm Section</span>
-                                </button>
-                                <button
-                                    className="admin-btn admin-btn--ai admin-btn--small"
-                                    onClick={openAIGeneration}
-                                >
-                                    <FiZap size={14} />
-                                    <span>Tạo bằng AI</span>
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="section-list">
-                            {sections.map((section, index) => (
-                                <div
-                                    key={section.id}
-                                    className={`section-item ${activeSection === section.id ? 'section-item--active' : ''}`}
-                                    onClick={() => setActiveSection(section.id)}
-                                >
-                                    <div className="section-item__info">
-                                        <span className="section-item__name">{getSectionName(section)}</span>
-                                        <span className="section-item__title">{getQuestionRange(section, index)}</span>
-                                    </div>
-                                    <div className="section-item__meta">
-                                        <span className="section-item__questions">
-                                            {section.questionCount || 0} câu
-                                        </span>
-                                        {section.audioUrl && (
-                                            <span className="section-item__audio" title="Có audio">🎵</span>
-                                        )}
-                                        {section.passageText && (
-                                            <span className="section-item__passage" title="Có passage">📝</span>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Quick Question Types */}
-                    {activeSection && (
-                        <div className="question-types-panel">
-                            <h4>Thêm nhanh câu hỏi</h4>
-                            <div className="question-types-grid">
-                                {(QUESTION_TYPES[activeSkill] || []).slice(0, 6).map(type => (
-                                    <button
-                                        key={type.value}
-                                        className="question-type-btn"
-                                        onClick={() => addQuestion(type.value)}
-                                        title={type.label}
-                                    >
-                                        <FiPlus size={12} />
-                                        <span>{type.label.replace(/ /g, '\n').split('\n')[0]}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Question Navigator */}
-                    {questions.length > 0 && (
-                        <div className="question-navigator">
-                            <h4>Câu hỏi ({questions.length})</h4>
-                            <div className="question-grid">
-                                {questions.map(q => (
-                                    <button
-                                        key={q.id}
-                                        className={`question-btn ${q.correctAnswer ? 'question-btn--complete' : 'question-btn--incomplete'}`}
-                                        title={`${q.questionType} - ${q.correctAnswer ? 'Hoàn thành' : 'Chưa có đáp án'}`}
-                                    >
-                                        {q.questionNumber}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
                 {/* Main Editor Area */}
-                <div className="editor-main">
+                <div className="editor-main editor-main--full">
                     {activeSection ? (
-                        <>
-                            {/* Section Header */}
-                            <div className="section-header">
-                                <div className="section-header__info">
-                                    <h2>{getSectionName(activeSectionData)}</h2>
-                                    <p>{activeSectionData?.questionCount || 0} câu hỏi</p>
-                                </div>
-                                <div className="section-header__actions">
-                                    {activeSkill === 'listening' && (
-                                        <button
-                                            className="admin-btn admin-btn--secondary"
-                                            onClick={() => setShowAudioModal(true)}
-                                        >
-                                            <FiUpload size={16} />
-                                            <span>Upload Audio</span>
-                                        </button>
-                                    )}
-                                    {activeSkill === 'reading' && (
-                                        <button
-                                            className="admin-btn admin-btn--secondary"
-                                            onClick={() => setShowPassageModal(true)}
-                                        >
-                                            <FiUpload size={16} />
-                                            <span>Upload Passage</span>
-                                        </button>
-                                    )}
-                                    <button
-                                        className="admin-btn admin-btn--ai"
-                                        onClick={openAIGeneration}
-                                    >
-                                        <FiZap size={16} />
-                                        <span>Tạo nội dung AI</span>
-                                    </button>
-                                    <button className="admin-btn admin-btn--secondary">
-                                        <FiEdit size={16} />
-                                        <span>Chỉnh sửa</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Passage/Content Area */}
-                            <div className="passage-area">
-                                <div className="passage-content">
-                                    {activeSkill === 'reading' && (
-                                        activeSectionData?.passageText ? (
-                                            <div
-                                                className="passage-html"
-                                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(activeSectionData.passageText) }}
-                                            />
-                                        ) : (
-                                            <div className="passage-placeholder-box">
-                                                <FiCopy size={32} />
-                                                <p>Chưa có nội dung passage</p>
-                                                <div className="passage-placeholder-actions">
-                                                    <button
-                                                        className="admin-btn admin-btn--secondary admin-btn--small"
-                                                        onClick={() => setShowPassageModal(true)}
-                                                    >
-                                                        <FiUpload size={14} />
-                                                        <span>Upload Passage</span>
-                                                    </button>
-                                                    <button
-                                                        className="admin-btn admin-btn--ai admin-btn--small"
-                                                        onClick={() => openAIGeneration('FULL')}
-                                                    >
-                                                        <FiZap size={14} />
-                                                        <span>Tạo bằng AI</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )
-                                    )}
-                                    {activeSkill === 'listening' && (
-                                        <div className="audio-placeholder-box">
-                                            <span className="audio-icon">🎧</span>
-                                            {activeSectionData?.audioUrl ? (
-                                                <>
-                                                    <audio controls src={activeSectionData.audioUrl}></audio>
-                                                    <p>Audio đã được tải lên</p>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <p>Chưa có file audio</p>
-                                                    <div className="audio-placeholder-actions">
-                                                        <button
-                                                            className="admin-btn admin-btn--primary admin-btn--small"
-                                                            onClick={() => setShowAudioModal(true)}
-                                                        >
-                                                            <FiUpload size={14} />
-                                                            <span>Upload Audio</span>
-                                                        </button>
-                                                        <button
-                                                            className="admin-btn admin-btn--ai admin-btn--small"
-                                                            onClick={openAIGeneration}
-                                                        >
-                                                            <FiZap size={14} />
-                                                            <span>Tạo Transcript AI</span>
-                                                        </button>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    )}
-                                    {activeSkill === 'writing' && (
-                                        <div className="writing-placeholder-box">
-                                            <span className="writing-icon">✍️</span>
-                                            <p>Đề bài Writing Task</p>
-                                            <button
-                                                className="admin-btn admin-btn--ai admin-btn--small"
-                                                onClick={openAIGeneration}
-                                            >
-                                                <FiZap size={14} />
-                                                <span>Tạo đề Writing AI</span>
-                                            </button>
-                                        </div>
-                                    )}
-                                    {activeSkill === 'speaking' && (
-                                        <div className="speaking-placeholder-box">
-                                            <span className="speaking-icon">🎤</span>
-                                            <p>Câu hỏi Speaking Part</p>
-                                            <button
-                                                className="admin-btn admin-btn--ai admin-btn--small"
-                                                onClick={openAIGeneration}
-                                            >
-                                                <FiZap size={14} />
-                                                <span>Tạo câu hỏi AI</span>
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Questions List */}
-                            <div className="questions-area">
-                                <div className="questions-header">
-                                    <h3>Danh sách câu hỏi</h3>
-                                    <div className="questions-header__actions">
-                                        <button
-                                            className="admin-btn admin-btn--ai admin-btn--small"
-                                            onClick={() => openAIGeneration(
-                                                'QUESTIONS_ONLY',
-                                                { passage: activeSectionData?.passageText }
-                                            )}
-                                        >
-                                            <FiZap size={14} />
-                                            <span>Tạo câu hỏi AI</span>
-                                        </button>
-                                        <button
-                                            className="admin-btn admin-btn--primary"
-                                            onClick={handleAddQuestion}
-                                        >
-                                            <FiPlus size={16} />
-                                            <span>Thêm câu hỏi</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {isLoadingQuestions ? (
-                                    <div className="questions-loading">
-                                        <div className="spinner small"></div>
-                                        <span>Đang tải câu hỏi...</span>
-                                    </div>
-                                ) : questions.length === 0 ? (
-                                    <div className="questions-empty">
-                                        <FiPlus size={32} />
-                                        <p>Chưa có câu hỏi nào trong section này</p>
-                                        <div className="questions-empty__actions">
-                                            <button
-                                                className="admin-btn admin-btn--primary"
-                                                onClick={handleAddQuestion}
-                                            >
-                                                <FiPlus size={16} />
-                                                <span>Thêm câu hỏi đầu tiên</span>
-                                            </button>
-                                            <button
-                                                className="admin-btn admin-btn--ai"
-                                                onClick={() => openAIGeneration('FULL')}
-                                            >
-                                                <FiZap size={16} />
-                                                <span>Tạo câu hỏi bằng AI</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="questions-list">
-                                        {questions.map(question => (
-                                            <div key={question.id} className="question-item">
-                                                <div className="question-item__number">
-                                                    <span className={question.correctAnswer ? 'complete' : 'incomplete'}>
-                                                        {question.questionNumber}
-                                                    </span>
-                                                </div>
-                                                <div className="question-item__content">
-                                                    <span className="question-item__type">
-                                                        {(question.questionType || '').replace(/_/g, ' ')}
-                                                    </span>
-                                                    <p className="question-item__text">
-                                                        {getQuestionText(question)}
-                                                    </p>
-                                                </div>
-                                                <div className="question-item__status">
-                                                    {question.correctAnswer ? (
-                                                        <span className="status-complete">
-                                                            <FiCheck size={14} /> Đã có đáp án
-                                                        </span>
-                                                    ) : (
-                                                        <span className="status-incomplete">
-                                                            <FiX size={14} /> Thiếu đáp án
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="question-item__actions">
-                                                    <button className="icon-btn" title="Chỉnh sửa">
-                                                        <FiEdit size={16} />
-                                                    </button>
-                                                    <button className="icon-btn" title="Duplicate">
-                                                        <FiCopy size={16} />
-                                                    </button>
-                                                    <button
-                                                        className="icon-btn icon-btn--ai"
-                                                        title="Sửa bằng AI"
-                                                        onClick={() => openAIGeneration(
-                                                            'FIX_QUESTION',
-                                                            { question, passage: activeSectionData?.passageText }
-                                                        )}
-                                                    >
-                                                        <FiZap size={16} />
-                                                    </button>
-                                                    <button
-                                                        className="icon-btn icon-btn--danger"
-                                                        title="Xóa"
-                                                        onClick={() => handleDeleteQuestion(question.id)}
-                                                    >
-                                                        <FiTrash size={16} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </>
+                        <AdminPreviewContent
+                            sections={sections}
+                            questions={allQuestions.length > 0 ? allQuestions : questions}
+                            activePartIndex={sections.findIndex(s => s.id === activeSection)}
+                            skill={activeSkill}
+                            onPartSelect={(index) => setActiveSection(sections[index]?.id)}
+                            onQuestionSelect={() => { }}
+                        />
                     ) : (
                         <div className="no-section-selected">
                             <FiSettings size={48} />

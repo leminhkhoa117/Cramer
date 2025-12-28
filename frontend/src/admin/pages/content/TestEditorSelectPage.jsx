@@ -105,6 +105,8 @@ export default function TestEditorSelectPage() {
     // Perform actual deletion
     const onConfirmDelete = async () => {
         const { type, item } = deleteConfig;
+        setShowDeleteModal(false); // Close modal immediately
+
         try {
             if (type === 'set') {
                 await deleteTestSet(item.id);
@@ -113,40 +115,53 @@ export default function TestEditorSelectPage() {
                 await deleteTest(item.id);
                 toast.success(`Đã xóa đề thi "${item.nameVi || 'Test ' + item.testNumber}"`);
             }
-            setShowDeleteModal(false);
+            // Force refresh topics list
+            await fetchTopics(true);
         } catch (err) {
+            console.error('Delete error:', err);
             toast.error(err.message || 'Lỗi khi xóa');
         }
     };
 
     // Handle create/update test
     const handleTestSubmit = async (data) => {
+        console.log('handleTestSubmit called with:', data);
         try {
-            if (editingTest) {
-                // Update existing test
-                const result = await updateTest(editingTest.id, {
-                    nameVi: data.testName, // Assuming the form sends 'testName'
+            if (editingTest || data.id) {
+                // Update existing test - data comes from modal with nameVi, difficulty, hashtagIds
+                const testId = data.id || editingTest.id;
+                const updatePayload = {
+                    nameVi: data.nameVi || data.testName, // Support both field names
                     testNumber: data.testNumber,
-                    hashtagIds: data.hashtagIds
-                });
-                if (result && result.success) {
+                    difficulty: data.difficulty,
+                    hashtagIds: data.hashtagIds || []
+                };
+                console.log('Updating test:', testId, updatePayload);
+
+                const result = await updateTest(testId, updatePayload);
+                // updateTest returns the updated test object directly, not {success: true}
+                if (result) {
                     toast.success("Đã cập nhật bài thi!");
                     setShowCreateTestModal(false);
                     setEditingTest(null);
                     // Refresh data
-                    fetchTopics(true);
+                    await fetchTopics(true);
                 }
             } else {
                 // Create new test
                 const result = await createTest(data);
-                if (result && result.success) {
+                // createTest may return different response format
+                if (result) {
                     toast.success(`Đã tạo đề thi thành công!`);
                     setShowCreateTestModal(false);
                     // The new system uses ID-based routing for editor
-                    navigate(`/admin/content/editor/${result.testId}`);
+                    if (result.testId || result.id) {
+                        navigate(`/admin/content/editor/${result.testId || result.id}`);
+                    }
                 }
             }
         } catch (err) {
+            console.error('handleTestSubmit error:', err);
             toast.error(err.message || "Lỗi khi xử lý đề thi");
         }
     };
