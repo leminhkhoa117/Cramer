@@ -48,7 +48,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
                     end: true
                 },
                 {
-                    to: '/admin/content',
+                    to: '/admin/content/sets',
                     icon: <FiFileText size={20} />,
                     label: 'Nội dung đề thi',
                     end: true
@@ -74,7 +74,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
             title: 'Nội dung',
             items: [
                 {
-                    to: '/admin/content/hub',
+                    to: '/admin/content/sets',
                     icon: <FiEdit3 size={20} />,
                     label: 'Quản lý đề thi'
                 },

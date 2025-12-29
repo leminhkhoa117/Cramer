@@ -20,25 +20,24 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TestDetailDTO {
-    
+
     private Long id;
     private Long setId;
     private String setCode;
     private String setName; // The test set's name for display
     private Integer testNumber;
-    private String nameVi;
-    private String nameEn;
+    private String name;
     private String description;
     private String difficulty;
     private Integer estimatedTimeMinutes;
     private Boolean isPublished;
     private Boolean isAiGenerated;
     private JsonNode generationMetadata;
-    
+
     // Related entities
     private List<HashtagDTO> hashtags;
     private List<SectionDTO> sections;
-    
+
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 
@@ -46,15 +45,16 @@ public class TestDetailDTO {
      * Create a detail DTO from an IeltsTest entity.
      */
     public static TestDetailDTO fromEntity(com.cramer.entity.IeltsTest entity) {
-        if (entity == null) return null;
-        
+        if (entity == null)
+            return null;
+
         List<HashtagDTO> hashtagDTOs = null;
         if (entity.getHashtags() != null) {
             hashtagDTOs = entity.getHashtags().stream()
                     .map(HashtagDTO::fromEntity)
                     .collect(Collectors.toList());
         }
-        
+
         List<SectionDTO> sectionDTOs = null;
         if (entity.getSections() != null) {
             sectionDTOs = entity.getSections().stream()
@@ -67,24 +67,23 @@ public class TestDetailDTO {
                             s.getDisplayContentUrl(),
                             s.getSectionLayout(),
                             s.getPassageText(),
-                            s.getAudioUrl()
-                    ))
+                            s.getAudioUrl(),
+                            s.getImageDescription()))
                     .collect(Collectors.toList());
         }
-        
+
         String setName = null;
         if (entity.getTestSet() != null) {
-            setName = entity.getTestSet().getNameVi();
+            setName = entity.getTestSet().getName();
         }
-        
+
         return TestDetailDTO.builder()
                 .id(entity.getId())
                 .setId(entity.getSetId())
                 .setCode(entity.getSetCode())
                 .setName(setName)
                 .testNumber(entity.getTestNumber())
-                .nameVi(entity.getNameVi())
-                .nameEn(entity.getNameEn())
+                .name(entity.getName())
                 .description(entity.getDescription())
                 .difficulty(entity.getDifficulty())
                 .estimatedTimeMinutes(entity.getEstimatedTimeMinutes())

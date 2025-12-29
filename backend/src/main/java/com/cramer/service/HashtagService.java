@@ -9,7 +9,6 @@ import com.cramer.repository.HashtagRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +30,7 @@ public class HashtagService {
 
     /**
      * Get all active hashtags.
+     * 
      * @return list of all active hashtags
      */
     @Transactional(readOnly = true)
@@ -44,6 +44,7 @@ public class HashtagService {
 
     /**
      * Get hashtags by category.
+     * 
      * @param category the category name
      * @return list of hashtags in that category
      */
@@ -58,6 +59,7 @@ public class HashtagService {
 
     /**
      * Search hashtags by name or code.
+     * 
      * @param query the search query
      * @return list of matching hashtags
      */
@@ -72,6 +74,7 @@ public class HashtagService {
 
     /**
      * Get popular hashtags (most used).
+     * 
      * @param limit maximum number of hashtags to return
      * @return list of popular hashtags
      */
@@ -87,83 +90,90 @@ public class HashtagService {
 
     /**
      * Create a new hashtag.
+     * 
      * @param request creation request
      * @return created hashtag DTO
      */
     public HashtagDTO createHashtag(CreateHashtagRequest request) {
         logger.info("Creating new hashtag with code: {}", request.getCode());
-        
+
         if (hashtagRepository.existsByCode(request.getCode())) {
             throw new ResourceAlreadyExistsException("Hashtag", "code", request.getCode());
         }
-        
+
         Hashtag hashtag = Hashtag.builder()
                 .code(request.getCode())
-                .nameVi(request.getNameVi())
-                .nameEn(request.getNameEn())
+                .name(request.getName())
+                .name(request.getName())
                 .category(request.getCategory())
                 .icon(request.getIcon())
                 .color(request.getColor())
                 .useCount(0)
                 .isActive(true)
                 .build();
-        
+
         Hashtag saved = hashtagRepository.save(hashtag);
+        if (saved == null) {
+            throw new RuntimeException("Failed to save hashtag");
+        }
         logger.info("Created hashtag with ID: {}", saved.getId());
-        
+
         return toDTO(saved);
     }
 
     /**
      * Update an existing hashtag.
-     * @param id hashtag ID
+     * 
+     * @param id      hashtag ID
      * @param request update request
      * @return updated hashtag DTO
      */
     public HashtagDTO updateHashtag(Long id, CreateHashtagRequest request) {
         logger.info("Updating hashtag ID: {}", id);
-        
+
         Hashtag hashtag = hashtagRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hashtag", "id", id));
-        
+
         // Check if code changed and if new code already exists
-        if (!hashtag.getCode().equals(request.getCode()) && 
-            hashtagRepository.existsByCode(request.getCode())) {
+        if (!hashtag.getCode().equals(request.getCode()) &&
+                hashtagRepository.existsByCode(request.getCode())) {
             throw new ResourceAlreadyExistsException("Hashtag", "code", request.getCode());
         }
-        
+
         hashtag.setCode(request.getCode());
-        hashtag.setNameVi(request.getNameVi());
-        hashtag.setNameEn(request.getNameEn());
+        hashtag.setName(request.getName());
+        hashtag.setName(request.getName());
         hashtag.setCategory(request.getCategory());
         hashtag.setIcon(request.getIcon());
         hashtag.setColor(request.getColor());
-        
+
         Hashtag saved = hashtagRepository.save(hashtag);
         logger.info("Updated hashtag ID: {}", saved.getId());
-        
+
         return toDTO(saved);
     }
 
     /**
      * Soft delete a hashtag (set inactive).
+     * 
      * @param id hashtag ID
      */
     public void deleteHashtag(Long id) {
         logger.info("Soft deleting hashtag ID: {}", id);
-        
+
         Hashtag hashtag = hashtagRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hashtag", "id", id));
-        
+
         hashtag.setIsActive(false);
         hashtagRepository.save(hashtag);
-        
+
         logger.info("Hashtag ID: {} is now inactive", id);
     }
 
     /**
      * Find or create hashtags by codes.
      * Used by ABTS to auto-create topic hashtags.
+     * 
      * @param codes list of hashtag codes
      * @return set of hashtags (existing or newly created)
      */
@@ -171,37 +181,41 @@ public class HashtagService {
         if (codes == null || codes.isEmpty()) {
             return new HashSet<>();
         }
-        
+
         logger.info("Finding or creating hashtags for codes: {}", codes);
-        
+
         Set<String> codeSet = new HashSet<>(codes);
         Set<Hashtag> existing = hashtagRepository.findByCodeIn(codeSet);
-        
+
         Set<String> existingCodes = existing.stream()
                 .map(Hashtag::getCode)
                 .collect(Collectors.toSet());
-        
+
         // Create new hashtags for codes that don't exist
         for (String code : codes) {
             if (!existingCodes.contains(code)) {
                 Hashtag newHashtag = Hashtag.builder()
                         .code(code)
-                        .nameVi(formatCodeToName(code))
-                        .nameEn(formatCodeToName(code))
+                        .name(formatCodeToName(code))
+                        .name(formatCodeToName(code))
                         .category("topic")
                         .useCount(0)
                         .isActive(true)
                         .build();
-                existing.add(hashtagRepository.save(newHashtag));
+                Hashtag savedHashtag = hashtagRepository.save(newHashtag);
+                if (savedHashtag != null) {
+                    existing.add(savedHashtag);
+                }
                 logger.info("Auto-created hashtag: {}", code);
             }
         }
-        
+
         return existing;
     }
 
     /**
      * Increment use count for a hashtag.
+     * 
      * @param hashtagId hashtag ID
      */
     public void incrementUseCount(Long hashtagId) {
@@ -210,6 +224,7 @@ public class HashtagService {
 
     /**
      * Increment use counts for multiple hashtags.
+     * 
      * @param hashtags set of hashtags
      */
     public void incrementUseCounts(Set<Hashtag> hashtags) {
@@ -222,6 +237,7 @@ public class HashtagService {
 
     /**
      * Decrement use counts for multiple hashtags.
+     * 
      * @param hashtags set of hashtags
      */
     public void decrementUseCounts(Set<Hashtag> hashtags) {
@@ -234,6 +250,7 @@ public class HashtagService {
 
     /**
      * Get hashtag by code.
+     * 
      * @param code hashtag code
      * @return hashtag entity
      */
@@ -244,6 +261,7 @@ public class HashtagService {
 
     /**
      * Get distinct categories.
+     * 
      * @return list of category names
      */
     @Transactional(readOnly = true)
@@ -258,8 +276,8 @@ public class HashtagService {
         return HashtagDTO.builder()
                 .id(entity.getId())
                 .code(entity.getCode())
-                .nameVi(entity.getNameVi())
-                .nameEn(entity.getNameEn())
+                .name(entity.getName())
+                .name(entity.getName())
                 .category(entity.getCategory())
                 .icon(entity.getIcon())
                 .color(entity.getColor())

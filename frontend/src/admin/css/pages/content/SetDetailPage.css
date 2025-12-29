@@ -450,29 +450,7 @@
   padding: var(--admin-spacing-xl);
 }
 
-/* ==========================================================================
-   BUTTON VARIANTS
-   ========================================================================== */
-
-.admin-btn--success {
-  background: #10B981;
-  border: none;
-  color: white;
-}
-
-.admin-btn--success:hover {
-  background: #059669;
-}
-
-.admin-btn--warning {
-  background: #F59E0B;
-  border: none;
-  color: #1a1a2e;
-}
-
-.admin-btn--warning:hover {
-  background: #D97706;
-}
+/* Button variants moved to admin.css for reusability */
 
 /* ==========================================================================
    MODAL STYLES
@@ -624,6 +602,22 @@
 .form-textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+.form-input--error {
+  border-color: var(--admin-danger);
+}
+
+.form-input--error:focus {
+  border-color: var(--admin-danger);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.form-error {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8125rem;
+  color: var(--admin-danger);
 }
 
 .form-error-box {

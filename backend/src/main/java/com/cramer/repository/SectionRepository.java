@@ -2,6 +2,7 @@ package com.cramer.repository;
 
 import com.cramer.entity.Section;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -141,4 +142,16 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
          * Used to check if a section already exists before creating.
          */
         Optional<Section> findByIeltsTestIdAndSkillAndPartNumber(Long testId, String skill, Integer partNumber);
+
+        /**
+         * Find legacy sections without test link.
+         */
+        List<Section> findByExamSourceAndTestNumberAndIeltsTestIsNull(String examSource, Integer testNumber);
+
+        /**
+         * Update status for all sections belonging to a test.
+         */
+        @Modifying
+        @Query("UPDATE Section s SET s.status = :status WHERE s.ieltsTest.id = :testId")
+        int updateStatusByTestId(@Param("testId") Long testId, @Param("status") String status);
 }

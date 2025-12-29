@@ -22,10 +22,10 @@ public class CreateHashtagRequest {
     
     @NotBlank(message = "Vietnamese name is required")
     @Size(max = 100, message = "Vietnamese name must be at most 100 characters")
-    private String nameVi;
+    private String name;
     
     @Size(max = 100, message = "English name must be at most 100 characters")
-    private String nameEn;
+    // removed duplicate nameEn
     
     @NotBlank(message = "Category is required")
     @Size(max = 50, message = "Category must be at most 50 characters")

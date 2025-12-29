@@ -499,6 +499,65 @@
   font-size: 1rem;
 }
 
+.admin-btn--success {
+  background: #10B981;
+  border: none;
+  color: white;
+}
+
+.admin-btn--success:hover {
+  background: #059669;
+}
+
+.admin-btn--warning {
+  background: #F59E0B;
+  border: none;
+  color: #1a1a2e;
+}
+
+.admin-btn--warning:hover {
+  background: #D97706;
+}
+
+/* Small spinner variant */
+.spinner.small {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+}
+
+/* AI Button with gradient */
+.admin-btn--ai {
+  background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+  border: none;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-btn--ai::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent);
+  transition: left 0.5s;
+}
+
+.admin-btn--ai:hover::before {
+  left: 100%;
+}
+
+.admin-btn--ai:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
 /* ==========================================================================
    BADGES
    ========================================================================== */
@@ -743,6 +802,15 @@
   margin-top: var(--admin-spacing-xs);
   font-size: 0.8125rem;
   color: var(--admin-text-muted);
+}
+
+.error-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--admin-spacing-xs);
+  font-size: 0.8125rem;
+  color: var(--admin-danger);
 }
 
 /* Placeholder states */

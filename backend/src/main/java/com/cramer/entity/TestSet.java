@@ -30,11 +30,8 @@ public class TestSet {
     @Column(name = "code", nullable = false, unique = true, length = 50)
     private String code; // e.g., "cam17", "cam18", "ai_001"
 
-    @Column(name = "name_vi", nullable = false, length = 255)
-    private String nameVi;
-
-    @Column(name = "name_en", length = 255)
-    private String nameEn;
+    @Column(name = "name", nullable = false, length = 255)
+    private String name;
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;

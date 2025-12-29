@@ -847,7 +847,7 @@ public class OpenRouterClient {
     public List<Map<String, Object>> fetchAvailableModels() {
         try {
             HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(config.getApiKey());
+            headers.setBearerAuth(Objects.requireNonNull(config.getApiKey()));
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("HTTP-Referer", "https://cramer.edu.vn");
             headers.set("X-Title", "Cramer ABTS");

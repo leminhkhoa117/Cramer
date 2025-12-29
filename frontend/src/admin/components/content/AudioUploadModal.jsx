@@ -5,7 +5,7 @@
  * @since 2025-12-21 - Content Upload Feature
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { FiUpload, FiMusic, FiX, FiCheck, FiAlertTriangle, FiTrash2 } from 'react-icons/fi';
 import '../../css/common/modal.css';
 
@@ -24,6 +24,15 @@ export default function AudioUploadModal({
     const [error, setError] = useState(null);
     const [isDragOver, setIsDragOver] = useState(false);
     const fileInputRef = useRef(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            setAudioFile(null);
+            setAudioUrl(initialAudioUrl || '');
+            setError(null);
+            setUploadProgress(0);
+        }
+    }, [isOpen, initialAudioUrl]);
 
     if (!isOpen) return null;
 
@@ -80,6 +89,16 @@ export default function AudioUploadModal({
         setAudioUrl(previewUrl);
     };
 
+    const handleUrlChange = (e) => {
+        const value = e.target.value.trim();
+        setError(null);
+        setAudioFile(null);
+        setAudioUrl(value);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     // Handle file input change
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -129,6 +148,22 @@ export default function AudioUploadModal({
             return;
         }
 
+        if (audioFile && audioUrl && audioUrl.startsWith('blob:')) {
+            setError('Hiện chỉ hỗ trợ lưu bằng URL. Vui lòng dán link audio.');
+            return;
+        }
+
+        if (!audioFile && audioUrl) {
+            onSave({
+                file: null,
+                url: audioUrl,
+                name: null,
+                size: null
+            });
+            onClose();
+            return;
+        }
+
         setIsUploading(true);
         setUploadProgress(0);
 
@@ -173,6 +208,17 @@ export default function AudioUploadModal({
 
                 {/* Content */}
                 <div className="admin-modal__content">
+                    <div className="audio-upload-url">
+                        <label className="audio-upload-url__label">Audio URL (tuỳ chọn)</label>
+                        <input
+                            type="text"
+                            className="audio-upload-url__input"
+                            placeholder="https://example.com/audio.mp3"
+                            value={audioFile ? '' : audioUrl}
+                            onChange={handleUrlChange}
+                        />
+                        <p className="audio-upload-url__hint">Dán URL audio nếu đã có link sẵn.</p>
+                    </div>
                     {/* Dropzone */}
                     {!audioUrl && (
                         <div

@@ -19,6 +19,7 @@ public interface TestSetRepository extends JpaRepository<TestSet, Long> {
 
     /**
      * Find a test set by its unique code.
+     * 
      * @param code the test set code (e.g., "cam17")
      * @return Optional containing the test set if found
      */
@@ -26,6 +27,7 @@ public interface TestSetRepository extends JpaRepository<TestSet, Long> {
 
     /**
      * Check if a test set exists with the given code.
+     * 
      * @param code the test set code
      * @return true if exists, false otherwise
      */
@@ -33,31 +35,37 @@ public interface TestSetRepository extends JpaRepository<TestSet, Long> {
 
     /**
      * Find all test sets ordered by display order.
+     * 
      * @return list of test sets ordered by displayOrder ASC
      */
     List<TestSet> findAllByOrderByDisplayOrderAsc();
 
     /**
      * Find all published test sets ordered by display order.
+     * 
      * @return list of published test sets
      */
     List<TestSet> findByIsPublishedTrueOrderByDisplayOrderAsc();
 
     /**
      * Find test sets by source type.
-     * @param sourceType the source type (e.g., "cambridge", "custom", "ai_generated")
+     * 
+     * @param sourceType the source type (e.g., "cambridge", "custom",
+     *                   "ai_generated")
      * @return list of test sets with that source type
      */
     List<TestSet> findBySourceTypeOrderByDisplayOrderAsc(String sourceType);
 
     /**
      * Find all published test sets.
+     * 
      * @return list of published test sets
      */
     List<TestSet> findByIsPublishedTrue();
 
     /**
      * Find test sets by source type.
+     * 
      * @param sourceType the source type
      * @return list of test sets
      */
@@ -65,6 +73,7 @@ public interface TestSetRepository extends JpaRepository<TestSet, Long> {
 
     /**
      * Count the number of tests in a test set.
+     * 
      * @param testSetId the test set ID
      * @return number of tests
      */
@@ -73,6 +82,7 @@ public interface TestSetRepository extends JpaRepository<TestSet, Long> {
 
     /**
      * Count the number of published tests in a test set.
+     * 
      * @param testSetId the test set ID
      * @return number of published tests
      */
@@ -81,6 +91,7 @@ public interface TestSetRepository extends JpaRepository<TestSet, Long> {
 
     /**
      * Get the maximum display order value.
+     * 
      * @return max display order or 0 if no test sets exist
      */
     @Query("SELECT COALESCE(MAX(ts.displayOrder), 0) FROM TestSet ts")
@@ -88,7 +99,8 @@ public interface TestSetRepository extends JpaRepository<TestSet, Long> {
 
     /**
      * Update display orders for reordering.
-     * @param id the test set ID
+     * 
+     * @param id           the test set ID
      * @param displayOrder the new display order
      */
     @Modifying
@@ -96,14 +108,14 @@ public interface TestSetRepository extends JpaRepository<TestSet, Long> {
     void updateDisplayOrder(@Param("id") Long id, @Param("displayOrder") Integer displayOrder);
 
     /**
-     * Find test sets by search term (matches code, nameVi, or nameEn).
+     * Find test sets by search term (matches code or name).
+     * 
      * @param searchTerm the search term
      * @return list of matching test sets
      */
     @Query("SELECT ts FROM TestSet ts WHERE " +
-           "LOWER(ts.code) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-           "LOWER(ts.nameVi) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-           "LOWER(ts.nameEn) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
-           "ORDER BY ts.displayOrder ASC")
+            "LOWER(ts.code) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(ts.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
+            "ORDER BY ts.displayOrder ASC")
     List<TestSet> searchByCodeOrName(@Param("searchTerm") String searchTerm);
 }

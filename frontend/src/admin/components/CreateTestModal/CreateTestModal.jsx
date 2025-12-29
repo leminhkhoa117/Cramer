@@ -46,7 +46,7 @@ export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = []
                     topicId: topicId,
                     newTopicName: '',
                     newTopicSource: '',
-                    testName: testToEdit.nameVi || testToEdit.nameEn || '',
+                    testName: testToEdit.name || testToEdit.name || '',
                     testNumber: testToEdit.testNumber || '',
                     difficulty: testToEdit.difficulty || 'INTERMEDIATE',
                     hashtagIds: testToEdit.hashtags ? testToEdit.hashtags.map(h => h.id) : []
@@ -127,7 +127,7 @@ export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = []
             if (isEditMode) {
                 onSubmit({
                     id: testToEdit.id,
-                    nameVi: formData.testName,
+                    name: formData.testName,
                     testNumber: parseInt(formData.testNumber) || testToEdit.testNumber,
                     difficulty: formData.difficulty,
                     hashtagIds: formData.hashtagIds,
@@ -290,7 +290,7 @@ export default function CreateTestModal({ isOpen, onClose, onSubmit, topics = []
                                     <FiFolder size={16} />
                                     <span>
                                         {mode === 'existing'
-                                            ? topics.find(t => t.id === parseInt(formData.topicId))?.displayName || topics.find(t => t.id === parseInt(formData.topicId))?.nameVi
+                                            ? topics.find(t => t.id === parseInt(formData.topicId))?.displayName || topics.find(t => t.id === parseInt(formData.topicId))?.name
                                             : formData.newTopicName
                                         }
                                     </span>

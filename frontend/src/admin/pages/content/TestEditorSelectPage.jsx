@@ -110,10 +110,10 @@ export default function TestEditorSelectPage() {
         try {
             if (type === 'set') {
                 await deleteTestSet(item.id);
-                toast.success(`Đã xóa bộ đề "${item.nameVi || item.code}"`);
+                toast.success(`Đã xóa bộ đề "${item.name || item.code}"`);
             } else {
                 await deleteTest(item.id);
-                toast.success(`Đã xóa đề thi "${item.nameVi || 'Test ' + item.testNumber}"`);
+                toast.success(`Đã xóa đề thi "${item.name || 'Test ' + item.testNumber}"`);
             }
             // Force refresh topics list
             await fetchTopics(true);
@@ -128,10 +128,10 @@ export default function TestEditorSelectPage() {
         console.log('handleTestSubmit called with:', data);
         try {
             if (editingTest || data.id) {
-                // Update existing test - data comes from modal with nameVi, difficulty, hashtagIds
+                // Update existing test - data comes from modal with name, difficulty, hashtagIds
                 const testId = data.id || editingTest.id;
                 const updatePayload = {
-                    nameVi: data.nameVi || data.testName, // Support both field names
+                    name: data.name || data.testName, // Support both field names
                     testNumber: data.testNumber,
                     difficulty: data.difficulty,
                     hashtagIds: data.hashtagIds || []
@@ -277,7 +277,7 @@ export default function TestEditorSelectPage() {
                                             {expandedTopics.includes(topic.id) ? <FiChevronDown /> : <FiChevronRight />}
                                             <FiFolder className="folder-icon" />
                                             <div className="folder-text">
-                                                <span className="folder-name">{topic.nameVi || topic.code}</span>
+                                                <span className="folder-name">{topic.name || topic.code}</span>
                                                 <span className="folder-meta">{topic.testsCount} bài thi • {topic.code}</span>
                                             </div>
                                         </div>
@@ -322,7 +322,7 @@ export default function TestEditorSelectPage() {
                                                             <div className="test-item__info">
                                                                 <FiFileText className="test-icon" />
                                                                 <div className="test-text">
-                                                                    <span className="test-name">{test.nameVi || `Bài thi ${test.testNumber}`}</span>
+                                                                    <span className="test-name">{test.name || `Bài thi ${test.testNumber}`}</span>
                                                                     <div className="test-labels">
                                                                         <StatusBadge
                                                                             status={test.isPublished ? 'PUBLISHED' : 'DRAFT'}
@@ -333,7 +333,7 @@ export default function TestEditorSelectPage() {
                                                                         )}
                                                                         {test.hashtags?.map(h => (
                                                                             <span key={h.id} className="h-tag" style={{ borderLeftColor: h.color }}>
-                                                                                {h.nameVi}
+                                                                                {h.name}
                                                                             </span>
                                                                         ))}
                                                                     </div>
@@ -420,7 +420,7 @@ export default function TestEditorSelectPage() {
                 isOpen={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}
                 onConfirm={onConfirmDelete}
-                itemName={deleteConfig.item ? (deleteConfig.item.nameVi || deleteConfig.item.code || deleteConfig.item.nameEn) : ''}
+                itemName={deleteConfig.item ? (deleteConfig.type === 'set' ? (deleteConfig.item.name || deleteConfig.item.code) : (deleteConfig.item.name || 'Test ' + deleteConfig.item.testNumber)) : ''}
                 title={deleteConfig.type === 'set' ? 'Xóa Bộ đề' : 'Xóa Đề thi'}
             />
         </div>

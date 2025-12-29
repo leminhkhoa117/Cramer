@@ -127,7 +127,7 @@ public class PaymentServiceImpl implements PaymentService {
         logger.info("📝 Created payment order {} for tier {}", orderCode, tier.getCode());
 
         // Call PayOS API to create payment link
-        return callPayOSCreatePayment(order, tier.getNameVi());
+        return callPayOSCreatePayment(order, tier.getName());
     }
 
     @Override
@@ -365,7 +365,7 @@ public class PaymentServiceImpl implements PaymentService {
                     order.getUserId(),
                     tier.getInitialLua(),
                     CreditTransaction.Category.TIER_BONUS,
-                    "Thưởng nâng cấp gói " + tier.getNameVi(),
+                    "Thưởng nâng cấp gói " + tier.getName(),
                     order.getPaymentLinkId());
         }
 

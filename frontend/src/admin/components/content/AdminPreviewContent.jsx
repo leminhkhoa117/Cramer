@@ -9,7 +9,7 @@
  * - Read-only mode: for display purposes only
  */
 
-import React, { useMemo, useRef, useCallback } from 'react';
+import React, { useMemo, useRef, useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
 import TestLayout from '../../../components/TestLayout';
 import QuestionGroupRenderer from '../../../components/QuestionGroupRenderer';
@@ -102,6 +102,8 @@ export default function AdminPreviewContent({
 }) {
     const highlightContainerRef = useRef(null);
     const isListeningTest = skill === 'listening';
+    const isWritingTest = skill === 'writing';
+    const [showTranscript, setShowTranscript] = useState(false);
 
     // Build testData format (same as TestPageContent expects)
     // Each part has questions array attached
@@ -127,15 +129,59 @@ export default function AdminPreviewContent({
     const showLeftPanel = useMemo(() => {
         if (!isListeningTest) return true; // Always show for Reading
         if (displayedPart?.displayContentUrl) return true;
+        if (showTranscript && displayedPart?.passageText) return true;
         return false;
-    }, [isListeningTest, displayedPart]);
+    }, [isListeningTest, displayedPart, showTranscript]);
 
     const leftPanelContent = useMemo(() => {
         if (isListeningTest) {
+            if (showTranscript && displayedPart?.passageText) {
+                return (
+                    <>
+                        {displayedPart?.displayContentUrl && (
+                            <img src={displayedPart.displayContentUrl} alt="Test visual aid" className="listening-visual-content" />
+                        )}
+                        <h2 className="passage-title">Listening Transcript</h2>
+                        <HighlightableText
+                            text={displayedPart.passageText.replace(/\n/g, '<br />')}
+                            contentId={`transcript-${displayedPart.id}`}
+                        />
+                    </>
+                );
+            }
             if (displayedPart?.displayContentUrl) {
                 return <img src={displayedPart.displayContentUrl} alt="Test visual aid" className="listening-visual-content" />;
             }
             return null;
+        }
+
+        if (isWritingTest) {
+            return (
+                <>
+                    <h2 className="passage-title">{`Writing Task ${displayedPart?.partNumber || 1}`}</h2>
+                    <p className="passage-instructions">
+                        {displayedPart?.partNumber === 2
+                            ? 'You should spend about 40 minutes on this task.'
+                            : 'You should spend about 20 minutes on this task.'}
+                    </p>
+                    {displayedPart?.passageText ? (
+                        <HighlightableText
+                            text={displayedPart.passageText.replace(/\n/g, '<br />')}
+                            contentId={`writing-${displayedPart.id}`}
+                        />
+                    ) : (
+                        <div className="no-passage">Chưa có nội dung đề bài</div>
+                    )}
+                    {displayedPart?.partNumber === 1 && displayedPart?.displayContentUrl && (
+                        <div className="writing-task-image">
+                            <img src={displayedPart.displayContentUrl} alt="Task 1 Figure" />
+                        </div>
+                    )}
+                    {displayedPart?.partNumber === 1 && displayedPart?.imageDescription && (
+                        <div className="writing-task-description">{displayedPart.imageDescription}</div>
+                    )}
+                </>
+            );
         }
 
         // Reading test logic - EXACT from TestPageContent
@@ -156,7 +202,17 @@ export default function AdminPreviewContent({
             );
         }
         return <div className="no-passage">Chưa có nội dung passage</div>;
-    }, [isListeningTest, displayedPart]);
+    }, [isListeningTest, isWritingTest, displayedPart, showTranscript]);
+
+    const writingWordCounts = useMemo(() => {
+        if (!isWritingTest) return {};
+        const counts = {};
+        testData.forEach(part => {
+            const min = part.partNumber === 1 ? 150 : 250;
+            counts[part.partNumber] = { current: 0, min };
+        });
+        return counts;
+    }, [isWritingTest, testData]);
 
     // No-op handlers (preview mode)
     const handleAnswerChange = useCallback(() => { }, []);
@@ -194,31 +250,61 @@ export default function AdminPreviewContent({
                     </div>
                 )}
 
+                {isListeningTest && (
+                    <div className="admin-preview-toolbar">
+                        <button
+                            className={`admin-preview-toggle ${showTranscript ? 'active' : ''}`}
+                            onClick={() => setShowTranscript(prev => !prev)}
+                            type="button"
+                        >
+                            Transcript
+                        </button>
+                    </div>
+                )}
+
                 {/* Main 2-column layout - EXACT structure from TestPageContent */}
                 <TestLayout
                     showLeftPanel={showLeftPanel}
                     leftPanelContent={leftPanelContent}
                     highlightContainerRef={highlightContainerRef}
                 >
-                    <div className="questions-column">
-                        <motion.div
-                            className="questions-container"
-                            key={activePartIndex}
-                            variants={containerVariants}
-                            initial="hidden"
-                            animate="visible"
-                        >
-                            {questionGroups.map((group, index) => (
-                                <QuestionGroupRenderer
-                                    key={index}
-                                    group={group}
-                                    onAnswerChange={handleAnswerChange}
-                                    answers={answers}
-                                    skill={skill}
-                                />
-                            ))}
-                        </motion.div>
-                    </div>
+                    {isWritingTest ? (
+                        <div className="questions-column writing-editor-panel">
+                            <div className="writing-editor-header">
+                                <h3>Your Response</h3>
+                                <div className="writing-word-counter">
+                                    <span className="count">0</span>
+                                    <span className="separator">/</span>
+                                    <span className="min">{displayedPart?.partNumber === 1 ? 150 : 250} words</span>
+                                </div>
+                            </div>
+                            <textarea
+                                className="writing-textarea"
+                                placeholder="Preview mode: writing response area"
+                                readOnly
+                            />
+                        </div>
+                    ) : (
+                        <div className="questions-column">
+                            <motion.div
+                                className="questions-container"
+                                key={activePartIndex}
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="visible"
+                            >
+                                {questionGroups.map((group, index) => (
+                                    <QuestionGroupRenderer
+                                        key={index}
+                                        group={group}
+                                        onAnswerChange={handleAnswerChange}
+                                        answers={answers}
+                                        skill={skill}
+                                    />
+                                ))}
+                            </motion.div>
+                        </div>
+                    )}
                 </TestLayout>
 
                 {/* Footer - EXACT same component as TestPageContent */}
@@ -228,6 +314,9 @@ export default function AdminPreviewContent({
                     onQuestionSelect={handleQuestionSelect}
                     onPartSelect={onPartSelect}
                     currentPartIndex={activePartIndex}
+                    mode={isWritingTest ? 'wordCount' : 'questions'}
+                    wordCounts={writingWordCounts}
+                    partLabel={isWritingTest ? 'Task' : 'Part'}
                 />
             </div>
         </HighlightProvider>

@@ -312,11 +312,27 @@ const useABTSStore = create((set, get) => ({
         });
 
         try {
+            const resolvePartNumber = () => {
+                if (formData.skill === SKILL_TYPES.WRITING) {
+                    const types = formData.questionTypes || [];
+                    const hasTask1 = types.includes('TASK_1');
+                    const hasTask2 = types.includes('TASK_2');
+                    if (hasTask2 && !hasTask1) return 2;
+                    if (hasTask1 && !hasTask2) return 1;
+                }
+                return formData.partNumber;
+            };
+
+            const hasCustomCounts = Object.keys(formData.questionTypeCounts).length > 0;
+            const shouldSendTotalQuestions = hasCustomCounts
+                || formData.questionTypes.length > 0
+                || (typeof formData.totalQuestions === 'number' && formData.totalQuestions !== 13);
+
             // Build request
             const request = {
                 skill: formData.skill,
                 scope: formData.scope,
-                partNumber: formData.partNumber,
+                partNumber: resolvePartNumber(),
                 topic: formData.topic,
                 hashtags: formData.hashtags,
                 facts: formData.facts,
@@ -326,7 +342,15 @@ const useABTSStore = create((set, get) => ({
                 questionTypes: formData.questionTypes.length > 0 ? formData.questionTypes : null,
                 model: formData.model,
                 enableReasoning: formData.enableReasoning,
-                reasoningEffort: formData.reasoningEffort
+                reasoningEffort: formData.reasoningEffort,
+                temperature: formData.temperature,
+                questionTypeCounts: Object.keys(formData.questionTypeCounts).length > 0
+                    ? formData.questionTypeCounts : null,
+                passageLength: formData.passageLength,
+                customInstructions: formData.customInstructions || null,
+                maxTokens: formData.maxTokens,
+                totalQuestions: shouldSendTotalQuestions ? formData.totalQuestions : null,
+                writingEssayType: formData.writingEssayType || null
             };
 
             set({ generationProgress: 30 });
@@ -394,11 +418,27 @@ const useABTSStore = create((set, get) => ({
             reasoning: '' // Reset accumulated reasoning
         });
 
+        const resolvePartNumber = () => {
+            if (formData.skill === SKILL_TYPES.WRITING) {
+                const types = formData.questionTypes || [];
+                const hasTask1 = types.includes('TASK_1');
+                const hasTask2 = types.includes('TASK_2');
+                if (hasTask2 && !hasTask1) return 2;
+                if (hasTask1 && !hasTask2) return 1;
+            }
+            return formData.partNumber;
+        };
+
+        const hasCustomCounts = Object.keys(formData.questionTypeCounts).length > 0;
+        const shouldSendTotalQuestions = hasCustomCounts
+            || formData.questionTypes.length > 0
+            || (typeof formData.totalQuestions === 'number' && formData.totalQuestions !== 13);
+
         // Build request
         const request = {
             skill: formData.skill,
             scope: formData.scope,
-            partNumber: formData.partNumber,
+            partNumber: resolvePartNumber(),
             topic: formData.topic,
             hashtags: formData.hashtags,
             facts: formData.facts,
@@ -413,11 +453,11 @@ const useABTSStore = create((set, get) => ({
             // Power-user settings
             questionTypeCounts: Object.keys(formData.questionTypeCounts).length > 0
                 ? formData.questionTypeCounts : null,
-            partNumber: formData.partNumber, // Reading Part (1, 2, or 3)
             passageLength: formData.passageLength,
             customInstructions: formData.customInstructions || null,
             maxTokens: formData.maxTokens,
-            totalQuestions: formData.totalQuestions
+            totalQuestions: shouldSendTotalQuestions ? formData.totalQuestions : null,
+            writingEssayType: formData.writingEssayType || null
         };
 
         // Callbacks for streaming events
@@ -673,7 +713,8 @@ const useABTSStore = create((set, get) => ({
                     testType: formData.testType,
                     questionTypes: formData.questionTypes,
                     model: formData.model,
-                    temperature: formData.temperature
+                    temperature: formData.temperature,
+                    writingEssayType: formData.writingEssayType || null
                 },
                 examSource: options.examSource || 'ai_generated',
                 testNumber: options.testNumber || null

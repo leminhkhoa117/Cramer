@@ -49,6 +49,7 @@ export default function AdminLayout() {
     // Full-width pages that should have no padding
     const isFullWidthPage = location.pathname.includes('/content/generate') ||
         location.pathname.includes('/content/editor') ||
+        location.pathname.includes('/content/tests') ||
         location.pathname.includes('/ai-studio');
 
     return (

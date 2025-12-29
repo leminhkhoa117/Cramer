@@ -25,8 +25,8 @@ public class TestSummaryDTO {
     private Long setId;
     private String setCode;
     private Integer testNumber;
-    private String nameVi;
-    private String nameEn;
+    private String name;
+    // removed duplicate nameEn
     private String difficulty;
     private Boolean isPublished;
     private Boolean isAiGenerated;
@@ -58,8 +58,8 @@ public class TestSummaryDTO {
                 .setId(entity.getSetId())
                 .setCode(entity.getSetCode())
                 .testNumber(entity.getTestNumber())
-                .nameVi(entity.getNameVi())
-                .nameEn(entity.getNameEn())
+                .name(entity.getName())
+                .name(entity.getName())
                 .difficulty(entity.getDifficulty())
                 .isPublished(entity.getIsPublished())
                 .isAiGenerated(entity.getIsAiGenerated())

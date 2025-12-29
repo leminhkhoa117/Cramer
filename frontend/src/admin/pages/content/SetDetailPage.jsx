@@ -175,7 +175,7 @@ export default function SetDetailPage() {
                     Quản lý Bộ đề
                 </Link>
                 <FiChevronRight size={14} className="breadcrumb__separator" />
-                <span className="breadcrumb__current">{selectedSet.nameVi || selectedSet.nameEn || selectedSet.code}</span>
+                <span className="breadcrumb__current">{selectedSet.name || selectedSet.code}</span>
             </nav>
 
             {/* Set Header */}
@@ -184,14 +184,14 @@ export default function SetDetailPage() {
                     <button
                         className="set-header__back"
                         onClick={() => navigate('/admin/content/sets')}
-                        title="Quay lai"
+                        title="Quay lại"
                     >
                         <FiArrowLeft size={20} />
                     </button>
                     <div className="set-header__info">
                         <div className="set-header__title-row">
                             <h1 className="set-header__title">
-                                {selectedSet.nameVi || selectedSet.nameEn || selectedSet.code}
+                                {selectedSet.name || selectedSet.code}
                             </h1>
                             <span className={`status-badge ${selectedSet.isPublished ? 'status-badge--published' : 'status-badge--draft'}`}>
                                 {selectedSet.isPublished ? 'Đã xuất bản' : 'Bản nháp'}
@@ -202,7 +202,7 @@ export default function SetDetailPage() {
                         )}
                         <div className="set-header__meta">
                             <span className="set-header__meta-item">
-                                Ma: <strong>{selectedSet.code}</strong>
+                                Mã: <strong>{selectedSet.code}</strong>
                             </span>
                             <span className="set-header__meta-item">
                                 {selectedSetTests.length} bài thi
@@ -257,7 +257,12 @@ export default function SetDetailPage() {
             {error && (
                 <div className="content-error">
                     <p>{error}</p>
-                    <button onClick={() => { clearError(); handleRefresh(); }}>Thử lại</button>
+                    <button
+                        className="admin-btn admin-btn--primary"
+                        onClick={() => { clearError(); handleRefresh(); }}
+                    >
+                        Thử lại
+                    </button>
                 </div>
             )}
 
@@ -284,7 +289,7 @@ export default function SetDetailPage() {
 
                                 {/* Test Name */}
                                 <h3 className="test-card__title">
-                                    {test.nameVi || test.nameEn || `Test ${test.testNumber}`}
+                                    {test.name || test.name || `Test ${test.testNumber}`}
                                 </h3>
 
                                 {/* Skill Indicators */}
@@ -302,7 +307,7 @@ export default function SetDetailPage() {
                                                     color: tag.color || '#8B5CF6'
                                                 }}
                                             >
-                                                {tag.icon} {tag.nameVi || tag.nameEn}
+                                                {tag.icon} {tag.name || tag.name}
                                             </span>
                                         ))}
                                         {test.hashtags.length > 3 && (
@@ -352,22 +357,18 @@ export default function SetDetailPage() {
                             </div>
                         ))}
 
-                        {/* Add Test Card */}
+                        {/* Add Test Card - Also serves as empty state prompt */}
                         <div
                             className="test-card test-card--add"
                             onClick={() => setShowCreateModal(true)}
                         >
                             <FiPlus size={32} />
-                            <span>Thêm bài thi mới</span>
+                            <span>
+                                {selectedSetTests.length === 0
+                                    ? 'Thêm bài thi đầu tiên'
+                                    : 'Thêm bài thi mới'}
+                            </span>
                         </div>
-
-                        {/* Empty State */}
-                        {selectedSetTests.length === 0 && (
-                            <div className="empty-state empty-state--inline">
-                                <FiFolder size={32} />
-                                <p>Chưa có bài thi nào trong bộ đề này</p>
-                            </div>
-                        )}
                     </div>
                 )}
             </div>
@@ -452,8 +453,8 @@ function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubm
 
     const [formData, setFormData] = useState({
         testNumber: Math.max(...existingTestNumbers, 0) + 1,
-        nameVi: '',
-        nameEn: '',
+        name: '',
+        name: '',
         difficulty: 'INTERMEDIATE',
         hashtagIds: []
     });
@@ -551,14 +552,14 @@ function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubm
 
                         {/* Name Vietnamese */}
                         <div className="form-group">
-                            <label htmlFor="nameVi">Tên tiếng Việt</label>
+                            <label htmlFor="name">Tên tiếng Việt</label>
                             <input
                                 type="text"
-                                id="nameVi"
-                                name="nameVi"
+                                id="name"
+                                name="name"
                                 className="form-input"
                                 placeholder="vd: Bài thi 1 - Chủ đề Giáo dục"
-                                value={formData.nameVi}
+                                value={formData.name}
                                 onChange={handleChange}
                                 disabled={isSubmitting}
                             />
@@ -566,14 +567,14 @@ function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubm
 
                         {/* Name English */}
                         <div className="form-group">
-                            <label htmlFor="nameEn">Tên tiếng Anh</label>
+                            <label htmlFor="name">Tên tiếng Anh</label>
                             <input
                                 type="text"
-                                id="nameEn"
-                                name="nameEn"
+                                id="name"
+                                name="name"
                                 className="form-input"
                                 placeholder="e.g. Test 1 - Education Topic"
-                                value={formData.nameEn}
+                                value={formData.name}
                                 onChange={handleChange}
                                 disabled={isSubmitting}
                             />
@@ -614,7 +615,7 @@ function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubm
                                                     : 'transparent'
                                             }}
                                         >
-                                            {tag.icon} {tag.nameVi || tag.nameEn}
+                                            {tag.icon} {tag.name || tag.name}
                                         </button>
                                     ))}
                                 </div>
@@ -667,8 +668,7 @@ function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubm
 function EditSetModal({ testSet, onClose }) {
     const { updateTestSet } = useTestSetStore();
     const [formData, setFormData] = useState({
-        nameVi: testSet.nameVi || '',
-        nameEn: testSet.nameEn || '',
+        name: testSet.name || '',
         description: testSet.description || '',
         sourceType: testSet.sourceType || 'custom'
     });
@@ -705,26 +705,13 @@ function EditSetModal({ testSet, onClose }) {
                 <form onSubmit={handleSubmit}>
                     <div className="admin-edit-modal-body">
                         <div className="form-group">
-                            <label htmlFor="edit-nameVi">Tên tiếng Việt</label>
+                            <label htmlFor="edit-name">Tên bộ đề *</label>
                             <input
                                 type="text"
-                                id="edit-nameVi"
-                                name="nameVi"
+                                id="edit-name"
+                                name="name"
                                 className="form-input"
-                                value={formData.nameVi}
-                                onChange={handleChange}
-                                disabled={isSubmitting}
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="edit-nameEn">Tên tiếng Anh</label>
-                            <input
-                                type="text"
-                                id="edit-nameEn"
-                                name="nameEn"
-                                className="form-input"
-                                value={formData.nameEn}
+                                value={formData.name}
                                 onChange={handleChange}
                                 disabled={isSubmitting}
                             />

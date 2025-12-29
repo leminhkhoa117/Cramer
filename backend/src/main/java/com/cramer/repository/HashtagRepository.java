@@ -20,6 +20,7 @@ public interface HashtagRepository extends JpaRepository<Hashtag, Long> {
 
     /**
      * Find a hashtag by its unique code.
+     * 
      * @param code the hashtag code (e.g., "environment")
      * @return Optional containing the hashtag if found
      */
@@ -27,6 +28,7 @@ public interface HashtagRepository extends JpaRepository<Hashtag, Long> {
 
     /**
      * Check if a hashtag exists with the given code.
+     * 
      * @param code the hashtag code
      * @return true if exists, false otherwise
      */
@@ -34,12 +36,14 @@ public interface HashtagRepository extends JpaRepository<Hashtag, Long> {
 
     /**
      * Find all active hashtags.
+     * 
      * @return list of active hashtags
      */
     List<Hashtag> findByIsActiveTrueOrderByUseCountDesc();
 
     /**
      * Find hashtags by category.
+     * 
      * @param category the category (e.g., "topic", "theme")
      * @return list of hashtags in that category
      */
@@ -47,6 +51,7 @@ public interface HashtagRepository extends JpaRepository<Hashtag, Long> {
 
     /**
      * Find hashtags by codes (for bulk lookup).
+     * 
      * @param codes set of hashtag codes
      * @return set of matching hashtags
      */
@@ -54,6 +59,7 @@ public interface HashtagRepository extends JpaRepository<Hashtag, Long> {
 
     /**
      * Find hashtags by codes list.
+     * 
      * @param codes list of hashtag codes
      * @return list of matching hashtags
      */
@@ -61,18 +67,19 @@ public interface HashtagRepository extends JpaRepository<Hashtag, Long> {
 
     /**
      * Search hashtags by name or code.
+     * 
      * @param searchTerm the search term
      * @return list of matching hashtags
      */
     @Query("SELECT h FROM Hashtag h WHERE h.isActive = true AND (" +
-           "LOWER(h.code) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-           "LOWER(h.nameVi) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-           "LOWER(h.nameEn) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
-           "ORDER BY h.useCount DESC")
+            "LOWER(h.code) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(h.name) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
+            "ORDER BY h.useCount DESC")
     List<Hashtag> searchByNameOrCode(@Param("searchTerm") String searchTerm);
 
     /**
      * Get popular hashtags (most used).
+     * 
      * @param limit the maximum number of hashtags to return
      * @return list of popular hashtags
      */
@@ -81,6 +88,7 @@ public interface HashtagRepository extends JpaRepository<Hashtag, Long> {
 
     /**
      * Increment the use count of a hashtag.
+     * 
      * @param hashtagId the hashtag ID
      */
     @Modifying
@@ -89,6 +97,7 @@ public interface HashtagRepository extends JpaRepository<Hashtag, Long> {
 
     /**
      * Decrement the use count of a hashtag.
+     * 
      * @param hashtagId the hashtag ID
      */
     @Modifying
@@ -97,6 +106,7 @@ public interface HashtagRepository extends JpaRepository<Hashtag, Long> {
 
     /**
      * Get all distinct categories.
+     * 
      * @return list of category names
      */
     @Query("SELECT DISTINCT h.category FROM Hashtag h WHERE h.isActive = true ORDER BY h.category")
@@ -104,6 +114,7 @@ public interface HashtagRepository extends JpaRepository<Hashtag, Long> {
 
     /**
      * Count hashtags by category.
+     * 
      * @param category the category
      * @return number of hashtags
      */

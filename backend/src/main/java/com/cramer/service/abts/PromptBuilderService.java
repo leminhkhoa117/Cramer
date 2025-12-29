@@ -1,8 +1,6 @@
 package com.cramer.service.abts;
 
 import com.cramer.dto.abts.GenerationRequestDTO;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -22,8 +20,6 @@ import java.util.*;
  */
 @Service
 public class PromptBuilderService {
-
-        private static final Logger logger = LoggerFactory.getLogger(PromptBuilderService.class);
 
         // ==================== READING PROMPTS ====================
 
@@ -96,7 +92,7 @@ public class PromptBuilderService {
                                 prompt.append("### Content Source (Strict Mode)\n");
                                 prompt.append("You MUST base the passage content primarily on the following verified facts.\n");
                                 prompt.append("You may connect them with logical transitions, but do not contradict them.\n\n");
-                                for (int i = 0; i < facts.size(); i++) {
+                                for (int i = 0; i < Objects.requireNonNull(facts).size(); i++) {
                                         prompt.append(String.format("%d. %s\n", i + 1, facts.get(i)));
                                 }
                         } else {
@@ -1173,26 +1169,33 @@ public class PromptBuilderService {
                 prompt.append("- Allows for multiple perspectives\n");
                 prompt.append("- Is suitable for international test-takers\n\n");
 
-                prompt.append("### Essay Type Selection (choose ONE that fits the topic):\n\n");
-                prompt.append("**Opinion Essay (Agree/Disagree)**\n");
-                prompt.append("- Format: Statement + 'To what extent do you agree or disagree?'\n");
-                prompt.append("- Candidates give their opinion and support it\n\n");
+                String essayType = request.getWritingEssayType();
+                if (essayType != null && !essayType.isBlank()) {
+                        prompt.append("### Essay Type (FIXED)\n");
+                        prompt.append("You MUST generate a ").append(essayType).append(" essay prompt.\n");
+                        prompt.append("Do NOT choose another type.\n\n");
+                } else {
+                        prompt.append("### Essay Type Selection (choose ONE that fits the topic):\n\n");
+                        prompt.append("**Opinion Essay (Agree/Disagree)**\n");
+                        prompt.append("- Format: Statement + 'To what extent do you agree or disagree?'\n");
+                        prompt.append("- Candidates give their opinion and support it\n\n");
 
-                prompt.append("**Discussion Essay (Discuss Both Views)**\n");
-                prompt.append("- Format: Two views + 'Discuss both views and give your own opinion.'\n");
-                prompt.append("- Candidates discuss multiple perspectives\n\n");
+                        prompt.append("**Discussion Essay (Discuss Both Views)**\n");
+                        prompt.append("- Format: Two views + 'Discuss both views and give your own opinion.'\n");
+                        prompt.append("- Candidates discuss multiple perspectives\n\n");
 
-                prompt.append("**Advantages/Disadvantages Essay**\n");
-                prompt.append("- Format: Topic + 'Discuss the advantages and disadvantages.'\n");
-                prompt.append("- May ask for opinion: 'Do the advantages outweigh the disadvantages?'\n\n");
+                        prompt.append("**Advantages/Disadvantages Essay**\n");
+                        prompt.append("- Format: Topic + 'Discuss the advantages and disadvantages.'\n");
+                        prompt.append("- May ask for opinion: 'Do the advantages outweigh the disadvantages?'\n\n");
 
-                prompt.append("**Problem/Solution Essay**\n");
-                prompt.append("- Format: Issue + 'What are the problems and how can they be solved?'\n");
-                prompt.append("- Focus on identifying issues and proposing solutions\n\n");
+                        prompt.append("**Problem/Solution Essay**\n");
+                        prompt.append("- Format: Issue + 'What are the problems and how can they be solved?'\n");
+                        prompt.append("- Focus on identifying issues and proposing solutions\n\n");
 
-                prompt.append("**Two-Part Question Essay**\n");
-                prompt.append("- Format: Statement + TWO related questions\n");
-                prompt.append("- Example: 'Why is this happening? What can be done about it?'\n\n");
+                        prompt.append("**Two-Part Question Essay**\n");
+                        prompt.append("- Format: Statement + TWO related questions\n");
+                        prompt.append("- Example: 'Why is this happening? What can be done about it?'\n\n");
+                }
 
                 prompt.append("### Topic\n");
                 prompt.append("**Topic**: ").append(request.getTopic()).append("\n\n");

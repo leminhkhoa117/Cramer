@@ -16,8 +16,8 @@ export default function CreateTestSetModal({ isOpen, onClose, testSet = null }) 
 
     const [formData, setFormData] = useState({
         code: '',
-        nameVi: '',
-        nameEn: '',
+        name: '',
+        name: '',
         description: '',
         sourceType: 'CAMBRIDGE', // Default
         displayOrder: 0,
@@ -29,8 +29,8 @@ export default function CreateTestSetModal({ isOpen, onClose, testSet = null }) 
         if (testSet) {
             setFormData({
                 code: testSet.code || '',
-                nameVi: testSet.nameVi || '',
-                nameEn: testSet.nameEn || '',
+                name: testSet.name || '',
+                name: testSet.name || '',
                 description: testSet.description || '',
                 sourceType: testSet.sourceType || 'CAMBRIDGE',
                 displayOrder: testSet.displayOrder || 0,
@@ -40,8 +40,8 @@ export default function CreateTestSetModal({ isOpen, onClose, testSet = null }) 
         } else {
             setFormData({
                 code: '',
-                nameVi: '',
-                nameEn: '',
+                name: '',
+                name: '',
                 description: '',
                 sourceType: 'CAMBRIDGE',
                 displayOrder: 0,
@@ -55,7 +55,7 @@ export default function CreateTestSetModal({ isOpen, onClose, testSet = null }) 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!formData.code || !formData.nameVi) {
+        if (!formData.code || !formData.name) {
             toast.error("Vui lòng nhập Mã bộ đề và Tên tiếng Việt");
             return;
         }
@@ -122,8 +122,8 @@ export default function CreateTestSetModal({ isOpen, onClose, testSet = null }) 
                             <input
                                 className="form-input"
                                 type="text"
-                                value={formData.nameVi}
-                                onChange={(e) => setFormData({ ...formData, nameVi: e.target.value })}
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 placeholder="VD: Cambridge IELTS 18"
                             />
                         </div>
@@ -133,8 +133,8 @@ export default function CreateTestSetModal({ isOpen, onClose, testSet = null }) 
                             <input
                                 className="form-input"
                                 type="text"
-                                value={formData.nameEn}
-                                onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 placeholder="VD: Cambridge IELTS 18 Academic"
                             />
                         </div>

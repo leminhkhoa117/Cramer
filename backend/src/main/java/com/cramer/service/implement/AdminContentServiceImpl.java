@@ -3,6 +3,8 @@ package com.cramer.service.implement;
 import com.cramer.service.AdminContentService;
 import com.cramer.repository.*;
 import com.cramer.entity.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +42,9 @@ public class AdminContentServiceImpl implements AdminContentService {
     @Autowired
     private HashtagRepository hashtagRepository;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     // Simple in-memory cache for overview stats (expires after 5 minutes)
     private Map<String, Object> cachedOverview = null;
     private long overviewCacheTime = 0;
@@ -62,8 +67,7 @@ public class AdminContentServiceImpl implements AdminContentService {
                 Map<String, Object> setMap = new HashMap<>();
                 setMap.put("id", testSet.getId());
                 setMap.put("code", testSet.getCode());
-                setMap.put("nameVi", testSet.getNameVi());
-                setMap.put("nameEn", testSet.getNameEn());
+                setMap.put("name", testSet.getName());
                 setMap.put("description", testSet.getDescription());
                 setMap.put("coverImageUrl", testSet.getCoverImageUrl());
                 setMap.put("isPublished", testSet.getIsPublished());
@@ -75,7 +79,7 @@ public class AdminContentServiceImpl implements AdminContentService {
                     Map<String, Object> hMap = new HashMap<>();
                     hMap.put("id", h.getId());
                     hMap.put("code", h.getCode());
-                    hMap.put("nameVi", h.getNameVi());
+                    hMap.put("nameVi", h.getName());
                     hMap.put("icon", h.getIcon());
                     hMap.put("color", h.getColor());
                     setHashtags.add(hMap);
@@ -93,8 +97,8 @@ public class AdminContentServiceImpl implements AdminContentService {
                     Map<String, Object> testMap = new HashMap<>();
                     testMap.put("id", test.getId());
                     testMap.put("testNumber", test.getTestNumber());
-                    testMap.put("nameVi", test.getNameVi());
-                    testMap.put("nameEn", test.getNameEn());
+                    testMap.put("nameVi", test.getName());
+                    testMap.put("nameEn", test.getName());
                     testMap.put("difficulty", test.getDifficulty());
                     testMap.put("isPublished", test.getIsPublished());
                     testMap.put("isAiGenerated", test.getIsAiGenerated());
@@ -105,7 +109,7 @@ public class AdminContentServiceImpl implements AdminContentService {
                         Map<String, Object> hMap = new HashMap<>();
                         hMap.put("id", h.getId());
                         hMap.put("code", h.getCode());
-                        hMap.put("nameVi", h.getNameVi());
+                        hMap.put("nameVi", h.getName());
                         hMap.put("icon", h.getIcon());
                         hMap.put("color", h.getColor());
                         hashtags.add(hMap);
@@ -227,6 +231,10 @@ public class AdminContentServiceImpl implements AdminContentService {
             test.put("examSource", examSource);
             test.put("testNumber", testNumber);
             test.put("name", "Test " + testNumber);
+            Long resolvedTestId = resolveTestId(null, examSource, testNumber);
+            if (resolvedTestId != null) {
+                test.put("testId", resolvedTestId);
+            }
 
             // Build skills map
             Map<String, Object> skills = new HashMap<>();
@@ -261,7 +269,27 @@ public class AdminContentServiceImpl implements AdminContentService {
             }
 
             test.put("skills", skills);
-            test.put("status", completeSkills >= 2 ? "PUBLISHED" : "DRAFT");
+
+            String status = completeSkills >= 2 ? "PUBLISHED" : "DRAFT";
+            try {
+                Boolean isPublished = jdbcTemplate.queryForObject(
+                        """
+                                SELECT t.is_published
+                                FROM public.tests t
+                                JOIN public.test_sets s ON t.set_id = s.id
+                                WHERE s.code = ? AND t.test_number = ?
+                                """,
+                        Boolean.class,
+                        examSource,
+                        testNumber);
+                if (isPublished != null) {
+                    status = isPublished ? "PUBLISHED" : "DRAFT";
+                }
+            } catch (Exception e) {
+                logger.debug("No published status found for {}/{}: {}", examSource, testNumber, e.getMessage());
+            }
+
+            test.put("status", status);
 
             // Get attempt count
             Long attempts = jdbcTemplate.queryForObject(
@@ -281,6 +309,19 @@ public class AdminContentServiceImpl implements AdminContentService {
     @Override
     public List<Map<String, Object>> getSections(String examSource, Integer testNumber, String skill) {
         try {
+            Long testId = resolveTestId(null, examSource, testNumber);
+            if (testId != null) {
+                jdbcTemplate.update(
+                        """
+                                UPDATE public.sections
+                                SET test_id = ?
+                                WHERE exam_source = ? AND test_number = ? AND test_id IS NULL
+                                """,
+                        testId,
+                        examSource,
+                        testNumber);
+            }
+
             String sql = """
                     SELECT
                         s.id,
@@ -315,7 +356,7 @@ public class AdminContentServiceImpl implements AdminContentService {
                 section.put("audioUrl", rs.getString("audio_url"));
                 section.put("displayContentUrl", rs.getString("display_content_url"));
                 section.put("imageDescription", rs.getString("image_description"));
-                section.put("sectionLayout", rs.getString("section_layout"));
+                section.put("sectionLayout", parseSectionLayout(rs.getString("section_layout")));
                 section.put("status", rs.getString("status"));
                 section.put("questionCount", rs.getInt("question_count"));
                 return section;
@@ -457,6 +498,108 @@ public class AdminContentServiceImpl implements AdminContentService {
         }
     }
 
+    private Integer parseTestNumber(Object value) {
+        if (value == null)
+            return null;
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        try {
+            return Integer.valueOf(value.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Long resolveTestId(Object testIdValue, String examSource, Integer testNumber) {
+        if (testIdValue != null) {
+            try {
+                return Long.valueOf(testIdValue.toString());
+            } catch (NumberFormatException e) {
+                logger.warn("Invalid testId value: {}", testIdValue);
+            }
+        }
+
+        if (examSource == null || testNumber == null) {
+            return null;
+        }
+
+        try {
+            return jdbcTemplate.queryForObject(
+                    """
+                            SELECT t.id
+                            FROM public.tests t
+                            JOIN public.test_sets s ON t.set_id = s.id
+                            WHERE s.code = ? AND t.test_number = ?
+                            """,
+                    Long.class,
+                    examSource,
+                    testNumber);
+        } catch (Exception e) {
+            logger.warn("Failed to resolve test_id for {}/{}: {}", examSource, testNumber, e.getMessage());
+            return null;
+        }
+    }
+
+    private String serializeSectionLayout(Object sectionLayout) {
+        if (sectionLayout == null) {
+            return null;
+        }
+        if (sectionLayout instanceof String raw) {
+            String trimmed = raw.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+            try {
+                objectMapper.readTree(trimmed);
+                return trimmed;
+            } catch (Exception e) {
+                throw new IllegalArgumentException("sectionLayout must be valid JSON");
+            }
+        }
+        try {
+            return objectMapper.writeValueAsString(sectionLayout);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("sectionLayout must be valid JSON");
+        }
+    }
+
+    private String serializeJsonValue(Object value) {
+        if (value == null) {
+            throw new IllegalArgumentException("JSON value must not be null");
+        }
+        if (value instanceof String raw) {
+            String trimmed = raw.trim();
+            if (trimmed.isEmpty()) {
+                throw new IllegalArgumentException("JSON value must not be empty");
+            }
+            try {
+                objectMapper.readTree(trimmed);
+                return trimmed;
+            } catch (Exception e) {
+                throw new IllegalArgumentException("JSON value must be valid JSON");
+            }
+        }
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("JSON value must be valid JSON");
+        }
+    }
+
+    private Object parseSectionLayout(String rawLayout) {
+        if (rawLayout == null || rawLayout.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode node = objectMapper.readTree(rawLayout);
+            return node;
+        } catch (Exception e) {
+            logger.warn("Failed to parse section_layout JSON: {}", e.getMessage());
+            return rawLayout;
+        }
+    }
+
     // =====================
     // CRUD METHODS
     // =====================
@@ -465,21 +608,27 @@ public class AdminContentServiceImpl implements AdminContentService {
     public Map<String, Object> createSection(Map<String, Object> sectionData, String adminUserId) {
         try {
             String sql = """
-                    INSERT INTO public.sections (exam_source, test_number, skill, part_number, passage_text, audio_url, display_content_url, image_description, section_layout, status, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, 'DRAFT', NOW(), NOW())
+                    INSERT INTO public.sections (test_id, exam_source, test_number, skill, part_number, passage_text, audio_url, display_content_url, image_description, section_layout, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, 'DRAFT', NOW(), NOW())
                     RETURNING id
                     """;
 
+            String examSource = Objects.toString(sectionData.get("examSource"), null);
+            Integer testNumber = parseTestNumber(sectionData.get("testNumber"));
+            Long testId = resolveTestId(sectionData.get("testId"), examSource, testNumber);
+            String sectionLayoutJson = serializeSectionLayout(sectionData.get("sectionLayout"));
+
             Long sectionId = jdbcTemplate.queryForObject(sql, Long.class,
-                    sectionData.get("examSource"),
-                    sectionData.get("testNumber"),
+                    testId,
+                    examSource,
+                    testNumber,
                     sectionData.get("skill"),
                     sectionData.get("partNumber"),
                     sectionData.get("passageText"),
                     sectionData.get("audioUrl"),
                     sectionData.get("displayContentUrl"),
                     sectionData.get("imageDescription"),
-                    sectionData.get("sectionLayout") != null ? sectionData.get("sectionLayout").toString() : null);
+                    sectionLayoutJson);
 
             // Invalidate cache
             cachedOverview = null;
@@ -522,8 +671,7 @@ public class AdminContentServiceImpl implements AdminContentService {
             }
             if (sectionData.containsKey("sectionLayout")) {
                 sql.append(", section_layout = ?::jsonb");
-                params.add(
-                        sectionData.get("sectionLayout") != null ? sectionData.get("sectionLayout").toString() : null);
+                params.add(serializeSectionLayout(sectionData.get("sectionLayout")));
             }
             if (sectionData.containsKey("status")) {
                 sql.append(", status = ?");
@@ -599,8 +747,8 @@ public class AdminContentServiceImpl implements AdminContentService {
                     nextQuestionNumber,
                     questionUid,
                     questionData.get("questionType"),
-                    questionData.get("questionContent") != null ? questionData.get("questionContent").toString() : null,
-                    questionData.get("correctAnswer") != null ? questionData.get("correctAnswer").toString() : null,
+                    serializeJsonValue(questionData.get("questionContent")),
+                    serializeJsonValue(questionData.get("correctAnswer")),
                     questionData.get("explanation"),
                     questionData.get("imageUrl"),
                     questionData.get("wordLimit"));
@@ -636,13 +784,11 @@ public class AdminContentServiceImpl implements AdminContentService {
             }
             if (questionData.containsKey("questionContent")) {
                 sql.append(", question_content = ?::jsonb");
-                params.add(questionData.get("questionContent") != null ? questionData.get("questionContent").toString()
-                        : null);
+                params.add(serializeJsonValue(questionData.get("questionContent")));
             }
             if (questionData.containsKey("correctAnswer")) {
                 sql.append(", correct_answer = ?::jsonb");
-                params.add(questionData.get("correctAnswer") != null ? questionData.get("correctAnswer").toString()
-                        : null);
+                params.add(serializeJsonValue(questionData.get("correctAnswer")));
             }
             if (questionData.containsKey("explanation")) {
                 sql.append(", explanation = ?");
@@ -723,6 +869,18 @@ public class AdminContentServiceImpl implements AdminContentService {
             int updated = jdbcTemplate.update(
                     "UPDATE public.sections SET status = ?, updated_at = NOW() WHERE exam_source = ? AND test_number = ?",
                     status, examSource, testNumber);
+
+            boolean publish = "PUBLISHED".equalsIgnoreCase(status);
+            jdbcTemplate.update(
+                    """
+                            UPDATE public.tests
+                            SET is_published = ?
+                            WHERE test_number = ?
+                              AND set_id = (SELECT id FROM public.test_sets WHERE code = ?)
+                            """,
+                    publish,
+                    testNumber,
+                    examSource);
 
             logger.info("Admin {} updated status to {} for {} Test {} - {} sections affected",
                     adminUserId, status, examSource, testNumber, updated);
@@ -880,14 +1038,14 @@ public class AdminContentServiceImpl implements AdminContentService {
             IeltsTest test = IeltsTest.builder()
                     .testSet(testSet)
                     .testNumber(testNumber)
-                    .nameVi("Bài thi " + testNumber)
-                    .nameEn("Test " + testNumber)
+                    .name("Bài thi " + testNumber)
+                    .name("Test " + testNumber)
                     .isPublished(false)
                     .isAiGenerated(false)
                     .createdBy(UUID.fromString(adminUserId))
                     .build();
 
-            test = ieltsTestRepository.save(test);
+            test = Objects.requireNonNull(ieltsTestRepository.save(test), "Failed to save test");
 
             // Handle hashtags if present
             if (testData.containsKey("hashtagIds")) {
@@ -896,7 +1054,8 @@ public class AdminContentServiceImpl implements AdminContentService {
                     List<Long> hashtagIds = rawIds.stream()
                             .map(id -> Long.valueOf(id.toString()))
                             .toList();
-                    List<Hashtag> hashtags = hashtagRepository.findAllById(hashtagIds);
+                    List<Hashtag> hashtags = hashtagRepository
+                            .findAllById(Objects.requireNonNull(hashtagIds, "hashtagIds must not be null"));
                     test.setHashtags(new HashSet<>(hashtags));
                     hashtags.forEach(h -> {
                         h.incrementUseCount();
@@ -921,7 +1080,7 @@ public class AdminContentServiceImpl implements AdminContentService {
                     .status("DRAFT")
                     .build();
 
-            sectionRepository.save(placeholder);
+            Objects.requireNonNull(sectionRepository.save(placeholder), "Failed to save placeholder section");
             logger.info("Created placeholder section for first skill");
 
             // Invalidate cache
@@ -946,13 +1105,15 @@ public class AdminContentServiceImpl implements AdminContentService {
     public Map<String, Object> updateTest(Long testId, Map<String, Object> testData, String adminUserId) {
         logger.info("Updating test {}: {}", testId, testData);
         try {
-            IeltsTest test = ieltsTestRepository.findById(testId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đề thi ID: " + testId));
+            IeltsTest test = Objects.requireNonNull(
+                    ieltsTestRepository.findById(Objects.requireNonNull(testId, "testId must not be null"))
+                            .orElseThrow(() -> new RuntimeException("Không tìm thấy đề thi ID: " + testId)),
+                    "Test must not be null");
 
             if (testData.containsKey("nameVi"))
-                test.setNameVi((String) testData.get("nameVi"));
+                test.setName((String) testData.get("nameVi"));
             if (testData.containsKey("nameEn"))
-                test.setNameEn((String) testData.get("nameEn"));
+                test.setName((String) testData.get("nameEn"));
             if (testData.containsKey("description"))
                 test.setDescription((String) testData.get("description"));
             // Add other fields as needed
@@ -965,7 +1126,8 @@ public class AdminContentServiceImpl implements AdminContentService {
                 List<?> rawIds = (List<?>) testData.get("hashtagIds");
                 List<Long> newIds = rawIds == null ? new ArrayList<>()
                         : rawIds.stream().map(id -> Long.valueOf(id.toString())).toList();
-                List<Hashtag> newHashtagsList = hashtagRepository.findAllById(newIds);
+                List<Hashtag> newHashtagsList = hashtagRepository
+                        .findAllById(Objects.requireNonNull(newIds, "newIds must not be null"));
                 Set<Hashtag> newHashtags = new HashSet<>(newHashtagsList);
 
                 // Calculate removed
@@ -992,7 +1154,7 @@ public class AdminContentServiceImpl implements AdminContentService {
                 test.setHashtags(newHashtags);
             }
 
-            test = ieltsTestRepository.save(test);
+            test = Objects.requireNonNull(ieltsTestRepository.save(test), "Failed to save updated test");
             cachedOverview = null; // Invalidate cache
 
             return Map.of("success", true, "message", "Cập nhật đề thi thành công");
@@ -1009,8 +1171,7 @@ public class AdminContentServiceImpl implements AdminContentService {
         try {
             TestSet testSet = TestSet.builder()
                     .code((String) setData.get("code"))
-                    .nameVi((String) setData.get("nameVi"))
-                    .nameEn((String) setData.get("nameEn"))
+                    .name((String) setData.get("name"))
                     .description((String) setData.get("description"))
                     .sourceType((String) setData.getOrDefault("sourceType", "custom"))
                     .displayOrder((Integer) setData.getOrDefault("displayOrder", 0))
@@ -1025,7 +1186,8 @@ public class AdminContentServiceImpl implements AdminContentService {
                     List<Long> hashtagIds = rawIds.stream()
                             .map(id -> Long.valueOf(id.toString()))
                             .toList();
-                    List<Hashtag> hashtags = hashtagRepository.findAllById(hashtagIds);
+                    List<Hashtag> hashtags = hashtagRepository
+                            .findAllById(Objects.requireNonNull(hashtagIds, "hashtagIds must not be null"));
                     testSet.setHashtags(hashtags);
                     hashtags.forEach(h -> {
                         h.incrementUseCount();
@@ -1034,7 +1196,7 @@ public class AdminContentServiceImpl implements AdminContentService {
                 }
             }
 
-            testSet = testSetRepository.save(testSet);
+            testSet = Objects.requireNonNull(testSetRepository.save(testSet), "Failed to save test set");
             cachedOverview = null;
             return Map.of("success", true, "id", testSet.getId());
         } catch (Exception e) {
@@ -1051,10 +1213,8 @@ public class AdminContentServiceImpl implements AdminContentService {
             TestSet testSet = testSetRepository.findById(setId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy bộ đề ID: " + setId));
 
-            if (setData.containsKey("nameVi"))
-                testSet.setNameVi((String) setData.get("nameVi"));
-            if (setData.containsKey("nameEn"))
-                testSet.setNameEn((String) setData.get("nameEn"));
+            if (setData.containsKey("name"))
+                testSet.setName((String) setData.get("name"));
             if (setData.containsKey("description"))
                 testSet.setDescription((String) setData.get("description"));
             if (setData.containsKey("sourceType"))
@@ -1068,7 +1228,8 @@ public class AdminContentServiceImpl implements AdminContentService {
                 List<?> rawIds = (List<?>) setData.get("hashtagIds");
                 List<Long> newIds = rawIds == null ? new ArrayList<>()
                         : rawIds.stream().map(id -> Long.valueOf(id.toString())).toList();
-                List<Hashtag> newHashtags = hashtagRepository.findAllById(newIds);
+                List<Hashtag> newHashtags = hashtagRepository
+                        .findAllById(Objects.requireNonNull(newIds, "newIds must not be null"));
 
                 // Calculate removed
                 List<Hashtag> removed = oldHashtags.stream()
@@ -1093,7 +1254,7 @@ public class AdminContentServiceImpl implements AdminContentService {
                 testSet.setHashtags(newHashtags);
             }
 
-            testSetRepository.save(testSet);
+            Objects.requireNonNull(testSetRepository.save(testSet), "Failed to save updated testset");
             cachedOverview = null;
             return Map.of("success", true);
         } catch (Exception e) {
@@ -1107,7 +1268,7 @@ public class AdminContentServiceImpl implements AdminContentService {
     public void deleteTestSet(Long setId, String adminUserId) {
         logger.info("Admin {} is deleting test set {}", adminUserId, setId);
         try {
-            testSetRepository.deleteById(setId);
+            testSetRepository.deleteById(Objects.requireNonNull(setId, "setId must not be null"));
             cachedOverview = null;
             logger.info("Successfully deleted test set {}", setId);
         } catch (Exception e) {

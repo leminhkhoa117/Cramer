@@ -182,7 +182,7 @@ export default function SaveAIContentModal({
                                         <option value="">-- Chọn bộ đề có sẵn --</option>
                                         {testSets.map(set => (
                                             <option key={set.id} value={set.id}>
-                                                {set.nameVi} ({set.code})
+                                                {set.name} ({set.code})
                                             </option>
                                         ))}
                                     </select>
@@ -267,7 +267,7 @@ export default function SaveAIContentModal({
                                         </option>
                                         {testsInSet.map(test => (
                                             <option key={test.id} value={test.id}>
-                                                {test.nameVi || `Test ${test.testNumber}`}
+                                                {test.name || `Test ${test.testNumber}`}
                                             </option>
                                         ))}
                                     </select>

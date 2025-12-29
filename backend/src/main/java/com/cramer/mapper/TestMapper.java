@@ -41,7 +41,8 @@ public class TestMapper {
                 section.getDisplayContentUrl(),
                 section.getSectionLayout(),
                 section.getPassageText(),
-                section.getAudioUrl()
+                section.getAudioUrl(),
+                section.getImageDescription()
         );
     }
 

@@ -13,9 +13,11 @@ import {
     FiRefreshCw,
     FiX,
     FiImage,
-    FiGlobe
+    FiGlobe,
+    FiZap
 } from 'react-icons/fi';
 import '../../css/pages/content/SetListPage.css';
+import '../../css/pages/content/SetDetailPage.css'; // For unified modal styles
 
 /**
  * SetListPage - Display and manage test sets in a grid layout
@@ -55,8 +57,7 @@ export default function SetListPage() {
         return testSets.filter(set => {
             const searchLower = searchQuery.toLowerCase();
             const matchesSearch =
-                set.nameVi?.toLowerCase().includes(searchLower) ||
-                set.nameEn?.toLowerCase().includes(searchLower) ||
+                set.name?.toLowerCase().includes(searchLower) ||
                 set.code?.toLowerCase().includes(searchLower);
             const matchesSource = sourceFilter === 'all' || set.sourceType === sourceFilter;
             return matchesSearch && matchesSource;
@@ -156,6 +157,13 @@ export default function SetListPage() {
                         <span>Làm mới</span>
                     </button>
                     <button
+                        className="admin-btn admin-btn--ai"
+                        onClick={() => navigate('/admin/content/generate')}
+                    >
+                        <FiZap size={16} />
+                        <span>Tạo bằng AI</span>
+                    </button>
+                    <button
                         className="admin-btn admin-btn--primary"
                         onClick={() => setShowCreateModal(true)}
                     >
@@ -226,7 +234,12 @@ export default function SetListPage() {
             {error && (
                 <div className="content-error">
                     <p>{error}</p>
-                    <button onClick={() => { clearError(); handleRefresh(); }}>Thử lại</button>
+                    <button
+                        className="admin-btn admin-btn--primary"
+                        onClick={() => { clearError(); handleRefresh(); }}
+                    >
+                        Thử lại
+                    </button>
                 </div>
             )}
 
@@ -248,7 +261,7 @@ export default function SetListPage() {
                                 {/* Cover Image */}
                                 <div className="set-card__cover">
                                     {set.coverImageUrl ? (
-                                        <img src={set.coverImageUrl} alt={set.nameVi || set.nameEn} />
+                                        <img src={set.coverImageUrl} alt={set.name} />
                                     ) : (
                                         <div className="set-card__cover-placeholder">
                                             {getSourceIcon(set.sourceType)}
@@ -267,7 +280,7 @@ export default function SetListPage() {
 
                                 {/* Set Info */}
                                 <div className="set-card__info">
-                                    <h3 className="set-card__name">{set.nameVi || set.nameEn || set.code}</h3>
+                                    <h3 className="set-card__name">{set.name || set.code}</h3>
                                     <p className="set-card__code">{set.code}</p>
 
                                     <div className="set-card__stats">
@@ -344,7 +357,7 @@ export default function SetListPage() {
                 isOpen={showDeleteModal}
                 onClose={() => { setShowDeleteModal(false); setSelectedSet(null); }}
                 onConfirm={handleDelete}
-                itemName={selectedSet?.nameVi || selectedSet?.nameEn || selectedSet?.code || ''}
+                itemName={selectedSet?.name || selectedSet?.code || ''}
                 loading={isDeleting}
             />
         </div>
@@ -357,8 +370,7 @@ export default function SetListPage() {
 function CreateSetModal({ onClose, onSubmit }) {
     const [formData, setFormData] = useState({
         code: '',
-        nameVi: '',
-        nameEn: '',
+        name: '',
         description: '',
         sourceType: 'custom',
         isPublished: false
@@ -387,8 +399,8 @@ function CreateSetModal({ onClose, onSubmit }) {
         } else if (!/^[a-z0-9_-]+$/.test(formData.code)) {
             newErrors.code = 'Mã chỉ chứa chữ thường, số, gạch ngang và gạch dưới';
         }
-        if (!formData.nameVi.trim() && !formData.nameEn.trim()) {
-            newErrors.nameVi = 'Cần ít nhất một tên (Tiếng Việt hoặc Tiếng Anh)';
+        if (!formData.name.trim()) {
+            newErrors.name = 'Tên bộ đề là bắt buộc';
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -418,12 +430,12 @@ function CreateSetModal({ onClose, onSubmit }) {
     };
 
     return (
-        <div className="modal-overlay" onClick={handleOverlayClick}>
-            <div className="modal create-set-modal" onClick={e => e.stopPropagation()}>
-                <div className="modal-header">
+        <div className="admin-modal-overlay-custom" onClick={handleOverlayClick}>
+            <div className="admin-edit-modal create-set-modal" onClick={e => e.stopPropagation()}>
+                <div className="admin-edit-modal-header">
                     <h2>Tạo bộ đề mới</h2>
                     <button
-                        className="modal-close"
+                        className="admin-edit-modal-close"
                         onClick={onClose}
                         disabled={isSubmitting}
                     >
@@ -432,7 +444,7 @@ function CreateSetModal({ onClose, onSubmit }) {
                 </div>
 
                 <form onSubmit={handleSubmit}>
-                    <div className="modal-body">
+                    <div className="admin-edit-modal-body">
                         {/* Code */}
                         <div className="form-group">
                             <label htmlFor="code">Mã bộ đề *</label>
@@ -450,35 +462,20 @@ function CreateSetModal({ onClose, onSubmit }) {
                             <p className="form-hint">Mã duy nhất để nhận dạng bộ đề (không dấu, chữ thường)</p>
                         </div>
 
-                        {/* Name Vietnamese */}
+                        {/* Name */}
                         <div className="form-group">
-                            <label htmlFor="nameVi">Tên tiếng Việt</label>
+                            <label htmlFor="name">Tên bộ đề *</label>
                             <input
                                 type="text"
-                                id="nameVi"
-                                name="nameVi"
-                                className={`form-input ${errors.nameVi ? 'form-input--error' : ''}`}
+                                id="name"
+                                name="name"
+                                className={`form-input ${errors.name ? 'form-input--error' : ''}`}
                                 placeholder="vd: Cambridge IELTS 17"
-                                value={formData.nameVi}
+                                value={formData.name}
                                 onChange={handleChange}
                                 disabled={isSubmitting}
                             />
-                            {errors.nameVi && <span className="form-error">{errors.nameVi}</span>}
-                        </div>
-
-                        {/* Name English */}
-                        <div className="form-group">
-                            <label htmlFor="nameEn">Tên tiếng Anh</label>
-                            <input
-                                type="text"
-                                id="nameEn"
-                                name="nameEn"
-                                className="form-input"
-                                placeholder="e.g. Cambridge IELTS 17"
-                                value={formData.nameEn}
-                                onChange={handleChange}
-                                disabled={isSubmitting}
-                            />
+                            {errors.name && <span className="form-error">{errors.name}</span>}
                         </div>
 
                         {/* Source Type */}
@@ -534,7 +531,7 @@ function CreateSetModal({ onClose, onSubmit }) {
                         )}
                     </div>
 
-                    <div className="modal-footer">
+                    <div className="admin-edit-modal-footer">
                         <button
                             type="button"
                             className="admin-btn admin-btn--secondary"

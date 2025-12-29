@@ -107,7 +107,7 @@ const useTestEditorStore = create((set, get) => ({
                 id: dto.id,
                 examSource: dto.setCode,
                 testNumber: dto.testNumber,
-                name: dto.nameVi || dto.nameEn || `Test ${dto.testNumber}`,
+                name: dto.name || dto.name || `Test ${dto.testNumber}`,
                 status: dto.isPublished ? 'PUBLISHED' : 'DRAFT',
                 skills: {
                     reading: { status: dto.skillSectionCounts?.reading > 0 ? 'full' : 'empty' },
@@ -182,15 +182,27 @@ const useTestEditorStore = create((set, get) => ({
                 );
             }
 
-            set({ sections: sections || [], isLoadingSections: false });
+            const normalizedSections = (sections || []).map(section => {
+                if (section?.sectionLayout && typeof section.sectionLayout === 'string') {
+                    try {
+                        return { ...section, sectionLayout: JSON.parse(section.sectionLayout) };
+                    } catch (error) {
+                        console.warn('[TestEditor] Failed to parse sectionLayout JSON:', error);
+                        return section;
+                    }
+                }
+                return section;
+            });
+
+            set({ sections: normalizedSections, isLoadingSections: false });
 
             // Load all questions and auto-select first section
-            if (sections && sections.length > 0) {
+            if (normalizedSections.length > 0) {
                 // Do not await this, let it run in background for footer
                 get().fetchAllQuestions();
 
                 // Auto-select first section immediately
-                get().setActiveSection(sections[0].id);
+                get().setActiveSection(normalizedSections[0].id);
             }
         } catch (error) {
             console.error('Failed to fetch sections:', error);
@@ -226,8 +238,11 @@ const useTestEditorStore = create((set, get) => ({
                 }
 
                 try {
-                    if (typeof q.correctAnswer === 'string' && q.correctAnswer.startsWith('{')) {
-                        parsedAnswer = JSON.parse(q.correctAnswer);
+                    if (typeof q.correctAnswer === 'string') {
+                        const trimmed = q.correctAnswer.trim();
+                        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                            parsedAnswer = JSON.parse(trimmed);
+                        }
                     }
                 } catch (e) {
                     // Keep as string
@@ -270,8 +285,11 @@ const useTestEditorStore = create((set, get) => ({
                 } catch (e) { /* keep as is */ }
 
                 try {
-                    if (typeof q.correctAnswer === 'string' && q.correctAnswer.startsWith('{')) {
-                        parsedAnswer = JSON.parse(q.correctAnswer);
+                    if (typeof q.correctAnswer === 'string') {
+                        const trimmed = q.correctAnswer.trim();
+                        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                            parsedAnswer = JSON.parse(trimmed);
+                        }
                     }
                 } catch (e) { /* keep as is */ }
 
@@ -295,7 +313,13 @@ const useTestEditorStore = create((set, get) => ({
         set({ isSaving: true });
 
         try {
-            await adminApi.content.updateTestStatus(examSource, parseInt(testNumber), 'DRAFT');
+            const { test } = get();
+            const numericTestId = Number(test?.testId ?? test?.id);
+            if (Number.isFinite(numericTestId)) {
+                await adminApi.testsApi.unpublish(numericTestId);
+            } else {
+                await adminApi.content.updateTestStatus(examSource, parseInt(testNumber), 'DRAFT');
+            }
             set(state => ({
                 test: { ...state.test, status: 'DRAFT' },
                 isSaving: false
@@ -318,7 +342,13 @@ const useTestEditorStore = create((set, get) => ({
         set({ isPublishing: true });
 
         try {
-            await adminApi.content.updateTestStatus(examSource, parseInt(testNumber), 'PUBLISHED');
+            const { test } = get();
+            const numericTestId = Number(test?.testId ?? test?.id);
+            if (Number.isFinite(numericTestId)) {
+                await adminApi.testsApi.publish(numericTestId);
+            } else {
+                await adminApi.content.updateTestStatus(examSource, parseInt(testNumber), 'PUBLISHED');
+            }
             set(state => ({
                 test: { ...state.test, status: 'PUBLISHED' },
                 isPublishing: false
@@ -377,6 +407,7 @@ const useTestEditorStore = create((set, get) => ({
             if (result.success) {
                 // Refresh questions
                 await get().setActiveSection(activeSection);
+                get().fetchAllQuestions();
                 return result.questionNumber;
             }
             return null;
@@ -393,7 +424,8 @@ const useTestEditorStore = create((set, get) => ({
         try {
             await adminApi.content.deleteQuestion(questionId);
             set(state => ({
-                questions: state.questions.filter(q => q.id !== questionId)
+                questions: state.questions.filter(q => q.id !== questionId),
+                allQuestions: state.allQuestions.filter(q => q.id !== questionId)
             }));
             return true;
         } catch (error) {
@@ -649,6 +681,9 @@ const useTestEditorStore = create((set, get) => ({
             // Update local state
             set(state => ({
                 questions: state.questions.map(q =>
+                    q.id === questionId ? { ...q, ...updates } : q
+                ),
+                allQuestions: state.allQuestions.map(q =>
                     q.id === questionId ? { ...q, ...updates } : q
                 ),
                 showQuestionEditor: false,

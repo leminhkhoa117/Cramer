@@ -6,10 +6,8 @@ import com.cramer.entity.Hashtag;
 import com.cramer.entity.IeltsTest;
 import com.cramer.entity.Section;
 import com.cramer.entity.TestSet;
-import com.cramer.exception.OperationNotAllowedException;
 import com.cramer.exception.ResourceAlreadyExistsException;
 import com.cramer.exception.ResourceNotFoundException;
-import com.cramer.repository.HashtagRepository;
 import com.cramer.repository.IeltsTestRepository;
 import com.cramer.repository.SectionRepository;
 import com.cramer.repository.TestSetRepository;
@@ -36,24 +34,24 @@ public class TestManagementService {
 
     private final IeltsTestRepository ieltsTestRepository;
     private final TestSetRepository testSetRepository;
-    private final HashtagRepository hashtagRepository;
     private final SectionRepository sectionRepository;
     private final HashtagService hashtagService;
 
     /**
      * Get all tests in a test set.
+     * 
      * @param setId test set ID
      * @return list of test summaries
      */
     @Transactional(readOnly = true)
     public List<TestSummaryDTO> getTestsBySetId(Long setId) {
         logger.info("Fetching tests for test set ID: {}", setId);
-        
+
         // Verify test set exists
-        if (!testSetRepository.existsById(setId)) {
+        if (!testSetRepository.existsById(Objects.requireNonNull(setId))) {
             throw new ResourceNotFoundException("TestSet", "id", setId);
         }
-        
+
         return ieltsTestRepository.findByTestSetIdOrderByTestNumberAsc(setId)
                 .stream()
                 .map(this::toSummaryDTO)
@@ -62,24 +60,24 @@ public class TestManagementService {
 
     /**
      * Get test by ID with full details.
+     * 
      * @param id test ID
      * @return detailed test DTO
      */
-    @Transactional(readOnly = true)
     public TestDetailDTO getTestById(Long id) {
         logger.info("Fetching test by ID: {}", id);
-        IeltsTest test = ieltsTestRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("IeltsTest", "id", id));
+        IeltsTest test = Objects.requireNonNull(ieltsTestRepository.findById(Objects.requireNonNull(id))
+                .orElseThrow(() -> new ResourceNotFoundException("IeltsTest", "id", id)));
         return toDetailDTO(test);
     }
 
     /**
      * Get test by set code and test number.
-     * @param setCode test set code
+     * 
+     * @param setCode    test set code
      * @param testNumber test number
      * @return detailed test DTO
      */
-    @Transactional(readOnly = true)
     public TestDetailDTO getTestBySetCodeAndNumber(String setCode, Integer testNumber) {
         logger.info("Fetching test by set code: {} and number: {}", setCode, testNumber);
         IeltsTest test = ieltsTestRepository.findBySetCodeAndTestNumber(setCode, testNumber)
@@ -90,17 +88,18 @@ public class TestManagementService {
 
     /**
      * Create a new test in a test set.
-     * @param setId test set ID
+     * 
+     * @param setId   test set ID
      * @param request creation request
-     * @param userId creator user ID
+     * @param userId  creator user ID
      * @return created test summary
      */
     public TestSummaryDTO createTest(Long setId, CreateTestRequest request, UUID userId) {
         logger.info("Creating new test in set ID: {}", setId);
-        
-        TestSet testSet = testSetRepository.findById(setId)
-                .orElseThrow(() -> new ResourceNotFoundException("TestSet", "id", setId));
-        
+
+        TestSet testSet = Objects.requireNonNull(testSetRepository.findById(Objects.requireNonNull(setId))
+                .orElseThrow(() -> new ResourceNotFoundException("TestSet", "id", setId)));
+
         // Determine test number
         Integer testNumber = request.getTestNumber();
         if (testNumber == null) {
@@ -113,62 +112,64 @@ public class TestManagementService {
                         String.format("Test with number %d already exists in this set", testNumber));
             }
         }
-        
+
         IeltsTest test = IeltsTest.builder()
                 .testSet(testSet)
                 .testNumber(testNumber)
-                .nameVi(request.getNameVi())
-                .nameEn(request.getNameEn())
+                .name(request.getName())
+                .name(request.getName())
                 .description(request.getDescription())
                 .difficulty(request.getDifficulty() != null ? request.getDifficulty() : "INTERMEDIATE")
-                .estimatedTimeMinutes(request.getEstimatedTimeMinutes() != null ? request.getEstimatedTimeMinutes() : 170)
+                .estimatedTimeMinutes(
+                        request.getEstimatedTimeMinutes() != null ? request.getEstimatedTimeMinutes() : 170)
                 .isPublished(request.getIsPublished() != null ? request.getIsPublished() : false)
                 .isAiGenerated(request.getIsAiGenerated() != null ? request.getIsAiGenerated() : false)
                 .generationMetadata(request.getGenerationMetadata())
                 .createdBy(userId)
                 .build();
-        
+
         // Handle hashtags
         if (request.getHashtagCodes() != null && !request.getHashtagCodes().isEmpty()) {
             Set<Hashtag> hashtags = hashtagService.findOrCreateByCodes(request.getHashtagCodes());
             test.setHashtags(hashtags);
             hashtagService.incrementUseCounts(hashtags);
         }
-        
+
         IeltsTest saved = ieltsTestRepository.save(test);
         logger.info("Created test with ID: {}", saved.getId());
-        
+
         return toSummaryDTO(saved);
     }
 
     /**
      * Update an existing test.
-     * @param id test ID
+     * 
+     * @param id      test ID
      * @param request update request
      * @return updated test summary
      */
     public TestSummaryDTO updateTest(Long id, CreateTestRequest request) {
         logger.info("Updating test ID: {}", id);
-        
-        IeltsTest test = ieltsTestRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("IeltsTest", "id", id));
-        
+
+        IeltsTest test = Objects.requireNonNull(ieltsTestRepository.findById(Objects.requireNonNull(id))
+                .orElseThrow(() -> new ResourceNotFoundException("IeltsTest", "id", id)));
+
         // Check if test number changed and if new number already exists
-        if (request.getTestNumber() != null && 
-            !request.getTestNumber().equals(test.getTestNumber()) &&
-            ieltsTestRepository.existsByTestSetIdAndTestNumber(test.getSetId(), request.getTestNumber())) {
+        if (request.getTestNumber() != null &&
+                !request.getTestNumber().equals(test.getTestNumber()) &&
+                ieltsTestRepository.existsByTestSetIdAndTestNumber(test.getSetId(), request.getTestNumber())) {
             throw new ResourceAlreadyExistsException(
                     String.format("Test with number %d already exists in this set", request.getTestNumber()));
         }
-        
+
         if (request.getTestNumber() != null) {
             test.setTestNumber(request.getTestNumber());
         }
-        if (request.getNameVi() != null) {
-            test.setNameVi(request.getNameVi());
+        if (request.getName() != null) {
+            test.setName(request.getName());
         }
-        if (request.getNameEn() != null) {
-            test.setNameEn(request.getNameEn());
+        if (request.getName() != null) {
+            test.setName(request.getName());
         }
         if (request.getDescription() != null) {
             test.setDescription(request.getDescription());
@@ -188,26 +189,27 @@ public class TestManagementService {
         if (request.getGenerationMetadata() != null) {
             test.setGenerationMetadata(request.getGenerationMetadata());
         }
-        
-        IeltsTest saved = ieltsTestRepository.save(test);
+
+        IeltsTest saved = Objects.requireNonNull(ieltsTestRepository.save(test));
         logger.info("Updated test ID: {}", saved.getId());
-        
+
         return toSummaryDTO(saved);
     }
 
     /**
      * Delete a test.
+     * 
      * @param id test ID
      */
     public void deleteTest(Long id) {
         logger.info("Deleting test ID: {}", id);
-        
-        IeltsTest test = ieltsTestRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("IeltsTest", "id", id));
-        
+
+        IeltsTest test = Objects.requireNonNull(ieltsTestRepository.findById(Objects.requireNonNull(id))
+                .orElseThrow(() -> new ResourceNotFoundException("IeltsTest", "id", id)));
+
         // Decrement hashtag use counts
         hashtagService.decrementUseCounts(test.getHashtags());
-        
+
         // Delete the test (sections will be handled separately or via DB cascade)
         ieltsTestRepository.delete(test);
         logger.info("Deleted test ID: {}", id);
@@ -215,38 +217,44 @@ public class TestManagementService {
 
     /**
      * Publish or unpublish a test.
-     * @param id test ID
+     * 
+     * @param id      test ID
      * @param publish true to publish, false to unpublish
      * @return updated test summary
      */
     public TestSummaryDTO publishTest(Long id, boolean publish) {
         logger.info("{} test ID: {}", publish ? "Publishing" : "Unpublishing", id);
-        
-        IeltsTest test = ieltsTestRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("IeltsTest", "id", id));
-        
+
+        IeltsTest test = Objects.requireNonNull(ieltsTestRepository.findById(Objects.requireNonNull(id))
+                .orElseThrow(() -> new ResourceNotFoundException("IeltsTest", "id", id)));
+
         test.setIsPublished(publish);
         IeltsTest saved = ieltsTestRepository.save(test);
-        
+
+        String sectionStatus = publish ? "PUBLISHED" : "DRAFT";
+        int updatedSections = sectionRepository.updateStatusByTestId(id, sectionStatus);
+        logger.info("Updated {} sections to status {}", updatedSections, sectionStatus);
+
         logger.info("Test ID: {} is now {}", id, publish ? "published" : "unpublished");
         return toSummaryDTO(saved);
     }
 
     /**
      * Update hashtags for a test.
-     * @param testId test ID
+     * 
+     * @param testId  test ID
      * @param request update request with hashtag codes
      * @return updated test summary
      */
     public TestSummaryDTO updateTestHashtags(Long testId, UpdateTestHashtagsRequest request) {
         logger.info("Updating hashtags for test ID: {}", testId);
-        
-        IeltsTest test = ieltsTestRepository.findById(testId)
-                .orElseThrow(() -> new ResourceNotFoundException("IeltsTest", "id", testId));
-        
+
+        IeltsTest test = Objects.requireNonNull(ieltsTestRepository.findById(Objects.requireNonNull(testId))
+                .orElseThrow(() -> new ResourceNotFoundException("IeltsTest", "id", testId)));
+
         // Decrement old hashtag use counts
         hashtagService.decrementUseCounts(test.getHashtags());
-        
+
         // Clear and set new hashtags
         test.getHashtags().clear();
         if (request.getHashtagCodes() != null && !request.getHashtagCodes().isEmpty()) {
@@ -254,37 +262,38 @@ public class TestManagementService {
             test.setHashtags(newHashtags);
             hashtagService.incrementUseCounts(newHashtags);
         }
-        
+
         IeltsTest saved = ieltsTestRepository.save(test);
         logger.info("Updated hashtags for test ID: {}", testId);
-        
+
         return toSummaryDTO(saved);
     }
 
     /**
      * Duplicate a test with a new test number.
-     * @param testId original test ID
+     * 
+     * @param testId        original test ID
      * @param newTestNumber new test number
      * @return duplicated test summary
      */
     public TestSummaryDTO duplicateTest(Long testId, Integer newTestNumber) {
         logger.info("Duplicating test ID: {} with new number: {}", testId, newTestNumber);
-        
-        IeltsTest original = ieltsTestRepository.findById(testId)
-                .orElseThrow(() -> new ResourceNotFoundException("IeltsTest", "id", testId));
-        
+
+        IeltsTest original = Objects.requireNonNull(ieltsTestRepository.findById(Objects.requireNonNull(testId))
+                .orElseThrow(() -> new ResourceNotFoundException("IeltsTest", "id", testId)));
+
         // Check if new test number already exists
         if (ieltsTestRepository.existsByTestSetIdAndTestNumber(original.getSetId(), newTestNumber)) {
             throw new ResourceAlreadyExistsException(
                     String.format("Test with number %d already exists in this set", newTestNumber));
         }
-        
+
         // Create duplicate
         IeltsTest duplicate = IeltsTest.builder()
                 .testSet(original.getTestSet())
                 .testNumber(newTestNumber)
-                .nameVi(original.getNameVi() != null ? original.getNameVi() + " (Copy)" : null)
-                .nameEn(original.getNameEn() != null ? original.getNameEn() + " (Copy)" : null)
+                .name(original.getName() != null ? original.getName() + " (Copy)" : null)
+                .name(original.getName() != null ? original.getName() + " (Copy)" : null)
                 .description(original.getDescription())
                 .difficulty(original.getDifficulty())
                 .estimatedTimeMinutes(original.getEstimatedTimeMinutes())
@@ -292,19 +301,19 @@ public class TestManagementService {
                 .isAiGenerated(original.getIsAiGenerated())
                 .generationMetadata(original.getGenerationMetadata())
                 .build();
-        
+
         // Copy hashtags
         if (original.getHashtags() != null && !original.getHashtags().isEmpty()) {
             duplicate.setHashtags(new HashSet<>(original.getHashtags()));
             hashtagService.incrementUseCounts(duplicate.getHashtags());
         }
-        
+
         IeltsTest saved = ieltsTestRepository.save(duplicate);
         logger.info("Duplicated test ID: {} to new test ID: {}", testId, saved.getId());
-        
+
         // Note: Sections are NOT duplicated - they need to be created separately
         // or a more complex duplication logic would be needed
-        
+
         return toSummaryDTO(saved);
     }
 
@@ -313,15 +322,15 @@ public class TestManagementService {
      */
     private Map<String, Long> getSkillSectionCounts(Long testId) {
         Map<String, Long> counts = new HashMap<>();
-        String[] skills = {"reading", "listening", "writing", "speaking"};
-        
+        String[] skills = { "reading", "listening", "writing", "speaking" };
+
         for (String skill : skills) {
             long count = ieltsTestRepository.countSectionsByTestIdAndSkill(testId, skill);
             if (count > 0) {
                 counts.put(skill, count);
             }
         }
-        
+
         return counts;
     }
 
@@ -329,29 +338,26 @@ public class TestManagementService {
      * Convert IeltsTest entity to summary DTO.
      */
     private TestSummaryDTO toSummaryDTO(IeltsTest test) {
-        List<HashtagDTO> hashtagDTOs = test.getHashtags() != null ?
-                test.getHashtags().stream()
-                        .map(h -> HashtagDTO.builder()
-                                .id(h.getId())
-                                .code(h.getCode())
-                                .nameVi(h.getNameVi())
-                                .nameEn(h.getNameEn())
-                                .category(h.getCategory())
-                                .icon(h.getIcon())
-                                .color(h.getColor())
-                                .build())
-                        .collect(Collectors.toList()) :
-                Collections.emptyList();
-        
+        List<HashtagDTO> hashtagDTOs = test.getHashtags() != null ? test.getHashtags().stream()
+                .map(h -> HashtagDTO.builder()
+                        .id(h.getId())
+                        .code(h.getCode())
+                        .name(h.getName())
+                        .name(h.getName())
+                        .category(h.getCategory())
+                        .icon(h.getIcon())
+                        .color(h.getColor())
+                        .build())
+                .collect(Collectors.toList()) : Collections.emptyList();
+
         return TestSummaryDTO.builder()
                 .id(test.getId())
                 .setId(test.getSetId())
                 .setCode(test.getSetCode())
-                .setNameVi(test.getTestSet() != null ? test.getTestSet().getNameVi() : null)
-                .setNameEn(test.getTestSet() != null ? test.getTestSet().getNameEn() : null)
+                .setName(test.getTestSet() != null ? test.getTestSet().getName() : null)
                 .testNumber(test.getTestNumber())
-                .nameVi(test.getNameVi())
-                .nameEn(test.getNameEn())
+                .name(test.getName())
+                .name(test.getName())
                 .description(test.getDescription())
                 .difficulty(test.getDifficulty())
                 .estimatedTimeMinutes(test.getEstimatedTimeMinutes())
@@ -371,39 +377,45 @@ public class TestManagementService {
         // Get sections for this test
         String setCode = test.getSetCode();
         Integer testNumber = test.getTestNumber();
-        
-        List<Section> sections = sectionRepository.findByExamSourceAndTestNumber(setCode, testNumber);
-        
+
+        List<Section> sections = new ArrayList<>(sectionRepository.findByIeltsTestId(test.getId()));
+        List<Section> unlinkedSections = sectionRepository.findByExamSourceAndTestNumberAndIeltsTestIsNull(setCode,
+                testNumber);
+        if (!unlinkedSections.isEmpty()) {
+            unlinkedSections.forEach(section -> section.setIeltsTest(test));
+            sectionRepository.saveAll(unlinkedSections);
+            sections.addAll(unlinkedSections);
+        }
+        if (sections.isEmpty()) {
+            sections = sectionRepository.findByExamSourceAndTestNumber(setCode, testNumber);
+        }
+
         // Group sections by skill
         Map<String, List<SectionDTO>> sectionsBySkill = sections.stream()
                 .collect(Collectors.groupingBy(
                         Section::getSkill,
-                        Collectors.mapping(EntityMapper::toDTO, Collectors.toList())
-                ));
-        
-        List<HashtagDTO> hashtagDTOs = test.getHashtags() != null ?
-                test.getHashtags().stream()
-                        .map(h -> HashtagDTO.builder()
-                                .id(h.getId())
-                                .code(h.getCode())
-                                .nameVi(h.getNameVi())
-                                .nameEn(h.getNameEn())
-                                .category(h.getCategory())
-                                .icon(h.getIcon())
-                                .color(h.getColor())
-                                .build())
-                        .collect(Collectors.toList()) :
-                Collections.emptyList();
-        
+                        Collectors.mapping(EntityMapper::toDTO, Collectors.toList())));
+
+        List<HashtagDTO> hashtagDTOs = test.getHashtags() != null ? test.getHashtags().stream()
+                .map(h -> HashtagDTO.builder()
+                        .id(h.getId())
+                        .code(h.getCode())
+                        .name(h.getName())
+                        .name(h.getName())
+                        .category(h.getCategory())
+                        .icon(h.getIcon())
+                        .color(h.getColor())
+                        .build())
+                .collect(Collectors.toList()) : Collections.emptyList();
+
         return TestDetailDTO.builder()
                 .id(test.getId())
                 .setId(test.getSetId())
                 .setCode(setCode)
-                .setNameVi(test.getTestSet() != null ? test.getTestSet().getNameVi() : null)
-                .setNameEn(test.getTestSet() != null ? test.getTestSet().getNameEn() : null)
+                .setName(test.getTestSet() != null ? test.getTestSet().getName() : null)
                 .testNumber(testNumber)
-                .nameVi(test.getNameVi())
-                .nameEn(test.getNameEn())
+                .name(test.getName())
+                .name(test.getName())
                 .description(test.getDescription())
                 .difficulty(test.getDifficulty())
                 .estimatedTimeMinutes(test.getEstimatedTimeMinutes())

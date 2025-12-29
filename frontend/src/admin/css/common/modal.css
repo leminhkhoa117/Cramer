@@ -242,6 +242,40 @@
     color: rgba(255, 255, 255, 0.4);
 }
 
+.audio-upload-url {
+    margin-bottom: 16px;
+}
+
+.audio-upload-url__label {
+    display: block;
+    margin-bottom: 6px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.audio-upload-url__input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.audio-upload-url__input:focus {
+    outline: none;
+    border-color: rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+}
+
+.audio-upload-url__hint {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
 .audio-upload-preview {
     padding: 16px;
     background: rgba(255, 255, 255, 0.03);

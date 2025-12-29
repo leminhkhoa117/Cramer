@@ -17,8 +17,8 @@ import java.util.*;
  * Named "IeltsTest" to avoid conflicts with JUnit's "Test" annotation.
  */
 @Entity
-@Table(name = "tests", schema = "public",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"set_id", "test_number"}))
+@Table(name = "tests", schema = "public", uniqueConstraints = @UniqueConstraint(columnNames = { "set_id",
+        "test_number" }))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -40,11 +40,8 @@ public class IeltsTest {
     @Column(name = "test_number", nullable = false)
     private Integer testNumber;
 
-    @Column(name = "name_vi", length = 255)
-    private String nameVi;
-
-    @Column(name = "name_en", length = 255)
-    private String nameEn;
+    @Column(name = "name", length = 255)
+    private String name;
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
@@ -82,11 +79,7 @@ public class IeltsTest {
 
     // Relationships
     @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "test_hashtags",
-            joinColumns = @JoinColumn(name = "test_id"),
-            inverseJoinColumns = @JoinColumn(name = "hashtag_id")
-    )
+    @JoinTable(name = "test_hashtags", joinColumns = @JoinColumn(name = "test_id"), inverseJoinColumns = @JoinColumn(name = "hashtag_id"))
     @Builder.Default
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
@@ -121,6 +114,7 @@ public class IeltsTest {
 
     /**
      * Get section counts by skill type.
+     * 
      * @return Map with skill as key and count as value
      */
     public Map<String, Integer> getSkillSectionCounts() {
@@ -131,7 +125,7 @@ public class IeltsTest {
         for (Section section : sections) {
             String skill = section.getSkill();
             if (skill != null) {
-                counts.merge(skill.toLowerCase(), 1, Integer::sum);
+                counts.merge(skill.toLowerCase(), 1, (a, b) -> Objects.requireNonNull(a) + Objects.requireNonNull(b));
             }
         }
         return counts;

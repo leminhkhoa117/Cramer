@@ -447,7 +447,7 @@ public class JsonValidatorService {
         if (questions != null) {
             for (JsonNode question : questions) {
                 String type = question.has("question_type") ? question.get("question_type").asText() : "UNKNOWN";
-                typeCounts.merge(type, 1, Integer::sum);
+                typeCounts.merge(type, 1, (a, b) -> Objects.requireNonNull(a) + Objects.requireNonNull(b));
             }
         }
 
@@ -479,7 +479,7 @@ public class JsonValidatorService {
         }
 
         // Check for required explanation language
-        if (request.getExplanationLanguage() == GenerationRequestDTO.ExplanationLanguage.VI) {
+        if (request.getExplanationLanguage() == GenerationRequestDTO.ExplanationLanguage.VI && questions != null) {
             for (JsonNode question : questions) {
                 String explanation = question.has("explanation") ? question.get("explanation").asText() : "";
                 // Simple check for Vietnamese characters
@@ -784,17 +784,41 @@ public class JsonValidatorService {
         // Check question number range based on part
         JsonNode questions = root.get("questions");
         Map<Integer, JsonNode> questionMap = new HashMap<>();
+        Map<String, Integer> typeCounts = new HashMap<>();
         if (questions != null && questions.isArray()) {
             int expectedStart = (part - 1) * 10 + 1;
             int expectedEnd = part * 10;
 
             for (JsonNode question : questions) {
                 int num = question.has("question_number") ? question.get("question_number").asInt() : 0;
+                String type = question.path("question_type").asText("").toUpperCase();
+                if (!type.isBlank()) {
+                    typeCounts.merge(type, 1, (a, b) -> Objects.requireNonNull(a) + Objects.requireNonNull(b));
+                }
                 questionMap.put(num, question);
                 if (num < expectedStart || num > expectedEnd) {
                     result.addWarning(String.format(
                             "Question number %d out of expected range for Part %d (Q%d-Q%d)",
                             num, part, expectedStart, expectedEnd));
+                }
+            }
+        }
+
+        if (request.getQuestionTypeCounts() != null && !request.getQuestionTypeCounts().isEmpty()) {
+            request.getQuestionTypeCounts().forEach((type, expectedCount) -> {
+                int actual = typeCounts.getOrDefault(type, 0);
+                if (actual != expectedCount) {
+                    result.addWarning(String.format(
+                            "Question type count mismatch for %s: expected %d, got %d",
+                            type, expectedCount, actual));
+                }
+            });
+        }
+
+        if (request.getQuestionTypes() != null && !request.getQuestionTypes().isEmpty()) {
+            for (String type : request.getQuestionTypes()) {
+                if (!typeCounts.containsKey(type)) {
+                    result.addWarning("Requested question type missing: " + type);
                 }
             }
         }
@@ -907,7 +931,8 @@ public class JsonValidatorService {
                             if ("MULTIPLE_CHOICE_MULTIPLE_ANSWERS".equals(
                                     q.path("question_type").asText("").toUpperCase())) {
                                 String stem = extractQuestionText(q.get("question_content")).trim();
-                                stemCounts.merge(stem, 1, Integer::sum);
+                                stemCounts.merge(stem, 1,
+                                        (a, b) -> Objects.requireNonNull(a) + Objects.requireNonNull(b));
                             }
                         }
                         for (Map.Entry<String, Integer> entry : stemCounts.entrySet()) {

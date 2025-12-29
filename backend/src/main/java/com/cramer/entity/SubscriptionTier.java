@@ -31,17 +31,14 @@ public class SubscriptionTier {
     @Column(name = "code", nullable = false, unique = true, length = 50)
     private String code; // cramerie, cramerich
 
-    @Column(name = "name_vi", nullable = false, length = 100)
-    private String nameVi;
-
-    @Column(name = "name_en", nullable = false, length = 100)
-    private String nameEn;
+    @Column(name = "name", nullable = false, length = 100)
+    private String name;
 
     @Column(name = "price_vnd", nullable = false)
     private Integer priceVnd; // 0 for free tier, 69000 for Cramerich
 
     // ==================== ATTEMPT LIMITS ====================
-    
+
     /** Global monthly limit for test attempts (0 = no free attempts, must pay) */
     @Column(name = "monthly_attempt_limit", nullable = false)
     @Builder.Default
@@ -72,8 +69,9 @@ public class SubscriptionTier {
     @Builder.Default
     private Integer attemptAiOverageCost = 20;
 
-    // ==================== LEGACY AI GRADINGS (kept for compatibility) ====================
-    
+    // ==================== LEGACY AI GRADINGS (kept for compatibility)
+    // ====================
+
     @Column(name = "included_ai_gradings", nullable = false)
     @Builder.Default
     private Integer includedAiGradings = 0;
@@ -134,23 +132,23 @@ public class SubscriptionTier {
     @Column(name = "display_order")
     @Builder.Default
     private Integer displayOrder = 0;
-    
+
     // ==================== HELPER METHODS ====================
-    
+
     /**
      * Check if this tier has AI grading access.
      */
     public boolean hasAiGradingAccess() {
         return monthlyAttemptAiLimit > 0 || includedAiGradings > 0;
     }
-    
+
     /**
      * Check if this is a paid tier.
      */
     public boolean isPaid() {
         return priceVnd != null && priceVnd > 0;
     }
-    
+
     /**
      * Check if this tier has full test access.
      */

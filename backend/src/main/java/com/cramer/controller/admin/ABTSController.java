@@ -17,6 +17,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -95,7 +96,7 @@ public class ABTSController {
                 try {
                     emitter.send(SseEmitter.event()
                             .name("error")
-                            .data(StreamEventDTO.failed(e.getMessage())));
+                            .data(Objects.requireNonNull(StreamEventDTO.failed(e.getMessage()))));
                     emitter.complete();
                 } catch (IOException ex) {
                     // Client already disconnected, just log and return silently
@@ -179,7 +180,7 @@ public class ABTSController {
                 try {
                     emitter.send(SseEmitter.event()
                             .name("error")
-                            .data(StreamEventDTO.failed(e.getMessage())));
+                            .data(Objects.requireNonNull(StreamEventDTO.failed(e.getMessage()))));
                     emitter.complete();
                 } catch (IOException ex) {
                     logger.debug("Cannot send error to Listening client (already disconnected): {}", ex.getMessage());
@@ -260,7 +261,7 @@ public class ABTSController {
                 try {
                     emitter.send(SseEmitter.event()
                             .name("error")
-                            .data(StreamEventDTO.failed(e.getMessage())));
+                            .data(Objects.requireNonNull(StreamEventDTO.failed(e.getMessage()))));
                     emitter.complete();
                 } catch (IOException ex) {
                     logger.debug("Cannot send error to Writing client (already disconnected): {}", ex.getMessage());

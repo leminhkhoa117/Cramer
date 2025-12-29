@@ -14,15 +14,14 @@ import java.time.OffsetDateTime;
 public class HashtagDTO {
     private Long id;
     private String code;
-    private String nameVi;
-    private String nameEn;
+    private String name;
     private String category;
     private String icon;
     private String color;
     private Integer useCount;
     private Boolean isActive;
     private OffsetDateTime createdAt;
-    
+
     // Number of tests using this hashtag
     private Integer testCount;
 
@@ -30,13 +29,13 @@ public class HashtagDTO {
      * Create DTO from Hashtag entity.
      */
     public static HashtagDTO fromEntity(Hashtag entity) {
-        if (entity == null) return null;
-        
+        if (entity == null)
+            return null;
+
         return HashtagDTO.builder()
                 .id(entity.getId())
                 .code(entity.getCode())
-                .nameVi(entity.getNameVi())
-                .nameEn(entity.getNameEn())
+                .name(entity.getName())
                 .category(entity.getCategory())
                 .icon(entity.getIcon())
                 .color(entity.getColor())

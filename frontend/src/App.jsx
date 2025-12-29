@@ -247,12 +247,13 @@ function AppContent() {
               <Route path="finance/transactions" element={<TransactionHistoryPage />} />
               <Route path="finance/reports" element={<ReportsPage />} />
               <Route path="content" element={<ContentListPage />} />
-              <Route path="content/hub" element={<TestEditorSelectPage />} />
+              <Route path="content/hub" element={<Navigate to="/admin/content/sets" replace />} />
               <Route path="content/hashtags" element={<HashtagManagementPage />} />
               <Route path="content/generate" element={<AIGenerationPage />} />
               {/* Editor Routes */}
-              <Route path="content/editor" element={<Navigate to="/admin/content/hub" replace />} />
-              <Route path="content/sets" element={<Navigate to="/admin/content/hub" replace />} />
+              <Route path="content/editor" element={<Navigate to="/admin/content/sets" replace />} />
+              <Route path="content/sets" element={<SetListPage />} />
+              <Route path="content/sets/:setId" element={<SetDetailPage />} />
               <Route path="content/editor/:testId" element={<TestEditorPage />} />
               <Route path="content/tests/:testId" element={<TestEditorPage />} />
               {/* Legacy Editor Route Support */}

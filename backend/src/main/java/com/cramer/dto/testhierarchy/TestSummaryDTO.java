@@ -16,11 +16,9 @@ public class TestSummaryDTO {
     private Long id;
     private Long setId;
     private String setCode;
-    private String setNameVi;
-    private String setNameEn;
+    private String setName;
     private Integer testNumber;
-    private String nameVi;
-    private String nameEn;
+    private String name;
     private String description;
     private String difficulty;
     private Integer estimatedTimeMinutes;
@@ -28,10 +26,10 @@ public class TestSummaryDTO {
     private Boolean isAiGenerated;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-    
+
     // Section counts by skill
     private Map<String, Long> skillSectionCounts;
-    
+
     // Hashtags
     private List<HashtagDTO> hashtags;
 }

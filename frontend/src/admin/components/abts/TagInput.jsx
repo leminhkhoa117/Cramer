@@ -6,7 +6,7 @@
  * - Remove tags by clicking X
  * - Optional autocomplete suggestions
  * - Keyboard navigation
- * - Supports both simple string tags and object tags (id, code, nameVi, etc.)
+ * - Supports both simple string tags and object tags (id, code, name, etc.)
  * 
  * @since 2025-12-21 - Cat B Feature
  * Updated 2025-12-26 - Support for Hashtag Management System
@@ -49,7 +49,7 @@ export default function TagInput({
             if (mode === 'select') {
                 filtered = hashtags.filter(h =>
                     (h.code.toLowerCase().includes(inputValue.toLowerCase()) ||
-                        h.nameVi.toLowerCase().includes(inputValue.toLowerCase())) &&
+                        h.name.toLowerCase().includes(inputValue.toLowerCase())) &&
                     !value.includes(h.id)
                 ).slice(0, 8); // Limit suggestions
             } else {
@@ -142,7 +142,7 @@ export default function TagInput({
     const getTagDisplay = (tagId) => {
         if (mode === 'select') {
             const hashtag = hashtags.find(h => h.id === tagId);
-            return hashtag ? { text: hashtag.nameVi, code: hashtag.code, color: hashtag.color, icon: hashtag.icon } : { text: 'Unknown', code: '??' };
+            return hashtag ? { text: hashtag.name, code: hashtag.code, color: hashtag.color, icon: hashtag.icon } : { text: 'Unknown', code: '??' };
         }
         return { text: tagId, code: tagId };
     };
@@ -219,7 +219,7 @@ export default function TagInput({
                             {mode === 'select' ? (
                                 <>
                                     <span style={{ marginRight: 8 }}>{suggestion.icon || <FiHash size={12} />}</span>
-                                    <span>{suggestion.nameVi}</span>
+                                    <span>{suggestion.name}</span>
                                     <span style={{ opacity: 0.5, fontSize: '0.8em', marginLeft: 8 }}>#{suggestion.code}</span>
                                 </>
                             ) : (

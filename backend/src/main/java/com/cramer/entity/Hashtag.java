@@ -29,11 +29,8 @@ public class Hashtag {
     @Column(name = "code", nullable = false, unique = true, length = 50)
     private String code; // e.g., "environment", "technology", "education"
 
-    @Column(name = "name_vi", nullable = false, length = 100)
-    private String nameVi;
-
-    @Column(name = "name_en", length = 100)
-    private String nameEn;
+    @Column(name = "name", nullable = false, length = 100)
+    private String name;
 
     @Column(name = "category", nullable = false, length = 50)
     private String category; // 'topic', 'theme', 'difficulty'

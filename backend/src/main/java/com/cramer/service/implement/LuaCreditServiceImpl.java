@@ -84,7 +84,7 @@ public class LuaCreditServiceImpl implements LuaCreditService {
     private LuaPackage entityToRecord(LuaPack entity) {
         return new LuaPackage(
                 entity.getCode(),
-                entity.getNameVi(),
+                entity.getName(),
                 entity.getLuaAmount(),
                 entity.getPriceVnd(),
                 entity.getDiscountPercent()
@@ -120,7 +120,7 @@ public class LuaCreditServiceImpl implements LuaCreditService {
             return LuaPurchaseResponseDTO.builder()
                     .success(true)
                     .packageCode(pack.getCode())
-                    .packageName(pack.getNameVi())
+                    .packageName(pack.getName())
                     .luaAmount(pack.getLuaAmount())
                     .bonusAmount(pack.getBonusLua())
                     .totalLua(pack.getTotalLua())

@@ -14,8 +14,7 @@ import java.util.List;
 public class TestSetDetailDTO {
     private Long id;
     private String code;
-    private String nameVi;
-    private String nameEn;
+    private String name;
     private String description;
     private String coverImageUrl;
     private String sourceType;
@@ -24,11 +23,11 @@ public class TestSetDetailDTO {
     private Integer displayOrder;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-    
+
     // Computed counts
     private Long testCount;
     private Long publishedTestCount;
-    
+
     // Nested tests
     private List<TestSummaryDTO> tests;
 }

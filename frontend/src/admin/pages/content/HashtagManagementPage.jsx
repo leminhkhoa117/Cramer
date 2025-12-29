@@ -73,8 +73,8 @@ const HashtagManagementPage = () => {
     const filteredHashtags = useMemo(() => {
         return hashtags.filter(h => {
             const matchesSearch =
-                h.nameVi?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                h.nameEn?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                h.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                h.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 h.code?.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesCategory = categoryFilter === 'all' || h.category === categoryFilter;
             return matchesSearch && matchesCategory;
@@ -263,9 +263,9 @@ const HashtagManagementPage = () => {
                                         >
                                             <span className="hashtag-card-icon">{hashtag.icon || '\u{1F3F7}'}</span>
                                             <div className="hashtag-card-names">
-                                                <span className="hashtag-name-vi">{hashtag.nameVi}</span>
-                                                {hashtag.nameEn && (
-                                                    <span className="hashtag-name-en">{hashtag.nameEn}</span>
+                                                <span className="hashtag-name-vi">{hashtag.name}</span>
+                                                {hashtag.name && (
+                                                    <span className="hashtag-name-en">{hashtag.name}</span>
                                                 )}
                                             </div>
                                         </div>
@@ -342,7 +342,7 @@ const HashtagManagementPage = () => {
                     <div className="hashtag-modal hashtag-confirm-modal" onClick={e => e.stopPropagation()}>
                         <h3>Xóa hashtag</h3>
                         <p>
-                            Bạn có chắc muốn ẩn hashtag "<strong>{showDeleteConfirm.nameVi}</strong>"?
+                            Bạn có chắc muốn ẩn hashtag "<strong>{showDeleteConfirm.name}</strong>"?
                             Hashtag sẽ không hiển thị nhưng vẫn được giữ lại trong hệ thống.
                         </p>
                         <div className="hashtag-modal-actions">
@@ -372,8 +372,8 @@ const HashtagManagementPage = () => {
 const HashtagModal = ({ hashtag, onClose, onSubmit, isSubmitting }) => {
     const [formData, setFormData] = useState({
         code: hashtag?.code || '',
-        nameVi: hashtag?.nameVi || '',
-        nameEn: hashtag?.nameEn || '',
+        name: hashtag?.name || '',
+        name: hashtag?.name || '',
         category: hashtag?.category || 'topic',
         icon: hashtag?.icon || '\u{1F4DA}',
         color: hashtag?.color || '#6366F1',
@@ -390,8 +390,8 @@ const HashtagModal = ({ hashtag, onClose, onSubmit, isSubmitting }) => {
         } else if (!/^[a-z0-9_]+$/.test(formData.code)) {
             newErrors.code = 'Mã chỉ cho phép chữ thường, số và dấu gạch dưới';
         }
-        if (!formData.nameVi.trim()) {
-            newErrors.nameVi = 'Tên tiếng Việt là bắt buộc';
+        if (!formData.name.trim()) {
+            newErrors.name = 'Tên tiếng Việt là bắt buộc';
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -453,20 +453,20 @@ const HashtagModal = ({ hashtag, onClose, onSubmit, isSubmitting }) => {
                             <label>Tên tiếng Việt *</label>
                             <input
                                 type="text"
-                                value={formData.nameVi}
-                                onChange={(e) => setFormData({ ...formData, nameVi: e.target.value })}
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 placeholder="Môi trường"
-                                className={errors.nameVi ? 'error' : ''}
+                                className={errors.name ? 'error' : ''}
                             />
-                            {errors.nameVi && <span className="hashtag-form-error">{errors.nameVi}</span>}
+                            {errors.name && <span className="hashtag-form-error">{errors.name}</span>}
                         </div>
 
                         <div className="hashtag-form-group">
                             <label>Tên tiếng Anh</label>
                             <input
                                 type="text"
-                                value={formData.nameEn}
-                                onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 placeholder="Environment"
                             />
                         </div>
@@ -561,7 +561,7 @@ const HashtagModal = ({ hashtag, onClose, onSubmit, isSubmitting }) => {
                                 border: `1px solid ${formData.color}`
                             }}
                         >
-                            {formData.icon || '\u{1F3F7}'} {formData.nameVi || 'Tên hashtag'}
+                            {formData.icon || '\u{1F3F7}'} {formData.name || 'Tên hashtag'}
                         </div>
                     </div>
 

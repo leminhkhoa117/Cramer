@@ -16,16 +16,16 @@ public class TestSectionDTO extends SectionDTO {
 
     public TestSectionDTO(SectionDTO sectionDTO, List<TestQuestionDTO> questions) {
         super(
-            sectionDTO.getId(),
-            sectionDTO.getExamSource(),
-            sectionDTO.getTestNumber(),
-            sectionDTO.getSkill(),
-            sectionDTO.getPartNumber(),
-            sectionDTO.getDisplayContentUrl(),
-            sectionDTO.getSectionLayout(),
-            sectionDTO.getPassageText(),
-            sectionDTO.getAudioUrl()
-        );
+                sectionDTO.getId(),
+                sectionDTO.getExamSource(),
+                sectionDTO.getTestNumber(),
+                sectionDTO.getSkill(),
+                sectionDTO.getPartNumber(),
+                sectionDTO.getDisplayContentUrl(),
+                sectionDTO.getSectionLayout(),
+                sectionDTO.getPassageText(),
+                sectionDTO.getAudioUrl(),
+                sectionDTO.getImageDescription());
         this.questions = questions;
     }
 

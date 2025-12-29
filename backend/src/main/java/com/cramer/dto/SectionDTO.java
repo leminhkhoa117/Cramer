@@ -15,12 +15,14 @@ public class SectionDTO {
     private JsonNode sectionLayout; // New field for Listening layouts
     private String passageText;
     private String audioUrl;
+    private String imageDescription;
 
     public SectionDTO() {
     }
 
     public SectionDTO(Long id, String examSource, Integer testNumber, String skill,
-                     Integer partNumber, String displayContentUrl, JsonNode sectionLayout, String passageText, String audioUrl) {
+                     Integer partNumber, String displayContentUrl, JsonNode sectionLayout, String passageText,
+                     String audioUrl, String imageDescription) {
         this.id = id;
         this.examSource = examSource;
         this.testNumber = testNumber;
@@ -30,6 +32,7 @@ public class SectionDTO {
         this.sectionLayout = sectionLayout;
         this.passageText = passageText;
         this.audioUrl = audioUrl;
+        this.imageDescription = imageDescription;
     }
 
     // Getters and Setters
@@ -103,5 +106,13 @@ public class SectionDTO {
 
     public void setAudioUrl(String audioUrl) {
         this.audioUrl = audioUrl;
+    }
+
+    public String getImageDescription() {
+        return imageDescription;
+    }
+
+    public void setImageDescription(String imageDescription) {
+        this.imageDescription = imageDescription;
     }
 }

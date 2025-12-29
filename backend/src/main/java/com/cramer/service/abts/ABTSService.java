@@ -394,7 +394,7 @@ public class ABTSService {
                 if (shouldFallbackToNonStreaming(e)) {
                     sendEvent(emitter, StreamEventDTO.progress(25,
                             "Streaming JSON schema unsupported. Switching to non-streaming."));
-                    GenerationResponseDTO fallback = generateListening(request);
+                    GenerationResponseDTO fallback = generateReading(request);
                     sendEvent(emitter, StreamEventDTO.completed(fallback));
                     emitter.complete();
                     return;
@@ -601,7 +601,7 @@ public class ABTSService {
                 if (shouldFallbackToNonStreaming(e)) {
                     sendEvent(emitter, StreamEventDTO.progress(25,
                             "Streaming JSON schema unsupported. Switching to non-streaming."));
-                    GenerationResponseDTO fallback = generateWriting(request);
+                    GenerationResponseDTO fallback = generateListening(request);
                     sendEvent(emitter, StreamEventDTO.completed(fallback));
                     emitter.complete();
                     return;
@@ -757,7 +757,7 @@ public class ABTSService {
     private void sendEvent(SseEmitter emitter, StreamEventDTO event) {
         try {
             emitter.send(SseEmitter.event()
-                    .name(event.getType().name().toLowerCase())
+                    .name(Objects.requireNonNull(event.getType().name().toLowerCase()))
                     .data(event));
         } catch (IOException e) {
             logger.debug("Failed to send SSE event (connection closed): {}", e.getMessage());
@@ -1690,7 +1690,8 @@ public class ABTSService {
                 hashtagService.incrementUseCounts(hashtags);
                 logger.info("Associated {} hashtags with test", hashtags.size());
             } else if (request.getHashtagIds() != null && !request.getHashtagIds().isEmpty()) {
-                Set<Hashtag> hashtags = new HashSet<>(hashtagRepository.findAllById(request.getHashtagIds()));
+                Set<Hashtag> hashtags = new HashSet<>(
+                        hashtagRepository.findAllById(Objects.requireNonNull(request.getHashtagIds())));
                 ieltsTest.setHashtags(hashtags);
                 hashtagService.incrementUseCounts(hashtags);
                 logger.info("Associated {} hashtags (by ID) with test", hashtags.size());
@@ -1780,7 +1781,7 @@ public class ABTSService {
     private TestSet resolveTestSet(SaveContentRequestDTO request, UUID createdBy) {
         // If setId provided, use it
         if (request.getSetId() != null) {
-            return testSetRepository.findById(request.getSetId())
+            return testSetRepository.findById(Objects.requireNonNull(request.getSetId()))
                     .orElseThrow(() -> new ResourceNotFoundException("TestSet", "id", request.getSetId()));
         }
 
@@ -1806,8 +1807,7 @@ public class ABTSService {
 
         TestSet newSet = TestSet.builder()
                 .code(setCode)
-                .nameVi(displayName)
-                .nameEn("Test Set: " + displayName)
+                .name(displayName)
                 .sourceType("ai_generated")
                 .isPublished(false)
                 .isSystem(false)
@@ -1824,7 +1824,7 @@ public class ABTSService {
     private IeltsTest resolveTest(SaveContentRequestDTO request, TestSet testSet, UUID createdBy) {
         // If testId provided, use it
         if (request.getTestId() != null) {
-            return ieltsTestRepository.findById(request.getTestId())
+            return ieltsTestRepository.findById(Objects.requireNonNull(request.getTestId()))
                     .orElseThrow(() -> new ResourceNotFoundException("IeltsTest", "id", request.getTestId()));
         }
 
@@ -1880,8 +1880,8 @@ public class ABTSService {
         IeltsTest newTest = IeltsTest.builder()
                 .testSet(testSet)
                 .testNumber(testNumber)
-                .nameVi(nameVi)
-                .nameEn(nameEn)
+                .name(nameVi)
+                .name(nameEn)
                 .difficulty(difficulty)
                 .isPublished(false)
                 .isAiGenerated(true)

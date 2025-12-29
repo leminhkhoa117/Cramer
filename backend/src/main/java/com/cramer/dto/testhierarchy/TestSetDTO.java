@@ -13,8 +13,7 @@ import java.time.OffsetDateTime;
 public class TestSetDTO {
     private Long id;
     private String code;
-    private String nameVi;
-    private String nameEn;
+    private String name;
     private String description;
     private String coverImageUrl;
     private String sourceType;
@@ -23,7 +22,7 @@ public class TestSetDTO {
     private Integer displayOrder;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-    
+
     // Computed counts
     private Long testCount;
     private Long publishedTestCount;

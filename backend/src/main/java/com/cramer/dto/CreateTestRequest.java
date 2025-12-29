@@ -26,10 +26,10 @@ public class CreateTestRequest {
     private Integer testNumber;
     
     @Size(max = 255, message = "Vietnamese name must be at most 255 characters")
-    private String nameVi;
+    private String name;
     
     @Size(max = 255, message = "English name must be at most 255 characters")
-    private String nameEn;
+    // removed duplicate nameEn
     
     private String description;
     

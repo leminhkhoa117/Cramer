@@ -21,7 +21,7 @@ export const TIER_INFO = {
   [TIERS.CRAMERIE]: {
     code: 'cramerie',
     name: 'Cramerie',
-    nameVi: 'Cramerie',
+    name: 'Cramerie',
     emoji: '🌾',
     color: '#22c55e', // green-500
     gradient: 'from-green-400 to-green-600',
@@ -34,7 +34,7 @@ export const TIER_INFO = {
   [TIERS.CRAMERICH]: {
     code: 'cramerich',
     name: 'Cramerich',
-    nameVi: 'Cramerich',
+    name: 'Cramerich',
     emoji: '🌻',
     color: '#eab308', // yellow-500
     gradient: 'from-yellow-400 to-amber-500',

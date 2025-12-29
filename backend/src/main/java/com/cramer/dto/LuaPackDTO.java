@@ -14,8 +14,8 @@ public class LuaPackDTO {
 
     private Long id;
     private String code;
-    private String nameVi;
-    private String nameEn;
+    private String name;
+    // removed duplicate nameEn
     private String emoji;
     private Integer luaAmount;
     private Integer priceVnd;
@@ -36,8 +36,8 @@ public class LuaPackDTO {
         return LuaPackDTO.builder()
                 .id(entity.getId())
                 .code(entity.getCode())
-                .nameVi(entity.getNameVi())
-                .nameEn(entity.getNameEn())
+                .name(entity.getName())
+                .name(entity.getName())
                 .emoji(entity.getEmoji())
                 .luaAmount(entity.getLuaAmount())
                 .priceVnd(entity.getPriceVnd())

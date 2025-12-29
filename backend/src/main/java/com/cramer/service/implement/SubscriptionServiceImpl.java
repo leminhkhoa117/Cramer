@@ -291,8 +291,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 // Build tier info
                 SubscriptionStatusDTO.TierInfo tierInfo = SubscriptionStatusDTO.TierInfo.builder()
                                 .code(tier.getCode())
-                                .nameVi(tier.getNameVi())
-                                .nameEn(tier.getNameEn())
+                                .name(tier.getName())
+                                .name(tier.getName())
                                 .emoji(TIER_EMOJIS.getOrDefault(tier.getCode(), "📦"))
                                 .priceVnd(tier.getPriceVnd())
                                 .displayOrder(tier.getDisplayOrder())

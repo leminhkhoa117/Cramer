@@ -311,7 +311,7 @@ const useAdminContentStore = create((set, get) => ({
                 tests.push({
                     ...test,
                     topicId: topic.id,
-                    topicName: topic.nameVi || topic.code,
+                    topicName: topic.name || topic.code,
                     topicSource: topic.code
                 });
             });
@@ -327,9 +327,9 @@ const useAdminContentStore = create((set, get) => ({
             ...topic,
             tests: (topic.tests || []).filter(test => {
                 const matchesSearch = !searchQuery ||
-                    (test.nameVi && test.nameVi.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                    (test.nameEn && test.nameEn.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                    (topic.nameVi && topic.nameVi.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (test.name && test.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (test.name && test.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (topic.name && topic.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
                     topic.code.toLowerCase().includes(searchQuery.toLowerCase());
 
                 const testStatus = test.isPublished ? 'PUBLISHED' : 'DRAFT';

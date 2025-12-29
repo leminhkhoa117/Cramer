@@ -137,7 +137,7 @@ public class DebugController {
                     userId,
                     tier.getInitialLua(),
                     CreditTransaction.Category.TIER_BONUS,
-                    "[DEBUG] Thưởng nâng cấp gói " + tier.getNameVi(),
+                    "[DEBUG] Thưởng nâng cấp gói " + tier.getName(),
                     "DEBUG"
             );
         }

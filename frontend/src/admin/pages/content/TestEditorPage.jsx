@@ -1,19 +1,16 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     FiArrowLeft,
     FiSave,
     FiEye,
-    FiUpload,
     FiCheck,
     FiPlus,
-    FiTrash,
-    FiEdit,
-    FiX,
     FiZap,
-    FiRefreshCw,
-    FiCopy,
-    FiSettings
+    FiSettings,
+    FiFileText,
+    FiImage,
+    FiHeadphones
 } from 'react-icons/fi';
 import StatusBadge from '../../components/StatusBadge';
 import StudioModal from '../../components/abts/StudioModal';
@@ -22,8 +19,10 @@ import AudioUploadModal from '../../components/content/AudioUploadModal';
 import { useTestEditorStore } from '../../stores';
 import useTestEditorStoreRaw from '../../stores/useTestEditorStore';
 import adminApi from '../../api/adminApi';
-import { sanitizeHtml } from '../../utils/htmlSanitizer';
 import AdminPreviewContent from '../../components/content/AdminPreviewContent';
+import SectionMetaModal from '../../components/content/SectionMetaModal';
+import SectionLayoutModal from '../../components/content/SectionLayoutModal';
+import QuestionEditModal from '../../components/content/QuestionEditModal';
 import '../../css/pages/content/TestEditorPage.css';
 
 // Test status configurations
@@ -102,6 +101,8 @@ export default function TestEditorPage() {
         isSaving,
         isPublishing,
         showAIGenerationModal,
+        showQuestionEditor,
+        editingQuestion,
         error,
         initializeEditor,
         initializeEditorByTestId,
@@ -112,6 +113,10 @@ export default function TestEditorPage() {
         addSection,
         addQuestion,
         deleteQuestion,
+        openQuestionEditor,
+        closeQuestionEditor,
+        saveQuestion,
+        fetchAllQuestions,
         openAIGeneration,
         closeAIGeneration,
         generationMode,
@@ -128,6 +133,8 @@ export default function TestEditorPage() {
     // Modal state for uploading content
     const [showPassageModal, setShowPassageModal] = useState(false);
     const [showAudioModal, setShowAudioModal] = useState(false);
+    const [showSectionMetaModal, setShowSectionMetaModal] = useState(false);
+    const [showLayoutModal, setShowLayoutModal] = useState(false);
 
     // Skills configuration
     const skills = [
@@ -140,16 +147,22 @@ export default function TestEditorPage() {
     // Initialize on mount
     useEffect(() => {
         const init = async () => {
+            let resolvedSource = examSource;
+            let resolvedNumber = testNumber;
+
             if (testId) {
                 await initializeEditorByTestId(testId);
+                const { test: loadedTest } = useTestEditorStoreRaw.getState();
+                resolvedSource = resolvedSource || loadedTest?.examSource;
+                resolvedNumber = resolvedNumber || loadedTest?.testNumber;
             } else if (examSource && testNumber) {
                 await initializeEditor(examSource, testNumber);
             }
 
             // Auto-apply generated content if passed from AI Wizard
-            if (location.state?.generatedContent && (testId || (examSource && testNumber))) {
+            if (location.state?.generatedContent && (testId || (resolvedSource && resolvedNumber))) {
                 const { applyGeneratedContent } = useTestEditorStoreRaw.getState();
-                await applyGeneratedContent(location.state.generatedContent, examSource, testNumber);
+                await applyGeneratedContent(location.state.generatedContent, resolvedSource, resolvedNumber);
                 window.history.replaceState({}, document.title);
             }
         };
@@ -164,9 +177,12 @@ export default function TestEditorPage() {
 
     // Handler: Preview test
     const handlePreview = useCallback(() => {
-        const previewUrl = `/test/${examSource}/${testNumber}/reading`;
+        if (!examSource || !testNumber) return;
+        const previewUrl = activeSkill === 'writing'
+            ? `/test/writing/${examSource}/${testNumber}`
+            : `/test/${examSource}/${testNumber}/${activeSkill}`;
         window.open(previewUrl, '_blank');
-    }, [examSource, testNumber]);
+    }, [examSource, testNumber, activeSkill]);
 
     // Handler: Save as draft
     const handleSaveDraft = useCallback(async () => {
@@ -199,13 +215,13 @@ export default function TestEditorPage() {
     }, [addSection, examSource, testNumber]);
 
     // Handler: Add new question
-    const handleAddQuestion = useCallback(async () => {
+    const handleAddQuestion = useCallback(async (questionType = 'FILL_IN_BLANK') => {
         if (!activeSection) {
             alert('Vui lòng chọn một section trước!');
             return;
         }
 
-        const questionNumber = await addQuestion();
+        const questionNumber = await addQuestion(questionType);
         if (questionNumber) {
             alert(`Đã thêm câu hỏi ${questionNumber}!`);
         }
@@ -218,8 +234,9 @@ export default function TestEditorPage() {
         const success = await deleteQuestion(questionId);
         if (success) {
             alert('Đã xóa câu hỏi!');
+            closeQuestionEditor();
         }
-    }, [deleteQuestion]);
+    }, [deleteQuestion, closeQuestionEditor]);
 
     // Handler: Save passage text
     const handleSavePassage = useCallback(async (passageText) => {
@@ -237,7 +254,7 @@ export default function TestEditorPage() {
             console.error('Failed to save passage:', error);
             alert('❌ Không thể lưu passage. Vui lòng thử lại.');
         }
-    }, [activeSection, examSource, testNumber, activeSkill]);
+    }, [activeSection, examSource, testNumber, activeSkill, setShowSectionMetaModal]);
 
     // Handler: Save audio file
     const handleSaveAudio = useCallback(async (audioData) => {
@@ -259,7 +276,58 @@ export default function TestEditorPage() {
             console.error('Failed to save audio:', error);
             alert('❌ Không thể lưu audio. Vui lòng thử lại.');
         }
+    }, [activeSection, examSource, testNumber, activeSkill, setShowLayoutModal]);
+
+    const handleSaveSectionMeta = useCallback(async (updates) => {
+        if (!activeSection) return;
+        try {
+            await adminApi.content.updateSection(activeSection, updates);
+            const { fetchSections } = useTestEditorStoreRaw.getState();
+            await fetchSections(examSource, testNumber, activeSkill);
+            setShowSectionMetaModal(false);
+            alert('✅ Đã lưu thông tin section!');
+        } catch (error) {
+            console.error('Failed to save section meta:', error);
+            alert('❌ Không thể lưu thông tin section. Vui lòng thử lại.');
+        }
     }, [activeSection, examSource, testNumber, activeSkill]);
+
+    const handleSaveSectionLayout = useCallback(async (layout) => {
+        if (!activeSection) return;
+        try {
+            await adminApi.content.updateSection(activeSection, { sectionLayout: layout });
+            const { fetchSections } = useTestEditorStoreRaw.getState();
+            await fetchSections(examSource, testNumber, activeSkill);
+            setShowLayoutModal(false);
+            alert('✅ Đã lưu layout!');
+        } catch (error) {
+            console.error('Failed to save section layout:', error);
+            alert('❌ Không thể lưu layout. Vui lòng thử lại.');
+        }
+    }, [activeSection, examSource, testNumber, activeSkill]);
+
+    // IMPORTANT: All useMemo hooks MUST be called before any conditional returns
+    // Get active section data (moved before early returns)
+    const activeSectionData = sections.find(s => s.id === activeSection);
+    const questionCountBySection = React.useMemo(() => {
+        const map = new Map();
+        allQuestions.forEach(q => {
+            map.set(q.sectionId, (map.get(q.sectionId) || 0) + 1);
+        });
+        return map;
+    }, [allQuestions]);
+    const activeSectionQuestions = useMemo(() => {
+        return [...questions].sort((a, b) => a.questionNumber - b.questionNumber);
+    }, [questions]);
+    const passageConfig = useMemo(() => {
+        if (activeSkill === 'listening') {
+            return { title: 'Thêm/Chỉnh sửa Transcript', minWords: 50, maxWords: 2000 };
+        }
+        if (activeSkill === 'writing') {
+            return { title: 'Thêm/Chỉnh sửa Prompt', minWords: 10, maxWords: 400 };
+        }
+        return { title: 'Thêm/Chỉnh sửa Passage', minWords: 600, maxWords: 1200 };
+    }, [activeSkill]);
 
     // Loading state
     if (isLoading) {
@@ -290,9 +358,6 @@ export default function TestEditorPage() {
             </div>
         );
     }
-
-    // Get active section data
-    const activeSectionData = sections.find(s => s.id === activeSection);
 
     // Get question range for section based on actual data
     const getQuestionRange = (section, index) => {
@@ -353,6 +418,49 @@ export default function TestEditorPage() {
         // Fallback: show UID
         return question.questionUid ? `UID: ${question.questionUid}` : 'Chưa có nội dung';
     };
+
+    const getSectionSubtitle = (section) => {
+        if (!section) return '';
+        if (section.passageText) {
+            const text = section.passageText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            if (text.length > 0) {
+                return text.length > 70 ? `${text.slice(0, 70)}...` : text;
+            }
+        }
+        if (section.audioUrl) return 'Có audio';
+        return 'Chưa có nội dung';
+    };
+
+    const isQuestionComplete = (question) => {
+        const hasContent = (() => {
+            if (!question.questionContent) return false;
+            if (typeof question.questionContent === 'string') {
+                return question.questionContent.trim().length > 0;
+            }
+            if (typeof question.questionContent === 'object') {
+                return Object.keys(question.questionContent).length > 0;
+            }
+            return false;
+        })();
+
+        const hasAnswer = (() => {
+            if (!question.correctAnswer) return false;
+            if (Array.isArray(question.correctAnswer)) {
+                return question.correctAnswer.length > 0;
+            }
+            if (typeof question.correctAnswer === 'string') {
+                return question.correctAnswer.trim().length > 0;
+            }
+            if (typeof question.correctAnswer === 'object') {
+                return Object.keys(question.correctAnswer).length > 0;
+            }
+            return false;
+        })();
+
+        return hasContent && hasAnswer;
+    };
+
+    // passageConfig is now defined earlier with other hooks (before early returns)
 
     return (
         <div className="admin-page test-editor-page">
@@ -421,17 +529,161 @@ export default function TestEditorPage() {
 
             {/* Editor Content */}
             <div className="editor-content">
+                {/* Sidebar */}
+                <aside className="editor-sidebar">
+                    <div className="editor-sidebar__header">
+                        <h3>Sections</h3>
+                        <div className="editor-sidebar__actions">
+                            <button
+                                className="add-section-btn"
+                                onClick={handleAddSection}
+                                title="Thêm section"
+                            >
+                                <FiPlus size={16} />
+                            </button>
+                            <button
+                                className="ai-section-btn"
+                                onClick={openAIGeneration}
+                                title="Tạo nội dung bằng AI"
+                            >
+                                <FiZap size={14} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="section-list">
+                        {isLoadingSections ? (
+                            <div className="sidebar-loading">
+                                <div className="spinner"></div>
+                                <p>Đang tải sections...</p>
+                            </div>
+                        ) : sections.length > 0 ? (
+                            sections.map(section => {
+                                const questionCount = questionCountBySection.get(section.id)
+                                    ?? section.questionCount
+                                    ?? 0;
+                                return (
+                                    <div
+                                        key={section.id}
+                                        className={`section-item ${activeSection === section.id ? 'section-item--active' : ''}`}
+                                        onClick={() => setActiveSection(section.id)}
+                                    >
+                                        <div className="section-item__info">
+                                            <span className="section-item__name">{getSectionName(section)}</span>
+                                            <span className="section-item__title">{getSectionSubtitle(section)}</span>
+                                        </div>
+                                        <div className="section-item__meta">
+                                            {section.passageText && <FiFileText size={12} className="section-item__passage" />}
+                                            {section.audioUrl && <FiHeadphones size={12} className="section-item__audio" />}
+                                            <span className="section-item__questions">{questionCount}Q</span>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="sidebar-empty">
+                                <p>Chưa có section nào</p>
+                                <div className="sidebar-empty__actions">
+                                    <button className="admin-btn admin-btn--primary" onClick={handleAddSection}>
+                                        <FiPlus size={16} />
+                                        <span>Thêm Section</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {activeSectionData && ['reading', 'listening'].includes(activeSkill) && (
+                        <div className="question-navigator">
+                            <h4>Questions</h4>
+                            <div className="question-grid">
+                                {activeSectionQuestions.map(question => (
+                                    <button
+                                        key={question.id}
+                                        className={`question-btn ${isQuestionComplete(question) ? 'question-btn--complete' : 'question-btn--incomplete'}`}
+                                        onClick={() => openQuestionEditor(question)}
+                                    >
+                                        {question.questionNumber}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeSectionData && ['reading', 'listening'].includes(activeSkill) && QUESTION_TYPES[activeSkill]?.length > 0 && (
+                        <div className="question-types-panel">
+                            <h4>Thêm câu hỏi</h4>
+                            <div className="question-types-grid">
+                                {QUESTION_TYPES[activeSkill].map(type => (
+                                    <button
+                                        key={type.value}
+                                        className="question-type-btn"
+                                        onClick={() => handleAddQuestion(type.value)}
+                                    >
+                                        {type.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </aside>
+
                 {/* Main Editor Area */}
-                <div className="editor-main editor-main--full">
+                <div className="editor-main">
                     {activeSection ? (
-                        <AdminPreviewContent
-                            sections={sections}
-                            questions={allQuestions.length > 0 ? allQuestions : questions}
-                            activePartIndex={sections.findIndex(s => s.id === activeSection)}
-                            skill={activeSkill}
-                            onPartSelect={(index) => setActiveSection(sections[index]?.id)}
-                            onQuestionSelect={() => { }}
-                        />
+                        <>
+                            <div className="section-header">
+                                <div className="section-header__info">
+                                    <h2>{getSectionName(activeSectionData)}</h2>
+                                    <p>{getSectionSubtitle(activeSectionData)}</p>
+                                </div>
+                                <div className="section-header__actions">
+                                    <button
+                                        className="admin-btn admin-btn--secondary admin-btn--small"
+                                        onClick={() => setShowPassageModal(true)}
+                                    >
+                                        <FiFileText size={14} />
+                                        Nội dung
+                                    </button>
+                                    {activeSkill === 'listening' && (
+                                        <button
+                                            className="admin-btn admin-btn--secondary admin-btn--small"
+                                            onClick={() => setShowAudioModal(true)}
+                                        >
+                                            <FiHeadphones size={14} />
+                                            Audio
+                                        </button>
+                                    )}
+                                    {(activeSkill === 'listening' || activeSkill === 'writing') && (
+                                        <button
+                                            className="admin-btn admin-btn--secondary admin-btn--small"
+                                            onClick={() => setShowSectionMetaModal(true)}
+                                        >
+                                            <FiImage size={14} />
+                                            Asset
+                                        </button>
+                                    )}
+                                    {activeSkill === 'listening' && (
+                                        <button
+                                            className="admin-btn admin-btn--secondary admin-btn--small"
+                                            onClick={() => setShowLayoutModal(true)}
+                                        >
+                                            <FiSettings size={14} />
+                                            Layout
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            <AdminPreviewContent
+                                sections={sections}
+                                questions={allQuestions.length > 0 ? allQuestions : questions}
+                                activePartIndex={sections.findIndex(s => s.id === activeSection)}
+                                skill={activeSkill}
+                                onPartSelect={(index) => setActiveSection(sections[index]?.id)}
+                                onQuestionSelect={() => { }}
+                            />
+                        </>
                     ) : (
                         <div className="no-section-selected">
                             <FiSettings size={48} />
@@ -497,7 +749,9 @@ export default function TestEditorPage() {
                 onClose={() => setShowPassageModal(false)}
                 onSave={handleSavePassage}
                 initialText={sections.find(s => s.id === activeSection)?.passageText || ''}
-                title="Thêm/Chỉnh sửa Passage"
+                title={passageConfig.title}
+                minWords={passageConfig.minWords}
+                maxWords={passageConfig.maxWords}
             />
 
             {/* Audio Upload Modal */}
@@ -507,6 +761,41 @@ export default function TestEditorPage() {
                 onSave={handleSaveAudio}
                 initialAudioUrl={sections.find(s => s.id === activeSection)?.audioUrl || ''}
                 title="Upload Audio"
+            />
+
+            <SectionMetaModal
+                isOpen={showSectionMetaModal}
+                onClose={() => setShowSectionMetaModal(false)}
+                onSave={handleSaveSectionMeta}
+                initialValues={{
+                    displayContentUrl: activeSectionData?.displayContentUrl || '',
+                    imageDescription: activeSectionData?.imageDescription || ''
+                }}
+                skill={activeSkill}
+            />
+
+            <SectionLayoutModal
+                isOpen={showLayoutModal}
+                onClose={() => setShowLayoutModal(false)}
+                onSave={handleSaveSectionLayout}
+                initialLayout={activeSectionData?.sectionLayout || null}
+            />
+
+            <QuestionEditModal
+                isOpen={showQuestionEditor}
+                onClose={closeQuestionEditor}
+                question={editingQuestion}
+                questionTypes={QUESTION_TYPES[activeSkill] || []}
+                onSave={async (questionId, updates) => {
+                    const success = await saveQuestion(questionId, updates);
+                    if (success) {
+                        fetchAllQuestions();
+                        alert('✅ Đã cập nhật câu hỏi!');
+                    } else {
+                        alert('❌ Không thể lưu câu hỏi.');
+                    }
+                }}
+                onDelete={handleDeleteQuestion}
             />
         </div>
     );
