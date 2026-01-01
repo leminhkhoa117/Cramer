@@ -195,19 +195,21 @@
   border: 1px solid rgba(236, 72, 153, 0.3);
 }
 
-/* System Badge */
+/* System Badge - positioned at bottom-right of header for cleaner layout */
 .set-card__system-badge {
   position: absolute;
-  top: var(--admin-spacing-sm);
+  bottom: var(--admin-spacing-sm);
   right: var(--admin-spacing-sm);
   padding: 4px 8px;
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 600;
   text-transform: uppercase;
-  background: rgba(16, 185, 129, 0.2);
+  letter-spacing: 0.5px;
+  background: rgba(16, 185, 129, 0.25);
   color: #10B981;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.4);
   border-radius: var(--admin-radius-sm);
+  backdrop-filter: blur(4px);
 }
 
 /* Set Card Info */

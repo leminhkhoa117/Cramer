@@ -5,7 +5,7 @@
  * @since 2025-12-21 - Content Upload Feature
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FiUpload, FiClipboard, FiX, FiCheck, FiAlertTriangle } from 'react-icons/fi';
 import '../../css/common/modal.css';
 
@@ -23,6 +23,14 @@ export default function PassageInputModal({
     const [error, setError] = useState(null);
     const textareaRef = useRef(null);
     const fileInputRef = useRef(null);
+
+    // Sync text state when initialText changes (different section selected) or modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setText(initialText);
+            setError(null);
+        }
+    }, [isOpen, initialText]);
 
     if (!isOpen) return null;
 

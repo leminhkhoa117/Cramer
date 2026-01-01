@@ -13,7 +13,7 @@
 - Full stack (recommended): from repo root run `docker-compose up --build`.
 - Backend dev (Windows, typical flow): `cd backend; ./run-app.ps1` (loads root `.env`, runs the built JAR; build first with `.\mvnw.cmd clean package -DskipTests` if `target/` is empty). Alternatives: `backend\run-local.cmd` or `cd backend && .\mvnw.cmd spring-boot:run`.
 - Backend build: `cd backend && .\mvnw.cmd clean package`.
-- Frontend dev (typical flow): `cd frontend; npm install; npm run dev` (Vite defaults to http://localhost:5173; set `VITE_API_BASE_URL`/Supabase keys in `.env.local`).
+- Frontend dev (typical flow): `cd frontend; npm install; npm run dev` (Vite defaults to http://localhost:3000; set `VITE_API_BASE_URL`/Supabase keys in `.env.local`).
 - Once tests exist, run backend tests with `cd backend && .\mvnw.cmd test`.
 
 ## Coding Style & Naming Conventions
@@ -51,7 +51,7 @@
 ## Frontend Notes
 
 - Use `.env.local` with `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_API_BASE_URL`.
-- Dev server runs on port **5173** (Vite default).
+- Dev server runs on port **3000** (Vite default).
 - Supabase Storage bucket `userImages` is expected with folders `avatars/`, `hero-backgrounds/`, and `backgrounds/`.
 - Routes: tests at `/test/:source/:testNum/:skill`, course details at `/courses/:courseName`.
 - Writing test at `/test/writing/:source/:testNum`, review at `/test/writing/review/:attemptId`.

@@ -154,4 +154,11 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
         @Modifying
         @Query("UPDATE Section s SET s.status = :status WHERE s.ieltsTest.id = :testId")
         int updateStatusByTestId(@Param("testId") Long testId, @Param("status") String status);
+
+        /**
+         * Count sections grouped by skill for a test.
+         * Returns a list of Object[] where [0] = skill (String), [1] = count (Long).
+         */
+        @Query("SELECT s.skill, COUNT(s) FROM Section s WHERE s.ieltsTest.id = :testId GROUP BY s.skill")
+        List<Object[]> countSectionsByTestIdGroupBySkill(@Param("testId") Long testId);
 }

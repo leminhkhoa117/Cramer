@@ -467,6 +467,11 @@
 }
 
 /* Note completion styles */
+.admin-preview-wrapper .note-completion-wrapper {
+    background: #1a1a2e !important;
+    border-color: var(--admin-border-primary) !important;
+}
+
 .admin-preview-wrapper .note-completion-wrapper h3 {
     color: var(--admin-text-primary);
 }
@@ -480,4 +485,60 @@
 .admin-preview-wrapper .highlightable-text {
     color: var(--admin-text-secondary);
     line-height: 1.8;
+}
+
+/* Question block hover fix - prevent white background */
+.admin-preview-wrapper .question-block:hover,
+.admin-preview-wrapper .question-group:hover {
+    background: rgba(139, 92, 246, 0.08) !important;
+}
+
+/* Force dark background on all question-related containers */
+.admin-preview-wrapper .question-group {
+    background: #1a1a2e !important;
+    border-color: var(--admin-border-primary) !important;
+}
+
+.admin-preview-wrapper .group-instructions {
+    color: var(--admin-text-secondary) !important;
+    border-bottom-color: var(--admin-border-primary) !important;
+}
+
+.admin-preview-wrapper .group-instructions p,
+.admin-preview-wrapper .group-instructions strong {
+    color: var(--admin-text-primary) !important;
+}
+
+/* Matching options box dark theme */
+.admin-preview-wrapper .matching-options-box {
+    background: rgba(139, 92, 246, 0.08) !important;
+    border-color: var(--admin-border-primary) !important;
+}
+
+.admin-preview-wrapper .matching-options-box h4 {
+    color: var(--admin-primary) !important;
+}
+
+.admin-preview-wrapper .matching-options-box p {
+    color: var(--admin-text-secondary) !important;
+}
+
+.admin-preview-wrapper .matching-options-box p strong {
+    color: var(--admin-primary) !important;
+}
+
+/* Table completion dark theme */
+.admin-preview-wrapper .table-completion-container table {
+    border-color: var(--admin-border-primary) !important;
+}
+
+.admin-preview-wrapper .table-completion-container th,
+.admin-preview-wrapper .table-completion-container td {
+    border-color: var(--admin-border-primary) !important;
+    color: var(--admin-text-secondary) !important;
+}
+
+.admin-preview-wrapper .table-completion-container th {
+    background: rgba(139, 92, 246, 0.1) !important;
+    color: var(--admin-text-primary) !important;
 }

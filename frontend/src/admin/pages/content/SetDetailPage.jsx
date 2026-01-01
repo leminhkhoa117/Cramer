@@ -19,6 +19,8 @@ import {
     FiEye,
     FiEyeOff
 } from 'react-icons/fi';
+// Note: CreateTestModal is defined locally in this file
+// The wizard version is at ../../components/CreateTestModal but not used here
 import '../../css/pages/content/SetDetailPage.css';
 
 /**
@@ -54,6 +56,7 @@ export default function SetDetailPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showEditSetModal, setShowEditSetModal] = useState(searchParams.get('edit') === 'true');
+    const [showEditTestModal, setShowEditTestModal] = useState(false);
     const [showPublishModal, setShowPublishModal] = useState(false);
     const [selectedTest, setSelectedTest] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -100,6 +103,30 @@ export default function SetDetailPage() {
             navigate(`/admin/content/tests/${newTest.id}`);
         } catch (err) {
             console.error('Error creating test:', err);
+        }
+    };
+
+    // Handle update test
+    const handleUpdateTest = async (testId, data) => {
+        const { updateTest, updateTestHashtags } = useTestSetStore.getState();
+        try {
+            // Update basic info
+            await updateTest(testId, {
+                testNumber: data.testNumber,
+                name: data.name,
+                difficulty: data.difficulty
+            });
+
+            // Update hashtags if changed (simple approach: always update)
+            if (data.hashtagIds) {
+                await updateTestHashtags(testId, data.hashtagIds);
+            }
+
+            setShowEditTestModal(false);
+            setSelectedTest(null);
+        } catch (err) {
+            console.error('Error updating test:', err);
+            throw err; // Re-throw for modal to handle
         }
     };
 
@@ -334,6 +361,13 @@ export default function SetDetailPage() {
                                 <div className="test-card__actions" onClick={(e) => e.stopPropagation()}>
                                     <button
                                         className="test-card__action-btn"
+                                        onClick={() => { setSelectedTest(test); setShowEditTestModal(true); }}
+                                        title="Chỉnh sửa thông tin"
+                                    >
+                                        <FiEdit2 size={14} />
+                                    </button>
+                                    <button
+                                        className="test-card__action-btn"
                                         onClick={() => handleDuplicate(test)}
                                         title="Nhân bản"
                                     >
@@ -385,6 +419,18 @@ export default function SetDetailPage() {
                 document.body
             )}
 
+            {/* Edit Test Modal */}
+            {showEditTestModal && selectedTest && createPortal(
+                <EditTestModal
+                    setId={Number(setId)}
+                    existingTestNumbers={existingTestNumbers.filter(n => n !== selectedTest.testNumber)}
+                    hashtags={hashtags}
+                    onClose={() => { setShowEditTestModal(false); setSelectedTest(null); }}
+                    onSubmit={(data) => handleUpdateTest(selectedTest.id, data)}
+                />,
+                document.body
+            )}
+
             {/* Delete Confirmation Modal */}
             {showDeleteModal && createPortal(
                 <DeleteConfirmModal
@@ -423,7 +469,8 @@ function SkillIndicator({ skillCounts }) {
     return (
         <div className="skill-indicators">
             {skills.map(skill => {
-                const count = skillCounts?.[skill.key] || 0;
+                // Check both lowercase and uppercase keys
+                const count = skillCounts?.[skill.key] || skillCounts?.[skill.key.toUpperCase()] || 0;
                 const hasContent = count > 0;
                 return (
                     <span
@@ -437,7 +484,6 @@ function SkillIndicator({ skillCounts }) {
                         title={`${skill.key}: ${count} sections`}
                     >
                         {skill.label}
-                        {hasContent && <FiCheck size={10} />}
                     </span>
                 );
             })}
@@ -453,7 +499,6 @@ function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubm
 
     const [formData, setFormData] = useState({
         testNumber: Math.max(...existingTestNumbers, 0) + 1,
-        name: '',
         name: '',
         difficulty: 'INTERMEDIATE',
         hashtagIds: []
@@ -661,17 +706,22 @@ function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubm
     );
 }
 
+// EditTestModal is the same as CreateTestModal - used for editing existing tests
+const EditTestModal = CreateTestModal;
+
 /**
  * EditSetModal - Modal for editing test set details
  * Placeholder - full implementation would include all fields
  */
 function EditSetModal({ testSet, onClose }) {
-    const { updateTestSet } = useTestSetStore();
+    const { updateTestSet, selectedSetTests, updateTest } = useTestSetStore();
     const [formData, setFormData] = useState({
+        code: testSet.code || '',
         name: testSet.name || '',
         description: testSet.description || '',
         sourceType: testSet.sourceType || 'custom'
     });
+    const [batchDifficulty, setBatchDifficulty] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleChange = (e) => {
@@ -683,7 +733,20 @@ function EditSetModal({ testSet, onClose }) {
         e.preventDefault();
         setIsSubmitting(true);
         try {
+            // Update test set metadata
             await updateTestSet(testSet.id, formData);
+
+            // Apply batch difficulty if selected
+            if (batchDifficulty) {
+                const updatePromises = selectedSetTests.map(test =>
+                    updateTest(test.id, {
+                        testNumber: test.testNumber,
+                        difficulty: batchDifficulty
+                    })
+                );
+                await Promise.all(updatePromises);
+            }
+
             onClose();
         } catch (err) {
             console.error('Error updating test set:', err);
@@ -745,6 +808,27 @@ function EditSetModal({ testSet, onClose }) {
                                 <option value="ai_generated">AI tạo</option>
                             </select>
                         </div>
+
+                        {selectedSetTests.length > 0 && (
+                            <div className="form-group" style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--admin-border-primary)' }}>
+                                <label htmlFor="edit-batchDifficulty">Đổi độ khó tất cả bài thi</label>
+                                <select
+                                    id="edit-batchDifficulty"
+                                    className="form-select"
+                                    value={batchDifficulty}
+                                    onChange={(e) => setBatchDifficulty(e.target.value)}
+                                    disabled={isSubmitting}
+                                >
+                                    <option value="">-- Không thay đổi --</option>
+                                    <option value="BEGINNER">Beginner (Cơ bản)</option>
+                                    <option value="INTERMEDIATE">Intermediate (Trung bình)</option>
+                                    <option value="ADVANCED">Advanced (Nâng cao)</option>
+                                </select>
+                                <p style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', marginTop: '4px' }}>
+                                    Áp dụng cho tất cả {selectedSetTests.length} bài thi
+                                </p>
+                            </div>
+                        )}
                     </div>
 
 
@@ -770,3 +854,4 @@ function EditSetModal({ testSet, onClose }) {
         </div>
     );
 }
+

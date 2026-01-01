@@ -8,6 +8,7 @@ import com.cramer.exception.ResourceAlreadyExistsException;
 import com.cramer.exception.ResourceNotFoundException;
 import com.cramer.repository.TestSetRepository;
 import com.cramer.repository.IeltsTestRepository;
+import com.cramer.repository.SectionRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -32,6 +34,7 @@ public class TestSetService {
 
     private final TestSetRepository testSetRepository;
     private final IeltsTestRepository ieltsTestRepository;
+    private final SectionRepository sectionRepository;
 
     /**
      * Get all test sets with counts.
@@ -273,6 +276,15 @@ public class TestSetService {
                         .build())
                 .collect(Collectors.toList());
 
+        // Query section counts by skill
+        Map<String, Long> skillCounts = new java.util.HashMap<>();
+        List<Object[]> rawCounts = sectionRepository.countSectionsByTestIdGroupBySkill(test.getId());
+        for (Object[] row : rawCounts) {
+            String skill = (String) row[0];
+            Long count = (Long) row[1];
+            skillCounts.put(skill, count);
+        }
+
         return TestSummaryDTO.builder()
                 .id(test.getId())
                 .setId(test.getSetId())
@@ -288,6 +300,7 @@ public class TestSetService {
                 .isAiGenerated(test.getIsAiGenerated())
                 .createdAt(test.getCreatedAt())
                 .updatedAt(test.getUpdatedAt())
+                .skillSectionCounts(skillCounts)
                 .hashtags(hashtagDTOs)
                 .build();
     }

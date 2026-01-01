@@ -592,40 +592,6 @@ export default function TestEditorPage() {
                             </div>
                         )}
                     </div>
-
-                    {activeSectionData && ['reading', 'listening'].includes(activeSkill) && (
-                        <div className="question-navigator">
-                            <h4>Questions</h4>
-                            <div className="question-grid">
-                                {activeSectionQuestions.map(question => (
-                                    <button
-                                        key={question.id}
-                                        className={`question-btn ${isQuestionComplete(question) ? 'question-btn--complete' : 'question-btn--incomplete'}`}
-                                        onClick={() => openQuestionEditor(question)}
-                                    >
-                                        {question.questionNumber}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {activeSectionData && ['reading', 'listening'].includes(activeSkill) && QUESTION_TYPES[activeSkill]?.length > 0 && (
-                        <div className="question-types-panel">
-                            <h4>Thêm câu hỏi</h4>
-                            <div className="question-types-grid">
-                                {QUESTION_TYPES[activeSkill].map(type => (
-                                    <button
-                                        key={type.value}
-                                        className="question-type-btn"
-                                        onClick={() => handleAddQuestion(type.value)}
-                                    >
-                                        {type.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
                 </aside>
 
                 {/* Main Editor Area */}
