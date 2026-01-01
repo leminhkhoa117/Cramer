@@ -1810,7 +1810,6 @@ public class ABTSService {
                 .name(displayName)
                 .sourceType("ai_generated")
                 .isPublished(false)
-                .isSystem(false)
                 .displayOrder(testSetRepository.findMaxDisplayOrder() + 1)
                 .createdBy(createdBy)
                 .build();

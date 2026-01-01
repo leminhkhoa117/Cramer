@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Linux/Bash helper to load root .env and run the Spring Boot app like the Windows script
+# Linux/Bash helper to load root .env and run the Spring Boot app
+# Automatically rebuilds if source files are newer than the JAR
 set -euo pipefail
 
 # Resolve script/root directories
@@ -63,12 +64,43 @@ fi
 cd "$SCRIPT_DIR"
 
 JAR_FILE="$SCRIPT_DIR/target/cramer-backend-0.0.1-SNAPSHOT.jar"
+SRC_DIR="$SCRIPT_DIR/src"
 
-if [[ -f "$JAR_FILE" ]]; then
-  echo "Starting Spring Boot from JAR: $JAR_FILE"
-  exec java -jar "$JAR_FILE"
-else
-  echo "JAR not found. Building with Maven wrapper (may take a while)..."
+# Function to check if rebuild is needed
+needs_rebuild() {
+  # If JAR doesn't exist, definitely rebuild
+  if [[ ! -f "$JAR_FILE" ]]; then
+    echo "JAR not found."
+    return 0
+  fi
+
+  # Check if any source file is newer than JAR
+  local jar_time
+  jar_time=$(stat -c %Y "$JAR_FILE" 2>/dev/null || stat -f %m "$JAR_FILE" 2>/dev/null)
+  
+  # Find any .java or .xml file newer than JAR
+  local newer_files
+  newer_files=$(find "$SRC_DIR" -type f \( -name "*.java" -o -name "*.xml" -o -name "*.properties" -o -name "*.yml" -o -name "*.yaml" \) -newer "$JAR_FILE" 2>/dev/null | head -5)
+  
+  if [[ -n "$newer_files" ]]; then
+    echo "Source files changed since last build:"
+    echo "$newer_files" | while read -r f; do echo "  - ${f#$SCRIPT_DIR/}"; done
+    return 0
+  fi
+
+  # Check if pom.xml is newer than JAR
+  if [[ "$SCRIPT_DIR/pom.xml" -nt "$JAR_FILE" ]]; then
+    echo "pom.xml changed since last build."
+    return 0
+  fi
+
+  return 1
+}
+
+# Function to build the JAR
+build_jar() {
+  echo ""
+  echo "Building with Maven (may take a while)..."
   if [[ -x "$SCRIPT_DIR/mvnw" ]]; then
     "$SCRIPT_DIR/mvnw" -DskipTests clean package
   elif command -v mvn >/dev/null 2>&1; then
@@ -77,6 +109,17 @@ else
     echo "No Maven wrapper or system mvn found. Please install Maven or make 'mvnw' executable." >&2
     exit 1
   fi
-  echo "Build finished; running JAR..."
-  exec java -jar "$JAR_FILE"
+  echo "Build finished!"
+}
+
+# Check if rebuild is needed
+if needs_rebuild; then
+  build_jar
+else
+  echo "JAR is up-to-date. Skipping build."
 fi
+
+# Run the JAR
+echo ""
+echo "Starting Spring Boot from JAR: $JAR_FILE"
+exec java -jar "$JAR_FILE"

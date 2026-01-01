@@ -100,7 +100,6 @@ public class TestSetService {
         testSet.setCoverImageUrl(request.getCoverImageUrl());
         testSet.setSourceType(request.getSourceType() != null ? request.getSourceType() : "custom");
         testSet.setIsPublished(request.getIsPublished() != null ? request.getIsPublished() : false);
-        testSet.setIsSystem(false); // New test sets are never system sets
         testSet.setCreatedBy(userId);
 
         // Set display order to max + 1 if not provided
@@ -167,10 +166,6 @@ public class TestSetService {
         TestSet testSet = Objects.requireNonNull(testSetRepository.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> new ResourceNotFoundException("TestSet", "id", id)));
 
-        if (testSet.getIsSystem()) {
-            throw new OperationNotAllowedException("delete", "Cannot delete system test sets");
-        }
-
         // Cascade delete will handle tests
         testSetRepository.delete(testSet);
         logger.info("Deleted test set ID: {}", id);
@@ -223,7 +218,6 @@ public class TestSetService {
                 .coverImageUrl(entity.getCoverImageUrl())
                 .sourceType(entity.getSourceType())
                 .isPublished(entity.getIsPublished())
-                .isSystem(entity.getIsSystem())
                 .displayOrder(entity.getDisplayOrder())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
@@ -250,7 +244,6 @@ public class TestSetService {
                 .coverImageUrl(entity.getCoverImageUrl())
                 .sourceType(entity.getSourceType())
                 .isPublished(entity.getIsPublished())
-                .isSystem(entity.getIsSystem())
                 .displayOrder(entity.getDisplayOrder())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())

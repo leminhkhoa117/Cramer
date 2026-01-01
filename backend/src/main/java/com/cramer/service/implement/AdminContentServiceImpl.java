@@ -71,7 +71,6 @@ public class AdminContentServiceImpl implements AdminContentService {
                 setMap.put("description", testSet.getDescription());
                 setMap.put("coverImageUrl", testSet.getCoverImageUrl());
                 setMap.put("isPublished", testSet.getIsPublished());
-                setMap.put("isSystem", testSet.getIsSystem());
 
                 // Add hashtags for Test Set
                 List<Map<String, Object>> setHashtags = new ArrayList<>();
@@ -1176,7 +1175,6 @@ public class AdminContentServiceImpl implements AdminContentService {
                     .sourceType((String) setData.getOrDefault("sourceType", "custom"))
                     .displayOrder((Integer) setData.getOrDefault("displayOrder", 0))
                     .isPublished(false)
-                    .isSystem(false)
                     .createdBy(UUID.fromString(adminUserId))
                     .build();
 

@@ -1,4 +1,5 @@
 # PowerShell script to load .env and run Spring Boot application
+# Automatically rebuilds if source files are newer than the JAR
 # Usage: .\run-app.ps1
 # Mirrors the behavior of run-app.sh for Linux
 
@@ -93,24 +94,69 @@ $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
 Set-Location $ScriptDir
 
 $JarFile = Join-Path $ScriptDir "target\cramer-backend-0.0.1-SNAPSHOT.jar"
+$SrcDir = Join-Path $ScriptDir "src"
+$PomFile = Join-Path $ScriptDir "pom.xml"
 
-if (Test-Path $JarFile) {
-    Write-Host "`nStarting Spring Boot from JAR: $JarFile" -ForegroundColor Green
-    & java -jar $JarFile
-} else {
-    Write-Host "JAR not found. Building with Maven wrapper (may take a while)..." -ForegroundColor Yellow
+# Function to check if rebuild is needed
+function Test-NeedsRebuild {
+    # If JAR doesn't exist, definitely rebuild
+    if (-not (Test-Path $JarFile)) {
+        Write-Host "JAR not found." -ForegroundColor Yellow
+        return $true
+    }
+
+    $jarTime = (Get-Item $JarFile).LastWriteTime
+
+    # Check if pom.xml is newer than JAR
+    if ((Get-Item $PomFile).LastWriteTime -gt $jarTime) {
+        Write-Host "pom.xml changed since last build." -ForegroundColor Yellow
+        return $true
+    }
+
+    # Check if any source file is newer than JAR
+    $newerFiles = Get-ChildItem -Path $SrcDir -Recurse -Include "*.java", "*.xml", "*.properties", "*.yml", "*.yaml" -ErrorAction SilentlyContinue |
+        Where-Object { $_.LastWriteTime -gt $jarTime } |
+        Select-Object -First 5
+
+    if ($newerFiles) {
+        Write-Host "Source files changed since last build:" -ForegroundColor Yellow
+        $newerFiles | ForEach-Object {
+            $relativePath = $_.FullName.Substring($ScriptDir.Length + 1)
+            Write-Host "  - $relativePath" -ForegroundColor DarkYellow
+        }
+        return $true
+    }
+
+    return $false
+}
+
+# Function to build the JAR
+function Build-Jar {
+    Write-Host ""
+    Write-Host "Building with Maven (may take a while)..." -ForegroundColor Yellow
     
     $MvnWrapper = Join-Path $ScriptDir "mvnw.cmd"
     
     if (Test-Path $MvnWrapper) {
         & $MvnWrapper -DskipTests clean package
     } elseif (Get-Command mvn -ErrorAction SilentlyContinue) {
-        mvn -DskipTests -f (Join-Path $ScriptDir "pom.xml") clean package
+        mvn -DskipTests -f $PomFile clean package
     } else {
         Write-Host "No Maven wrapper or system mvn found. Please install Maven or ensure 'mvnw.cmd' exists." -ForegroundColor Red
         exit 1
     }
     
-    Write-Host "Build finished; running JAR..." -ForegroundColor Green
-    & java -jar $JarFile
+    Write-Host "Build finished!" -ForegroundColor Green
 }
+
+# Check if rebuild is needed
+if (Test-NeedsRebuild) {
+    Build-Jar
+} else {
+    Write-Host "JAR is up-to-date. Skipping build." -ForegroundColor Green
+}
+
+# Run the JAR
+Write-Host ""
+Write-Host "Starting Spring Boot from JAR: $JarFile" -ForegroundColor Green
+& java -jar $JarFile

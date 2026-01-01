@@ -47,10 +47,6 @@ public class TestSet {
     @Builder.Default
     private Boolean isPublished = false;
 
-    @Column(name = "is_system")
-    @Builder.Default
-    private Boolean isSystem = false;
-
     @Column(name = "display_order")
     @Builder.Default
     private Integer displayOrder = 0;

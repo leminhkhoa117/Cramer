@@ -272,10 +272,6 @@ export default function SetListPage() {
                                         {getSourceIcon(set.sourceType)}
                                         {getSourceLabel(set.sourceType)}
                                     </span>
-                                    {/* System badge */}
-                                    {set.isSystem && (
-                                        <span className="set-card__system-badge">Hệ thống</span>
-                                    )}
                                 </div>
 
                                 {/* Set Info */}
@@ -304,15 +300,13 @@ export default function SetListPage() {
                                     >
                                         <FiEdit2 size={16} />
                                     </button>
-                                    {!set.isSystem && (
-                                        <button
-                                            className="set-card__action-btn set-card__action-btn--delete"
-                                            onClick={(e) => confirmDelete(set, e)}
-                                            title="Xóa"
-                                        >
-                                            <FiTrash2 size={16} />
-                                        </button>
-                                    )}
+                                    <button
+                                        className="set-card__action-btn set-card__action-btn--delete"
+                                        onClick={(e) => confirmDelete(set, e)}
+                                        title="Xóa"
+                                    >
+                                        <FiTrash2 size={16} />
+                                    </button>
                                 </div>
                             </div>
                         ))}

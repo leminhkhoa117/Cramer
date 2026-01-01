@@ -18,7 +18,6 @@ public class TestSetDTO {
     private String coverImageUrl;
     private String sourceType;
     private Boolean isPublished;
-    private Boolean isSystem;
     private Integer displayOrder;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
