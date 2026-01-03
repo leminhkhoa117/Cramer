@@ -65,6 +65,12 @@ cd "$SCRIPT_DIR"
 
 JAR_FILE="$SCRIPT_DIR/target/cramer-backend-0.0.1-SNAPSHOT.jar"
 SRC_DIR="$SCRIPT_DIR/src"
+SRC_HASH_FILE="$SCRIPT_DIR/target/.src-hash"
+
+# Function to compute hash of source file list (detects additions/deletions)
+compute_src_hash() {
+  find "$SRC_DIR" -type f \( -name "*.java" -o -name "*.xml" -o -name "*.properties" -o -name "*.yml" -o -name "*.yaml" \) 2>/dev/null | sort | md5sum | cut -d' ' -f1
+}
 
 # Function to check if rebuild is needed
 needs_rebuild() {
@@ -74,11 +80,22 @@ needs_rebuild() {
     return 0
   fi
 
+  # Check if source file list changed (detects additions AND deletions)
+  local current_hash
+  current_hash=$(compute_src_hash)
+  if [[ -f "$SRC_HASH_FILE" ]]; then
+    local stored_hash
+    stored_hash=$(cat "$SRC_HASH_FILE")
+    if [[ "$current_hash" != "$stored_hash" ]]; then
+      echo "Source file structure changed (files added or deleted)."
+      return 0
+    fi
+  else
+    echo "No source hash found (first run or target cleaned)."
+    return 0
+  fi
+
   # Check if any source file is newer than JAR
-  local jar_time
-  jar_time=$(stat -c %Y "$JAR_FILE" 2>/dev/null || stat -f %m "$JAR_FILE" 2>/dev/null)
-  
-  # Find any .java or .xml file newer than JAR
   local newer_files
   newer_files=$(find "$SRC_DIR" -type f \( -name "*.java" -o -name "*.xml" -o -name "*.properties" -o -name "*.yml" -o -name "*.yaml" \) -newer "$JAR_FILE" 2>/dev/null | head -5)
   
@@ -109,7 +126,10 @@ build_jar() {
     echo "No Maven wrapper or system mvn found. Please install Maven or make 'mvnw' executable." >&2
     exit 1
   fi
-  echo "Build finished!"
+  
+  # Save source hash after successful build
+  compute_src_hash > "$SRC_HASH_FILE"
+  echo "Build finished! Source hash saved."
 }
 
 # Check if rebuild is needed

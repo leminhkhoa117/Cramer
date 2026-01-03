@@ -107,6 +107,66 @@
 }
 
 /* ==========================================================================
+   CONTENT AREA & ERROR STATES
+   ========================================================================== */
+
+.set-list-page .content-area {
+  background: var(--admin-glass-bg);
+  border: 1px solid var(--admin-glass-border);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-spacing-lg);
+  min-height: 400px;
+}
+
+.set-list-page .content-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-spacing-lg);
+  margin-bottom: var(--admin-spacing-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-spacing-md);
+}
+
+.set-list-page .content-error p {
+  margin: 0;
+  color: var(--admin-danger);
+  font-size: 0.9375rem;
+}
+
+.set-list-page .content-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--admin-text-muted);
+}
+
+.set-list-page .content-loading p {
+  margin-top: var(--admin-spacing-md);
+  font-size: 0.875rem;
+}
+
+.set-list-page .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--admin-text-muted);
+  text-align: center;
+  grid-column: 1 / -1;
+  /* Span full grid width */
+}
+
+.set-list-page .empty-state p {
+  margin: var(--admin-spacing-md) 0 var(--admin-spacing-lg) 0;
+}
+
+/* ==========================================================================
    SETS GRID
    ========================================================================== */
 
@@ -322,6 +382,26 @@
 
 .source-icon--ai {
   color: #EC4899;
+}
+
+/* Spinner Animation */
+.set-list-page .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--admin-border-secondary);
+  border-top-color: var(--admin-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
 }
 
 /* ==========================================================================

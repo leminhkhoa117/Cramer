@@ -156,6 +156,50 @@
 }
 
 /* ==========================================================================
+   CONTENT AREA & ERROR STATES
+   ========================================================================== */
+
+.set-detail-page .content-area {
+  background: var(--admin-glass-bg);
+  border: 1px solid var(--admin-glass-border);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-spacing-lg);
+  min-height: 300px;
+}
+
+.set-detail-page .content-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-spacing-lg);
+  margin-bottom: var(--admin-spacing-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-spacing-md);
+}
+
+.set-detail-page .content-error p {
+  margin: 0;
+  color: var(--admin-danger);
+  font-size: 0.9375rem;
+}
+
+.set-detail-page .content-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--admin-text-muted);
+}
+
+.set-detail-page .content-loading p {
+  margin-top: var(--admin-spacing-md);
+  font-size: 0.875rem;
+}
+
+/* ==========================================================================
    TESTS GRID
    ========================================================================== */
 

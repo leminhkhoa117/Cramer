@@ -385,14 +385,19 @@
 }
 
 .admin-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--admin-spacing-lg);
   margin-bottom: var(--admin-spacing-xl);
+  flex-wrap: wrap;
 }
 
 .admin-page__title {
   font-size: 1.75rem;
   font-weight: 700;
   color: var(--admin-text-primary);
-  margin: 0 0 var(--admin-spacing-sm) 0;
+  margin: 0 0 var(--admin-spacing-xs) 0;
 }
 
 .admin-page__subtitle {
@@ -802,6 +807,45 @@
   margin-top: var(--admin-spacing-xs);
   font-size: 0.8125rem;
   color: var(--admin-text-muted);
+}
+
+/* ==========================================================================
+   ERROR MESSAGE
+   ========================================================================== */
+
+.admin-error-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-spacing-md);
+  padding: var(--admin-spacing-lg);
+  background: var(--admin-danger-light);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--admin-radius-lg);
+  color: var(--admin-danger);
+  font-size: 0.9375rem;
+  margin-bottom: var(--admin-spacing-lg);
+}
+
+.admin-error-message button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-spacing-xs);
+  padding: var(--admin-spacing-xs) var(--admin-spacing-md);
+  background: transparent;
+  border: 1px solid var(--admin-danger);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-danger);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--admin-transition-fast);
+}
+
+.admin-error-message button:hover {
+  background: var(--admin-danger);
+  color: white;
 }
 
 .error-text {

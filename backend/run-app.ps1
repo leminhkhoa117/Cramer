@@ -96,12 +96,39 @@ Set-Location $ScriptDir
 $JarFile = Join-Path $ScriptDir "target\cramer-backend-0.0.1-SNAPSHOT.jar"
 $SrcDir = Join-Path $ScriptDir "src"
 $PomFile = Join-Path $ScriptDir "pom.xml"
+$SrcHashFile = Join-Path $ScriptDir "target\.src-hash"
+
+# Function to compute hash of source file list (detects additions/deletions)
+function Get-SrcHash {
+    $files = Get-ChildItem -Path $SrcDir -Recurse -Include "*.java", "*.xml", "*.properties", "*.yml", "*.yaml" -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty FullName |
+        Sort-Object
+    $joined = $files -join "`n"
+    $md5 = [System.Security.Cryptography.MD5]::Create()
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($joined)
+    $hash = $md5.ComputeHash($bytes)
+    return [BitConverter]::ToString($hash) -replace '-', ''
+}
 
 # Function to check if rebuild is needed
 function Test-NeedsRebuild {
     # If JAR doesn't exist, definitely rebuild
     if (-not (Test-Path $JarFile)) {
         Write-Host "JAR not found." -ForegroundColor Yellow
+        return $true
+    }
+
+    # Check if source file list changed (detects additions AND deletions)
+    $currentHash = Get-SrcHash
+    if (Test-Path $SrcHashFile) {
+        $storedHash = Get-Content $SrcHashFile -Raw
+        $storedHash = $storedHash.Trim()
+        if ($currentHash -ne $storedHash) {
+            Write-Host "Source file structure changed (files added or deleted)." -ForegroundColor Yellow
+            return $true
+        }
+    } else {
+        Write-Host "No source hash found (first run or target cleaned)." -ForegroundColor Yellow
         return $true
     }
 
@@ -146,7 +173,9 @@ function Build-Jar {
         exit 1
     }
     
-    Write-Host "Build finished!" -ForegroundColor Green
+    # Save source hash after successful build
+    Get-SrcHash | Out-File -FilePath $SrcHashFile -Encoding UTF8 -NoNewline
+    Write-Host "Build finished! Source hash saved." -ForegroundColor Green
 }
 
 # Check if rebuild is needed
