@@ -1,16 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiX, FiSave, FiFolder, FiType, FiBarChart2, FiFileText, FiLayers } from 'react-icons/fi';
+import { FiX, FiSave, FiFolder, FiType, FiBarChart2, FiHash, FiEye, FiPlus, FiAlertCircle } from 'react-icons/fi';
 import useTestSetStore from '../../stores/useTestSetStore';
 import { testsApi } from '../../api/adminApi';
 import TagInput from './TagInput';
 import '../../components/common/AdminModal.css';
 
 /**
- * SaveAIContentModal - Configuration modal for saving AI generated content.
- * Updated to support adding parts to existing tests.
+ * SaveAIContentModal - Simplified configuration modal for saving AI generated content.
+ * 
+ * Features:
+ * - Preview section showing what will be saved
+ * - Test set selection with inline creation
+ * - Auto-incremented test number (editable)
+ * - Required test name with validation
+ * - 5-level difficulty selector
+ * - Hashtags with max 20 tags
  * 
  * @since 2025-12-26
- * @updated 2025-12-28 - Added test selector and part display
+ * @updated 2026-01-03 - Simplified UI, added preview, fixed validation
  */
 export default function SaveAIContentModal({
     isOpen,
@@ -18,50 +25,68 @@ export default function SaveAIContentModal({
     onSave,
     initialTopic = '',
     suggestedSkill = 'reading',
-    partNumber = 1 // Current part being saved
+    partNumber = 1,
+    questionCount = 0,
+    passagePreview = '' // First 100 chars of passage/prompt
 }) {
     const { testSets, fetchTestSets, isLoading } = useTestSetStore();
 
     const [formData, setFormData] = useState({
-        setId: '', // Selected test set ID
-        setCode: '', // Only used if creating new
-        setNameVi: '', // Name for new test set
-        testId: '', // Existing test ID (if adding to existing)
-        testName: '', // Test name (only for new test)
+        setId: '',
+        setCode: '',
+        setName: '',
+        testNumber: 1,
+        testName: '',
         difficulty: 'INTERMEDIATE',
-        hashtags: [], // Array of hashtag IDs
-        createNewSet: false,
-        addToExistingTest: false
+        hashtags: [],
+        createNewSet: false
     });
 
     const [testsInSet, setTestsInSet] = useState([]);
     const [isLoadingTests, setIsLoadingTests] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState({});
 
-    // Skill display name
+    // Skill display name mapping
     const skillDisplayName = useMemo(() => {
-        const names = { reading: 'Reading', listening: 'Listening', writing: 'Writing', speaking: 'Speaking' };
+        const names = { 
+            reading: 'Reading', 
+            listening: 'Listening', 
+            writing: 'Writing', 
+            speaking: 'Speaking' 
+        };
         return names[suggestedSkill?.toLowerCase()] || suggestedSkill;
     }, [suggestedSkill]);
+
+    // Difficulty options with Vietnamese labels
+    const difficultyOptions = [
+        { value: 'BEGINNER', label: 'Cơ bản', labelEn: 'Beginner' },
+        { value: 'LOWER_INTERMEDIATE', label: 'Sơ trung cấp', labelEn: 'Lower Intermediate' },
+        { value: 'INTERMEDIATE', label: 'Trung cấp', labelEn: 'Intermediate' },
+        { value: 'UPPER_INTERMEDIATE', label: 'Trung cao cấp', labelEn: 'Upper Intermediate' },
+        { value: 'ADVANCED', label: 'Nâng cao', labelEn: 'Advanced' }
+    ];
 
     // Initialize form when modal opens
     useEffect(() => {
         if (isOpen) {
             fetchTestSets(true);
-            const topicName = initialTopic || 'AI Generated';
-            setFormData(prev => ({
-                ...prev,
-                testName: topicName,
-                setNameVi: topicName,
-                setCode: generateCode(topicName),
-                testId: '',
-                addToExistingTest: false
-            }));
+            setFormData({
+                setId: '',
+                setCode: '',
+                setName: '',
+                testNumber: 1,
+                testName: '',
+                difficulty: 'INTERMEDIATE',
+                hashtags: [],
+                createNewSet: false
+            });
             setTestsInSet([]);
+            setErrors({});
         }
-    }, [isOpen, initialTopic, fetchTestSets]);
+    }, [isOpen, fetchTestSets]);
 
-    // Fetch tests when a test set is selected
+    // Fetch tests when a test set is selected & auto-increment test number
     useEffect(() => {
         const fetchTests = async () => {
             if (formData.setId && !formData.createNewSet) {
@@ -69,6 +94,10 @@ export default function SaveAIContentModal({
                 try {
                     const tests = await testsApi.getBySetId(formData.setId);
                     setTestsInSet(tests || []);
+                    // Auto-increment test number
+                    const maxNumber = (tests || []).reduce((max, t) => 
+                        Math.max(max, t.testNumber || 0), 0);
+                    setFormData(prev => ({ ...prev, testNumber: maxNumber + 1 }));
                 } catch (error) {
                     console.error('Error fetching tests:', error);
                     setTestsInSet([]);
@@ -77,6 +106,7 @@ export default function SaveAIContentModal({
                 }
             } else {
                 setTestsInSet([]);
+                setFormData(prev => ({ ...prev, testNumber: 1 }));
             }
         };
         fetchTests();
@@ -84,36 +114,68 @@ export default function SaveAIContentModal({
 
     // Handle input changes
     const handleChange = (field, value) => {
-        setFormData(prev => ({
-            ...prev,
-            [field]: value
-        }));
-
-        // Reset test selection when changing set or mode
-        if (field === 'setId' || field === 'createNewSet') {
-            setFormData(prev => ({
-                ...prev,
-                [field]: value,
-                testId: '',
-                addToExistingTest: false
-            }));
+        setFormData(prev => ({ ...prev, [field]: value }));
+        // Clear error when user types
+        if (errors[field]) {
+            setErrors(prev => ({ ...prev, [field]: null }));
         }
     };
 
+    // Toggle create new set mode
+    const toggleCreateNewSet = (createNew) => {
+        setFormData(prev => ({
+            ...prev,
+            createNewSet: createNew,
+            setId: createNew ? '' : prev.setId,
+            setCode: '',
+            setName: ''
+        }));
+        setErrors(prev => ({ ...prev, setId: null, setCode: null, setName: null }));
+    };
+
+    // Validate form
+    const validateForm = () => {
+        const newErrors = {};
+
+        // Validate test set
+        if (formData.createNewSet) {
+            if (!formData.setCode.trim()) {
+                newErrors.setCode = 'Vui lòng nhập mã bộ đề';
+            }
+            if (!formData.setName.trim()) {
+                newErrors.setName = 'Vui lòng nhập tên bộ đề';
+            }
+        } else {
+            if (!formData.setId) {
+                newErrors.setId = 'Vui lòng chọn bộ đề thi';
+            }
+        }
+
+        // Validate test name - REQUIRED
+        if (!formData.testName.trim()) {
+            newErrors.testName = 'Vui lòng nhập tên đề thi';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        if (!validateForm()) {
+            return;
+        }
+
         setIsSubmitting(true);
         try {
-            // Prepare data for callback
             const saveConfig = {
-                // Test Set identification
                 setId: formData.createNewSet ? null : (formData.setId || null),
-                setCode: formData.createNewSet ? formData.setCode : null,
-                setNameVi: formData.createNewSet ? formData.setNameVi : null,
-                // Test identification
-                testId: formData.addToExistingTest ? Number(formData.testId) : null,
-                testName: formData.addToExistingTest ? null : formData.testName,
-                // Other metadata
+                setCode: formData.createNewSet ? formData.setCode.trim() : null,
+                setNameVi: formData.createNewSet ? formData.setName.trim() : null,
+                testNumber: formData.testNumber,
+                testName: formData.testName.trim(),
                 difficulty: formData.difficulty,
                 hashtagIds: formData.hashtags
             };
@@ -139,175 +201,184 @@ export default function SaveAIContentModal({
                 </div>
 
                 <div className="modal-body">
-                    {/* Part Info Display */}
+                    {/* 1. PREVIEW SECTION */}
                     <div className="form-group">
-                        <div className="info-badge" style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '12px 16px',
-                            background: 'var(--surface-elevated, rgba(74, 144, 226, 0.1))',
+                        <label className="form-label">
+                            <FiEye className="form-icon" />
+                            Xem trước nội dung
+                        </label>
+                        <div style={{
+                            padding: '16px',
+                            background: 'var(--surface-elevated, rgba(74, 144, 226, 0.08))',
                             borderRadius: 'var(--radius-md, 8px)',
                             border: '1px solid var(--border-color, rgba(255,255,255,0.1))'
                         }}>
-                            <FiLayers style={{ color: 'var(--primary, #4a90e2)', fontSize: '20px' }} />
-                            <div>
-                                <div style={{ fontWeight: 600, color: 'var(--text-primary, #fff)' }}>
-                                    {skillDisplayName} - Part {partNumber}
-                                </div>
-                                <small style={{ color: 'var(--text-secondary, rgba(255,255,255,0.6))' }}>
-                                    Nội dung AI đã tạo sẽ được lưu vào phần này
-                                </small>
+                            <div style={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: 'auto 1fr', 
+                                gap: '8px 16px',
+                                fontSize: '14px'
+                            }}>
+                                <span style={{ color: 'var(--text-secondary, rgba(255,255,255,0.6))' }}>Kỹ năng:</span>
+                                <span style={{ fontWeight: 600, color: 'var(--primary, #4a90e2)' }}>{skillDisplayName}</span>
+                                
+                                <span style={{ color: 'var(--text-secondary, rgba(255,255,255,0.6))' }}>Phần:</span>
+                                <span style={{ fontWeight: 600 }}>Part {partNumber}</span>
+                                
+                                <span style={{ color: 'var(--text-secondary, rgba(255,255,255,0.6))' }}>Số câu hỏi:</span>
+                                <span style={{ fontWeight: 600 }}>{questionCount || 'N/A'}</span>
+                                
+                                {passagePreview && (
+                                    <>
+                                        <span style={{ color: 'var(--text-secondary, rgba(255,255,255,0.6))' }}>Tiêu đề:</span>
+                                        <span style={{ 
+                                            fontStyle: 'italic', 
+                                            color: 'var(--text-primary, #fff)',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap'
+                                        }}>
+                                            {passagePreview.substring(0, 100)}{passagePreview.length > 100 ? '...' : ''}
+                                        </span>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
 
                     <form id="save-content-form" onSubmit={handleSubmit}>
 
-                        {/* 1. Test Set Selection */}
+                        {/* 2. TEST SET SELECTION */}
                         <div className="form-group">
                             <label className="form-label">
                                 <FiFolder className="form-icon" />
-                                Bộ đề thi (Folder)
+                                Bộ đề thi <span className="required">*</span>
                             </label>
 
                             {!formData.createNewSet ? (
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <select
-                                        className="form-select"
-                                        value={formData.setId}
-                                        onChange={(e) => handleChange('setId', e.target.value)}
-                                        style={{ flex: 1 }}
-                                    >
-                                        <option value="">-- Chọn bộ đề có sẵn --</option>
-                                        {testSets.map(set => (
-                                            <option key={set.id} value={set.id}>
-                                                {set.name} ({set.code})
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <button
-                                        type="button"
-                                        className="btn btn-secondary"
-                                        onClick={() => handleChange('createNewSet', true)}
-                                    >
-                                        Tạo mới
-                                    </button>
-                                </div>
+                                <>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <select
+                                            className={`form-select ${errors.setId ? 'is-invalid' : ''}`}
+                                            value={formData.setId}
+                                            onChange={(e) => handleChange('setId', e.target.value)}
+                                            style={{ flex: 1 }}
+                                        >
+                                            <option value="">-- Chọn bộ đề có sẵn --</option>
+                                            {testSets.map(set => (
+                                                <option key={set.id} value={set.id}>
+                                                    {set.name} ({set.code})
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary"
+                                            onClick={() => toggleCreateNewSet(true)}
+                                            title="Tạo bộ đề mới"
+                                        >
+                                            <FiPlus />
+                                        </button>
+                                    </div>
+                                    {errors.setId && (
+                                        <div className="form-error">
+                                            <FiAlertCircle /> {errors.setId}
+                                        </div>
+                                    )}
+                                </>
                             ) : (
-                                <div style={{ display: 'flex', gap: '8px' }}>
+                                <div style={{ 
+                                    padding: '12px', 
+                                    background: 'var(--surface-card, rgba(255,255,255,0.03))',
+                                    borderRadius: 'var(--radius-md, 8px)',
+                                    border: '1px dashed var(--primary, #4a90e2)'
+                                }}>
+                                    <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--primary, #4a90e2)' }}>
+                                            Tạo bộ đề mới
+                                        </span>
+                                        <button
+                                            type="button"
+                                            className="btn btn-ghost btn-sm"
+                                            onClick={() => toggleCreateNewSet(false)}
+                                            style={{ fontSize: '12px', padding: '4px 8px' }}
+                                        >
+                                            Hủy
+                                        </button>
+                                    </div>
                                     <input
                                         type="text"
-                                        className="form-input"
-                                        placeholder="Nhập mã bộ đề mới (VD: speaking_2025)"
+                                        className={`form-input ${errors.setCode ? 'is-invalid' : ''}`}
+                                        placeholder="Mã bộ đề (VD: ielts_ai_2026)"
                                         value={formData.setCode}
-                                        onChange={(e) => handleChange('setCode', e.target.value)}
-                                        style={{ flex: 1 }}
-                                        required
+                                        onChange={(e) => handleChange('setCode', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                                        style={{ marginBottom: '8px' }}
                                     />
-                                    <button
-                                        type="button"
-                                        className="btn btn-secondary"
-                                        onClick={() => handleChange('createNewSet', false)}
-                                    >
-                                        Hủy
-                                    </button>
+                                    {errors.setCode && (
+                                        <div className="form-error" style={{ marginBottom: '8px' }}>
+                                            <FiAlertCircle /> {errors.setCode}
+                                        </div>
+                                    )}
+                                    <input
+                                        type="text"
+                                        className={`form-input ${errors.setName ? 'is-invalid' : ''}`}
+                                        placeholder="Tên bộ đề (VD: IELTS AI Practice 2026)"
+                                        value={formData.setName}
+                                        onChange={(e) => handleChange('setName', e.target.value)}
+                                    />
+                                    {errors.setName && (
+                                        <div className="form-error">
+                                            <FiAlertCircle /> {errors.setName}
+                                        </div>
+                                    )}
                                 </div>
                             )}
-                            <small className="form-hint">
-                                {formData.createNewSet
-                                    ? "Nhập mã cho bộ đề mới. Tên sẽ được tạo tự động."
-                                    : "Chọn một bộ đề có sẵn để thêm bài tập này vào."}
-                            </small>
                         </div>
 
-                        {/* 2. Test Selection - Only show if set is selected */}
-                        {formData.setId && !formData.createNewSet && (
-                            <div className="form-group">
-                                <label className="form-label">
-                                    <FiFileText className="form-icon" />
-                                    Bài thi
-                                </label>
-
-                                {/* Toggle between new and existing test */}
-                                <div style={{
-                                    display: 'flex',
-                                    gap: '8px',
-                                    marginBottom: '8px'
-                                }}>
-                                    <button
-                                        type="button"
-                                        className={`btn ${!formData.addToExistingTest ? 'btn-primary' : 'btn-secondary'}`}
-                                        onClick={() => setFormData(prev => ({ ...prev, addToExistingTest: false, testId: '' }))}
-                                        style={{ flex: 1 }}
-                                    >
-                                        Tạo bài mới
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`btn ${formData.addToExistingTest ? 'btn-primary' : 'btn-secondary'}`}
-                                        onClick={() => setFormData(prev => ({ ...prev, addToExistingTest: true }))}
-                                        disabled={testsInSet.length === 0}
-                                        style={{ flex: 1 }}
-                                    >
-                                        Thêm vào bài có sẵn {testsInSet.length > 0 && `(${testsInSet.length})`}
-                                    </button>
-                                </div>
-
-                                {formData.addToExistingTest ? (
-                                    <select
-                                        className="form-select"
-                                        value={formData.testId}
-                                        onChange={(e) => handleChange('testId', e.target.value)}
-                                        required
-                                        disabled={isLoadingTests}
-                                    >
-                                        <option value="">
-                                            {isLoadingTests ? 'Đang tải...' : '-- Chọn bài thi --'}
-                                        </option>
-                                        {testsInSet.map(test => (
-                                            <option key={test.id} value={test.id}>
-                                                {test.name || `Test ${test.testNumber}`}
-                                            </option>
-                                        ))}
-                                    </select>
-                                ) : (
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="Nhập tên bài thi..."
-                                        value={formData.testName}
-                                        onChange={(e) => handleChange('testName', e.target.value)}
-                                        required
-                                    />
-                                )}
-
-                                <small className="form-hint">
-                                    {formData.addToExistingTest
-                                        ? `Part ${partNumber} sẽ được thêm vào bài thi đã chọn.`
-                                        : "Bài thi mới sẽ được tạo trong bộ đề này."}
+                        {/* 3. TEST NUMBER */}
+                        <div className="form-group">
+                            <label className="form-label">
+                                Số thứ tự đề thi
+                            </label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <input
+                                    type="number"
+                                    className="form-input"
+                                    value={formData.testNumber}
+                                    onChange={(e) => handleChange('testNumber', parseInt(e.target.value) || 1)}
+                                    min={1}
+                                    style={{ width: '100px' }}
+                                />
+                                <small style={{ color: 'var(--text-secondary, rgba(255,255,255,0.6))' }}>
+                                    {formData.setId && !formData.createNewSet 
+                                        ? `(${testsInSet.length} đề hiện có trong bộ)`
+                                        : '(Tự động tăng)'
+                                    }
                                 </small>
                             </div>
-                        )}
+                        </div>
 
-                        {/* 3. Test Name - Only for new test without set selected */}
-                        {(!formData.setId || formData.createNewSet) && (
-                            <div className="form-group">
-                                <label className="form-label">
-                                    <FiType className="form-icon" />
-                                    Tên bài thi <span className="required">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    value={formData.testName}
-                                    onChange={(e) => handleChange('testName', e.target.value)}
-                                    required
-                                />
-                            </div>
-                        )}
+                        {/* 4. TEST NAME - REQUIRED */}
+                        <div className="form-group">
+                            <label className="form-label">
+                                <FiType className="form-icon" />
+                                Tên đề thi <span className="required">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                className={`form-input ${errors.testName ? 'is-invalid' : ''}`}
+                                placeholder="VD: IELTS Academic Reading Test 1"
+                                value={formData.testName}
+                                onChange={(e) => handleChange('testName', e.target.value)}
+                            />
+                            {errors.testName && (
+                                <div className="form-error">
+                                    <FiAlertCircle /> {errors.testName}
+                                </div>
+                            )}
+                        </div>
 
-                        {/* 4. Difficulty Level */}
+                        {/* 5. DIFFICULTY */}
                         <div className="form-group">
                             <label className="form-label">
                                 <FiBarChart2 className="form-icon" />
@@ -318,23 +389,39 @@ export default function SaveAIContentModal({
                                 value={formData.difficulty}
                                 onChange={(e) => handleChange('difficulty', e.target.value)}
                             >
-                                <option value="BEGINNER">Dễ (Beginner)</option>
-                                <option value="INTERMEDIATE">Trung bình (Intermediate)</option>
-                                <option value="ADVANCED">Khó (Advanced)</option>
+                                {difficultyOptions.map(opt => (
+                                    <option key={opt.value} value={opt.value}>
+                                        {opt.label} ({opt.labelEn})
+                                    </option>
+                                ))}
                             </select>
                         </div>
 
-                        {/* 5. Hashtags */}
+                        {/* 6. HASHTAGS - Max 20 */}
                         <div className="form-group">
+                            <label className="form-label">
+                                <FiHash className="form-icon" />
+                                Hashtags
+                                <span style={{ 
+                                    marginLeft: '8px', 
+                                    fontSize: '12px', 
+                                    color: formData.hashtags.length >= 20 
+                                        ? 'var(--danger, #f56565)' 
+                                        : 'var(--text-secondary, rgba(255,255,255,0.6))'
+                                }}>
+                                    Đã chọn: {formData.hashtags.length}/20
+                                </span>
+                            </label>
                             <TagInput
-                                label="Hashtags"
                                 mode="select"
                                 value={formData.hashtags}
                                 onChange={(val) => handleChange('hashtags', val)}
-                                maxTags={5}
-                                placeholder="Chọn hashtag (VD: #reading, #ielts)..."
-                                helperText="Gắn thẻ để dễ dàng tìm kiếm sau này."
+                                maxTags={20}
+                                placeholder="Chọn hashtag..."
                             />
+                            <small className="form-hint">
+                                Gắn thẻ để dễ dàng tìm kiếm và phân loại sau này
+                            </small>
                         </div>
 
                     </form>
@@ -355,19 +442,11 @@ export default function SaveAIContentModal({
                         className="btn btn-primary"
                         disabled={isSubmitting}
                     >
+                        <FiSave style={{ marginRight: '6px' }} />
                         {isSubmitting ? 'Đang lưu...' : 'Lưu vào CSDL'}
                     </button>
                 </div>
             </div>
         </div>
     );
-}
-
-function generateCode(name) {
-    if (!name) return '';
-    return String(name)
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '')
-        .substring(0, 30);
 }

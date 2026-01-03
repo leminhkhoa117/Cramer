@@ -71,19 +71,8 @@ public class AdminContentServiceImpl implements AdminContentService {
                 setMap.put("description", testSet.getDescription());
                 setMap.put("coverImageUrl", testSet.getCoverImageUrl());
                 setMap.put("isPublished", testSet.getIsPublished());
-
-                // Add hashtags for Test Set
-                List<Map<String, Object>> setHashtags = new ArrayList<>();
-                for (Hashtag h : testSet.getHashtags()) {
-                    Map<String, Object> hMap = new HashMap<>();
-                    hMap.put("id", h.getId());
-                    hMap.put("code", h.getCode());
-                    hMap.put("nameVi", h.getName());
-                    hMap.put("icon", h.getIcon());
-                    hMap.put("color", h.getColor());
-                    setHashtags.add(hMap);
-                }
-                setMap.put("hashtags", setHashtags);
+                // Note: Hashtags are now at the IeltsTest level, not TestSet level
+                setMap.put("hashtags", new ArrayList<>());
 
                 List<Map<String, Object>> testsList = new ArrayList<>();
                 for (IeltsTest test : testSet.getTests()) {
@@ -1178,21 +1167,7 @@ public class AdminContentServiceImpl implements AdminContentService {
                     .createdBy(UUID.fromString(adminUserId))
                     .build();
 
-            if (setData.containsKey("hashtagIds")) {
-                List<?> rawIds = (List<?>) setData.get("hashtagIds");
-                if (rawIds != null && !rawIds.isEmpty()) {
-                    List<Long> hashtagIds = rawIds.stream()
-                            .map(id -> Long.valueOf(id.toString()))
-                            .toList();
-                    List<Hashtag> hashtags = hashtagRepository
-                            .findAllById(Objects.requireNonNull(hashtagIds, "hashtagIds must not be null"));
-                    testSet.setHashtags(hashtags);
-                    hashtags.forEach(h -> {
-                        h.incrementUseCount();
-                        hashtagRepository.save(h);
-                    });
-                }
-            }
+            // Note: hashtagIds for TestSet are ignored - hashtags should be set at IeltsTest level
 
             testSet = Objects.requireNonNull(testSetRepository.save(testSet), "Failed to save test set");
             cachedOverview = null;
@@ -1220,37 +1195,7 @@ public class AdminContentServiceImpl implements AdminContentService {
             if (setData.containsKey("displayOrder"))
                 testSet.setDisplayOrder((Integer) setData.get("displayOrder"));
 
-            if (setData.containsKey("hashtagIds")) {
-                List<Hashtag> oldHashtags = new ArrayList<>(testSet.getHashtags());
-
-                List<?> rawIds = (List<?>) setData.get("hashtagIds");
-                List<Long> newIds = rawIds == null ? new ArrayList<>()
-                        : rawIds.stream().map(id -> Long.valueOf(id.toString())).toList();
-                List<Hashtag> newHashtags = hashtagRepository
-                        .findAllById(Objects.requireNonNull(newIds, "newIds must not be null"));
-
-                // Calculate removed
-                List<Hashtag> removed = oldHashtags.stream()
-                        .filter(h -> !newHashtags.contains(h))
-                        .toList();
-
-                // Calculate added
-                List<Hashtag> added = newHashtags.stream()
-                        .filter(h -> !oldHashtags.contains(h))
-                        .toList();
-
-                // Update counts
-                removed.forEach(h -> {
-                    h.decrementUseCount();
-                    hashtagRepository.save(h);
-                });
-                added.forEach(h -> {
-                    h.incrementUseCount();
-                    hashtagRepository.save(h);
-                });
-
-                testSet.setHashtags(newHashtags);
-            }
+            // Note: hashtagIds for TestSet are ignored - hashtags should be set at IeltsTest level
 
             Objects.requireNonNull(testSetRepository.save(testSet), "Failed to save updated testset");
             cachedOverview = null;

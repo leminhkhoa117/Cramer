@@ -26,8 +26,16 @@ public class GenerationResponseDTO {
 
     /**
      * Generated content (section and questions).
+     * Used for SINGLE_PART scope.
      */
     private GeneratedContentDTO content;
+
+    /**
+     * Multiple generated parts (for FULL_SKILL scope).
+     * Each entry contains content for one part.
+     * Index 0 = Part 1, Index 1 = Part 2, etc.
+     */
+    private List<GeneratedContentDTO> parts;
 
     /**
      * Validation results.
@@ -98,6 +106,14 @@ public class GenerationResponseDTO {
 
     public void setContent(GeneratedContentDTO content) {
         this.content = content;
+    }
+
+    public List<GeneratedContentDTO> getParts() {
+        return parts;
+    }
+
+    public void setParts(List<GeneratedContentDTO> parts) {
+        this.parts = parts;
     }
 
     public ValidationResultDTO getValidation() {

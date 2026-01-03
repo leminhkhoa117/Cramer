@@ -553,6 +553,7 @@ export default function SetDetailPage() {
                     hashtags={hashtags}
                     onClose={() => { setShowEditTestModal(false); setSelectedTest(null); }}
                     onSubmit={(data) => handleUpdateTest(selectedTest.id, data)}
+                    editingTest={selectedTest}
                 />,
                 document.body
             )}
@@ -640,16 +641,18 @@ function SkillIndicator({ skillCounts }) {
 }
 
 /**
- * CreateTestModal - Modal for creating a new test
+ * CreateTestModal - Modal for creating/editing a test
+ * @param {Object} editingTest - If provided, modal is in edit mode with pre-filled data
  */
-function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubmit }) {
+function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubmit, editingTest = null }) {
     const topicHashtags = hashtags.filter(h => h.category === 'topic');
+    const isEditing = !!editingTest;
 
     const [formData, setFormData] = useState({
-        testNumber: Math.max(...existingTestNumbers, 0) + 1,
-        name: '',
-        difficulty: 'INTERMEDIATE',
-        hashtagIds: []
+        testNumber: editingTest?.testNumber ?? Math.max(...existingTestNumbers, 0) + 1,
+        name: editingTest?.name ?? '',
+        difficulty: editingTest?.difficulty ?? 'INTERMEDIATE',
+        hashtagIds: editingTest?.hashtagIds ?? []
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
@@ -684,6 +687,9 @@ function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubm
         } else if (existingTestNumbers.includes(formData.testNumber)) {
             newErrors.testNumber = 'Số bài thi đã tồn tại';
         }
+        if (!formData.name || formData.name.trim() === '') {
+            newErrors.name = 'Vui lòng nhập tên đề thi';
+        }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -715,7 +721,7 @@ function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubm
         <div className="admin-modal-overlay-custom" onClick={handleOverlayClick}>
             <div className="admin-edit-modal create-test-modal" onClick={e => e.stopPropagation()}>
                 <div className="admin-edit-modal-header">
-                    <h2>Thêm bài thi mới</h2>
+                    <h2>{isEditing ? 'Chỉnh sửa thông tin đề thi' : 'Thêm bài thi mới'}</h2>
                     <button
                         className="admin-edit-modal-close"
                         onClick={onClose}
@@ -743,34 +749,21 @@ function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubm
                             {errors.testNumber && <span className="form-error">{errors.testNumber}</span>}
                         </div>
 
-                        {/* Name Vietnamese */}
+                        {/* Test Name */}
                         <div className="form-group">
-                            <label htmlFor="name">Tên tiếng Việt</label>
+                            <label htmlFor="name">Tên đề thi *</label>
                             <input
                                 type="text"
                                 id="name"
                                 name="name"
-                                className="form-input"
-                                placeholder="vd: Bài thi 1 - Chủ đề Giáo dục"
+                                className={`form-input ${errors.name ? 'form-input--error' : ''}`}
+                                placeholder="vd: Cambridge 17 Test 1"
                                 value={formData.name}
                                 onChange={handleChange}
                                 disabled={isSubmitting}
+                                required
                             />
-                        </div>
-
-                        {/* Name English */}
-                        <div className="form-group">
-                            <label htmlFor="name">Tên tiếng Anh</label>
-                            <input
-                                type="text"
-                                id="name"
-                                name="name"
-                                className="form-input"
-                                placeholder="e.g. Test 1 - Education Topic"
-                                value={formData.name}
-                                onChange={handleChange}
-                                disabled={isSubmitting}
-                            />
+                            {errors.name && <span className="form-error">{errors.name}</span>}
                         </div>
 
                         {/* Difficulty */}
@@ -785,7 +778,9 @@ function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubm
                                 disabled={isSubmitting}
                             >
                                 <option value="BEGINNER">Cơ bản (Beginner)</option>
-                                <option value="INTERMEDIATE">Trung bình (Intermediate)</option>
+                                <option value="LOWER_INTERMEDIATE">Sơ trung cấp (Lower Intermediate)</option>
+                                <option value="INTERMEDIATE">Trung cấp (Intermediate)</option>
+                                <option value="UPPER_INTERMEDIATE">Trung cao cấp (Upper Intermediate)</option>
                                 <option value="ADVANCED">Nâng cao (Advanced)</option>
                             </select>
                         </div>
@@ -838,12 +833,12 @@ function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubm
                             {isSubmitting ? (
                                 <>
                                     <span className="spinner small"></span>
-                                    Đang tạo...
+                                    {isEditing ? 'Đang lưu...' : 'Đang tạo...'}
                                 </>
                             ) : (
                                 <>
-                                    <FiPlus size={16} />
-                                    Tạo bài thi
+                                    {isEditing ? <FiCheck size={16} /> : <FiPlus size={16} />}
+                                    {isEditing ? 'Lưu thay đổi' : 'Tạo bài thi'}
                                 </>
                             )}
                         </button>

@@ -1903,7 +1903,7 @@ public class JsonValidatorService {
                     question.setCorrectAnswer(answers);
                 }
                 if (qNode.has("explanation")) {
-                    question.setExplanation(qNode.get("explanation").asText());
+                    question.setExplanation(qNode.get("explanation"));
                 }
                 if (qNode.has("word_limit") && !qNode.get("word_limit").isNull()) {
                     question.setWordLimit(qNode.get("word_limit").asText());

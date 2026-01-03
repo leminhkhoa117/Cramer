@@ -70,12 +70,8 @@ public class TestSet {
     @EqualsAndHashCode.Exclude
     private List<IeltsTest> tests = new ArrayList<>();
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "test_set_hashtags", joinColumns = @JoinColumn(name = "test_set_id"), inverseJoinColumns = @JoinColumn(name = "hashtag_id"))
-    @Builder.Default
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private List<Hashtag> hashtags = new ArrayList<>();
+    // Note: Hashtags are now associated at the IeltsTest level (via test_hashtags table)
+    // The test_set_hashtags table was removed as it was unused (0 rows)
 
     /**
      * Get the count of all tests in this set.

@@ -137,7 +137,15 @@ public class GeneratedContentDTO {
         private String questionType;
         private JsonNode questionContent;
         private List<String> correctAnswer;
-        private String explanation;
+        /**
+         * Structured explanation object:
+         * {
+         *   "detail": "Detailed explanation in Vietnamese",
+         *   "quote": "Direct quote from passage/transcript (in English)",
+         *   "strategy": "Strategy tip for this question type (in Vietnamese)"
+         * }
+         */
+        private JsonNode explanation;
         private String wordLimit;
         private String imageUrl;
 
@@ -173,11 +181,11 @@ public class GeneratedContentDTO {
             this.correctAnswer = correctAnswer;
         }
 
-        public String getExplanation() {
+        public JsonNode getExplanation() {
             return explanation;
         }
 
-        public void setExplanation(String explanation) {
+        public void setExplanation(JsonNode explanation) {
             this.explanation = explanation;
         }
 

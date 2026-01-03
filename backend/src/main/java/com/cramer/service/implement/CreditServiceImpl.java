@@ -193,7 +193,7 @@ public class CreditServiceImpl implements CreditService {
         return UserFullStatsDTO.builder()
                 .userId(userId)
                 .currentTier(subscription.getTier())
-                .aiGradingsRemaining(subscription.getAiGradingsRemaining())
+                .attemptAisRemaining(subscription.getAttemptAisRemaining())
                 .dailyChatRemaining(dailyChatRemaining)
                 .isSubscriptionActive(subscription.getIsActive())
                 .luaBalance(credits.getBalance())

@@ -343,7 +343,7 @@ public class PaymentServiceImpl implements PaymentService {
                     .userId(order.getUserId())
                     .tier(tier)
                     .status(UserSubscription.Status.ACTIVE)
-                    .aiGradingsUsed(0)
+                    .attemptAisUsed(0)
                     .paymentReference(order.getPaymentLinkId())
                     .autoRenew(false)
                     .build();
@@ -351,8 +351,8 @@ public class PaymentServiceImpl implements PaymentService {
             // Upgrade existing subscription
             subscription.setTier(tier);
             subscription.setPaymentReference(order.getPaymentLinkId());
-            // Reset gradings used for new tier
-            subscription.setAiGradingsUsed(0);
+            // Reset attempt_ais used for new tier
+            subscription.setAttemptAisUsed(0);
         }
 
         // Set expiration (1 month from now)

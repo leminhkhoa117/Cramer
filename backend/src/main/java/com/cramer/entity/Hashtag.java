@@ -61,12 +61,8 @@ public class Hashtag {
     @EqualsAndHashCode.Exclude
     private Set<IeltsTest> tests = new HashSet<>();
 
-    @ManyToMany(mappedBy = "hashtags", fetch = FetchType.LAZY)
-    @JsonIgnore
-    @Builder.Default
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private Set<TestSet> testSets = new HashSet<>();
+    // Note: TestSet -> Hashtag relationship was removed (test_set_hashtags table deleted)
+    // Hashtags are now only associated at the IeltsTest level
 
     /**
      * Increment the use count when this hashtag is added to a test.

@@ -1968,7 +1968,7 @@ public class ABTSService {
         String insertQuestionSql = """
                 INSERT INTO questions (section_id, question_number, question_uid, question_type,
                                       question_content, correct_answer, explanation, word_limit, image_url)
-                VALUES (?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?::jsonb, ?::jsonb, ?::jsonb, ?, ?)
                 """;
 
         String skillCode = section.getSkill().substring(0, 1); // r, l, w
@@ -1995,6 +1995,12 @@ public class ABTSService {
                     correctAnswerJson = objectMapper.writeValueAsString(q.getCorrectAnswer());
                 }
 
+                // Serialize explanation to JSON (structured format)
+                String explanationJson = null;
+                if (q.getExplanation() != null) {
+                    explanationJson = objectMapper.writeValueAsString(q.getExplanation());
+                }
+
                 jdbcTemplate.update(
                         insertQuestionSql,
                         section.getId(),
@@ -2003,7 +2009,7 @@ public class ABTSService {
                         q.getQuestionType(),
                         questionContentJson,
                         correctAnswerJson,
-                        q.getExplanation(),
+                        explanationJson,
                         q.getWordLimit(),
                         q.getImageUrl());
 

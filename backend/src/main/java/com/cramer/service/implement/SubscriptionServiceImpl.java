@@ -180,7 +180,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         @Transactional(readOnly = true)
         public int getMonthlyGradingsRemaining(UUID userId) {
                 return subscriptionRepository.findActiveByUserId(userId)
-                                .map(UserSubscription::getRemainingAiGradings)
+                                .map(UserSubscription::getRemainingAttemptAis)
                                 .orElse(0);
         }
 
@@ -207,7 +207,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                                 .userId(userId)
                                 .tier(freeTier)
                                 .status(UserSubscription.Status.ACTIVE)
-                                .aiGradingsUsed(0)
+                                .attemptAisUsed(0)
                                 .autoRenew(false)
                                 .build();
 

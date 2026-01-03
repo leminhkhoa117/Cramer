@@ -446,21 +446,21 @@ public class AdminUserServiceImpl implements AdminUserService {
                     Integer.class, userId);
 
             if (existingSubCount != null && existingSubCount > 0) {
-                // Update existing subscription
+                // Update existing subscription (ai_gradings_used column removed)
                 jdbcTemplate.update(
                         "UPDATE public.user_subscriptions " +
                         "SET tier_id = ?, status = 'ACTIVE', started_at = NOW(), expires_at = ?, " +
                         "attempts_used = 0, attempt_ais_used = 0, chatbot_used = 0, " +
-                        "ai_gradings_used = 0, auto_renew = false " +
+                        "auto_renew = false " +
                         "WHERE user_id = ?::uuid",
                         newTierId, expiresAt, userId);
             } else {
-                // Insert new subscription
+                // Insert new subscription (ai_gradings_used column removed)
                 jdbcTemplate.update(
                         "INSERT INTO public.user_subscriptions " +
                         "(user_id, tier_id, status, started_at, expires_at, attempts_used, attempt_ais_used, " +
-                        "chatbot_used, ai_gradings_used, auto_renew) " +
-                        "VALUES (?::uuid, ?, 'ACTIVE', NOW(), ?, 0, 0, 0, 0, false)",
+                        "chatbot_used, auto_renew) " +
+                        "VALUES (?::uuid, ?, 'ACTIVE', NOW(), ?, 0, 0, 0, false)",
                         userId, newTierId, expiresAt);
             }
 

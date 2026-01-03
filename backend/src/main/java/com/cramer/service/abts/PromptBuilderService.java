@@ -69,11 +69,22 @@ public class PromptBuilderService {
                                                 : "English")
                                 .append("\n");
                 prompt.append("⚠️ CRITICAL: The passage and ALL question text must ALWAYS be in ENGLISH. ");
-                prompt.append("Only the 'explanation' field should be in the language specified above.\n");
-                prompt.append("⚠️ EXPLANATION QUALITY: Explanations must be detailed and structured. Include:\n");
-                prompt.append("   1. **Reasoning**: Why is this the correct answer?\n");
-                prompt.append("   2. **Evidence**: A direct quote from the passage.\n");
-                prompt.append("   3. **Strategy**: A brief tip on how to find such answers.\n\n");
+                prompt.append("Only the 'explanation' field should be in the language specified above.\n\n");
+
+                // STRUCTURED EXPLANATION FORMAT (3 fields only - correct_answer is stored separately)
+                prompt.append("### ⚠️ EXPLANATION FORMAT (CRITICAL - MUST FOLLOW EXACTLY)\n");
+                prompt.append("Each question's `explanation` field must be a JSON object with this EXACT structure:\n");
+                prompt.append("```json\n");
+                prompt.append("{\n");
+                prompt.append("  \"detail\": \"<detailed explanation in Vietnamese why this is correct>\",\n");
+                prompt.append("  \"quote\": \"<EXACT quote from the passage in English that proves the answer>\",\n");
+                prompt.append("  \"strategy\": \"<strategy tip in Vietnamese for this question type>\"\n");
+                prompt.append("}\n");
+                prompt.append("```\n\n");
+                prompt.append("**Field Requirements:**\n");
+                prompt.append("- `detail`: 2-4 sentences explaining the reasoning (in Vietnamese).\n");
+                prompt.append("- `quote`: Direct quote from passage with quotation marks. Keep in English.\n");
+                prompt.append("- `strategy`: Brief strategy tip for similar questions (in Vietnamese).\n\n");
 
                 // Check if using existing passage
                 if (request.getExistingPassageText() != null && !request.getExistingPassageText().isEmpty()) {
@@ -843,22 +854,23 @@ public class PromptBuilderService {
                         prompt.append("- answer_locations: Which letters correspond to which blanks\n\n");
                 }
 
-                // Explanation language
-                prompt.append("### Explanation Language\n");
-                prompt.append("All explanations must be in: **Vietnamese (Tiếng Việt)** regardless of user input.\n");
-                prompt.append("Use HTML keys: <b>Reasoning:</b>, <b>Evidence:</b>, <b>Strategy:</b>.\n\n");
+                // Explanation language and format
+                prompt.append("### Explanation Format (CRITICAL)\n");
+                prompt.append("All explanations must be JSON objects in Vietnamese:\n");
+                prompt.append("```json\n");
+                prompt.append("{\n");
+                prompt.append("  \"detail\": \"<Vietnamese explanation: why is this correct?>\",\n");
+                prompt.append("  \"quote\": \"<EXACT English quote from transcript that proves the answer>\",\n");
+                prompt.append("  \"strategy\": \"<Vietnamese strategy tip for this question type>\"\n");
+                prompt.append("}\n");
+                prompt.append("```\n\n");
 
                 prompt.append("### ⚠️ CRITICAL: Answer Format\n");
                 prompt.append("- Each question MUST have its OWN `correct_answer` array with exactly ONE answer.\n");
                 prompt.append("- Question 1's correct_answer = [\"answer1\"] (just this question's answer)\n");
                 prompt.append("- Question 2's correct_answer = [\"answer2\"] (just this question's answer)\n");
                 prompt.append("- DO NOT put all answers in one array and duplicate across questions!\n");
-                prompt.append("- Each question MUST have its own INDIVIDUAL explanation.\n\n");
-
-                prompt.append("Explanations must include (using HTML):\n");
-                prompt.append("1. `<b>Reasoning:</b>` Why is this the correct answer?\n");
-                prompt.append("2. `<b>Evidence:</b>` Quote the exact transcript phrase.\n");
-                prompt.append("3. `<b>Strategy:</b>` A brief listening tip.\n\n");
+                prompt.append("- Each question MUST have its own INDIVIDUAL explanation JSON object.\n\n");
 
                 prompt.append("### Audio Placeholder (REQUIRED)\n");
                 prompt.append("Include `audio_placeholder` with:\n");
@@ -985,12 +997,23 @@ public class PromptBuilderService {
                 system.append("4. **DISTRACTION**: Include plausible distractors mentioned before the answer\n");
                 system.append("5. **PARAPHRASING**: Questions should paraphrase information from transcript\n");
                 system.append("6. **10 QUESTIONS**: Each part must have exactly 10 questions\n");
-                system.append("7. **EXPLANATIONS**: Provide detailed reasoning + transcript quote + strategy tip\n");
+                system.append("7. **EXPLANATIONS**: Must be a JSON object with: detail, quote, strategy (3 fields)\n");
                 system.append(
                                 "8. **WORD LIMITS**: FILL_IN_BLANK answers must respect word_limit and use ORIGINAL CASING (e.g. 'Park Street', not 'PARK STREET')\n");
                 system.append(
                                 "9. **INLINE STRATEGY**: For NOTE_COMPLETION, each question MUST have its own text (bullet point). Do NOT leave text empty.\n");
                 system.append("10. **JSON FORMAT**: Output must match schema exactly\n\n");
+
+                // Add structured explanation format (3 fields - correct_answer stored separately)
+                system.append("## Explanation JSON Format (CRITICAL)\n");
+                system.append("Each question's `explanation` must be a JSON object:\n");
+                system.append("```json\n");
+                system.append("{\n");
+                system.append("  \"detail\": \"<detailed Vietnamese explanation>\",\n");
+                system.append("  \"quote\": \"<EXACT English quote from transcript>\",\n");
+                system.append("  \"strategy\": \"<Vietnamese strategy tip>\"\n");
+                system.append("}\n");
+                system.append("```\n\n");
 
                 system.append("## Speaker Naming Convention\n");
                 system.append("- Part 1: Two named roles (e.g., AGENT:, CALLER:)\n");
@@ -1370,7 +1393,19 @@ public class PromptBuilderService {
                                                 "FLOW_CHART_COMPLETION")));
                 questionProps.put("question_content", Map.of("type", "object"));
                 questionProps.put("correct_answer", Map.of("type", "array", "items", Map.of("type", "string")));
-                questionProps.put("explanation", Map.of("type", "string"));
+                // Structured explanation in Vietnamese (3 fields - dapAn removed as it's redundant with correct_answer)
+                questionProps.put("explanation", Map.of(
+                                "type", "object",
+                                "properties", Map.of(
+                                                "detail", Map.of("type", "string",
+                                                                "description",
+                                                                "Detailed explanation why this is the correct answer (in Vietnamese)"),
+                                                "quote", Map.of("type", "string",
+                                                                "description",
+                                                                "Direct quote from passage/transcript (in English)"),
+                                                "strategy", Map.of("type", "string",
+                                                                "description", "Strategy tip for this question type (in Vietnamese)")),
+                                "required", List.of("detail", "quote", "strategy")));
                 questionProps.put("word_limit", Map.of("type", List.of("string", "null")));
                 questionProps.put("image_url", Map.of("type", List.of("string", "null")));
                 questionItem.put("properties", questionProps);
@@ -1432,7 +1467,19 @@ public class PromptBuilderService {
                                                 "MATCHING")));
                 questionProps.put("question_content", Map.of("type", "object"));
                 questionProps.put("correct_answer", Map.of("type", "array", "items", Map.of("type", "string")));
-                questionProps.put("explanation", Map.of("type", "string"));
+                // Structured explanation in Vietnamese (3 fields - dapAn removed as it's redundant with correct_answer)
+                questionProps.put("explanation", Map.of(
+                                "type", "object",
+                                "properties", Map.of(
+                                                "detail", Map.of("type", "string",
+                                                                "description",
+                                                                "Detailed explanation why this is the correct answer (in Vietnamese)"),
+                                                "quote", Map.of("type", "string",
+                                                                "description",
+                                                                "Direct quote from transcript (in English)"),
+                                                "strategy", Map.of("type", "string",
+                                                                "description", "Strategy tip for this question type (in Vietnamese)")),
+                                "required", List.of("detail", "quote", "strategy")));
                 questionProps.put("word_limit", Map.of("type", List.of("string", "null")));
                 questionItem.put("properties", questionProps);
                 questionItem.put("required",

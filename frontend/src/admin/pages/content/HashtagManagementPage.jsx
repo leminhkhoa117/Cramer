@@ -373,7 +373,6 @@ const HashtagModal = ({ hashtag, onClose, onSubmit, isSubmitting }) => {
     const [formData, setFormData] = useState({
         code: hashtag?.code || '',
         name: hashtag?.name || '',
-        name: hashtag?.name || '',
         category: hashtag?.category || 'topic',
         icon: hashtag?.icon || '\u{1F4DA}',
         color: hashtag?.color || '#6366F1',

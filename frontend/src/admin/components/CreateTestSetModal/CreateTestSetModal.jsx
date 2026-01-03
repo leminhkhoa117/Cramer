@@ -17,7 +17,6 @@ export default function CreateTestSetModal({ isOpen, onClose, testSet = null }) 
     const [formData, setFormData] = useState({
         code: '',
         name: '',
-        name: '',
         description: '',
         sourceType: 'CAMBRIDGE', // Default
         displayOrder: 0,
@@ -30,7 +29,6 @@ export default function CreateTestSetModal({ isOpen, onClose, testSet = null }) 
             setFormData({
                 code: testSet.code || '',
                 name: testSet.name || '',
-                name: testSet.name || '',
                 description: testSet.description || '',
                 sourceType: testSet.sourceType || 'CAMBRIDGE',
                 displayOrder: testSet.displayOrder || 0,
@@ -40,7 +38,6 @@ export default function CreateTestSetModal({ isOpen, onClose, testSet = null }) 
         } else {
             setFormData({
                 code: '',
-                name: '',
                 name: '',
                 description: '',
                 sourceType: 'CAMBRIDGE',

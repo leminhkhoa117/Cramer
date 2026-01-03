@@ -7,10 +7,15 @@
  * - Uses same TestFooter
  * - Removed: Timer, Submit/Exit, stores, modals, audio autoplay
  * - Read-only mode: for display purposes only
+ * 
+ * Admin Features:
+ * - Answer Key Toggle: Show/hide correct answers for all questions
+ * - Click-to-Edit: Click on a question to open the question editor
  */
 
 import React, { useMemo, useRef, useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
+import { FiEye, FiEyeOff, FiEdit3 } from 'react-icons/fi';
 import TestLayout from '../../../components/TestLayout';
 import QuestionGroupRenderer from '../../../components/QuestionGroupRenderer';
 import TestFooter from '../../../components/TestFooter';
@@ -29,6 +34,83 @@ import '../../css/components/admin-preview.css';
 const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+};
+
+/**
+ * AdminQuestionWrapper - Wraps each question with click-to-edit and answer display
+ */
+const AdminQuestionWrapper = ({ question, showAnswer, onEdit, children }) => {
+    const handleClick = useCallback((e) => {
+        // Don't trigger edit if clicking on interactive elements
+        if (e.target.closest('input, select, button, textarea, label')) {
+            return;
+        }
+        onEdit(question);
+    }, [question, onEdit]);
+
+    return (
+        <div 
+            className="admin-question-wrapper"
+            onClick={handleClick}
+            title="Nhấn để chỉnh sửa câu hỏi"
+        >
+            <div className="admin-question-edit-hint">
+                <FiEdit3 size={12} />
+                <span>Chỉnh sửa</span>
+            </div>
+            {children}
+            {showAnswer && question.correctAnswer && (
+                <div className="admin-answer-key">
+                    <span className="admin-answer-label">Đáp án:</span>
+                    <span className="admin-answer-value">{question.correctAnswer}</span>
+                </div>
+            )}
+        </div>
+    );
+};
+
+/**
+ * AdminQuestionGroupWrapper - Wraps question groups to add edit functionality to each question
+ */
+const AdminQuestionGroupWrapper = ({ group, showAnswers, onQuestionEdit, onAnswerChange, answers, skill }) => {
+    // Extract questions from the group
+    const questionsWithWrapper = useMemo(() => {
+        return group.questions || [];
+    }, [group.questions]);
+
+    return (
+        <div className="admin-question-group-wrapper">
+            <QuestionGroupRenderer
+                group={group}
+                onAnswerChange={onAnswerChange}
+                answers={answers}
+                skill={skill}
+            />
+            {/* Overlay answer keys if showAnswers is true */}
+            {showAnswers && (
+                <div className="admin-answers-overlay">
+                    {questionsWithWrapper.map(q => (
+                        <div 
+                            key={q.id} 
+                            className="admin-answer-item"
+                            data-question-id={q.id}
+                            onClick={() => onQuestionEdit(q)}
+                        >
+                            <span className="admin-answer-qnum">Q{q.questionNumber}</span>
+                            <span className="admin-answer-value">{q.correctAnswer || '—'}</span>
+                            <button 
+                                className="admin-answer-edit-btn"
+                                title="Chỉnh sửa câu hỏi"
+                                onClick={(e) => { e.stopPropagation(); onQuestionEdit(q); }}
+                            >
+                                <FiEdit3 size={12} />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 };
 
 /**
@@ -99,11 +181,27 @@ export default function AdminPreviewContent({
     skill = 'reading',
     onPartSelect = () => { },
     onQuestionSelect = () => { },
+    onQuestionEdit = () => { },     // Called when question is clicked for editing
+    showAnswers = false,             // Controlled answer key state
+    onToggleAnswers = () => { },     // Toggle answer key callback
 }) {
     const highlightContainerRef = useRef(null);
     const isListeningTest = skill === 'listening';
     const isWritingTest = skill === 'writing';
     const [showTranscript, setShowTranscript] = useState(false);
+    // Internal state for answer toggle if not controlled externally
+    const [internalShowAnswers, setInternalShowAnswers] = useState(false);
+    
+    // Use internal state if onToggleAnswers is the default no-op
+    const isControlled = onToggleAnswers !== (() => { }).toString();
+    const answersVisible = isControlled ? showAnswers : internalShowAnswers;
+    const handleToggleAnswers = useCallback(() => {
+        if (isControlled) {
+            onToggleAnswers();
+        } else {
+            setInternalShowAnswers(prev => !prev);
+        }
+    }, [isControlled, onToggleAnswers]);
 
     // Build testData format (same as TestPageContent expects)
     // Each part has questions array attached
@@ -250,8 +348,23 @@ export default function AdminPreviewContent({
                     </div>
                 )}
 
-                {isListeningTest && (
-                    <div className="admin-preview-toolbar">
+                {/* Admin Preview Toolbar - Always show for answer key toggle */}
+                <div className="admin-preview-toolbar">
+                    {/* Answer Key Toggle - available for all skills except writing */}
+                    {!isWritingTest && (
+                        <button
+                            className={`admin-preview-toggle answer-key-toggle ${answersVisible ? 'active' : ''}`}
+                            onClick={handleToggleAnswers}
+                            type="button"
+                            title={answersVisible ? 'Ẩn đáp án' : 'Hiện đáp án'}
+                        >
+                            {answersVisible ? <FiEyeOff size={14} /> : <FiEye size={14} />}
+                            <span>Đáp án</span>
+                        </button>
+                    )}
+                    
+                    {/* Transcript Toggle - only for listening */}
+                    {isListeningTest && (
                         <button
                             className={`admin-preview-toggle ${showTranscript ? 'active' : ''}`}
                             onClick={() => setShowTranscript(prev => !prev)}
@@ -259,8 +372,8 @@ export default function AdminPreviewContent({
                         >
                             Transcript
                         </button>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 {/* Main 2-column layout - EXACT structure from TestPageContent */}
                 <TestLayout
@@ -294,9 +407,11 @@ export default function AdminPreviewContent({
                                 animate="visible"
                             >
                                 {questionGroups.map((group, index) => (
-                                    <QuestionGroupRenderer
+                                    <AdminQuestionGroupWrapper
                                         key={index}
                                         group={group}
+                                        showAnswers={answersVisible}
+                                        onQuestionEdit={onQuestionEdit}
                                         onAnswerChange={handleAnswerChange}
                                         answers={answers}
                                         skill={skill}

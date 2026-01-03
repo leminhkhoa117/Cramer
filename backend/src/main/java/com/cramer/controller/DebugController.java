@@ -117,14 +117,14 @@ public class DebugController {
                     .userId(userId)
                     .tier(tier)
                     .status(UserSubscription.Status.ACTIVE)
-                    .aiGradingsUsed(0)
+                    .attemptAisUsed(0)
                     .paymentReference("DEBUG_" + System.currentTimeMillis())
                     .autoRenew(false)
                     .build();
         } else {
             subscription.setTier(tier);
             subscription.setPaymentReference("DEBUG_" + System.currentTimeMillis());
-            subscription.setAiGradingsUsed(0);
+            subscription.setAttemptAisUsed(0);
         }
 
         // Set expiration (1 month from now)

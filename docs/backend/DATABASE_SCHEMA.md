@@ -4,7 +4,7 @@
 >
 > **Project ID:** `jpocdgkrvohmjkejclpl`
 >
-> **Last Updated:** 2025-12-26
+> **Last Updated:** 2026-01-03
 
 ---
 
@@ -47,11 +47,11 @@ The Cramer database is hosted on **Supabase** (PostgreSQL) and serves as the bac
 
 | Metric | Value |
 |--------|-------|
-| Total Tables | 22 |
-| Tables with RLS | 17 |
+| Total Tables | 26 |
+| Tables with RLS | 20 |
 | Database Functions | 3 |
 | Active Triggers | 3 |
-| Applied Migrations | 15 |
+| Applied Migrations | 16 |
 
 ---
 

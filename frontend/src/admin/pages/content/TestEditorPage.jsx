@@ -648,6 +648,7 @@ export default function TestEditorPage() {
                                 skill={activeSkill}
                                 onPartSelect={(index) => setActiveSection(sections[index]?.id)}
                                 onQuestionSelect={() => { }}
+                                onQuestionEdit={openQuestionEditor}
                             />
                         </>
                     ) : (
