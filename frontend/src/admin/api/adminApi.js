@@ -761,16 +761,23 @@ export const testSetsApi = {
 // ============ TESTS API ============
 export const testsApi = {
     /**
-     * List tests in a set
+     * List tests in a set with optional sorting
      * @param {number} setId - Test set ID
+     * @param {Object} options - Sorting options
+     * @param {string} options.sortBy - Sort field (testNumber, createdAt, difficulty, name, isAiGenerated)
+     * @param {string} options.sortDir - Sort direction (asc, desc)
      * @returns {Promise<Array>} List of tests
      */
-    getBySetId: async (setId) => {
+    getBySetId: async (setId, options = {}) => {
         const headers = await getAuthHeaders();
-        const response = await axios.get(
-            `${API_BASE_URL}/api/admin/test-sets/${setId}/tests`,
-            { headers }
-        );
+        const queryParams = new URLSearchParams();
+        if (options.sortBy) queryParams.append('sortBy', options.sortBy);
+        if (options.sortDir) queryParams.append('sortDir', options.sortDir);
+        const queryString = queryParams.toString();
+        const url = queryString
+            ? `${API_BASE_URL}/api/admin/test-sets/${setId}/tests?${queryString}`
+            : `${API_BASE_URL}/api/admin/test-sets/${setId}/tests`;
+        const response = await axios.get(url, { headers });
         return response.data;
     },
 

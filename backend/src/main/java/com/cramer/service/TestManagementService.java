@@ -38,24 +38,62 @@ public class TestManagementService {
     private final HashtagService hashtagService;
 
     /**
-     * Get all tests in a test set.
+     * Get all tests in a test set with default sorting (by test number).
      * 
      * @param setId test set ID
      * @return list of test summaries
      */
     @Transactional(readOnly = true)
     public List<TestSummaryDTO> getTestsBySetId(Long setId) {
-        logger.info("Fetching tests for test set ID: {}", setId);
+        return getTestsBySetId(setId, "testNumber", "asc");
+    }
+
+    /**
+     * Get all tests in a test set with custom sorting.
+     * 
+     * @param setId   test set ID
+     * @param sortBy  field to sort by (testNumber, createdAt, difficulty,
+     *                isAiGenerated)
+     * @param sortDir sort direction (asc, desc)
+     * @return list of test summaries
+     */
+    @Transactional(readOnly = true)
+    public List<TestSummaryDTO> getTestsBySetId(Long setId, String sortBy, String sortDir) {
+        logger.info("Fetching tests for test set ID: {} with sort: {} {}", setId, sortBy, sortDir);
 
         // Verify test set exists
         if (!testSetRepository.existsById(Objects.requireNonNull(setId))) {
             throw new ResourceNotFoundException("TestSet", "id", setId);
         }
 
-        return ieltsTestRepository.findByTestSetIdOrderByTestNumberAsc(setId)
+        // Build sort
+        org.springframework.data.domain.Sort sort = buildSort(sortBy, sortDir);
+
+        return ieltsTestRepository.findByTestSetId(setId, sort)
                 .stream()
                 .map(this::toSummaryDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Build a Sort object from string parameters.
+     */
+    private org.springframework.data.domain.Sort buildSort(String sortBy, String sortDir) {
+        // Validate and default sort field
+        String validSortField = switch (sortBy != null ? sortBy.toLowerCase() : "testnumber") {
+            case "createdat", "created_at" -> "createdAt";
+            case "difficulty" -> "difficulty";
+            case "isai", "isaigenerated", "is_ai_generated" -> "isAiGenerated";
+            case "name" -> "name";
+            default -> "testNumber";
+        };
+
+        // Validate direction
+        org.springframework.data.domain.Sort.Direction direction = "desc".equalsIgnoreCase(sortDir)
+                ? org.springframework.data.domain.Sort.Direction.DESC
+                : org.springframework.data.domain.Sort.Direction.ASC;
+
+        return org.springframework.data.domain.Sort.by(direction, validSortField);
     }
 
     /**
@@ -117,7 +155,6 @@ public class TestManagementService {
                 .testSet(testSet)
                 .testNumber(testNumber)
                 .name(request.getName())
-                .name(request.getName())
                 .description(request.getDescription())
                 .difficulty(request.getDifficulty() != null ? request.getDifficulty() : "INTERMEDIATE")
                 .estimatedTimeMinutes(
@@ -164,9 +201,6 @@ public class TestManagementService {
 
         if (request.getTestNumber() != null) {
             test.setTestNumber(request.getTestNumber());
-        }
-        if (request.getName() != null) {
-            test.setName(request.getName());
         }
         if (request.getName() != null) {
             test.setName(request.getName());
@@ -232,8 +266,22 @@ public class TestManagementService {
         IeltsTest saved = ieltsTestRepository.save(test);
 
         String sectionStatus = publish ? "PUBLISHED" : "DRAFT";
+
+        // Update sections linked via FK
         int updatedSections = sectionRepository.updateStatusByTestId(id, sectionStatus);
-        logger.info("Updated {} sections to status {}", updatedSections, sectionStatus);
+        logger.info("Updated {} sections (via FK) to status {}", updatedSections, sectionStatus);
+
+        // Also update legacy sections linked via examSource/testNumber but not FK
+        String setCode = test.getSetCode();
+        Integer testNumber = test.getTestNumber();
+        if (setCode != null && testNumber != null) {
+            int legacySections = sectionRepository.updateStatusByExamSourceAndTestNumber(
+                    setCode, testNumber, sectionStatus);
+            if (legacySections > 0) {
+                logger.info("Updated {} legacy sections (via examSource/testNumber) to status {}",
+                        legacySections, sectionStatus);
+            }
+        }
 
         logger.info("Test ID: {} is now {}", id, publish ? "published" : "unpublished");
         return toSummaryDTO(saved);
@@ -293,7 +341,6 @@ public class TestManagementService {
                 .testSet(original.getTestSet())
                 .testNumber(newTestNumber)
                 .name(original.getName() != null ? original.getName() + " (Copy)" : null)
-                .name(original.getName() != null ? original.getName() + " (Copy)" : null)
                 .description(original.getDescription())
                 .difficulty(original.getDifficulty())
                 .estimatedTimeMinutes(original.getEstimatedTimeMinutes())
@@ -343,7 +390,6 @@ public class TestManagementService {
                         .id(h.getId())
                         .code(h.getCode())
                         .name(h.getName())
-                        .name(h.getName())
                         .category(h.getCategory())
                         .icon(h.getIcon())
                         .color(h.getColor())
@@ -356,7 +402,6 @@ public class TestManagementService {
                 .setCode(test.getSetCode())
                 .setName(test.getTestSet() != null ? test.getTestSet().getName() : null)
                 .testNumber(test.getTestNumber())
-                .name(test.getName())
                 .name(test.getName())
                 .description(test.getDescription())
                 .difficulty(test.getDifficulty())
@@ -378,15 +423,36 @@ public class TestManagementService {
         String setCode = test.getSetCode();
         Integer testNumber = test.getTestNumber();
 
+        // Get sections linked to this test via FK
         List<Section> sections = new ArrayList<>(sectionRepository.findByIeltsTestId(test.getId()));
-        List<Section> unlinkedSections = sectionRepository.findByExamSourceAndTestNumberAndIeltsTestIsNull(setCode,
-                testNumber);
-        if (!unlinkedSections.isEmpty()) {
-            unlinkedSections.forEach(section -> section.setIeltsTest(test));
-            sectionRepository.saveAll(unlinkedSections);
-            sections.addAll(unlinkedSections);
+
+        // Try to link orphan sections (legacy data without FK)
+        // This is a best-effort linking - in cases of concurrent access, sections may
+        // already be linked by another request, which is acceptable
+        if (setCode != null && testNumber != null) {
+            try {
+                List<Section> unlinkedSections = sectionRepository.findByExamSourceAndTestNumberAndIeltsTestIsNull(
+                        setCode, testNumber);
+                if (!unlinkedSections.isEmpty()) {
+                    logger.info("Linking {} orphan sections to test {}", unlinkedSections.size(), test.getId());
+                    for (Section section : unlinkedSections) {
+                        section.setIeltsTest(test);
+                    }
+                    // Save and add to list; duplicates are handled by Set semantics
+                    sectionRepository.saveAll(unlinkedSections);
+                    sections.addAll(unlinkedSections);
+                }
+            } catch (Exception e) {
+                // Race condition: sections may have been linked by another request
+                logger.debug("Could not link orphan sections (likely concurrent access): {}", e.getMessage());
+            }
         }
-        if (sections.isEmpty()) {
+
+        // If still no sections found, try legacy-only lookup (for viewing purposes
+        // only)
+        // Do NOT link these - just include them in the return for display
+        if (sections.isEmpty() && setCode != null && testNumber != null) {
+            logger.info("No FK-linked sections, fetching legacy sections for display only");
             sections = sectionRepository.findByExamSourceAndTestNumber(setCode, testNumber);
         }
 
@@ -401,7 +467,6 @@ public class TestManagementService {
                         .id(h.getId())
                         .code(h.getCode())
                         .name(h.getName())
-                        .name(h.getName())
                         .category(h.getCategory())
                         .icon(h.getIcon())
                         .color(h.getColor())
@@ -414,7 +479,6 @@ public class TestManagementService {
                 .setCode(setCode)
                 .setName(test.getTestSet() != null ? test.getTestSet().getName() : null)
                 .testNumber(testNumber)
-                .name(test.getName())
                 .name(test.getName())
                 .description(test.getDescription())
                 .difficulty(test.getDifficulty())

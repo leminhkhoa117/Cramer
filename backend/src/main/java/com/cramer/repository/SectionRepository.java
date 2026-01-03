@@ -161,4 +161,16 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
          */
         @Query("SELECT s.skill, COUNT(s) FROM Section s WHERE s.ieltsTest.id = :testId GROUP BY s.skill")
         List<Object[]> countSectionsByTestIdGroupBySkill(@Param("testId") Long testId);
+
+        /**
+         * Update status for legacy sections (linked via examSource/testNumber but not
+         * FK).
+         * This complements updateStatusByTestId for complete coverage.
+         */
+        @Modifying
+        @Query("UPDATE Section s SET s.status = :status WHERE s.examSource = :examSource AND s.testNumber = :testNumber AND s.ieltsTest IS NULL")
+        int updateStatusByExamSourceAndTestNumber(
+                        @Param("examSource") String examSource,
+                        @Param("testNumber") Integer testNumber,
+                        @Param("status") String status);
 }

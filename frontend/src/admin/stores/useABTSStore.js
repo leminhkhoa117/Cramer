@@ -46,7 +46,7 @@ const initialFormState = {
 
     // Power-user settings (v5.0)
     questionTypeCounts: {}, // { 'TRUE_FALSE_NOT_GIVEN': 3, 'MULTIPLE_CHOICE': 2 }
-    partNumber: 1, // Reading Part (1, 2, or 3)
+    // partNumber is defined above (line 31)
     passageLength: 'MEDIUM', // 'SHORT' (800-900) | 'MEDIUM' (900-1000) | 'LONG' (1000-1200)
     customInstructions: '', // Custom prompt additions
     showJsonPreview: false, // Toggle JSON preview panel
@@ -705,6 +705,7 @@ const useABTSStore = create((set, get) => ({
                 setCode: options.setCode ?? selectedSetCode ?? 'ai_generated',
                 testId: options.testId ?? selectedTestId,
                 topic: formData.topic || null,
+                difficulty: formData.difficulty || 'INTERMEDIATE',
                 hashtagCodes: formData.hashtags || [],
                 generationConfig: {
                     topic: formData.topic,
@@ -721,6 +722,15 @@ const useABTSStore = create((set, get) => ({
             };
 
             const result = await saveGeneratedTest(saveRequest);
+
+            // Invalidate test set cache so new content appears in lists immediately
+            try {
+                const { default: useTestSetStore } = await import('./useTestSetStore');
+                useTestSetStore.getState().invalidateCache();
+                console.log('[ABTS] Test set cache invalidated after save');
+            } catch (cacheError) {
+                console.warn('[ABTS] Could not invalidate cache:', cacheError);
+            }
 
             set({
                 isSaving: false,

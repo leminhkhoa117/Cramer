@@ -16,8 +16,11 @@ public class SaveContentResponseDTO {
     private boolean success;
     private String message;
     private Long sectionId;
-    private Long testId;       // NEW: IeltsTest ID
-    private Long setId;        // NEW: TestSet ID
+    private Long testId; // IeltsTest ID
+    private Long setId; // TestSet ID
+    private String testName; // NEW: Test name for display
+    private String setName; // NEW: TestSet name for display
+    private String setCode; // NEW: TestSet code for navigation
     private String examSource;
     private Integer testNumber;
     private String skill;
@@ -28,6 +31,7 @@ public class SaveContentResponseDTO {
     // Static factory methods
 
     public static SaveContentResponseDTO success(Long sectionId, Long testId, Long setId,
+            String testName, String setName, String setCode,
             String examSource, Integer testNumber, String skill, Integer partNumber, Integer questionsCreated) {
         SaveContentResponseDTO response = new SaveContentResponseDTO();
         response.success = true;
@@ -35,6 +39,9 @@ public class SaveContentResponseDTO {
         response.sectionId = sectionId;
         response.testId = testId;
         response.setId = setId;
+        response.testName = testName;
+        response.setName = setName;
+        response.setCode = setCode;
         response.examSource = examSource;
         response.testNumber = testNumber;
         response.skill = skill;
@@ -48,7 +55,8 @@ public class SaveContentResponseDTO {
      */
     public static SaveContentResponseDTO success(Long sectionId, String examSource, Integer testNumber,
             String skill, Integer partNumber, Integer questionsCreated) {
-        return success(sectionId, null, null, examSource, testNumber, skill, partNumber, questionsCreated);
+        return success(sectionId, null, null, null, null, null, examSource, testNumber, skill, partNumber,
+                questionsCreated);
     }
 
     public static SaveContentResponseDTO error(String message) {
@@ -98,6 +106,30 @@ public class SaveContentResponseDTO {
 
     public void setSetId(Long setId) {
         this.setId = setId;
+    }
+
+    public String getTestName() {
+        return testName;
+    }
+
+    public void setTestName(String testName) {
+        this.testName = testName;
+    }
+
+    public String getSetName() {
+        return setName;
+    }
+
+    public void setSetName(String setName) {
+        this.setName = setName;
+    }
+
+    public String getSetCode() {
+        return setCode;
+    }
+
+    public void setSetCode(String setCode) {
+        this.setCode = setCode;
     }
 
     public String getExamSource() {

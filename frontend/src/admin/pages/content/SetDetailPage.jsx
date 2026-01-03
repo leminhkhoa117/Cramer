@@ -62,6 +62,12 @@ export default function SetDetailPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
 
+    // Bulk selection state
+    const [selectedTests, setSelectedTests] = useState(new Set());
+    const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+    const [showBulkDifficultyModal, setShowBulkDifficultyModal] = useState(false);
+    const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+
     // Fetch data on mount
     useEffect(() => {
         if (setId) {
@@ -181,6 +187,62 @@ export default function SetDetailPage() {
         return selectedSetTests.map(t => t.testNumber);
     }, [selectedSetTests]);
 
+    // Bulk selection handlers
+    const toggleTestSelection = (testId, e) => {
+        e.stopPropagation();
+        setSelectedTests(prev => {
+            const next = new Set(prev);
+            if (next.has(testId)) {
+                next.delete(testId);
+            } else {
+                next.add(testId);
+            }
+            return next;
+        });
+    };
+
+    const clearSelection = () => {
+        setSelectedTests(new Set());
+    };
+
+    // Bulk delete
+    const handleBulkDelete = async () => {
+        setIsBulkProcessing(true);
+        try {
+            for (const testId of selectedTests) {
+                await deleteTest(testId);
+            }
+            setShowBulkDeleteModal(false);
+            clearSelection();
+        } catch (err) {
+            console.error('Bulk delete error:', err);
+        } finally {
+            setIsBulkProcessing(false);
+        }
+    };
+
+    // Bulk difficulty update
+    const handleBulkDifficultyUpdate = async (difficulty) => {
+        const { updateTest } = useTestSetStore.getState();
+        setIsBulkProcessing(true);
+        try {
+            const updatePromises = Array.from(selectedTests).map(testId => {
+                const test = selectedSetTests.find(t => t.id === testId);
+                if (test) {
+                    return updateTest(testId, { testNumber: test.testNumber, difficulty });
+                }
+                return Promise.resolve();
+            });
+            await Promise.all(updatePromises);
+            setShowBulkDifficultyModal(false);
+            clearSelection();
+        } catch (err) {
+            console.error('Bulk difficulty update error:', err);
+        } finally {
+            setIsBulkProcessing(false);
+        }
+    };
+
     // Loading state
     if (isLoading || !selectedSet) {
         return (
@@ -293,6 +355,40 @@ export default function SetDetailPage() {
                 </div>
             )}
 
+            {/* Bulk Action Toolbar */}
+            {selectedTests.size > 0 && (
+                <div className="bulk-toolbar">
+                    <span className="bulk-toolbar__count">
+                        Đã chọn {selectedTests.size} bài thi
+                    </span>
+                    <div className="bulk-toolbar__actions">
+                        <button
+                            className="admin-btn admin-btn--secondary"
+                            onClick={() => setShowBulkDifficultyModal(true)}
+                            disabled={isBulkProcessing}
+                        >
+                            Đổi độ khó
+                        </button>
+                        <button
+                            className="admin-btn admin-btn--danger"
+                            onClick={() => setShowBulkDeleteModal(true)}
+                            disabled={isBulkProcessing}
+                        >
+                            <FiTrash2 size={14} />
+                            Xóa đã chọn
+                        </button>
+                        <button
+                            className="admin-btn admin-btn--secondary"
+                            onClick={clearSelection}
+                            disabled={isBulkProcessing}
+                        >
+                            <FiX size={14} />
+                            Hủy chọn
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Tests Grid */}
             <div className="content-area">
                 {isLoadingTests ? (
@@ -305,11 +401,18 @@ export default function SetDetailPage() {
                         {selectedSetTests.map(test => (
                             <div
                                 key={test.id}
-                                className="test-card"
+                                className={`test-card ${selectedTests.has(test.id) ? 'test-card--selected' : ''}`}
                                 onClick={() => handleTestClick(test)}
                             >
                                 {/* Test Header */}
                                 <div className="test-card__header">
+                                    <input
+                                        type="checkbox"
+                                        className="test-card__checkbox"
+                                        checked={selectedTests.has(test.id)}
+                                        onChange={(e) => toggleTestSelection(test.id, e)}
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
                                     <span className="test-card__number">Bài {test.testNumber}</span>
                                     <span className={`status-dot ${test.isPublished ? 'status-dot--published' : 'status-dot--draft'}`} />
                                 </div>
@@ -356,6 +459,29 @@ export default function SetDetailPage() {
                                         <span className="ai-badge">AI</span>
                                     )}
                                 </div>
+
+                                {/* AI Generation Metadata (compact) */}
+                                {test.isAiGenerated && test.generationMetadata && (
+                                    <div className="test-card__ai-meta" title="Thông tin tạo AI">
+                                        {test.generationMetadata.model && (
+                                            <span className="ai-meta-item ai-meta-item--model">
+                                                🤖 {test.generationMetadata.model.split('/').pop()}
+                                            </span>
+                                        )}
+                                        {test.generationMetadata.topic && (
+                                            <span className="ai-meta-item ai-meta-item--topic">
+                                                📝 {test.generationMetadata.topic.length > 20
+                                                    ? test.generationMetadata.topic.substring(0, 20) + '...'
+                                                    : test.generationMetadata.topic}
+                                            </span>
+                                        )}
+                                        {test.generationMetadata.temperature !== undefined && (
+                                            <span className="ai-meta-item ai-meta-item--temp">
+                                                🌡️ {test.generationMetadata.temperature}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Test Actions */}
                                 <div className="test-card__actions" onClick={(e) => e.stopPropagation()}>
@@ -439,6 +565,28 @@ export default function SetDetailPage() {
                     onConfirm={handleDeleteTest}
                     itemName={selectedTest ? `Bài ${selectedTest.testNumber}` : ''}
                     loading={isDeleting}
+                />,
+                document.body
+            )}
+
+            {/* Bulk Delete Modal with typed confirmation */}
+            {showBulkDeleteModal && createPortal(
+                <BulkDeleteModal
+                    count={selectedTests.size}
+                    onClose={() => setShowBulkDeleteModal(false)}
+                    onConfirm={handleBulkDelete}
+                    loading={isBulkProcessing}
+                />,
+                document.body
+            )}
+
+            {/* Bulk Difficulty Modal */}
+            {showBulkDifficultyModal && createPortal(
+                <BulkDifficultyModal
+                    count={selectedTests.size}
+                    onClose={() => setShowBulkDifficultyModal(false)}
+                    onConfirm={handleBulkDifficultyUpdate}
+                    loading={isBulkProcessing}
                 />,
                 document.body
             )}
@@ -855,3 +1003,127 @@ function EditSetModal({ testSet, onClose }) {
     );
 }
 
+/**
+ * BulkDeleteModal - Modal with typed confirmation for bulk deletion
+ */
+function BulkDeleteModal({ count, onClose, onConfirm, loading }) {
+    const [confirmText, setConfirmText] = useState('');
+    const CONFIRM_PHRASE = 'I CONFIRM THE DELETION';
+    const isConfirmValid = confirmText === CONFIRM_PHRASE;
+
+    return (
+        <div className="admin-modal-overlay-custom" onClick={(e) => e.target === e.currentTarget && !loading && onClose()}>
+            <div className="admin-edit-modal bulk-delete-modal" onClick={e => e.stopPropagation()}>
+                <div className="admin-edit-modal-header admin-edit-modal-header--danger">
+                    <h2>⚠️ Xóa {count} bài thi</h2>
+                    <button className="admin-edit-modal-close" onClick={onClose} disabled={loading}>
+                        <FiX size={20} />
+                    </button>
+                </div>
+
+                <div className="admin-edit-modal-body">
+                    <p className="bulk-delete-warning">
+                        Hành động này <strong>không thể hoàn tác</strong>. Tất cả {count} bài thi đã chọn
+                        và dữ liệu liên quan sẽ bị xóa vĩnh viễn.
+                    </p>
+
+                    <div className="form-group">
+                        <label>Nhập "<strong>{CONFIRM_PHRASE}</strong>" để xác nhận:</label>
+                        <input
+                            type="text"
+                            className={`form-input ${confirmText && !isConfirmValid ? 'form-input--error' : ''}`}
+                            value={confirmText}
+                            onChange={(e) => setConfirmText(e.target.value)}
+                            placeholder="I CONFIRM THE DELETION"
+                            disabled={loading}
+                            autoFocus
+                        />
+                    </div>
+                </div>
+
+                <div className="admin-edit-modal-footer">
+                    <button
+                        className="admin-btn admin-btn--secondary"
+                        onClick={onClose}
+                        disabled={loading}
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        className="admin-btn admin-btn--danger"
+                        onClick={onConfirm}
+                        disabled={loading || !isConfirmValid}
+                    >
+                        {loading ? (
+                            <>
+                                <span className="spinner small"></span>
+                                Đang xóa...
+                            </>
+                        ) : (
+                            <>
+                                <FiTrash2 size={14} />
+                                Xóa {count} bài thi
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * BulkDifficultyModal - Modal for updating difficulty of multiple tests
+ */
+function BulkDifficultyModal({ count, onClose, onConfirm, loading }) {
+    const [difficulty, setDifficulty] = useState('INTERMEDIATE');
+
+    return (
+        <div className="admin-modal-overlay-custom" onClick={(e) => e.target === e.currentTarget && !loading && onClose()}>
+            <div className="admin-edit-modal" onClick={e => e.stopPropagation()}>
+                <div className="admin-edit-modal-header">
+                    <h2>Đổi độ khó ({count} bài thi)</h2>
+                    <button className="admin-edit-modal-close" onClick={onClose} disabled={loading}>
+                        <FiX size={20} />
+                    </button>
+                </div>
+
+                <div className="admin-edit-modal-body">
+                    <div className="form-group">
+                        <label htmlFor="bulk-difficulty">Độ khó mới</label>
+                        <select
+                            id="bulk-difficulty"
+                            className="form-select"
+                            value={difficulty}
+                            onChange={(e) => setDifficulty(e.target.value)}
+                            disabled={loading}
+                        >
+                            <option value="BEGINNER">Cơ bản (Beginner)</option>
+                            <option value="LOWER_INTERMEDIATE">Thấp-Trung bình (Lower-Intermediate)</option>
+                            <option value="INTERMEDIATE">Trung bình (Intermediate)</option>
+                            <option value="UPPER_INTERMEDIATE">Cao-Trung bình (Upper-Intermediate)</option>
+                            <option value="ADVANCED">Nâng cao (Advanced)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div className="admin-edit-modal-footer">
+                    <button
+                        className="admin-btn admin-btn--secondary"
+                        onClick={onClose}
+                        disabled={loading}
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        className="admin-btn admin-btn--primary"
+                        onClick={() => onConfirm(difficulty)}
+                        disabled={loading}
+                    >
+                        {loading ? 'Đang cập nhật...' : `Cập nhật ${count} bài thi`}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}

@@ -1662,7 +1662,7 @@ public class ABTSService {
         try {
             GeneratedContentDTO content = request.getContent();
             if (content == null) {
-                return SaveContentResponseDTO.error("Content is null");
+                return SaveContentResponseDTO.error("Nội dung trống");
             }
 
             // Parse admin user ID to UUID if possible
@@ -1683,15 +1683,40 @@ public class ABTSService {
             IeltsTest ieltsTest = resolveTest(request, testSet, createdBy);
             logger.info("Using IeltsTest: id={}, testNumber={}", ieltsTest.getId(), ieltsTest.getTestNumber());
 
-            // 3. Associate hashtags with the test
+            // 3. Associate hashtags with the test (with validation)
             if (request.getHashtagCodes() != null && !request.getHashtagCodes().isEmpty()) {
-                Set<Hashtag> hashtags = hashtagService.findOrCreateByCodes(request.getHashtagCodes());
+                List<String> codes = request.getHashtagCodes();
+
+                // Validate hashtag count (max 20)
+                if (codes.size() > 20) {
+                    return SaveContentResponseDTO.error("Quá nhiều hashtag: tối đa 20, đã nhập " + codes.size());
+                }
+
+                // Validate hashtag code format (alphanumeric, underscore, hyphen only)
+                for (String code : codes) {
+                    if (code == null || code.isBlank())
+                        continue;
+                    if (!code.matches("^[a-z0-9_-]{1,50}$")) {
+                        return SaveContentResponseDTO.error(
+                                "Định dạng mã hashtag không hợp lệ: '" + code + "'. " +
+                                        "Mã chỉ được chứa 1-50 ký tự chữ thường, số, gạch dưới hoặc gạch ngang.");
+                    }
+                }
+
+                Set<Hashtag> hashtags = hashtagService.findOrCreateByCodes(codes);
                 ieltsTest.setHashtags(hashtags);
                 hashtagService.incrementUseCounts(hashtags);
                 logger.info("Associated {} hashtags with test", hashtags.size());
             } else if (request.getHashtagIds() != null && !request.getHashtagIds().isEmpty()) {
+                List<Long> ids = request.getHashtagIds();
+
+                // Validate count
+                if (ids.size() > 20) {
+                    return SaveContentResponseDTO.error("Quá nhiều hashtag: tối đa 20, đã nhập " + ids.size());
+                }
+
                 Set<Hashtag> hashtags = new HashSet<>(
-                        hashtagRepository.findAllById(Objects.requireNonNull(request.getHashtagIds())));
+                        hashtagRepository.findAllById(Objects.requireNonNull(ids)));
                 ieltsTest.setHashtags(hashtags);
                 hashtagService.incrementUseCounts(hashtags);
                 logger.info("Associated {} hashtags (by ID) with test", hashtags.size());
@@ -1754,7 +1779,10 @@ public class ABTSService {
                     section.getId(),
                     ieltsTest.getId(),
                     testSet.getId(),
+                    ieltsTest.getName(),
+                    testSet.getName(),
                     testSet.getCode(),
+                    testSet.getCode(), // examSource for legacy compatibility
                     ieltsTest.getTestNumber(),
                     request.getSkill().toLowerCase(),
                     request.getPartNumber(),
@@ -1763,7 +1791,7 @@ public class ABTSService {
             // Add warnings if question count mismatch
             if (content.getQuestions() != null && questionsCreated < content.getQuestions().size()) {
                 response.setWarnings(List.of(
-                        String.format("Only %d of %d questions were saved",
+                        String.format("Chỉ lưu được %d trong %d câu hỏi",
                                 questionsCreated, content.getQuestions().size())));
             }
 
@@ -1771,7 +1799,7 @@ public class ABTSService {
 
         } catch (Exception e) {
             logger.error("Failed to save ABTS content: {}", e.getMessage(), e);
-            return SaveContentResponseDTO.error("Database error: " + e.getMessage());
+            return SaveContentResponseDTO.error("Lỗi cơ sở dữ liệu: " + e.getMessage());
         }
     }
 
@@ -1880,7 +1908,6 @@ public class ABTSService {
                 .testSet(testSet)
                 .testNumber(testNumber)
                 .name(nameVi)
-                .name(nameEn)
                 .difficulty(difficulty)
                 .isPublished(false)
                 .isAiGenerated(true)

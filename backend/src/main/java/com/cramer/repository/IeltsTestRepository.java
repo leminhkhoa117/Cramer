@@ -25,6 +25,15 @@ public interface IeltsTestRepository extends JpaRepository<IeltsTest, Long> {
        List<IeltsTest> findByTestSetIdOrderByTestNumberAsc(Long testSetId);
 
        /**
+        * Find all tests belonging to a test set with custom sorting.
+        * 
+        * @param testSetId the test set ID
+        * @param sort      the sort specification
+        * @return list of tests ordered as specified
+        */
+       List<IeltsTest> findByTestSetId(Long testSetId, org.springframework.data.domain.Sort sort);
+
+       /**
         * Find a test by test set ID and test number.
         * 
         * @param testSetId  the test set ID

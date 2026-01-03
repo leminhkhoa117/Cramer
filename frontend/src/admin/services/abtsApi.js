@@ -77,12 +77,13 @@ export async function validateContent(content) {
  * @param {Object} [params.generationConfig] - Optional: generation inputs for reproducibility
  * @returns {Promise<Object>} Save result with sectionId, testId, setId and questionsCreated
  */
-export async function saveGeneratedTest({ 
-    examSource, 
-    testNumber, 
-    skill, 
-    partNumber, 
-    topic, 
+export async function saveGeneratedTest({
+    examSource,
+    testNumber,
+    skill,
+    partNumber,
+    topic,
+    difficulty,
     content,
     // New hierarchy fields
     setId,
@@ -101,6 +102,7 @@ export async function saveGeneratedTest({
             skill,
             partNumber,
             topic,
+            difficulty,
             content,
             // New fields
             setId,

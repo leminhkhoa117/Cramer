@@ -72,22 +72,22 @@ public class GenerationRequestDTO {
 
     // ==================== REQUIRED FIELDS ====================
 
-    @NotNull(message = "Skill type is required")
+    @NotNull(message = "Loại kỹ năng là bắt buộc")
     private SkillType skill;
 
-    @NotNull(message = "Generation scope is required")
+    @NotNull(message = "Phạm vi tạo là bắt buộc")
     private GenerationScope scope;
 
-    @NotNull(message = "Topic is required")
+    @NotNull(message = "Chủ đề là bắt buộc")
     private String topic;
 
-    @NotNull(message = "Difficulty level is required")
+    @NotNull(message = "Độ khó là bắt buộc")
     private DifficultyLevel difficulty;
 
     // Facts are optional in Auto Mode
     private List<String> facts;
 
-    @NotNull(message = "Explanation language is required")
+    @NotNull(message = "Ngôn ngữ giải thích là bắt buộc")
     private ExplanationLanguage explanationLanguage = ExplanationLanguage.VI;
 
     // ==================== OPTIONAL FIELDS ====================

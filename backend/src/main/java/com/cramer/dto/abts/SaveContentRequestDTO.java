@@ -37,19 +37,19 @@ public class SaveContentRequestDTO {
     /**
      * Skill type: "reading", "listening", "writing".
      */
-    @NotBlank(message = "Skill is required")
+    @NotBlank(message = "Kỹ năng là bắt buộc")
     private String skill;
 
     /**
      * Part number within the skill (1, 2, 3, etc.).
      */
-    @NotNull(message = "Part number is required")
+    @NotNull(message = "Số phần là bắt buộc")
     private Integer partNumber;
 
     /**
      * The generated content to save.
      */
-    @NotNull(message = "Content is required")
+    @NotNull(message = "Nội dung là bắt buộc")
     private GeneratedContentDTO content;
 
     // ==================== NEW HIERARCHY FIELDS ====================

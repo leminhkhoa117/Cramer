@@ -28,7 +28,7 @@ import java.util.UUID;
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 @Validated
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:5173" })
 public class TestHierarchyController {
 
     private static final Logger logger = LoggerFactory.getLogger(TestHierarchyController.class);
@@ -138,12 +138,20 @@ public class TestHierarchyController {
     // ==================== TESTS ====================
 
     /**
-     * Get all tests in a test set.
+     * Get all tests in a test set with optional sorting.
+     * 
+     * @param setId   Test set ID
+     * @param sortBy  Sort field: testNumber (default), createdAt, difficulty, name,
+     *                isAiGenerated
+     * @param sortDir Sort direction: asc (default), desc
      */
     @GetMapping("/test-sets/{setId}/tests")
-    public ResponseEntity<List<TestSummaryDTO>> getTestsBySetId(@PathVariable Long setId) {
-        logger.info("GET /api/admin/test-sets/{}/tests", setId);
-        List<TestSummaryDTO> tests = testManagementService.getTestsBySetId(setId);
+    public ResponseEntity<List<TestSummaryDTO>> getTestsBySetId(
+            @PathVariable Long setId,
+            @RequestParam(required = false, defaultValue = "testNumber") String sortBy,
+            @RequestParam(required = false, defaultValue = "asc") String sortDir) {
+        logger.info("GET /api/admin/test-sets/{}/tests?sortBy={}&sortDir={}", setId, sortBy, sortDir);
+        List<TestSummaryDTO> tests = testManagementService.getTestsBySetId(setId, sortBy, sortDir);
         return ResponseEntity.ok(tests);
     }
 
