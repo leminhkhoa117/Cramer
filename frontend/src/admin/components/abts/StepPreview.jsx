@@ -1,21 +1,18 @@
 /**
  * StepPreview - Preview & Edit generated content
  * 
- * V5.0: Uses unified AIStudio.css, no inline styles
- * - Split-pane layout mimicking test-taking UI
- * - Dark purple admin theme
- * - Hybrid approach: test-taking structure with admin styling
+ * V6.0: Refactored to reuse AdminPreviewContent for consistent UI
+ * - Uses same test-taking UI as admin editor preview
+ * - Removes ~200 lines of duplicate rendering code
+ * - Adds MetadataBar, ValidationPanel, ReasoningPanel wrappers
  * 
  * @since 2025-12-22
  */
 
-import React, { useState } from 'react';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { FiInfo, FiChevronUp, FiChevronDown, FiClock, FiCpu, FiFileText, FiHelpCircle } from 'react-icons/fi';
+import React, { useState, useMemo } from 'react';
+import { FiInfo, FiChevronUp, FiChevronDown, FiClock, FiCpu, FiFileText, FiAlertTriangle } from 'react-icons/fi';
 import useABTSStore from '../../stores/useABTSStore';
-import { sanitizeHtml } from '../../utils/htmlSanitizer';
-import QuestionGroupRenderer from './QuestionGroupRenderer';
-import { HighlightProvider } from '../../../contexts/HighlightContext';
+import AdminPreviewContent from '../content/AdminPreviewContent';
 import StreamingDisplay from './StreamingDisplay';
 import './AIStudio.css';
 
@@ -25,7 +22,6 @@ export default function StepPreview({ onBack }) {
     generationResult,
     isGenerating,
     goToStep,
-    regenerateQuestions,
     streamEvents,
     generationProgress,
     generationError,
@@ -34,9 +30,9 @@ export default function StepPreview({ onBack }) {
   } = useABTSStore();
 
   const [showMetadata, setShowMetadata] = useState(false);
-  const [previewAnswers, setPreviewAnswers] = useState({});
-  const [regeneratingQuestionId, setRegeneratingQuestionId] = useState(null);
   const [showReasoningPanel, setShowReasoningPanel] = useState(false);
+  const [activePartIndex, setActivePartIndex] = useState(0);
+  const [showAnswers, setShowAnswers] = useState(true);
 
   // Use onBack if provided, otherwise fallback to store's goToStep
   const handleGoBack = onBack || (() => goToStep(1));
@@ -45,26 +41,65 @@ export default function StepPreview({ onBack }) {
   const warnings = generationResult?.warnings || [];
   const validation = generationResult?.validation || null;
   const metadata = generationResult?.metadata || null;
-  const questions = content.questions || [];
-  const section = content.section || {};
   const isWriting = formData.skill === 'WRITING';
   const reasoningText = generationResult?.reasoning || reasoning;
 
-  const questionIssues = new Map();
-  const addIssue = (message) => {
-    if (!message) return;
-    const match = message.match(/Question\s+(\d+)/i);
-    if (!match) return;
-    const num = parseInt(match[1], 10);
-    if (!questionIssues.has(num)) questionIssues.set(num, []);
-    questionIssues.get(num).push(message);
-  };
+  // Transform ABTS data to AdminPreviewContent format
+  const { previewSections, previewQuestions } = useMemo(() => {
+    const rawSections = content.sections || (content.section ? [content.section] : []);
+    const rawQuestions = content.questions || [];
 
-  (warnings || []).forEach(addIssue);
-  if (validation) {
-    (validation.schemaErrors || []).forEach(addIssue);
-    (validation.contentErrors || []).forEach(addIssue);
-    (validation.businessRuleErrors || []).forEach(addIssue);
+    // Transform sections: ABTS format -> AdminPreviewContent format
+    const transformedSections = rawSections.map((sec, idx) => ({
+      id: `abts-section-${idx}`,
+      partNumber: sec.partNumber || idx + 1,
+      passageText: sec.passageText || sec.taskText || sec.transcript || '',
+      sectionLayout: sec.sectionLayout,
+      wordCount: sec.wordCount,
+      displayContentUrl: null, // AI-generated doesn't have images yet
+      audioUrl: null // AI-generated doesn't have audio yet
+    }));
+
+    // Transform questions: ABTS format -> AdminPreviewContent format  
+    const transformedQuestions = rawQuestions.map((q, idx) => {
+      // Determine which section this question belongs to (by question number range)
+      let sectionId = transformedSections[0]?.id;
+      if (transformedSections.length > 1) {
+        const qNum = q.questionNumber || q.question_number || idx + 1;
+        // Reading: Part 1 = Q1-13, Part 2 = Q14-26, Part 3 = Q27-40
+        // Listening: Part 1 = Q1-10, Part 2 = Q11-20, Part 3 = Q21-30, Part 4 = Q31-40
+        if (formData.skill === 'READING') {
+          if (qNum <= 13) sectionId = transformedSections[0]?.id;
+          else if (qNum <= 26) sectionId = transformedSections[1]?.id || transformedSections[0]?.id;
+          else sectionId = transformedSections[2]?.id || transformedSections[0]?.id;
+        } else if (formData.skill === 'LISTENING') {
+          if (qNum <= 10) sectionId = transformedSections[0]?.id;
+          else if (qNum <= 20) sectionId = transformedSections[1]?.id || transformedSections[0]?.id;
+          else if (qNum <= 30) sectionId = transformedSections[2]?.id || transformedSections[0]?.id;
+          else sectionId = transformedSections[3]?.id || transformedSections[0]?.id;
+        }
+      }
+
+      return {
+        id: `abts-q-${idx}`,
+        sectionId,
+        questionNumber: q.questionNumber || q.question_number || idx + 1,
+        questionType: q.questionType || q.question_type || 'UNKNOWN',
+        questionContent: q.questionContent || q.question_content || {},
+        correctAnswer: formatCorrectAnswer(q.correctAnswer || q.correct_answer),
+        explanation: q.explanation || ''
+      };
+    });
+
+    return { previewSections: transformedSections, previewQuestions: transformedQuestions };
+  }, [content, formData.skill]);
+
+  // Format correct answer for display
+  function formatCorrectAnswer(answer) {
+    if (!answer) return '';
+    if (Array.isArray(answer)) return answer.join(', ');
+    if (typeof answer === 'object') return JSON.stringify(answer);
+    return String(answer);
   }
 
   // 1. Loading / Streaming State
@@ -102,102 +137,7 @@ export default function StepPreview({ onBack }) {
     );
   }
 
-  const handleAnswerChange = (questionId, value) => {
-    setPreviewAnswers(prev => ({
-      ...prev,
-      [questionId]: value
-    }));
-  };
-
-  const handleRegenerateQuestion = async (questionNum) => {
-    if (!regenerateQuestions) return;
-    setRegeneratingQuestionId(questionNum);
-    try {
-      await regenerateQuestions([questionNum]);
-    } catch (error) {
-      console.error("Failed to regenerate question:", error);
-    } finally {
-      setRegeneratingQuestionId(null);
-    }
-  };
-
-  // Group questions by type
-  const getGroupedQuestions = () => {
-    const grouped = [];
-    if (!questions || questions.length === 0) return grouped;
-
-    // Additional safety: filter out invalid questions
-    const validQuestions = questions.filter(q => q && typeof q === 'object');
-    if (validQuestions.length === 0) return grouped;
-
-    const layoutBlocks = section.sectionLayout?.blocks
-      || (Array.isArray(section.sectionLayout) ? section.sectionLayout : null);
-
-    if (layoutBlocks && Array.isArray(layoutBlocks)) {
-      return layoutBlocks.map((block, idx) => {
-        const numbers = block.question_numbers || block.questionNumbers || [];
-        const blockQuestions = numbers.length > 0
-          ? numbers.map(num => validQuestions.find(q => q.questionNumber === num)).filter(Boolean)
-          : validQuestions;
-
-        // Handle empty block questions
-        if (blockQuestions.length === 0) {
-          return {
-            type: block.block_type || 'UNKNOWN',
-            blockType: block.block_type,
-            blockContent: block.content || {},
-            questions: [],
-            startNum: 1,
-            endNum: 1,
-            blockIndex: idx
-          };
-        }
-
-        const startNum = blockQuestions[0]?.questionNumber || 1;
-        const endNum = blockQuestions[blockQuestions.length - 1]?.questionNumber || startNum;
-
-        return {
-          type: block.block_type || blockQuestions[0]?.questionType || 'UNKNOWN',
-          blockType: block.block_type,
-          blockContent: block.content || {},
-          questions: blockQuestions,
-          startNum,
-          endNum,
-          blockIndex: idx
-        };
-      }).filter(g => g.questions.length > 0);  // Filter out empty groups
-    }
-
-    // No layout blocks - group by question type
-    const firstQuestion = validQuestions[0];
-    let currentGroup = {
-      type: firstQuestion?.questionType || 'UNKNOWN',
-      questions: [firstQuestion],
-      startNum: firstQuestion?.questionNumber || 1
-    };
-
-    for (let i = 1; i < validQuestions.length; i++) {
-      const q = validQuestions[i];
-      if (!q) continue;  // Skip null/undefined questions
-
-      if (q.questionType === currentGroup.type) {
-        currentGroup.questions.push(q);
-      } else {
-        currentGroup.endNum = currentGroup.questions[currentGroup.questions.length - 1]?.questionNumber || i;
-        grouped.push(currentGroup);
-        currentGroup = {
-          type: q.questionType || 'UNKNOWN',
-          questions: [q],
-          startNum: q.questionNumber || i + 1
-        };
-      }
-    }
-    currentGroup.endNum = currentGroup.questions[currentGroup.questions.length - 1]?.questionNumber || validQuestions.length;
-    grouped.push(currentGroup);
-    return grouped;
-  };
-
-  // Metadata Bar
+  // Metadata Bar Component
   const MetadataBar = () => (
     <div className="studio-meta">
       <div
@@ -261,91 +201,8 @@ export default function StepPreview({ onBack }) {
     </div>
   );
 
-  // Left Panel Content (Passage/Transcript)
-  const renderLeftPanel = () => {
-    const passageText = section.taskText || section.passageText || section.transcript || '';
-    const displayWordCount = section.wordCount ||
-      (passageText ? passageText.replace(/<[^>]*>/g, '').split(/\s+/).filter(w => w.length > 0).length : 0);
-
-    return (
-      <div className="studio-split__panel studio-split__panel--left">
-        <div className="studio-panel__header">
-          <h4 className="studio-panel__title">
-            {formData.skill === 'LISTENING' ? 'Transcript' :
-              formData.skill === 'WRITING' ? 'Task Prompt' : 'Reading Passage'}
-          </h4>
-          {displayWordCount > 0 && (
-            <span className="studio-panel__meta">
-              {displayWordCount} words
-            </span>
-          )}
-        </div>
-
-        <div className="studio-panel__content">
-          {formData.skill === 'LISTENING' && content.audioPlaceholder && (
-            <div className="studio-audio-card">
-              <div className="studio-audio-card__icon">
-                <FiCpu size={24} />
-              </div>
-              <div className="studio-audio-card__info">
-                <strong>Audio Specification</strong>
-                <p>
-                  {content.audioPlaceholder.speakerCount || 'Unknown'} speakers |
-                  {content.audioPlaceholder.accentRecommendation || 'Standard'} accent |
-                  ~{content.audioPlaceholder.durationEstimate || '0:00'}
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div
-            className="studio-passage"
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(passageText) }}
-          />
-        </div>
-      </div>
-    );
-  };
-
-  // Right Panel Content (Questions)
-  const renderRightPanel = () => {
-    const groupedQuestions = getGroupedQuestions();
-
-    return (
-      <div className="studio-split__panel">
-        <div className="studio-panel__header">
-          <h4 className="studio-panel__title">Questions ({questions.length})</h4>
-          <span className="studio-panel__meta">
-            <FiHelpCircle size={12} /> Preview Mode
-          </span>
-        </div>
-
-        <div className="studio-panel__content">
-          {questions.length === 0 ? (
-            <div className="studio-empty">
-              <p className="studio-empty__text">No questions generated.</p>
-            </div>
-          ) : (
-            groupedQuestions.map((group, idx) => (
-              <QuestionGroupRenderer
-                key={idx}
-                group={group}
-                allQuestions={questions}
-                userAnswers={previewAnswers}
-                onAnswerChange={handleAnswerChange}
-                onRegenerateQuestion={regenerateQuestions ? handleRegenerateQuestion : null}
-                isGenerating={isGenerating}
-                regeneratingQuestionId={regeneratingQuestionId}
-                questionIssues={questionIssues}
-              />
-            ))
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const renderValidationPanel = () => {
+  // Validation Panel Component
+  const ValidationPanel = () => {
     const schemaErrors = validation?.schemaErrors || [];
     const contentErrors = validation?.contentErrors || [];
     const businessErrors = validation?.businessRuleErrors || [];
@@ -360,7 +217,7 @@ export default function StepPreview({ onBack }) {
       <div className="studio-alerts">
         {schemaErrors.length > 0 && (
           <div className="studio-alerts__section">
-            <h4 className="studio-alerts__title">Schema Errors</h4>
+            <h4 className="studio-alerts__title"><FiAlertTriangle /> Schema Errors</h4>
             <ul>
               {schemaErrors.map((err, idx) => <li key={`schema-${idx}`}>{err}</li>)}
             </ul>
@@ -368,7 +225,7 @@ export default function StepPreview({ onBack }) {
         )}
         {contentErrors.length > 0 && (
           <div className="studio-alerts__section">
-            <h4 className="studio-alerts__title">Content Errors</h4>
+            <h4 className="studio-alerts__title"><FiAlertTriangle /> Content Errors</h4>
             <ul>
               {contentErrors.map((err, idx) => <li key={`content-${idx}`}>{err}</li>)}
             </ul>
@@ -376,7 +233,7 @@ export default function StepPreview({ onBack }) {
         )}
         {businessErrors.length > 0 && (
           <div className="studio-alerts__section">
-            <h4 className="studio-alerts__title">Business Rule Errors</h4>
+            <h4 className="studio-alerts__title"><FiAlertTriangle /> Business Rule Errors</h4>
             <ul>
               {businessErrors.map((err, idx) => <li key={`business-${idx}`}>{err}</li>)}
             </ul>
@@ -394,7 +251,8 @@ export default function StepPreview({ onBack }) {
     );
   };
 
-  const renderReasoningPanel = () => {
+  // Reasoning Panel Component
+  const ReasoningPanel = () => {
     if (!reasoningText) return null;
 
     return (
@@ -415,17 +273,19 @@ export default function StepPreview({ onBack }) {
     );
   };
 
-  // Writing Layout (Single Panel)
+  // Writing has special layout (no AdminPreviewContent for now)
   if (isWriting) {
+    const taskText = content.section?.taskText || content.section?.passageText || '';
     return (
       <div className="studio-preview">
         <MetadataBar />
-        {renderValidationPanel()}
-        {renderReasoningPanel()}
-        <div className="studio-panel__content" style={{ flex: 1, overflow: 'auto' }}>
-          {renderLeftPanel()}
+        <ValidationPanel />
+        <ReasoningPanel />
+        <div className="studio-panel__content" style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+          <h3>Writing Task</h3>
+          <div dangerouslySetInnerHTML={{ __html: taskText }} />
           {(content.chartData || content.figureDescription || content.letterContext || content.essayMetadata) && (
-            <div className="studio-json-panel" style={{ margin: '16px' }}>
+            <div className="studio-json-panel" style={{ marginTop: '16px' }}>
               <div className="studio-json-header">
                 <span className="studio-json-header__title">Writing Details</span>
               </div>
@@ -444,30 +304,26 @@ export default function StepPreview({ onBack }) {
     );
   }
 
-  // Split Layout (Reading / Listening)
+  // Reading / Listening - Use AdminPreviewContent
   return (
-    <HighlightProvider>
-      <div className="studio-preview">
-        <MetadataBar />
-        {renderValidationPanel()}
-        {renderReasoningPanel()}
+    <div className="studio-preview">
+      <MetadataBar />
+      <ValidationPanel />
+      <ReasoningPanel />
 
-        <div className="studio-split">
-          <PanelGroup direction="horizontal">
-            <Panel defaultSize={50} minSize={30} order={1}>
-              {renderLeftPanel()}
-            </Panel>
-
-            <PanelResizeHandle className="studio-resize-handle">
-              <span className="studio-resize-handle__icon">||</span>
-            </PanelResizeHandle>
-
-            <Panel defaultSize={50} minSize={30} order={2}>
-              {renderRightPanel()}
-            </Panel>
-          </PanelGroup>
-        </div>
+      <div style={{ flex: 1, overflow: 'hidden' }}>
+        <AdminPreviewContent
+          sections={previewSections}
+          questions={previewQuestions}
+          activePartIndex={activePartIndex}
+          skill={formData.skill?.toLowerCase() || 'reading'}
+          onPartSelect={setActivePartIndex}
+          onQuestionSelect={() => { }}
+          onQuestionEdit={() => { }}
+          showAnswers={showAnswers}
+          onToggleAnswers={() => setShowAnswers(!showAnswers)}
+        />
       </div>
-    </HighlightProvider>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import useABTSStore from '../../stores/useABTSStore';
+import useABTSStore, { READING_PART_TYPES, LISTENING_PART_TYPES, QUESTION_COUNTS } from '../../stores/useABTSStore';
 import {
     FiZap, FiBookOpen, FiHeadphones, FiEdit3,
     FiCpu, FiFileText, FiList, FiPlus, FiX, FiCheck,
@@ -101,7 +101,15 @@ export default function StudioConfigView({ onGenerate }) {
         removeFact,
         isGenerating,
         toggleQuestionType,
-        setQuestionTypeCount
+        setQuestionTypeCount,
+        // Multi-part actions
+        togglePartSelection,
+        setPartConfig,
+        clearPartSelections,
+        // Per-part question type actions
+        randomizePartConfig,
+        randomizeAllParts,
+        togglePartQuestionType
     } = useABTSStore();
 
     const [newFact, setNewFact] = useState('');
@@ -152,6 +160,18 @@ export default function StudioConfigView({ onGenerate }) {
         if (!formData.skill) return false;
         if (!formData.topic || formData.topic.length < 3) return false;
         if (formData.generationMode === 'CUSTOM_FACTS' && formData.facts.length < 3) return false;
+
+        // Multi-part validation: All selected parts must have at least 2 question types
+        if (formData.scope === 'MULTI_PART') {
+            if (!formData.selectedParts?.length) return false;
+            for (const part of formData.selectedParts) {
+                const partConfig = formData.partConfigs?.[part];
+                if (!partConfig?.questionTypes || partConfig.questionTypes.length < 2) {
+                    return false;
+                }
+            }
+        }
+
         return true;
     };
 
@@ -346,7 +366,7 @@ export default function StudioConfigView({ onGenerate }) {
                             <h3 className="studio-card__title">
                                 <FiList className="studio-card__title-icon" />
                                 Question Types
-                                {totalSelectedQuestions > 0 && (
+                                {formData.scope === GENERATION_SCOPES.SINGLE_PART && totalSelectedQuestions > 0 && (
                                     <span style={{
                                         marginLeft: '8px',
                                         fontSize: '0.7rem',
@@ -358,94 +378,244 @@ export default function StudioConfigView({ onGenerate }) {
                                 )}
                             </h3>
                             <div className="studio-card__actions">
-                                <button
-                                    className="studio-btn studio-btn--ghost studio-btn--sm"
-                                    onClick={handleRandomizeTypes}
-                                    title="Pick Random Types"
-                                >
-                                    <FiShuffle size={14} /> Random
-                                </button>
-                                <button
-                                    className="studio-btn studio-btn--ghost studio-btn--sm"
-                                    onClick={handleClearTypes}
-                                    title="Clear All (AI Decides)"
-                                >
-                                    <FiX size={14} /> Clear
-                                </button>
+                                {/* Single Part: Random/Clear buttons */}
+                                {formData.scope === GENERATION_SCOPES.SINGLE_PART && (
+                                    <>
+                                        <button
+                                            className="studio-btn studio-btn--ghost studio-btn--sm"
+                                            onClick={handleRandomizeTypes}
+                                            title="Pick Random Types"
+                                        >
+                                            <FiShuffle size={14} /> Random
+                                        </button>
+                                        <button
+                                            className="studio-btn studio-btn--ghost studio-btn--sm"
+                                            onClick={handleClearTypes}
+                                            title="Clear All (AI Decides)"
+                                        >
+                                            <FiX size={14} /> Clear
+                                        </button>
+                                    </>
+                                )}
+                                {/* Multi Part: Randomize All button */}
+                                {formData.scope === 'MULTI_PART' && formData.selectedParts?.length > 0 && (
+                                    <button
+                                        className="studio-btn studio-btn--ghost studio-btn--sm"
+                                        onClick={randomizeAllParts}
+                                        title="Randomize All Parts"
+                                    >
+                                        <FiShuffle size={14} /> Ngẫu nhiên tất cả
+                                    </button>
+                                )}
                             </div>
                         </div>
 
-                        {/* Empty state hint */}
-                        {formData.questionTypes.length === 0 && (
-                            <div style={{
-                                padding: '10px 14px',
-                                marginBottom: '12px',
-                                background: 'rgba(139, 92, 246, 0.08)',
-                                border: '1px dashed rgba(139, 92, 246, 0.3)',
-                                borderRadius: '8px',
-                                color: '#c4b5fd',
-                                fontSize: '0.8rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px'
-                            }}>
-                                <FiZap size={14} />
-                                No types selected - AI will choose optimal types automatically.
-                            </div>
+                        {/* === SINGLE_PART MODE: Global question type selector === */}
+                        {formData.scope === GENERATION_SCOPES.SINGLE_PART && (
+                            <>
+                                {/* Empty state hint */}
+                                {formData.questionTypes.length === 0 && (
+                                    <div style={{
+                                        padding: '10px 14px',
+                                        marginBottom: '12px',
+                                        background: 'rgba(139, 92, 246, 0.08)',
+                                        border: '1px dashed rgba(139, 92, 246, 0.3)',
+                                        borderRadius: '8px',
+                                        color: '#c4b5fd',
+                                        fontSize: '0.8rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }}>
+                                        <FiZap size={14} />
+                                        No types selected - AI will choose optimal types automatically.
+                                    </div>
+                                )}
+
+                                {/* Question Types Grid with Count Controls */}
+                                <div className="studio-qtype-grid">
+                                    {QUESTION_TYPES[formData.skill].map(type => {
+                                        const isSelected = formData.questionTypes?.includes(type.id);
+                                        const count = formData.questionTypeCounts?.[type.id] || 0;
+
+                                        return (
+                                            <div
+                                                key={type.id}
+                                                className={`studio-qtype-item ${isSelected ? 'studio-qtype-item--active' : ''}`}
+                                            >
+                                                <span
+                                                    className="studio-qtype-label"
+                                                    onClick={() => toggleQuestionType(type.id)}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    {type.label}
+                                                </span>
+
+                                                {isSelected && (
+                                                    <div className="studio-qtype-controls">
+                                                        <button
+                                                            className="studio-qtype-btn"
+                                                            onClick={() => setQuestionTypeCount(type.id, count - 1)}
+                                                            disabled={count <= 1}
+                                                        >
+                                                            <FiMinus size={10} />
+                                                        </button>
+                                                        <span className="studio-qtype-count">{count}</span>
+                                                        <button
+                                                            className="studio-qtype-btn"
+                                                            onClick={() => setQuestionTypeCount(type.id, count + 1)}
+                                                            disabled={count >= 10}
+                                                        >
+                                                            <FiPlus size={10} />
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {!isSelected && (
+                                                    <button
+                                                        className="studio-btn studio-btn--ghost studio-btn--sm"
+                                                        onClick={() => toggleQuestionType(type.id)}
+                                                        style={{ padding: '4px 8px' }}
+                                                    >
+                                                        <FiPlus size={12} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </>
                         )}
 
-                        {/* Question Types Grid with Count Controls */}
-                        <div className="studio-qtype-grid">
-                            {QUESTION_TYPES[formData.skill].map(type => {
-                                const isSelected = formData.questionTypes?.includes(type.id);
-                                const count = formData.questionTypeCounts?.[type.id] || 0;
-
-                                return (
-                                    <div
-                                        key={type.id}
-                                        className={`studio-qtype-item ${isSelected ? 'studio-qtype-item--active' : ''}`}
-                                    >
-                                        <span
-                                            className="studio-qtype-label"
-                                            onClick={() => toggleQuestionType(type.id)}
-                                            style={{ cursor: 'pointer' }}
-                                        >
-                                            {type.label}
-                                        </span>
-
-                                        {isSelected && (
-                                            <div className="studio-qtype-controls">
-                                                <button
-                                                    className="studio-qtype-btn"
-                                                    onClick={() => setQuestionTypeCount(type.id, count - 1)}
-                                                    disabled={count <= 1}
-                                                >
-                                                    <FiMinus size={10} />
-                                                </button>
-                                                <span className="studio-qtype-count">{count}</span>
-                                                <button
-                                                    className="studio-qtype-btn"
-                                                    onClick={() => setQuestionTypeCount(type.id, count + 1)}
-                                                    disabled={count >= 10}
-                                                >
-                                                    <FiPlus size={10} />
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        {!isSelected && (
-                                            <button
-                                                className="studio-btn studio-btn--ghost studio-btn--sm"
-                                                onClick={() => toggleQuestionType(type.id)}
-                                                style={{ padding: '4px 8px' }}
-                                            >
-                                                <FiPlus size={12} />
-                                            </button>
-                                        )}
+                        {/* === MULTI_PART MODE: Per-part configuration panels === */}
+                        {formData.scope === 'MULTI_PART' && (
+                            <>
+                                {formData.selectedParts?.length === 0 && (
+                                    <div style={{
+                                        padding: '20px',
+                                        textAlign: 'center',
+                                        color: 'rgba(255,255,255,0.5)',
+                                        fontSize: '0.85rem'
+                                    }}>
+                                        Chọn các parts ở trên để cấu hình loại câu hỏi
                                     </div>
-                                );
-                            })}
-                        </div>
+                                )}
+
+                                {formData.selectedParts?.length > 0 && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                        {formData.selectedParts.map(partNumber => {
+                                            const partConfig = formData.partConfigs[partNumber] || {};
+                                            const questionTypes = partConfig.questionTypes || [];
+                                            const questionTypeCounts = partConfig.questionTypeCounts || {};
+                                            const totalQuestions = QUESTION_COUNTS[formData.skill]?.[partNumber] || 13;
+                                            const currentTotal = Object.values(questionTypeCounts).reduce((a, b) => a + b, 0);
+                                            const typePool = formData.skill === 'READING'
+                                                ? READING_PART_TYPES[partNumber]
+                                                : LISTENING_PART_TYPES[partNumber];
+
+                                            return (
+                                                <div key={partNumber} style={{
+                                                    padding: '14px',
+                                                    background: 'rgba(255, 255, 255, 0.03)',
+                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                    borderRadius: '8px'
+                                                }}>
+                                                    {/* Part Header */}
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'space-between',
+                                                        marginBottom: '12px'
+                                                    }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                            <span style={{ fontWeight: 600, color: '#a78bfa' }}>
+                                                                Part {partNumber}
+                                                            </span>
+                                                            <span style={{
+                                                                fontSize: '0.75rem',
+                                                                color: currentTotal === totalQuestions ? '#6ee7b7' : '#fcd34d'
+                                                            }}>
+                                                                {currentTotal}/{totalQuestions} câu
+                                                            </span>
+                                                        </div>
+                                                        <button
+                                                            className="studio-btn studio-btn--ghost studio-btn--sm"
+                                                            onClick={() => randomizePartConfig(partNumber)}
+                                                            style={{ padding: '4px 10px' }}
+                                                        >
+                                                            <FiShuffle size={12} /> Random
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Type Chips */}
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                        {typePool.map(typeId => {
+                                                            const isSelected = questionTypes.includes(typeId);
+                                                            const count = questionTypeCounts[typeId] || 0;
+                                                            const typeLabel = QUESTION_TYPES[formData.skill]?.find(t => t.id === typeId)?.label || typeId;
+
+                                                            return (
+                                                                <button
+                                                                    key={typeId}
+                                                                    type="button"
+                                                                    onClick={() => togglePartQuestionType(partNumber, typeId)}
+                                                                    disabled={!isSelected && questionTypes.length >= 3}
+                                                                    style={{
+                                                                        padding: '6px 12px',
+                                                                        borderRadius: '6px',
+                                                                        fontSize: '0.75rem',
+                                                                        cursor: (!isSelected && questionTypes.length >= 3) ? 'not-allowed' : 'pointer',
+                                                                        border: isSelected
+                                                                            ? '1px solid #10b981'
+                                                                            : '1px solid rgba(255, 255, 255, 0.15)',
+                                                                        background: isSelected
+                                                                            ? 'rgba(16, 185, 129, 0.2)'
+                                                                            : 'rgba(255, 255, 255, 0.05)',
+                                                                        color: isSelected ? '#6ee7b7' : 'rgba(255, 255, 255, 0.7)',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: '6px',
+                                                                        transition: 'all 150ms ease',
+                                                                        opacity: (!isSelected && questionTypes.length >= 3) ? 0.5 : 1
+                                                                    }}
+                                                                >
+                                                                    {isSelected && <FiCheck size={12} />}
+                                                                    <span>{typeLabel}</span>
+                                                                    {isSelected && (
+                                                                        <span style={{ fontSize: '0.65rem', opacity: 0.8 }}>
+                                                                            ({count})
+                                                                        </span>
+                                                                    )}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+
+                                                    {/* Warning for insufficient types */}
+                                                    {questionTypes.length < 2 && (
+                                                        <div style={{
+                                                            marginTop: '10px',
+                                                            padding: '8px 12px',
+                                                            background: 'rgba(245, 158, 11, 0.1)',
+                                                            border: '1px solid rgba(245, 158, 11, 0.3)',
+                                                            borderRadius: '6px',
+                                                            color: '#fcd34d',
+                                                            fontSize: '0.75rem',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px'
+                                                        }}>
+                                                            <FiAlertCircle size={14} />
+                                                            Chọn ít nhất 2 loại câu hỏi
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
                 )}
 
@@ -497,55 +667,108 @@ export default function StudioConfigView({ onGenerate }) {
                             <div className="studio-modes">
                                 <div
                                     className={`studio-mode ${formData.scope === GENERATION_SCOPES.SINGLE_PART ? 'studio-mode--active' : ''}`}
-                                    onClick={() => setFormField('scope', GENERATION_SCOPES.SINGLE_PART)}
+                                    onClick={() => {
+                                        setFormField('scope', GENERATION_SCOPES.SINGLE_PART);
+                                        clearPartSelections();
+                                    }}
                                 >
                                     <FiFileText className="studio-mode__icon" />
                                     <div className="studio-mode__text">
-                                        <h4>Tạo từng phần</h4>
-                                        <p>Tạo 1 part mỗi lần</p>
+                                        <h4>Từng phần</h4>
+                                        <p>1 part mỗi lần</p>
                                     </div>
                                 </div>
                                 <div
-                                    className={`studio-mode ${formData.scope === GENERATION_SCOPES.FULL_SKILL ? 'studio-mode--active' : ''}`}
-                                    onClick={() => setFormField('scope', GENERATION_SCOPES.FULL_SKILL)}
+                                    className={`studio-mode ${formData.scope === 'MULTI_PART' ? 'studio-mode--active' : ''}`}
+                                    onClick={() => setFormField('scope', 'MULTI_PART')}
                                     style={{ position: 'relative' }}
                                 >
-                                    <FiGrid className="studio-mode__icon" />
+                                    <FiLayers className="studio-mode__icon" />
                                     <div className="studio-mode__text">
-                                        <h4>Tạo toàn bộ</h4>
-                                        <p>{formData.skill === SKILL_TYPES.READING ? '3 parts (40 câu)' : '4 parts (40 câu)'}</p>
+                                        <h4>Chọn nhiều</h4>
+                                        <p>Chọn parts cần tạo</p>
                                     </div>
                                     <span style={{
                                         position: 'absolute',
                                         top: '4px',
                                         right: '4px',
-                                        fontSize: '0.6rem',
-                                        padding: '2px 6px',
-                                        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                        fontSize: '0.55rem',
+                                        padding: '2px 5px',
+                                        background: 'linear-gradient(135deg, #10b981, #059669)',
                                         borderRadius: '4px',
                                         fontWeight: 600,
-                                        color: '#fff',
-                                        textTransform: 'uppercase'
-                                    }}>Beta</span>
+                                        color: '#fff'
+                                    }}>NEW</span>
                                 </div>
                             </div>
-                            {formData.scope === GENERATION_SCOPES.FULL_SKILL && (
+
+                            {/* Multi-Part Checkbox Selection */}
+                            {formData.scope === 'MULTI_PART' && (
                                 <div style={{
-                                    marginTop: '10px',
-                                    padding: '10px 14px',
-                                    background: 'rgba(245, 158, 11, 0.1)',
-                                    border: '1px solid rgba(245, 158, 11, 0.3)',
-                                    borderRadius: '8px',
-                                    color: '#fcd34d',
-                                    fontSize: '0.8rem',
-                                    display: 'flex',
-                                    alignItems: 'flex-start',
-                                    gap: '8px'
+                                    marginTop: '12px',
+                                    padding: '14px',
+                                    background: 'rgba(16, 185, 129, 0.08)',
+                                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                                    borderRadius: '8px'
                                 }}>
-                                    <FiAlertCircle size={16} style={{ marginTop: '2px', flexShrink: 0 }} />
-                                    <div>
-                                        <strong>Lưu ý:</strong> Chế độ này tạo {formData.skill === SKILL_TYPES.READING ? '3 bài đọc' : '4 phần nghe'} cùng lúc.
-                                        Quá trình sẽ mất nhiều thời gian và token hơn. AI sẽ tạo lần lượt từng part.
+                                    <div style={{
+                                        fontSize: '0.8rem',
+                                        color: '#6ee7b7',
+                                        marginBottom: '10px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between'
+                                    }}>
+                                        <span>
+                                            <FiCheck style={{ marginRight: '6px' }} />
+                                            Chọn các parts cần tạo:
+                                        </span>
+                                        {formData.selectedParts?.length > 0 && (
+                                            <span style={{ color: '#a7f3d0', fontSize: '0.75rem' }}>
+                                                ({formData.selectedParts.length} đã chọn)
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: formData.skill === SKILL_TYPES.READING
+                                            ? 'repeat(3, 1fr)'
+                                            : 'repeat(4, 1fr)',
+                                        gap: '8px'
+                                    }}>
+                                        {(formData.skill === SKILL_TYPES.READING ? READING_PARTS : LISTENING_PARTS).map(part => {
+                                            const isSelected = formData.selectedParts?.includes(part.value);
+                                            return (
+                                                <button
+                                                    key={part.value}
+                                                    type="button"
+                                                    onClick={() => togglePartSelection(part.value)}
+                                                    style={{
+                                                        padding: '10px 12px',
+                                                        borderRadius: '8px',
+                                                        border: isSelected
+                                                            ? '2px solid #10b981'
+                                                            : '1px solid rgba(255,255,255,0.15)',
+                                                        background: isSelected
+                                                            ? 'rgba(16, 185, 129, 0.2)'
+                                                            : 'rgba(255,255,255,0.05)',
+                                                        color: isSelected ? '#6ee7b7' : 'rgba(255,255,255,0.7)',
+                                                        cursor: 'pointer',
+                                                        fontSize: '0.8rem',
+                                                        fontWeight: isSelected ? 600 : 400,
+                                                        textAlign: 'center',
+                                                        transition: 'all 150ms ease',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        gap: '6px'
+                                                    }}
+                                                >
+                                                    {isSelected && <FiCheck size={14} />}
+                                                    Part {part.value}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
@@ -554,21 +777,21 @@ export default function StudioConfigView({ onGenerate }) {
 
                     <div className="studio-form-row">
                         {/* Part Selector - Reading or Listening (only when SINGLE_PART scope) */}
-                        {(formData.skill === SKILL_TYPES.READING || formData.skill === SKILL_TYPES.LISTENING) && 
-                         formData.scope === GENERATION_SCOPES.SINGLE_PART && (
-                            <div className="studio-form-group">
-                                <label className="studio-label">Part</label>
-                                <select
-                                    className="studio-select"
-                                    value={formData.partNumber || 1}
-                                    onChange={(e) => setFormField('partNumber', parseInt(e.target.value))}
-                                >
-                                    {(formData.skill === SKILL_TYPES.READING ? READING_PARTS : LISTENING_PARTS).map(part => (
-                                        <option key={part.value} value={part.value}>{part.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
+                        {(formData.skill === SKILL_TYPES.READING || formData.skill === SKILL_TYPES.LISTENING) &&
+                            formData.scope === GENERATION_SCOPES.SINGLE_PART && (
+                                <div className="studio-form-group">
+                                    <label className="studio-label">Part</label>
+                                    <select
+                                        className="studio-select"
+                                        value={formData.partNumber || 1}
+                                        onChange={(e) => setFormField('partNumber', parseInt(e.target.value))}
+                                    >
+                                        {(formData.skill === SKILL_TYPES.READING ? READING_PARTS : LISTENING_PARTS).map(part => (
+                                            <option key={part.value} value={part.value}>{part.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                         {/* Passage length is only meaningful for Reading */}
                         {formData.skill === SKILL_TYPES.READING && formData.scope === GENERATION_SCOPES.SINGLE_PART && (
                             <div className="studio-form-group">
@@ -611,7 +834,7 @@ export default function StudioConfigView({ onGenerate }) {
                         )}
                     </div>
 
-                    {formData.skill === SKILL_TYPES.READING && (
+                    {formData.skill === SKILL_TYPES.READING && formData.scope === GENERATION_SCOPES.SINGLE_PART && (
                         <div className="studio-form-row">
                             <div className="studio-form-group">
                                 <label className="studio-label">

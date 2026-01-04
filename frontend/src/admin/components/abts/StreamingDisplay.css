@@ -104,14 +104,19 @@
 }
 
 .progress-text {
-    position: absolute;
-    right: 16px;
-    top: 8px;
-    font-size: 0.75rem;
-    color: var(--st-text-muted, #94a3b8);
-    font-family: var(--st-font, sans-serif);
+    display: none;
+    /* Moved to header */
+}
+
+/* Progress percentage in header */
+.progress-text-header {
+    margin-left: 12px;
+    font-size: 0.875rem;
+    color: var(--st-primary, #8b5cf6);
     font-weight: 600;
-    letter-spacing: 0.5px;
+    background: rgba(139, 92, 246, 0.15);
+    padding: 2px 8px;
+    border-radius: 4px;
 }
 
 /* Event Log (The Terminal) */

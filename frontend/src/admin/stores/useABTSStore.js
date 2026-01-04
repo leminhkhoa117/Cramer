@@ -24,6 +24,29 @@ import {
     GENERATION_SCOPES
 } from '../services/abtsApi';
 
+// ==================== IELTS QUESTION TYPE POOLS ====================
+// Part-specific question types for semi-random selection (based on Cambridge IELTS)
+
+export const READING_PART_TYPES = {
+    1: ['FILL_IN_BLANK', 'SUMMARY_COMPLETION', 'TABLE_COMPLETION', 'TRUE_FALSE_NOT_GIVEN', 'DIAGRAM_LABEL_COMPLETION'],
+    2: ['MATCHING_HEADINGS', 'MATCHING_INFORMATION', 'SUMMARY_COMPLETION', 'FILL_IN_BLANK', 'MULTIPLE_CHOICE_MULTIPLE_ANSWERS'],
+    3: ['MULTIPLE_CHOICE', 'YES_NO_NOT_GIVEN', 'MATCHING_SENTENCE_ENDINGS', 'SUMMARY_COMPLETION_OPTIONS', 'MATCHING_FEATURES']
+};
+
+export const LISTENING_PART_TYPES = {
+    1: ['FILL_IN_BLANK', 'MULTIPLE_CHOICE'],
+    2: ['FILL_IN_BLANK', 'MATCHING'],
+    3: ['MULTIPLE_CHOICE', 'MULTIPLE_CHOICE_MULTIPLE_ANSWERS'],
+    4: ['FILL_IN_BLANK', 'MULTIPLE_CHOICE']
+};
+
+// Fixed question counts per part
+export const QUESTION_COUNTS = {
+    READING: { 1: 13, 2: 13, 3: 14 },
+    LISTENING: { 1: 10, 2: 10, 3: 10, 4: 10 }
+};
+
+
 // Initial form state
 const initialFormState = {
     skill: null,
@@ -52,6 +75,10 @@ const initialFormState = {
     showJsonPreview: false, // Toggle JSON preview panel
     maxTokens: 8000, // Max output tokens (4000-16000)
     totalQuestions: 13, // Target total questions (10-20)
+
+    // Multi-part generation (v6.0)
+    selectedParts: [], // e.g., [1, 2] for Parts 1 and 2
+    partConfigs: {}, // { 1: { topic: '', facts: [], questionTypes: [] }, 2: {...} }
 };
 
 const useABTSStore = create((set, get) => ({
@@ -206,6 +233,212 @@ const useABTSStore = create((set, get) => ({
         });
     },
 
+    // ==================== MULTI-PART ACTIONS ====================
+
+    /**
+     * Toggle part selection for multi-part generation
+     */
+    togglePartSelection: (partNumber) => {
+        const { formData } = get();
+        const currentParts = formData.selectedParts || [];
+        const newParts = currentParts.includes(partNumber)
+            ? currentParts.filter(p => p !== partNumber)
+            : [...currentParts, partNumber].sort((a, b) => a - b);
+
+        set({
+            formData: {
+                ...formData,
+                selectedParts: newParts,
+                // Update scope based on selection
+                scope: newParts.length > 1 ? 'MULTI_PART' : GENERATION_SCOPES.SINGLE_PART,
+                // If single part selected, also set partNumber for backward compatibility
+                partNumber: newParts.length === 1 ? newParts[0] : formData.partNumber
+            }
+        });
+    },
+
+    /**
+     * Set configuration for a specific part
+     */
+    setPartConfig: (partNumber, config) => {
+        const { formData } = get();
+        const updatedConfigs = {
+            ...formData.partConfigs,
+            [partNumber]: {
+                ...(formData.partConfigs[partNumber] || {}),
+                ...config
+            }
+        };
+        set({
+            formData: { ...formData, partConfigs: updatedConfigs }
+        });
+    },
+
+    /**
+     * Apply global config to all selected parts
+     */
+    applyGlobalConfigToAllParts: () => {
+        const { formData } = get();
+        const { selectedParts, topic, facts, questionTypes } = formData;
+        const partConfigs = {};
+
+        selectedParts.forEach(part => {
+            partConfigs[part] = { topic, facts: [...facts], questionTypes: [...questionTypes] };
+        });
+
+        set({
+            formData: { ...formData, partConfigs }
+        });
+    },
+
+    /**
+     * Clear all part selections
+     */
+    clearPartSelections: () => {
+        set(state => ({
+            formData: {
+                ...state.formData,
+                selectedParts: [],
+                partConfigs: {},
+                scope: GENERATION_SCOPES.SINGLE_PART
+            }
+        }));
+    },
+
+    /**
+     * Semi-randomize question types for a specific part.
+     * Uses IELTS-realistic type pools with balanced counts.
+     */
+    randomizePartConfig: (partNumber) => {
+        const { formData } = get();
+        const skill = formData.skill;
+
+        if (!skill || skill === 'WRITING') return;
+
+        const typePool = skill === 'READING'
+            ? READING_PART_TYPES[partNumber]
+            : LISTENING_PART_TYPES[partNumber];
+
+        const totalQuestions = QUESTION_COUNTS[skill]?.[partNumber] || 10;
+
+        // Pick 2-3 types randomly
+        const numTypes = Math.random() < 0.5 ? 2 : 3;
+        const shuffled = [...typePool].sort(() => 0.5 - Math.random());
+        const selectedTypes = shuffled.slice(0, numTypes);
+
+        // Calculate balanced counts
+        const counts = {};
+        const baseCount = Math.floor(totalQuestions / numTypes);
+        let remainder = totalQuestions % numTypes;
+
+        selectedTypes.forEach(type => {
+            counts[type] = baseCount + (remainder > 0 ? 1 : 0);
+            remainder--;
+        });
+
+        // Update partConfigs
+        const updatedConfigs = {
+            ...formData.partConfigs,
+            [partNumber]: {
+                ...(formData.partConfigs[partNumber] || {}),
+                questionTypes: selectedTypes,
+                questionTypeCounts: counts
+            }
+        };
+
+        set({ formData: { ...formData, partConfigs: updatedConfigs } });
+    },
+
+    /**
+     * Randomize all selected parts at once
+     */
+    randomizeAllParts: () => {
+        const { formData } = get();
+        const skill = formData.skill;
+
+        if (!skill || skill === 'WRITING') return;
+
+        const updatedConfigs = { ...formData.partConfigs };
+
+        formData.selectedParts.forEach(partNumber => {
+            const typePool = skill === 'READING'
+                ? READING_PART_TYPES[partNumber]
+                : LISTENING_PART_TYPES[partNumber];
+
+            const totalQuestions = QUESTION_COUNTS[skill]?.[partNumber] || 10;
+            const numTypes = Math.random() < 0.5 ? 2 : 3;
+            const shuffled = [...typePool].sort(() => 0.5 - Math.random());
+            const selectedTypes = shuffled.slice(0, numTypes);
+
+            const counts = {};
+            const baseCount = Math.floor(totalQuestions / numTypes);
+            let remainder = totalQuestions % numTypes;
+            selectedTypes.forEach(type => {
+                counts[type] = baseCount + (remainder > 0 ? 1 : 0);
+                remainder--;
+            });
+
+            updatedConfigs[partNumber] = {
+                ...(formData.partConfigs[partNumber] || {}),
+                questionTypes: selectedTypes,
+                questionTypeCounts: counts
+            };
+        });
+
+        set({ formData: { ...formData, partConfigs: updatedConfigs } });
+    },
+
+    /**
+     * Toggle a question type for a specific part (manual selection)
+     */
+    togglePartQuestionType: (partNumber, typeId) => {
+        const { formData } = get();
+        const skill = formData.skill;
+        const totalQuestions = QUESTION_COUNTS[skill]?.[partNumber] || 13;
+
+        const partConfig = formData.partConfigs[partNumber] || { questionTypes: [], questionTypeCounts: {} };
+        const currentTypes = partConfig.questionTypes || [];
+
+        let newTypes, newCounts;
+
+        if (currentTypes.includes(typeId)) {
+            // Remove type
+            newTypes = currentTypes.filter(t => t !== typeId);
+            newCounts = { ...partConfig.questionTypeCounts };
+            delete newCounts[typeId];
+
+            // Recalculate counts for remaining types
+            if (newTypes.length > 0) {
+                const baseCount = Math.floor(totalQuestions / newTypes.length);
+                let remainder = totalQuestions % newTypes.length;
+                newTypes.forEach(type => {
+                    newCounts[type] = baseCount + (remainder > 0 ? 1 : 0);
+                    remainder--;
+                });
+            }
+        } else {
+            // Add type (max 3)
+            if (currentTypes.length >= 3) return;
+            newTypes = [...currentTypes, typeId];
+
+            // Recalculate balanced counts
+            newCounts = {};
+            const baseCount = Math.floor(totalQuestions / newTypes.length);
+            let remainder = totalQuestions % newTypes.length;
+            newTypes.forEach(type => {
+                newCounts[type] = baseCount + (remainder > 0 ? 1 : 0);
+                remainder--;
+            });
+        }
+
+        const updatedConfigs = {
+            ...formData.partConfigs,
+            [partNumber]: { ...partConfig, questionTypes: newTypes, questionTypeCounts: newCounts }
+        };
+
+        set({ formData: { ...formData, partConfigs: updatedConfigs } });
+    },
+
     /**
      * Add a fact
      */
@@ -350,7 +583,10 @@ const useABTSStore = create((set, get) => ({
                 customInstructions: formData.customInstructions || null,
                 maxTokens: formData.maxTokens,
                 totalQuestions: shouldSendTotalQuestions ? formData.totalQuestions : null,
-                writingEssayType: formData.writingEssayType || null
+                writingEssayType: formData.writingEssayType || null,
+                // Multi-part generation (v6.0)
+                partsToGenerate: formData.selectedParts?.length > 0 ? formData.selectedParts : null,
+                partConfigs: Object.keys(formData.partConfigs || {}).length > 0 ? formData.partConfigs : null
             };
 
             set({ generationProgress: 30 });
@@ -457,7 +693,10 @@ const useABTSStore = create((set, get) => ({
             customInstructions: formData.customInstructions || null,
             maxTokens: formData.maxTokens,
             totalQuestions: shouldSendTotalQuestions ? formData.totalQuestions : null,
-            writingEssayType: formData.writingEssayType || null
+            writingEssayType: formData.writingEssayType || null,
+            // Multi-part generation (v6.0)
+            partsToGenerate: formData.selectedParts?.length > 0 ? formData.selectedParts : null,
+            partConfigs: Object.keys(formData.partConfigs || {}).length > 0 ? formData.partConfigs : null
         };
 
         // Callbacks for streaming events

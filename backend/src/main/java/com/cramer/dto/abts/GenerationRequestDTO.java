@@ -26,6 +26,7 @@ public class GenerationRequestDTO {
     public enum GenerationScope {
         FULL_SKILL, // All parts for the skill (e.g., all 3 Reading passages)
         SINGLE_PART, // One part/passage only
+        MULTI_PART, // Multiple selected parts (user picks which parts)
         QUESTION_GROUP // Specific question range only
     }
 
@@ -201,6 +202,26 @@ public class GenerationRequestDTO {
      */
     private String writingEssayType;
 
+    // ==================== MULTI-PART GENERATION ====================
+
+    /**
+     * Parts to generate (multi-selection).
+     * For Reading: [1], [2], [3], [1,2], [2,3], [1,3], [1,2,3]
+     * For Listening: [1], [2], [3], [4], any combination
+     * For Writing: [1] (Task 1), [2] (Task 2), [1,2] (Both)
+     * If null or empty, uses partNumber for single-part (backward compatible).
+     */
+    private List<Integer> partsToGenerate;
+
+    /**
+     * Per-part configuration map.
+     * Key: part number (1, 2, 3, or 4)
+     * Value: PartConfigDTO with optional overrides for topic, facts, name,
+     * questionTypes.
+     * If a part is not in this map, global values are used.
+     */
+    private Map<Integer, PartConfigDTO> partConfigs;
+
     // ==================== INNER CLASSES ====================
 
     /**
@@ -232,6 +253,82 @@ public class GenerationRequestDTO {
 
         public void setMax(int max) {
             this.max = max;
+        }
+    }
+
+    /**
+     * Per-part configuration for multi-part generation.
+     * All fields are optional - null values inherit from global config.
+     */
+    public static class PartConfigDTO {
+        /**
+         * Custom topic for this part. If null, uses global topic.
+         */
+        private String topic;
+
+        /**
+         * Custom facts for this part. If null, uses auto-mode (AI generates facts).
+         * If empty list, no facts are provided. If non-empty, uses these facts.
+         */
+        private List<String> facts;
+
+        /**
+         * Custom name/title for this part. If null, auto-generated.
+         */
+        private String name;
+
+        /**
+         * Custom question types for this part. If null, uses auto-selection.
+         */
+        private List<String> questionTypes;
+
+        /**
+         * Question count per type. Key: question type ID, Value: count.
+         * Example: { "FILL_IN_BLANK": 7, "SUMMARY_COMPLETION": 6 }
+         */
+        private Map<String, Integer> questionTypeCounts;
+
+        public PartConfigDTO() {
+        }
+
+        public String getTopic() {
+            return topic;
+        }
+
+        public void setTopic(String topic) {
+            this.topic = topic;
+        }
+
+        public List<String> getFacts() {
+            return facts;
+        }
+
+        public void setFacts(List<String> facts) {
+            this.facts = facts;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public List<String> getQuestionTypes() {
+            return questionTypes;
+        }
+
+        public void setQuestionTypes(List<String> questionTypes) {
+            this.questionTypes = questionTypes;
+        }
+
+        public Map<String, Integer> getQuestionTypeCounts() {
+            return questionTypeCounts;
+        }
+
+        public void setQuestionTypeCounts(Map<String, Integer> questionTypeCounts) {
+            this.questionTypeCounts = questionTypeCounts;
         }
     }
 
@@ -443,5 +540,21 @@ public class GenerationRequestDTO {
 
     public void setWritingEssayType(String writingEssayType) {
         this.writingEssayType = writingEssayType;
+    }
+
+    public List<Integer> getPartsToGenerate() {
+        return partsToGenerate;
+    }
+
+    public void setPartsToGenerate(List<Integer> partsToGenerate) {
+        this.partsToGenerate = partsToGenerate;
+    }
+
+    public Map<Integer, PartConfigDTO> getPartConfigs() {
+        return partConfigs;
+    }
+
+    public void setPartConfigs(Map<Integer, PartConfigDTO> partConfigs) {
+        this.partConfigs = partConfigs;
     }
 }

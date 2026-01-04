@@ -146,6 +146,7 @@ export default function StreamingDisplay({
                             currentStage ? currentStage.label :
                                 isActive ? 'Initializing...' : 'Ready'}
                     </span>
+                    {isActive && <span className="progress-text-header">{Math.round(progress)}%</span>}
                 </div>
 
                 {onAbort && isActive && (

@@ -129,8 +129,8 @@ export default function QuestionGroupRenderer({
                 return (
                     <div className="studio-qgroup__context">
                         <div className="studio-qgroup__context-title">
-                            {type === 'MATCHING_HEADINGS' ? 'List of Headings' : 
-                             type === 'MATCHING_SENTENCE_ENDINGS' ? 'Sentence Endings' : 'Options'}
+                            {type === 'MATCHING_HEADINGS' ? 'List of Headings' :
+                                type === 'MATCHING_SENTENCE_ENDINGS' ? 'Sentence Endings' : 'Options'}
                         </div>
                         <div className="studio-qgroup__options-grid">
                             {options.map((opt, i) => (
@@ -228,10 +228,15 @@ export default function QuestionGroupRenderer({
     };
 
     // Get explanation for display - RESILIENT approach
-    // Return full explanation now handled by scrollable container if needed
+    // Handle both string and object formats (object has {quote, detail, strategy})
     const getQuestionExplanation = (question) => {
         if (!question.explanation) return null;
-        return String(question.explanation);
+        if (typeof question.explanation === 'string') {
+            return question.explanation;
+        }
+        // Object format - prioritize detail, then strategy, then quote
+        const exp = question.explanation;
+        return exp.detail || exp.strategy || exp.quote || JSON.stringify(exp);
     };
 
     // Render a simple completion question (just the number + blank indicator)
@@ -317,7 +322,7 @@ export default function QuestionGroupRenderer({
                                         const issues = questionIssues?.get?.(qNum) || [];
 
                                         return (
-                                            <div key={idx} className="studio-question__footer-item" style={{ marginTop: '12px', borderTop: idx > 0 ? '1px dashed var(--studio-border)' : 'none', paddingTop: idx > 0 ? '8px' : '0' }}>
+                                            <div key={idx} className="studio-question__footer-item">
                                                 <div className="studio-question__answer">
                                                     <strong>{qNum}. Answer:</strong>
                                                     <span className="studio-question__answer-value">
@@ -331,11 +336,6 @@ export default function QuestionGroupRenderer({
                                                     return (
                                                         <div
                                                             className="studio-question__explanation"
-                                                            style={{
-                                                                fontSize: '0.95rem',
-                                                                lineHeight: '1.6',
-                                                                marginTop: '8px'
-                                                            }}
                                                             dangerouslySetInnerHTML={{ __html: explanation }}
                                                         />
                                                     );

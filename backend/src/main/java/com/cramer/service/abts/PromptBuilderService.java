@@ -71,7 +71,8 @@ public class PromptBuilderService {
                 prompt.append("⚠️ CRITICAL: The passage and ALL question text must ALWAYS be in ENGLISH. ");
                 prompt.append("Only the 'explanation' field should be in the language specified above.\n\n");
 
-                // STRUCTURED EXPLANATION FORMAT (3 fields only - correct_answer is stored separately)
+                // STRUCTURED EXPLANATION FORMAT (3 fields only - correct_answer is stored
+                // separately)
                 prompt.append("### ⚠️ EXPLANATION FORMAT (CRITICAL - MUST FOLLOW EXACTLY)\n");
                 prompt.append("Each question's `explanation` field must be a JSON object with this EXACT structure:\n");
                 prompt.append("```json\n");
@@ -144,6 +145,21 @@ public class PromptBuilderService {
                         prompt.append("- **Language**: ENGLISH ONLY for the passage text.\n");
                         prompt.append("- **Format**: HTML tags for formatting.\n\n");
                 }
+
+                // CRITICAL: Word Limit Format Section
+                prompt.append("### ⚠️ WORD LIMIT FORMAT (CRITICAL - MUST USE EXACT VALUES)\n");
+                prompt.append("For completion-type questions, `word_limit` MUST be one of these EXACT strings:\n");
+                prompt.append("✅ VALID:\n");
+                prompt.append("- `\"ONE WORD ONLY\"`\n");
+                prompt.append("- `\"NO MORE THAN TWO WORDS\"`\n");
+                prompt.append("- `\"NO MORE THAN THREE WORDS\"`\n");
+                prompt.append("- `\"ONE WORD AND/OR A NUMBER\"`\n");
+                prompt.append("- `\"NO MORE THAN TWO WORDS AND/OR A NUMBER\"`\n");
+                prompt.append("- `\"NO MORE THAN THREE WORDS AND/OR A NUMBER\"`\n\n");
+                prompt.append("❌ INVALID (do NOT use these):\n");
+                prompt.append("- `\"ONE WORD\"` ← WRONG, use `\"ONE WORD ONLY\"`\n");
+                prompt.append("- `\"TWO WORDS\"` ← WRONG, use `\"NO MORE THAN TWO WORDS\"`\n");
+                prompt.append("- `\"THREE WORDS\"` ← WRONG, use `\"NO MORE THAN THREE WORDS\"`\n\n");
 
                 // Question requirements
                 prompt.append("### Question Requirements\n");
@@ -553,10 +569,18 @@ public class PromptBuilderService {
                         prompt.append(
                                         "- **Failure to include text in each question will cause the test to render broken/blank questions.**\n\n");
 
-                        prompt.append("#### Answer Word Limit Enforcement (CRITICAL):\n");
-                        prompt.append("- When `word_limit` is `ONE WORD ONLY`: correct_answer must be a SINGLE word (no spaces).\n");
-                        prompt.append("- When `word_limit` is `NO MORE THAN TWO WORDS`: correct_answer must be 1-2 words maximum.\n");
-                        prompt.append("- Exceeding the word limit is a VALIDATION ERROR. Double-check all answers.\n");
+                        prompt.append("#### 🚨 ANSWER WORD LIMIT ENFORCEMENT (CRITICAL - VALIDATION WILL FAIL) 🚨\n");
+                        prompt.append("The `correct_answer` MUST respect the `word_limit` constraint. This is NON-NEGOTIABLE.\n\n");
+                        prompt.append("| word_limit | Max Words | ✅ Valid Examples | ❌ Invalid Examples |\n");
+                        prompt.append("|------------|-----------|-------------------|---------------------|\n");
+                        prompt.append("| ONE WORD ONLY | 1 | \"population\", \"technology\" | \"electric motor\", \"grid system\" |\n");
+                        prompt.append("| NO MORE THAN TWO WORDS | 1-2 | \"solar panels\", \"efficiency\" | \"renewable energy sources\" |\n");
+                        prompt.append("| NO MORE THAN THREE WORDS | 1-3 | \"carbon dioxide emissions\" | \"the main power source\" |\n\n");
+                        prompt.append("⚠️ BEFORE FINALIZING EACH ANSWER, COUNT THE WORDS:\n");
+                        prompt.append("- If word_limit is ONE WORD ONLY and answer has a space → WRONG, pick a single word\n");
+                        prompt.append("- \"Vehicle-to-Grid technology\" = 2 words (hyphenated counts as 1) but still WRONG for ONE WORD ONLY\n");
+                        prompt.append("- \"electric motor\" = 2 words → WRONG for ONE WORD ONLY, pick just \"motor\"\n");
+                        prompt.append("- Answers violating word limits will be REJECTED by validation.\n\n");
                 }
                 prompt.append("IMPORTANT: Do NOT mix question types. Finish one group before starting the next.\n");
                 prompt.append("\n");
@@ -643,6 +667,13 @@ public class PromptBuilderService {
                 system.append("- Before finalizing, verify each answer exists word-for-word in the passage.\n");
                 system.append(
                                 "- Example: If passage says 'battery technology', answer must be 'battery technology' (not 'Battery Technology').\n\n");
+
+                system.append("## 🚨 CRITICAL: Answer Word Limit Compliance 🚨\n");
+                system.append("Answers MUST NOT exceed the word_limit. COUNT THE WORDS before finalizing:\n");
+                system.append("- ONE WORD ONLY = exactly 1 word, NO SPACES (e.g., \"motor\" not \"electric motor\")\n");
+                system.append("- NO MORE THAN TWO WORDS = 1-2 words maximum\n");
+                system.append("- NO MORE THAN THREE WORDS = 1-3 words maximum\n");
+                system.append("If your answer exceeds the limit, PICK A SHORTER VERSION that still appears in the passage.\n\n");
 
                 system.append("For MATCHING and SELECTION types (TFNG, MCQ, Matching, etc.):\n");
                 system.append("- Answers are letter choices from the options, not text from passage.\n");
@@ -1004,7 +1035,8 @@ public class PromptBuilderService {
                                 "9. **INLINE STRATEGY**: For NOTE_COMPLETION, each question MUST have its own text (bullet point). Do NOT leave text empty.\n");
                 system.append("10. **JSON FORMAT**: Output must match schema exactly\n\n");
 
-                // Add structured explanation format (3 fields - correct_answer stored separately)
+                // Add structured explanation format (3 fields - correct_answer stored
+                // separately)
                 system.append("## Explanation JSON Format (CRITICAL)\n");
                 system.append("Each question's `explanation` must be a JSON object:\n");
                 system.append("```json\n");
@@ -1393,7 +1425,8 @@ public class PromptBuilderService {
                                                 "FLOW_CHART_COMPLETION")));
                 questionProps.put("question_content", Map.of("type", "object"));
                 questionProps.put("correct_answer", Map.of("type", "array", "items", Map.of("type", "string")));
-                // Structured explanation in Vietnamese (3 fields - dapAn removed as it's redundant with correct_answer)
+                // Structured explanation in Vietnamese (3 fields - dapAn removed as it's
+                // redundant with correct_answer)
                 questionProps.put("explanation", Map.of(
                                 "type", "object",
                                 "properties", Map.of(
@@ -1404,7 +1437,8 @@ public class PromptBuilderService {
                                                                 "description",
                                                                 "Direct quote from passage/transcript (in English)"),
                                                 "strategy", Map.of("type", "string",
-                                                                "description", "Strategy tip for this question type (in Vietnamese)")),
+                                                                "description",
+                                                                "Strategy tip for this question type (in Vietnamese)")),
                                 "required", List.of("detail", "quote", "strategy")));
                 questionProps.put("word_limit", Map.of("type", List.of("string", "null")));
                 questionProps.put("image_url", Map.of("type", List.of("string", "null")));
@@ -1467,7 +1501,8 @@ public class PromptBuilderService {
                                                 "MATCHING")));
                 questionProps.put("question_content", Map.of("type", "object"));
                 questionProps.put("correct_answer", Map.of("type", "array", "items", Map.of("type", "string")));
-                // Structured explanation in Vietnamese (3 fields - dapAn removed as it's redundant with correct_answer)
+                // Structured explanation in Vietnamese (3 fields - dapAn removed as it's
+                // redundant with correct_answer)
                 questionProps.put("explanation", Map.of(
                                 "type", "object",
                                 "properties", Map.of(
@@ -1478,7 +1513,8 @@ public class PromptBuilderService {
                                                                 "description",
                                                                 "Direct quote from transcript (in English)"),
                                                 "strategy", Map.of("type", "string",
-                                                                "description", "Strategy tip for this question type (in Vietnamese)")),
+                                                                "description",
+                                                                "Strategy tip for this question type (in Vietnamese)")),
                                 "required", List.of("detail", "quote", "strategy")));
                 questionProps.put("word_limit", Map.of("type", List.of("string", "null")));
                 questionItem.put("properties", questionProps);

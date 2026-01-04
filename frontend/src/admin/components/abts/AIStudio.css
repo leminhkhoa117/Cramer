@@ -1172,6 +1172,25 @@
     margin-top: 4px;
 }
 
+/* Multi-question footer groups (for shared question types) */
+.studio-question__master-footers {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.studio-question__footer-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.studio-question__footer-item:not(:first-child) {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--studio-border);
+}
+
 /* Regenerate Button */
 .studio-question__regen {
     margin-top: 8px;

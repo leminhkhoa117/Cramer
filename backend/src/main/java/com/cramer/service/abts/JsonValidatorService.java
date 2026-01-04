@@ -336,8 +336,9 @@ public class JsonValidatorService {
                         num, qTypeRaw));
             }
 
-            // Check explanation length (warning only)
-            String explanation = question.path("explanation").asText("");
+            // Check explanation length (warning only) - handles both string and object
+            // formats
+            String explanation = extractExplanationText(question.path("explanation"));
             if (explanation.isEmpty() || explanation.length() < 20) {
                 result.addWarning(String.format(
                         "Question %d has short explanation (length: %d)",
@@ -387,7 +388,7 @@ public class JsonValidatorService {
                     validateAnswerWordLimit(num, answers, wordLimit, result);
                     if (!passageLower.isBlank()) {
                         for (String ans : answers) {
-                            if (ans.length() > 1 && !passageLower.contains(ans.toLowerCase())) {
+                            if (ans.length() > 1 && !answerAppearsInPassage(ans, passageLower)) {
                                 result.addWarning(String.format(
                                         "Question %d answer '%s' may not appear in passage",
                                         num, ans));
@@ -420,12 +421,8 @@ public class JsonValidatorService {
                     validateMatchingOptions(num, qContent, question, result);
                     break;
                 case "DIAGRAM_LABEL_COMPLETION":
-                    String imageUrl = question.path("image_url").asText("");
-                    if (imageUrl.isBlank()) {
-                        result.addWarning(String.format(
-                                "Question %d: DIAGRAM_LABEL_COMPLETION should include image_url",
-                                num));
-                    }
+                    // Note: AI-generated content does not include images - image_url is optional
+                    // Image can be uploaded later by human reviewer
                     break;
                 default:
                     break;
@@ -481,7 +478,7 @@ public class JsonValidatorService {
         // Check for required explanation language
         if (request.getExplanationLanguage() == GenerationRequestDTO.ExplanationLanguage.VI && questions != null) {
             for (JsonNode question : questions) {
-                String explanation = question.has("explanation") ? question.get("explanation").asText() : "";
+                String explanation = extractExplanationText(question.path("explanation"));
                 // Simple check for Vietnamese characters
                 if (!containsVietnamese(explanation)) {
                     result.addWarning(String.format(
@@ -705,7 +702,7 @@ public class JsonValidatorService {
                 }
             }
 
-            String explanation = question.path("explanation").asText("");
+            String explanation = extractExplanationText(question.path("explanation"));
             if (explanation.isEmpty() || explanation.length() < 20) {
                 result.addWarning(String.format(
                         "Question %d has short explanation (length: %d)",
@@ -1482,14 +1479,9 @@ public class JsonValidatorService {
             }
         }
 
-        if (request.getPartNumber() != null) {
-            int expectedStart = (request.getPartNumber() - 1) * 13 + 1;
-            if (numbers.get(0) != expectedStart) {
-                result.addWarning(String.format(
-                        "Question numbering for Part %d should start at %d (found %d)",
-                        request.getPartNumber(), expectedStart, numbers.get(0)));
-            }
-        }
+        // Note: We no longer validate question numbering start position because
+        // ABTSService.generateReadingForPart calls renumberQuestionsForReadingPart()
+        // to automatically fix this after parsing.
     }
 
     private void validateSingleAnswerInSet(int num, JsonNode question, Set<String> allowed,
@@ -1620,6 +1612,36 @@ public class JsonValidatorService {
         }
         if (qContent.has("heading")) {
             return qContent.get("heading").asText("");
+        }
+        return "";
+    }
+
+    /**
+     * Extract explanation text from explanation node.
+     * Handles both string format (legacy) and object format (with detail, quote,
+     * strategy).
+     */
+    private String extractExplanationText(JsonNode explanation) {
+        if (explanation == null || explanation.isMissingNode() || explanation.isNull()) {
+            return "";
+        }
+        // If it's a string, return directly
+        if (explanation.isTextual()) {
+            return explanation.asText("");
+        }
+        // If it's an object, concatenate detail + quote + strategy
+        if (explanation.isObject()) {
+            StringBuilder sb = new StringBuilder();
+            if (explanation.has("detail")) {
+                sb.append(explanation.get("detail").asText(""));
+            }
+            if (explanation.has("quote")) {
+                sb.append(" ").append(explanation.get("quote").asText(""));
+            }
+            if (explanation.has("strategy")) {
+                sb.append(" ").append(explanation.get("strategy").asText(""));
+            }
+            return sb.toString().trim();
         }
         return "";
     }
@@ -1804,6 +1826,48 @@ public class JsonValidatorService {
     }
 
     /**
+     * Check if an answer appears in the passage using smart component matching.
+     * For multi-word answers, checks if ALL significant words appear in the
+     * passage.
+     * This reduces false positives for answers like "electric motor" where both
+     * words appear in the passage but not as a contiguous phrase.
+     * 
+     * @param answer       The answer to check
+     * @param passageLower The passage text in lowercase
+     * @return true if the answer (or all its components) appear in the passage
+     */
+    private boolean answerAppearsInPassage(String answer, String passageLower) {
+        if (answer == null || answer.isBlank()) {
+            return true; // Empty answers are not validated
+        }
+
+        String answerLower = answer.toLowerCase().trim();
+
+        // First, try exact match
+        if (passageLower.contains(answerLower)) {
+            return true;
+        }
+
+        // For multi-word answers, check if ALL significant words appear
+        String[] words = answerLower.split("\\s+");
+        if (words.length > 1) {
+            for (String word : words) {
+                // Skip very short words (articles, prepositions)
+                if (word.length() <= 2) {
+                    continue;
+                }
+                if (!passageLower.contains(word)) {
+                    return false;
+                }
+            }
+            return true; // All significant words found
+        }
+
+        // Single word - exact match already failed
+        return false;
+    }
+
+    /**
      * Check if text contains Vietnamese characters.
      */
     private boolean containsVietnamese(String text) {
@@ -1975,6 +2039,59 @@ public class JsonValidatorService {
             }
 
             content.setAudioPlaceholder(audio);
+        }
+
+        return content;
+    }
+
+    /**
+     * Renumber questions for Reading Parts 2 and 3 if they start at 1.
+     * This is a post-processing step to fix AI outputs that don't follow
+     * IELTS numbering conventions.
+     * 
+     * Part 1: Q1-13 (no change needed)
+     * Part 2: Q14-26 (add 13 if starting at 1)
+     * Part 3: Q27-40 (add 26 if starting at 1)
+     * 
+     * @param content    The generated content to renumber
+     * @param partNumber The Reading part number (1, 2, or 3)
+     * @return The content with renumbered questions
+     */
+    public GeneratedContentDTO renumberQuestionsForReadingPart(GeneratedContentDTO content, int partNumber) {
+        if (content == null || content.getQuestions() == null || content.getQuestions().isEmpty()) {
+            return content;
+        }
+
+        List<GeneratedContentDTO.GeneratedQuestionDTO> questions = content.getQuestions();
+
+        // Check if renumbering is needed
+        int firstQuestionNumber = questions.get(0).getQuestionNumber();
+
+        int expectedStart;
+        int offset;
+        switch (partNumber) {
+            case 2:
+                expectedStart = 14;
+                offset = 13;
+                break;
+            case 3:
+                expectedStart = 27;
+                offset = 26;
+                break;
+            default:
+                // Part 1 or unknown - no renumbering needed
+                return content;
+        }
+
+        // Only renumber if questions start at 1 (AI didn't follow instructions)
+        if (firstQuestionNumber == 1) {
+            logger.info("Renumbering questions for Part {} - adding offset {}", partNumber, offset);
+            for (GeneratedContentDTO.GeneratedQuestionDTO q : questions) {
+                q.setQuestionNumber(q.getQuestionNumber() + offset);
+            }
+        } else if (firstQuestionNumber != expectedStart) {
+            logger.warn("Part {} questions start at {} (expected {}), not renumbering",
+                    partNumber, firstQuestionNumber, expectedStart);
         }
 
         return content;

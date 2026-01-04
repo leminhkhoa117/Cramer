@@ -21,6 +21,7 @@
 - Match nearby code; do not introduce new libraries or patterns without discussion.
 - Java: 4-space indentation, `com.cramer.*` packages, single responsibility classes, prefer Lombok where already used.
 - React: function components in `PascalCase` (e.g., `TestPage.jsx`), helpers/hooks in `camelCase`, keep styling in Tailwind utility classes or local CSS files under `frontend/src`.
+- Avoid emojis at all costs.
 
 ## Testing Guidelines
 

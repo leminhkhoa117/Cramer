@@ -120,6 +120,57 @@ public class SaveContentRequestDTO {
      */
     private String difficulty;
 
+    // ==================== MULTI-PART SAVING ====================
+
+    /**
+     * Optional: multiple parts to save in one transaction.
+     * If provided, each part will be saved as a separate section.
+     * This takes precedence over the single `content` field.
+     */
+    private List<PartSaveData> partsToSave;
+
+    /**
+     * Data for saving a single part/section.
+     */
+    public static class PartSaveData {
+        private Integer partNumber;
+        private GeneratedContentDTO content;
+        private String topic; // Optional per-part topic
+        private Map<String, Object> generationConfig; // Per-part generation metadata
+
+        public Integer getPartNumber() {
+            return partNumber;
+        }
+
+        public void setPartNumber(Integer partNumber) {
+            this.partNumber = partNumber;
+        }
+
+        public GeneratedContentDTO getContent() {
+            return content;
+        }
+
+        public void setContent(GeneratedContentDTO content) {
+            this.content = content;
+        }
+
+        public String getTopic() {
+            return topic;
+        }
+
+        public void setTopic(String topic) {
+            this.topic = topic;
+        }
+
+        public Map<String, Object> getGenerationConfig() {
+            return generationConfig;
+        }
+
+        public void setGenerationConfig(Map<String, Object> generationConfig) {
+            this.generationConfig = generationConfig;
+        }
+    }
+
     // ==================== GETTERS AND SETTERS ====================
 
     public String getExamSource() {
@@ -248,5 +299,13 @@ public class SaveContentRequestDTO {
 
     public void setDifficulty(String difficulty) {
         this.difficulty = difficulty;
+    }
+
+    public List<PartSaveData> getPartsToSave() {
+        return partsToSave;
+    }
+
+    public void setPartsToSave(List<PartSaveData> partsToSave) {
+        this.partsToSave = partsToSave;
     }
 }

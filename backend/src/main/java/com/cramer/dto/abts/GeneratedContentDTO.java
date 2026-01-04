@@ -14,8 +14,15 @@ public class GeneratedContentDTO {
 
     /**
      * Generated section data (passage/transcript).
+     * For single-part generation.
      */
     private GeneratedSectionDTO section;
+
+    /**
+     * List of generated sections for multi-part generation.
+     * Each section contains its own passage/transcript for its part.
+     */
+    private List<GeneratedSectionDTO> sections;
 
     /**
      * Generated questions.
@@ -140,9 +147,9 @@ public class GeneratedContentDTO {
         /**
          * Structured explanation object:
          * {
-         *   "detail": "Detailed explanation in Vietnamese",
-         *   "quote": "Direct quote from passage/transcript (in English)",
-         *   "strategy": "Strategy tip for this question type (in Vietnamese)"
+         * "detail": "Detailed explanation in Vietnamese",
+         * "quote": "Direct quote from passage/transcript (in English)",
+         * "strategy": "Strategy tip for this question type (in Vietnamese)"
          * }
          */
         private JsonNode explanation;
@@ -325,6 +332,14 @@ public class GeneratedContentDTO {
 
     public void setSection(GeneratedSectionDTO section) {
         this.section = section;
+    }
+
+    public List<GeneratedSectionDTO> getSections() {
+        return sections;
+    }
+
+    public void setSections(List<GeneratedSectionDTO> sections) {
+        this.sections = sections;
     }
 
     public List<GeneratedQuestionDTO> getQuestions() {

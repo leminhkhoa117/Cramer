@@ -3,9 +3,11 @@ package com.cramer.service.abts;
 import com.cramer.config.OpenRouterConfig;
 import com.cramer.dto.abts.GeneratedContentDTO;
 import com.cramer.dto.abts.GenerationRequestDTO;
+import com.cramer.dto.abts.GenerationRequestDTO.PartConfigDTO;
 import com.cramer.dto.abts.GenerationResponseDTO;
 import com.cramer.dto.abts.GenerationResponseDTO.GenerationMetadataDTO;
 import com.cramer.dto.abts.GenerationResponseDTO.ValidationResultDTO;
+import com.cramer.dto.abts.QuestionCountConfig;
 import com.cramer.dto.abts.SaveContentRequestDTO;
 import com.cramer.dto.abts.SaveContentResponseDTO;
 import com.cramer.dto.abts.StreamEventDTO;
@@ -170,7 +172,15 @@ public class ABTSService {
                 return;
             }
 
-            // Route to skill-specific streaming generation
+            // Check for multi-part generation
+            List<Integer> partsToGenerate = request.getPartsToGenerate();
+            if (partsToGenerate != null && partsToGenerate.size() > 1) {
+                // Multi-part sequential generation
+                generateMultiplePartsWithStream(request, emitter, cancelled);
+                return;
+            }
+
+            // Route to skill-specific streaming generation (single part)
             switch (request.getSkill()) {
                 case READING -> generateReadingWithStream(request, emitter, cancelled);
                 case LISTENING -> generateListeningWithStream(request, emitter, cancelled);
@@ -208,8 +218,634 @@ public class ABTSService {
     }
 
     /**
-     * Generate Reading content with streaming updates.
+     * Generate multiple parts sequentially with streaming updates.
+     * Each part generates independently and results are collected.
      */
+    private void generateMultiplePartsWithStream(GenerationRequestDTO request, SseEmitter emitter,
+            java.util.concurrent.atomic.AtomicBoolean cancelled) throws IOException {
+        List<Integer> parts = request.getPartsToGenerate();
+        int totalParts = parts.size();
+
+        logger.info("Starting multi-part generation for {} parts: {}", totalParts, parts);
+        sendEvent(emitter, StreamEventDTO.progress(5, "Starting generation for " + totalParts + " parts"));
+
+        // Collect results from each part
+        List<GeneratedContentDTO> partContents = new ArrayList<>();
+        List<String> allWarnings = new ArrayList<>();
+        String combinedReasoning = "";
+        long totalDurationMs = 0;
+
+        for (int i = 0; i < parts.size(); i++) {
+            int partNumber = parts.get(i);
+            int partProgress = (i * 100) / totalParts;
+
+            // Check cancellation
+            if (cancelled != null && cancelled.get()) {
+                sendEvent(emitter, StreamEventDTO.aborted());
+                emitter.complete();
+                return;
+            }
+
+            sendEvent(emitter, StreamEventDTO.progress(partProgress,
+                    "🔄 Starting Part " + partNumber + " (" + (i + 1) + "/" + totalParts + ")"));
+
+            // Build part-specific request
+            GenerationRequestDTO partRequest = buildPartRequest(request, partNumber);
+
+            // Generate this part WITH STREAMING - forward AI_THINKING/AI_CHUNK events
+            try {
+                GenerationResponseDTO partResponse = generateSinglePartWithStreamingTokens(
+                        partRequest, emitter, cancelled, partNumber);
+
+                if (partResponse == null) {
+                    // Cancelled
+                    return;
+                }
+
+                if (partResponse.getStatus() == GenerationResponseDTO.GenerationStatus.FAILED) {
+                    String errorMsg = partResponse.getErrors() != null && !partResponse.getErrors().isEmpty()
+                            ? partResponse.getErrors().get(0)
+                            : "Unknown error";
+                    sendEvent(emitter,
+                            StreamEventDTO.failed("Failed to generate Part " + partNumber + ": " + errorMsg));
+                    emitter.complete();
+                    return;
+                }
+
+                // Collect content with renumbered questions
+                GeneratedContentDTO content = partResponse.getContent();
+                if (content != null) {
+                    renumberQuestionsInContent(content, partNumber, request.getSkill());
+                    partContents.add(content);
+                }
+
+                // Collect warnings
+                if (partResponse.getWarnings() != null) {
+                    allWarnings.addAll(partResponse.getWarnings());
+                }
+
+                // Collect reasoning
+                if (partResponse.getReasoning() != null) {
+                    combinedReasoning += "\n\n--- Part " + partNumber + " Reasoning ---\n"
+                            + partResponse.getReasoning();
+                }
+
+                // Accumulate timing
+                if (partResponse.getMetadata() != null) {
+                    totalDurationMs += partResponse.getMetadata().getGenerationTimeSeconds() != null
+                            ? (long) (partResponse.getMetadata().getGenerationTimeSeconds() * 1000)
+                            : 0;
+                }
+
+                sendEvent(emitter, StreamEventDTO.progress(partProgress + (100 / totalParts / 2),
+                        "✅ Part " + partNumber + " completed"));
+
+            } catch (Exception e) {
+                logger.error("Error generating part {}: {}", partNumber, e.getMessage(), e);
+                sendEvent(emitter,
+                        StreamEventDTO.failed("Error generating Part " + partNumber + ": " + e.getMessage()));
+                emitter.complete();
+                return;
+            }
+        }
+
+        // Merge all part contents into a combined response
+        GenerationResponseDTO combinedResponse = new GenerationResponseDTO();
+        combinedResponse.setStatus(allWarnings.isEmpty()
+                ? GenerationResponseDTO.GenerationStatus.SUCCESS
+                : GenerationResponseDTO.GenerationStatus.PARTIAL_SUCCESS);
+
+        // Merge generated content
+        GeneratedContentDTO mergedContent = mergePartContents(partContents, parts, request.getSkill());
+        combinedResponse.setContent(mergedContent);
+        combinedResponse.setReasoning(combinedReasoning.trim());
+
+        if (!allWarnings.isEmpty()) {
+            combinedResponse.setWarnings(allWarnings);
+        }
+
+        // Build combined metadata
+        GenerationMetadataDTO metadata = new GenerationMetadataDTO();
+        metadata.setGenerationTimeSeconds(totalDurationMs / 1000.0);
+        metadata.setGeneratedAt(OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        metadata.setTopic(request.getTopic());
+        // Note: parts info is already in the merged content
+        combinedResponse.setMetadata(metadata);
+
+        sendEvent(emitter, StreamEventDTO.completed(combinedResponse));
+        emitter.complete();
+        logger.info("Multi-part generation completed for {} parts", totalParts);
+    }
+
+    /**
+     * Build a request for a specific part, merging per-part config with global
+     * config.
+     */
+    private GenerationRequestDTO buildPartRequest(GenerationRequestDTO originalRequest, int partNumber) {
+        // Clone the original request (shallow copy key fields)
+        GenerationRequestDTO partRequest = new GenerationRequestDTO();
+
+        // Copy all global fields
+        partRequest.setSkill(originalRequest.getSkill());
+        partRequest.setScope(GenerationRequestDTO.GenerationScope.SINGLE_PART);
+        partRequest.setPartNumber(partNumber);
+        partRequest.setDifficulty(originalRequest.getDifficulty());
+        partRequest.setExplanationLanguage(originalRequest.getExplanationLanguage());
+        partRequest.setHashtags(originalRequest.getHashtags());
+        partRequest.setWordCountRange(originalRequest.getWordCountRange());
+        partRequest.setTestType(originalRequest.getTestType());
+        partRequest.setModel(originalRequest.getModel());
+        partRequest.setModelVariant(originalRequest.getModelVariant());
+        partRequest.setEnableReasoning(originalRequest.getEnableReasoning());
+        partRequest.setReasoningEffort(originalRequest.getReasoningEffort());
+        partRequest.setTemperature(originalRequest.getTemperature());
+        partRequest.setMaxTokens(originalRequest.getMaxTokens());
+        partRequest.setEnableWebSearch(originalRequest.getEnableWebSearch());
+        partRequest.setEnableContextCaching(originalRequest.getEnableContextCaching());
+        partRequest.setPassageLength(originalRequest.getPassageLength());
+        partRequest.setCustomInstructions(originalRequest.getCustomInstructions());
+        partRequest.setWritingEssayType(originalRequest.getWritingEssayType());
+
+        // Apply per-part overrides if available
+        Map<Integer, PartConfigDTO> partConfigs = originalRequest.getPartConfigs();
+        if (partConfigs != null && partConfigs.containsKey(partNumber)) {
+            PartConfigDTO config = partConfigs.get(partNumber);
+
+            // Topic: use part-specific if provided, else global
+            partRequest.setTopic(config.getTopic() != null ? config.getTopic() : originalRequest.getTopic());
+
+            // Facts: if provided, use it; if null, auto-mode (AI generates facts)
+            // Only override if explicitly set in part config
+            if (config.getFacts() != null) {
+                partRequest.setFacts(config.getFacts());
+            } else {
+                partRequest.setFacts(originalRequest.getFacts()); // Use global or null for auto
+            }
+
+            // Question types: use part-specific if provided, else global
+            if (config.getQuestionTypes() != null) {
+                partRequest.setQuestionTypes(config.getQuestionTypes());
+            } else {
+                partRequest.setQuestionTypes(originalRequest.getQuestionTypes());
+            }
+        } else {
+            // Use global values
+            partRequest.setTopic(originalRequest.getTopic());
+            partRequest.setFacts(originalRequest.getFacts());
+            partRequest.setQuestionTypes(originalRequest.getQuestionTypes());
+        }
+
+        return partRequest;
+    }
+
+    /**
+     * Generate a single part (non-streaming) for multi-part orchestration.
+     * 
+     * @deprecated Use generateSinglePartWithStreamingTokens for streaming support
+     */
+    private GenerationResponseDTO generateSinglePart(GenerationRequestDTO request) {
+        return switch (request.getSkill()) {
+            case READING -> generateReading(request);
+            case LISTENING -> generateListening(request);
+            case WRITING -> generateWriting(request);
+            default -> GenerationResponseDTO.error("UNSUPPORTED_SKILL",
+                    "Skill not supported: " + request.getSkill(), false);
+        };
+    }
+
+    /**
+     * Generate a single part WITH STREAMING support.
+     * Forwards AI_THINKING and AI_CHUNK events to the parent emitter for real-time
+     * display.
+     * Returns the completed GenerationResponseDTO, or null if cancelled.
+     */
+    private GenerationResponseDTO generateSinglePartWithStreamingTokens(
+            GenerationRequestDTO request,
+            SseEmitter parentEmitter,
+            java.util.concurrent.atomic.AtomicBoolean cancelled,
+            int partNumber) throws Exception {
+
+        try {
+            sendEvent(parentEmitter, StreamEventDTO.progress(0, "⏳ Part " + partNumber + ": Building prompt..."));
+
+            // Build prompt and call AI with streaming
+            switch (request.getSkill()) {
+                case READING -> {
+                    return generateReadingForPart(request, parentEmitter, cancelled, partNumber);
+                }
+                case LISTENING -> {
+                    return generateListeningForPart(request, parentEmitter, cancelled, partNumber);
+                }
+                case WRITING -> {
+                    // Writing doesn't support streaming currently, fall back
+                    return generateWriting(request);
+                }
+                default -> {
+                    return GenerationResponseDTO.error("UNSUPPORTED_SKILL",
+                            "Skill not supported: " + request.getSkill(), false);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error in generateSinglePartWithStreamingTokens: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * Generate Reading content for a single part with streaming tokens forwarded to
+     * parent.
+     * This is a simplified version of generateReadingWithStream that returns a
+     * response instead of completing an emitter.
+     */
+    private GenerationResponseDTO generateReadingForPart(
+            GenerationRequestDTO request,
+            SseEmitter parentEmitter,
+            java.util.concurrent.atomic.AtomicBoolean cancelled,
+            int partNumber) throws Exception {
+
+        final int MAX_RETRIES = 3;
+        String lastError = null;
+
+        for (int attempts = 1; attempts <= MAX_RETRIES; attempts++) {
+            if (cancelled != null && cancelled.get()) {
+                return null;
+            }
+
+            try {
+                // 1. Build prompt
+                sendEvent(parentEmitter, StreamEventDTO.progress(10,
+                        "📝 Part " + partNumber + ": Building AI prompt..."));
+                String userPrompt = promptBuilderService.buildReadingPrompt(request);
+                String systemPrompt = "You are an expert IELTS exam content creator.";
+
+                // 2. Get JSON schema for validation
+                Map<String, Object> jsonSchema = promptBuilderService.getReadingJsonSchema();
+
+                // 3. Build reasoning config
+                Map<String, Object> reasoningConfig = new HashMap<>();
+                if (Boolean.TRUE.equals(request.getEnableReasoning())) {
+                    reasoningConfig.put("effort", request.getReasoningEffort() != null
+                            ? request.getReasoningEffort()
+                            : "high");
+                }
+
+                // 4. Call AI with streaming
+                sendEvent(parentEmitter, StreamEventDTO.progress(15,
+                        "🤖 Part " + partNumber + ": Calling AI (streaming)..."));
+
+                // Use synchronization to wait for streaming to complete
+                final Object lock = new Object();
+                final boolean[] completed = { false };
+                final OpenRouterClient.OpenRouterResponse[] responseHolder = new OpenRouterClient.OpenRouterResponse[1];
+                final Exception[] errorHolder = new Exception[1];
+
+                openRouterClient.callChatCompletionStreaming(
+                        request.getModel(),
+                        systemPrompt,
+                        userPrompt,
+                        jsonSchema,
+                        reasoningConfig,
+                        request.getTemperature(),
+                        8192,
+                        new OpenRouterClient.StreamCallback() {
+                            @Override
+                            public void onReasoningChunk(String chunk) {
+                                // Forward AI thinking tokens to parent emitter
+                                sendEvent(parentEmitter, StreamEventDTO.aiThinking(chunk));
+                            }
+
+                            @Override
+                            public void onContentChunk(String chunk) {
+                                // Forward content chunks to parent emitter
+                                sendEvent(parentEmitter, StreamEventDTO.aiChunk(chunk));
+                            }
+
+                            @Override
+                            public void onProgress(int percent, String message) {
+                                sendEvent(parentEmitter, StreamEventDTO.progress(15 + percent / 2,
+                                        "Part " + partNumber + ": " + message));
+                            }
+
+                            @Override
+                            public void onComplete(OpenRouterClient.OpenRouterResponse response) {
+                                synchronized (lock) {
+                                    responseHolder[0] = response;
+                                    completed[0] = true;
+                                    lock.notify();
+                                }
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                synchronized (lock) {
+                                    errorHolder[0] = new RuntimeException(error);
+                                    completed[0] = true;
+                                    lock.notify();
+                                }
+                            }
+                        },
+                        cancelled);
+
+                // Wait for streaming to complete
+                synchronized (lock) {
+                    while (!completed[0]) {
+                        lock.wait();
+                    }
+                }
+
+                // Check for errors
+                if (errorHolder[0] != null) {
+                    if (shouldFallbackToNonStreaming(errorHolder[0])) {
+                        sendEvent(parentEmitter, StreamEventDTO.progress(25,
+                                "Part " + partNumber + ": Falling back to non-streaming..."));
+                        return generateReading(request);
+                    }
+                    throw errorHolder[0];
+                }
+
+                OpenRouterClient.OpenRouterResponse aiResponse = responseHolder[0];
+
+                // 3. Validate response
+                sendEvent(parentEmitter, StreamEventDTO.progress(60,
+                        "🔍 Part " + partNumber + ": Validating response..."));
+                JsonValidatorService.ValidationResult validationResult = jsonValidatorService
+                        .validateReadingContent(aiResponse.getContent(), request);
+
+                if (!validationResult.isValid() && !validationResult.getSchemaErrors().isEmpty()) {
+                    lastError = String.join("; ", validationResult.getAllErrors());
+                    if (attempts < MAX_RETRIES) {
+                        continue;
+                    }
+                }
+
+                // 4. Parse and build response
+                GeneratedContentDTO content = jsonValidatorService.parseGeneratedContent(aiResponse.getContent());
+
+                // 5. Post-process: Renumber questions for Parts 2/3 if AI started at 1
+                content = jsonValidatorService.renumberQuestionsForReadingPart(content, partNumber);
+
+                GenerationResponseDTO response = new GenerationResponseDTO();
+                response.setStatus(validationResult.isValid()
+                        ? GenerationResponseDTO.GenerationStatus.SUCCESS
+                        : GenerationResponseDTO.GenerationStatus.PARTIAL_SUCCESS);
+                response.setContent(content);
+                response.setReasoning(aiResponse.getReasoning());
+                response.setValidation(buildValidationDto(validationResult));
+
+                List<String> allWarnings = new ArrayList<>(validationResult.getWarnings());
+                if (!validationResult.isValid()) {
+                    allWarnings.addAll(validationResult.getAllErrors());
+                }
+                if (!allWarnings.isEmpty()) {
+                    response.setWarnings(allWarnings);
+                }
+
+                GenerationMetadataDTO metadata = buildMetadata(request, aiResponse, content);
+                response.setMetadata(metadata);
+
+                return response;
+
+            } catch (Exception e) {
+                lastError = e.getMessage();
+                logger.error("Error generating reading for part {} on attempt {}: {}",
+                        partNumber, attempts, lastError);
+                if (attempts >= MAX_RETRIES) {
+                    throw e;
+                }
+            }
+        }
+
+        return GenerationResponseDTO.error("GENERATION_FAILED", lastError, true);
+    }
+
+    /**
+     * Generate Listening content for a single part with streaming tokens forwarded
+     * to parent.
+     */
+    private GenerationResponseDTO generateListeningForPart(
+            GenerationRequestDTO request,
+            SseEmitter parentEmitter,
+            java.util.concurrent.atomic.AtomicBoolean cancelled,
+            int partNumber) throws Exception {
+
+        final int MAX_RETRIES = 3;
+        String lastError = null;
+
+        for (int attempts = 1; attempts <= MAX_RETRIES; attempts++) {
+            if (cancelled != null && cancelled.get()) {
+                return null;
+            }
+
+            try {
+                // 1. Build prompt
+                sendEvent(parentEmitter, StreamEventDTO.progress(10,
+                        "📝 Part " + partNumber + ": Building AI prompt..."));
+                String userPrompt = promptBuilderService.buildListeningPrompt(request);
+                String systemPrompt = "You are an expert IELTS exam content creator.";
+
+                // 2. Get JSON schema for validation
+                Map<String, Object> jsonSchema = promptBuilderService.getListeningJsonSchema();
+
+                // 3. Build reasoning config
+                Map<String, Object> reasoningConfig = new HashMap<>();
+                if (Boolean.TRUE.equals(request.getEnableReasoning())) {
+                    reasoningConfig.put("effort", request.getReasoningEffort() != null
+                            ? request.getReasoningEffort()
+                            : "high");
+                }
+
+                // 4. Call AI with streaming
+                sendEvent(parentEmitter, StreamEventDTO.progress(15,
+                        "🤖 Part " + partNumber + ": Calling AI (streaming)..."));
+
+                final Object lock = new Object();
+                final boolean[] completed = { false };
+                final OpenRouterClient.OpenRouterResponse[] responseHolder = new OpenRouterClient.OpenRouterResponse[1];
+                final Exception[] errorHolder = new Exception[1];
+
+                openRouterClient.callChatCompletionStreaming(
+                        request.getModel(),
+                        systemPrompt,
+                        userPrompt,
+                        jsonSchema,
+                        reasoningConfig,
+                        request.getTemperature(),
+                        8192,
+                        new OpenRouterClient.StreamCallback() {
+                            @Override
+                            public void onReasoningChunk(String chunk) {
+                                sendEvent(parentEmitter, StreamEventDTO.aiThinking(chunk));
+                            }
+
+                            @Override
+                            public void onContentChunk(String chunk) {
+                                sendEvent(parentEmitter, StreamEventDTO.aiChunk(chunk));
+                            }
+
+                            @Override
+                            public void onProgress(int percent, String message) {
+                                sendEvent(parentEmitter, StreamEventDTO.progress(15 + percent / 2,
+                                        "Part " + partNumber + ": " + message));
+                            }
+
+                            @Override
+                            public void onComplete(OpenRouterClient.OpenRouterResponse response) {
+                                synchronized (lock) {
+                                    responseHolder[0] = response;
+                                    completed[0] = true;
+                                    lock.notify();
+                                }
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                synchronized (lock) {
+                                    errorHolder[0] = new RuntimeException(error);
+                                    completed[0] = true;
+                                    lock.notify();
+                                }
+                            }
+                        },
+                        cancelled);
+
+                // Wait for streaming to complete
+                synchronized (lock) {
+                    while (!completed[0]) {
+                        lock.wait();
+                    }
+                }
+
+                // Check for errors
+                if (errorHolder[0] != null) {
+                    if (shouldFallbackToNonStreaming(errorHolder[0])) {
+                        sendEvent(parentEmitter, StreamEventDTO.progress(25,
+                                "Part " + partNumber + ": Falling back to non-streaming..."));
+                        return generateListening(request);
+                    }
+                    throw errorHolder[0];
+                }
+
+                OpenRouterClient.OpenRouterResponse aiResponse = responseHolder[0];
+
+                // 3. Validate response
+                sendEvent(parentEmitter, StreamEventDTO.progress(60,
+                        "🔍 Part " + partNumber + ": Validating response..."));
+                JsonValidatorService.ValidationResult validationResult = jsonValidatorService
+                        .validateListeningContent(aiResponse.getContent(), request);
+
+                if (!validationResult.isValid() && !validationResult.getSchemaErrors().isEmpty()) {
+                    lastError = String.join("; ", validationResult.getAllErrors());
+                    if (attempts < MAX_RETRIES) {
+                        continue;
+                    }
+                }
+
+                // 4. Parse and build response
+                GeneratedContentDTO content = jsonValidatorService.parseGeneratedContent(aiResponse.getContent());
+
+                GenerationResponseDTO response = new GenerationResponseDTO();
+                response.setStatus(validationResult.isValid()
+                        ? GenerationResponseDTO.GenerationStatus.SUCCESS
+                        : GenerationResponseDTO.GenerationStatus.PARTIAL_SUCCESS);
+                response.setContent(content);
+                response.setReasoning(aiResponse.getReasoning());
+                response.setValidation(buildValidationDto(validationResult));
+
+                List<String> allWarnings = new ArrayList<>(validationResult.getWarnings());
+                if (!validationResult.isValid()) {
+                    allWarnings.addAll(validationResult.getAllErrors());
+                }
+                if (!allWarnings.isEmpty()) {
+                    response.setWarnings(allWarnings);
+                }
+
+                GenerationMetadataDTO metadata = buildMetadata(request, aiResponse, content);
+                response.setMetadata(metadata);
+
+                return response;
+
+            } catch (Exception e) {
+                lastError = e.getMessage();
+                logger.error("Error generating listening for part {} on attempt {}: {}",
+                        partNumber, attempts, lastError);
+                if (attempts >= MAX_RETRIES) {
+                    throw e;
+                }
+            }
+        }
+
+        return GenerationResponseDTO.error("GENERATION_FAILED", lastError, true);
+
+    }
+
+    /**
+     * Renumber questions in content based on part and skill.
+     */
+    private void renumberQuestionsInContent(GeneratedContentDTO content, int partNumber,
+            GenerationRequestDTO.SkillType skill) {
+        if (content == null || content.getQuestions() == null)
+            return;
+
+        int startNumber = QuestionCountConfig.getStartQuestionNumber(skill, partNumber);
+
+        for (int i = 0; i < content.getQuestions().size(); i++) {
+            var question = content.getQuestions().get(i);
+            if (question != null) {
+                // Renumber from 1-based local to actual question number
+                int localNumber = i + 1;
+                int actualNumber = startNumber + localNumber - 1;
+                question.setQuestionNumber(actualNumber);
+            }
+        }
+    }
+
+    /**
+     * Merge multiple part contents into a single combined content.
+     */
+    private GeneratedContentDTO mergePartContents(List<GeneratedContentDTO> partContents,
+            List<Integer> parts, GenerationRequestDTO.SkillType skill) {
+        GeneratedContentDTO merged = new GeneratedContentDTO();
+
+        // Merged questions from all parts
+        List<GeneratedContentDTO.GeneratedQuestionDTO> allQuestions = new ArrayList<>();
+        List<GeneratedContentDTO.GeneratedSectionDTO> allSections = new ArrayList<>();
+
+        for (int i = 0; i < partContents.size(); i++) {
+            GeneratedContentDTO partContent = partContents.get(i);
+            int partNumber = parts.get(i);
+
+            if (partContent.getQuestions() != null) {
+                allQuestions.addAll(partContent.getQuestions());
+            }
+
+            // Collect sections with part identifier
+            if (partContent.getSection() != null) {
+                GeneratedContentDTO.GeneratedSectionDTO section = partContent.getSection();
+                section.setPartNumber(partNumber);
+                allSections.add(section);
+            }
+        }
+
+        // Sort questions by question number
+        allQuestions.sort((a, b) -> {
+            int numA = a.getQuestionNumber() != null ? a.getQuestionNumber() : 0;
+            int numB = b.getQuestionNumber() != null ? b.getQuestionNumber() : 0;
+            return Integer.compare(numA, numB);
+        });
+
+        merged.setQuestions(allQuestions);
+
+        // Set sections array for multi-part display
+        merged.setSections(allSections);
+
+        // For backward compatibility, also set section to the first one
+        if (!allSections.isEmpty()) {
+            merged.setSection(allSections.get(0));
+        }
+
+        return merged;
+    }
+
     private void generateReadingWithStream(GenerationRequestDTO request, SseEmitter emitter,
             java.util.concurrent.atomic.AtomicBoolean cancelled) throws IOException {
         logger.info("Starting Reading generation (streaming) for topic: {}", request.getTopic());

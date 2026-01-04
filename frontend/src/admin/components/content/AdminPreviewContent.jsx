@@ -49,7 +49,7 @@ const AdminQuestionWrapper = ({ question, showAnswer, onEdit, children }) => {
     }, [question, onEdit]);
 
     return (
-        <div 
+        <div
             className="admin-question-wrapper"
             onClick={handleClick}
             title="Nhấn để chỉnh sửa câu hỏi"
@@ -90,21 +90,30 @@ const AdminQuestionGroupWrapper = ({ group, showAnswers, onQuestionEdit, onAnswe
             {showAnswers && (
                 <div className="admin-answers-overlay">
                     {questionsWithWrapper.map(q => (
-                        <div 
-                            key={q.id} 
+                        <div
+                            key={q.id}
                             className="admin-answer-item"
                             data-question-id={q.id}
                             onClick={() => onQuestionEdit(q)}
                         >
-                            <span className="admin-answer-qnum">Q{q.questionNumber}</span>
-                            <span className="admin-answer-value">{q.correctAnswer || '—'}</span>
-                            <button 
-                                className="admin-answer-edit-btn"
-                                title="Chỉnh sửa câu hỏi"
-                                onClick={(e) => { e.stopPropagation(); onQuestionEdit(q); }}
-                            >
-                                <FiEdit3 size={12} />
-                            </button>
+                            <div className="admin-answer-header">
+                                <span className="admin-answer-qnum">Q{q.questionNumber}</span>
+                                <span className="admin-answer-value">{q.correctAnswer || '—'}</span>
+                                <button
+                                    className="admin-answer-edit-btn"
+                                    title="Chỉnh sửa câu hỏi"
+                                    onClick={(e) => { e.stopPropagation(); onQuestionEdit(q); }}
+                                >
+                                    <FiEdit3 size={12} />
+                                </button>
+                            </div>
+                            {q.explanation && (
+                                <div className="admin-answer-explanation">
+                                    {typeof q.explanation === 'string'
+                                        ? q.explanation
+                                        : q.explanation.detail || q.explanation.strategy || q.explanation.quote || JSON.stringify(q.explanation)}
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -191,17 +200,18 @@ export default function AdminPreviewContent({
     const [showTranscript, setShowTranscript] = useState(false);
     // Internal state for answer toggle if not controlled externally
     const [internalShowAnswers, setInternalShowAnswers] = useState(false);
-    
-    // Use internal state if onToggleAnswers is the default no-op
-    const isControlled = onToggleAnswers !== (() => { }).toString();
-    const answersVisible = isControlled ? showAnswers : internalShowAnswers;
+
+    // Support both controlled (parent passes showAnswers) and uncontrolled (internal state) modes
+    // Use internal state when showAnswers is falsy (default value)
+    const answersVisible = showAnswers || internalShowAnswers;
     const handleToggleAnswers = useCallback(() => {
-        if (isControlled) {
+        // If parent provides toggle callback, call it; otherwise toggle internal state
+        if (showAnswers !== undefined && showAnswers !== false) {
             onToggleAnswers();
         } else {
             setInternalShowAnswers(prev => !prev);
         }
-    }, [isControlled, onToggleAnswers]);
+    }, [showAnswers, onToggleAnswers]);
 
     // Build testData format (same as TestPageContent expects)
     // Each part has questions array attached
@@ -362,7 +372,7 @@ export default function AdminPreviewContent({
                             <span>Đáp án</span>
                         </button>
                     )}
-                    
+
                     {/* Transcript Toggle - only for listening */}
                     {isListeningTest && (
                         <button

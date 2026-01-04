@@ -144,3 +144,47 @@
     align-items: baseline;
     gap: 0.5rem;
 }
+
+/* IELTS Instruction List - For T/F/NG, Y/N/NG etc. */
+.ielts-instruction-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0.75rem 0;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #f3f4f6 100%);
+    border-radius: 8px;
+    border-left: 3px solid #7c3aed;
+}
+
+.ielts-instruction-item {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.ielts-instruction-item strong {
+    flex-shrink: 0;
+    min-width: 80px;
+    color: #7c3aed;
+    font-weight: 600;
+}
+
+.ielts-instruction-item span {
+    color: #4b5563;
+}
+
+.ielts-instruction-note {
+    font-style: italic;
+    color: #6b7280;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+.ielts-instruction-note strong {
+    font-style: normal;
+    color: #7c3aed;
+    margin-right: 0.25rem;
+}
