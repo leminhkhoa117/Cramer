@@ -835,7 +835,9 @@ Admin có thể chọn generate ở 3 mức độ:
 | `MULTIPLE_CHOICE` | 3-4 | Single answer |
 | `MULTIPLE_CHOICE_MULTIPLE_ANSWERS` | 2-3 | Multiple answers |
 | `TABLE_COMPLETION` | 4-6 | Fill table blanks |
-| `DIAGRAM_LABEL_COMPLETION` | 4-6 | Label diagram parts |
+| `DIAGRAM_LABEL_COMPLETION` | 4-6 | Label diagram parts (uses flowchart JSON) |
+
+> **Note (DIAGRAM_LABEL_COMPLETION):** For AI generation, use code-based flowchart JSON with `diagram` field containing `direction`, `nodes[]` array. Each node has `type` (step/blank/start/end), `label`, and `question_number` for blanks. See `DATA_INGESTION_GUIDE_READING.md` for full schema.
 
 ### 5.4 AI Output JSON Schema (Reading)
 

@@ -23,7 +23,8 @@ public class StreamEventDTO {
         COMPLETED, // Generation successful
         FAILED, // Generation failed
         PROGRESS, // General progress update
-        ABORTED // Generation was cancelled by user
+        ABORTED, // Generation was cancelled by user
+        REFINEMENT_COMPLETED // Agent 2 refinement finished
     }
 
     private EventType type;
@@ -153,6 +154,18 @@ public class StreamEventDTO {
         event.setType(EventType.ABORTED);
         event.setMessage("Generation was cancelled");
         event.setProgress(0);
+        return event;
+    }
+
+    /**
+     * Agent 2 refinement completed.
+     */
+    public static StreamEventDTO refinementCompleted(Object refinementResult) {
+        StreamEventDTO event = new StreamEventDTO();
+        event.setType(EventType.REFINEMENT_COMPLETED);
+        event.setMessage("Refinement completed");
+        event.setProgress(100);
+        event.setData(refinementResult);
         return event;
     }
 

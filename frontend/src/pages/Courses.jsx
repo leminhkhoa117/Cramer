@@ -7,15 +7,6 @@ import './../css/courses.css';
 
 import { FaSearch } from 'react-icons/fa';
 import FullPageLoader from '../components/FullPageLoader';
-import Pagination from '../components/Pagination';
-
-// Helper to format course source names
-const formatCourseName = (source) => {
-    if (source.toLowerCase().startsWith('cam')) {
-        return `IELTS Cambridge ${source.substring(3)}`;
-    }
-    return source;
-};
 
 export default function Courses() {
     // Zustand store state
@@ -23,35 +14,25 @@ export default function Courses() {
         courses,
         loading,
         error,
-        currentPage,
-        totalPages,
         searchQuery,
-        debouncedSearchQuery,
-        fetchCourses,
-        setPage,
+        fetchCoursesV2,
         setSearchQuery,
-        setDebouncedSearchQuery,
     } = useCourseStore();
 
     // Local UI state (doesn't need to persist)
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [activeFilters, setActiveFilters] = useState({});
 
-    // Debounce search - updates store's debounced value
+    // Fetch courses on mount using V2 API
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedSearchQuery(searchQuery);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [searchQuery, setDebouncedSearchQuery]);
-
-    // Fetch courses when pagination or debounced search changes
-    useEffect(() => {
-        fetchCourses(currentPage, 6, debouncedSearchQuery);
-    }, [currentPage, debouncedSearchQuery, fetchCourses]);
+        fetchCoursesV2();
+    }, [fetchCoursesV2]);
 
     const availableFilters = useMemo(() => {
-        const examSources = courses.map(name => ({ value: name, label: formatCourseName(name) }));
+        const examSources = courses.map(course => ({
+            value: course.code,
+            label: course.name || course.code
+        }));
         return {
             source: { label: 'Bộ đề', options: examSources },
         };
@@ -60,17 +41,23 @@ export default function Courses() {
     const filteredCourses = useMemo(() => {
         let filtered = [...courses];
 
-        // Client-side filtering for other filters if needed, 
-        // but search is now server-side.
-        // Note: activeFilters might need adjustment if we want server-side filtering for them too.
-        // For now, we filter the current page's results.
+        // Client-side search filtering
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(course =>
+                (course.name && course.name.toLowerCase().includes(query)) ||
+                (course.code && course.code.toLowerCase().includes(query)) ||
+                (course.description && course.description.toLowerCase().includes(query))
+            );
+        }
 
+        // Filter by source if selected
         if (activeFilters.source && activeFilters.source.length > 0) {
-            filtered = filtered.filter(courseName => activeFilters.source.includes(courseName));
+            filtered = filtered.filter(course => activeFilters.source.includes(course.code));
         }
 
         return filtered;
-    }, [courses, activeFilters]);
+    }, [courses, searchQuery, activeFilters]);
 
     const handleMouseMove = (e) => {
         const card = e.currentTarget;
@@ -133,24 +120,32 @@ export default function Courses() {
                     {!loading && !error && (
                         <>
                             <div className="new-courses-grid">
-                                {filteredCourses.map(courseName => (
+                                {filteredCourses.map(course => (
                                     <div
                                         className="new-course-card"
-                                        key={courseName}
+                                        key={course.code}
                                         onMouseMove={handleMouseMove}
                                     >
                                         <div className="new-course-card__image-container">
-                                            <div className="new-course-card__image-placeholder" />
+                                            {course.coverImageUrl ? (
+                                                <img
+                                                    src={course.coverImageUrl}
+                                                    alt={course.name}
+                                                    className="new-course-card__image"
+                                                />
+                                            ) : (
+                                                <div className="new-course-card__image-placeholder" />
+                                            )}
                                         </div>
                                         <div className="new-course-card__content">
                                             <div className="new-course-card__header">
-                                                <span className="new-course-card__title">{formatCourseName(courseName)}</span>
+                                                <span className="new-course-card__title">{course.name || course.code}</span>
                                             </div>
                                             <div className="new-course-card__meta">
-                                                <p>Bộ đề thi IELTS chính thức.</p>
+                                                <p>{course.description || `Bộ đề ${course.name || course.code}`}</p>
                                             </div>
                                             <div className="new-course-card__footer">
-                                                <Link to={`/courses/${courseName}`} className="new-course-card__details-button">
+                                                <Link to={`/courses/${course.code}`} className="new-course-card__details-button">
                                                     Xem các bài test
                                                 </Link>
                                             </div>
@@ -162,12 +157,6 @@ export default function Courses() {
                             {filteredCourses.length === 0 && (
                                 <p className="courses-no-results">Không tìm thấy bộ đề nào phù hợp.</p>
                             )}
-
-                            <Pagination
-                                currentPage={currentPage}
-                                totalPages={totalPages}
-                                onPageChange={setPage}
-                            />
                         </>
                     )}
                 </div>
@@ -183,3 +172,4 @@ export default function Courses() {
         </>
     );
 }
+

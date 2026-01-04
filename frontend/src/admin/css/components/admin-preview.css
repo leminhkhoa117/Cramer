@@ -13,6 +13,8 @@
     background: #0f0f14;
     color: #e4e4e7;
     overflow: hidden;
+    /* CSS Variable for dynamic sidebar width adjustment */
+    --sidebar-width: var(--admin-sidebar-width, 56px);
 }
 
 /* Custom Dark Scrollbar */
@@ -73,20 +75,57 @@
 
 .admin-preview-toolbar {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: space-between;
     gap: var(--admin-spacing-sm);
-    padding: 10px var(--admin-spacing-lg);
+    padding: 6px var(--admin-spacing-md);
     background: var(--admin-bg-secondary);
     border-bottom: 1px solid var(--admin-border-primary);
+}
+
+.admin-toolbar__left {
+    display: flex;
+    align-items: center;
+    gap: var(--admin-spacing-sm);
+}
+
+.admin-toolbar__right {
+    display: flex;
+    align-items: center;
+    gap: var(--admin-spacing-sm);
+}
+
+.admin-toolbar__section-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--admin-text-primary);
+    margin-right: var(--admin-spacing-sm);
+}
+
+.admin-toolbar__btn {
+    border: 1px solid var(--admin-border-primary);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--admin-text-secondary);
+    padding: 4px 10px;
+    border-radius: var(--admin-radius-sm);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all var(--admin-transition-fast);
+}
+
+.admin-toolbar__btn:hover {
+    color: var(--admin-text-primary);
+    border-color: var(--admin-primary);
+    background: rgba(139, 92, 246, 0.1);
 }
 
 .admin-preview-toggle {
     border: 1px solid var(--admin-border-primary);
     background: rgba(255, 255, 255, 0.05);
     color: var(--admin-text-secondary);
-    padding: 6px 12px;
+    padding: 4px 10px;
     border-radius: 999px;
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     cursor: pointer;
     transition: all var(--admin-transition-fast);
 }
@@ -127,6 +166,8 @@
     color: #c8c8d0 !important;
     padding: 24px;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    /* Prevent over-scrolling */
     border: none !important;
 }
 
@@ -238,6 +279,8 @@
     background: var(--admin-bg-primary);
     height: 100%;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    /* Prevent over-scrolling */
     padding: var(--admin-spacing-lg);
 }
 
@@ -414,13 +457,22 @@
 
 /* ====== TestFooter Dark Mode Overrides ====== */
 .admin-preview-wrapper .test-page-footer {
-    position: sticky;
+    position: fixed;
     bottom: 0;
+    /* Use sidebar width variable with correct default for expanded state */
+    left: var(--admin-sidebar-width, 260px);
+    right: 0;
     background: #0f0f14 !important;
     border-top: 1px solid #2d2d44 !important;
-    flex-shrink: 0;
-    z-index: 10;
+    z-index: 100;
     padding: 0 !important;
+    transition: left 0.25s ease;
+    /* Match sidebar transition */
+}
+
+/* When sidebar is collapsed, use the collapsed width */
+.admin-main--collapsed .admin-preview-wrapper .test-page-footer {
+    left: var(--admin-sidebar-collapsed-width, 80px);
 }
 
 .admin-preview-wrapper .footer-part-section {
@@ -644,10 +696,41 @@
 .admin-answer-explanation {
     font-size: 0.75rem;
     color: var(--admin-text-secondary);
-    line-height: 1.5;
+    line-height: 1.6;
     border-top: 1px dashed rgba(34, 197, 94, 0.3);
-    padding-top: 6px;
-    margin-top: 2px;
+    padding-top: 8px;
+    margin-top: 4px;
+}
+
+.admin-answer-explanation .explanation-quote,
+.admin-answer-explanation .explanation-detail,
+.admin-answer-explanation .explanation-strategy,
+.admin-answer-explanation .explanation-contributor {
+    margin-bottom: 6px;
+}
+
+.admin-answer-explanation .explanation-quote {
+    font-style: italic;
+    color: #a1a1aa;
+}
+
+.admin-answer-explanation .explanation-detail {
+    color: var(--admin-text-secondary);
+}
+
+.admin-answer-explanation .explanation-strategy {
+    color: #22c55e;
+}
+
+.admin-answer-explanation .explanation-contributor {
+    color: #8b8b9e;
+    font-size: 0.7rem;
+}
+
+.admin-answer-explanation strong {
+    color: var(--admin-text-primary);
+    font-weight: 600;
+    margin-right: 4px;
 }
 
 .admin-answer-edit-btn {

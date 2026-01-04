@@ -107,13 +107,43 @@ const AdminQuestionGroupWrapper = ({ group, showAnswers, onQuestionEdit, onAnswe
                                     <FiEdit3 size={12} />
                                 </button>
                             </div>
-                            {q.explanation && (
-                                <div className="admin-answer-explanation">
-                                    {typeof q.explanation === 'string'
-                                        ? q.explanation
-                                        : q.explanation.detail || q.explanation.strategy || q.explanation.quote || JSON.stringify(q.explanation)}
-                                </div>
-                            )}
+                            {q.explanation && (() => {
+                                // Parse explanation if it's a JSON string
+                                let exp = q.explanation;
+                                if (typeof exp === 'string') {
+                                    try {
+                                        exp = JSON.parse(exp);
+                                    } catch {
+                                        // Not valid JSON, render as plain text
+                                        return <div className="admin-answer-explanation">{exp}</div>;
+                                    }
+                                }
+                                // Now exp is an object
+                                return (
+                                    <div className="admin-answer-explanation">
+                                        {exp.quote && (
+                                            <div className="explanation-quote">
+                                                <strong>Trích dẫn:</strong> "{exp.quote}"
+                                            </div>
+                                        )}
+                                        {exp.detail && (
+                                            <div className="explanation-detail">
+                                                <strong>Giải thích:</strong> {exp.detail}
+                                            </div>
+                                        )}
+                                        {exp.strategy && (
+                                            <div className="explanation-strategy">
+                                                <strong>Chiến lược:</strong> {exp.strategy}
+                                            </div>
+                                        )}
+                                        {exp.contributor && (
+                                            <div className="explanation-contributor">
+                                                <strong>Nguồn:</strong> {exp.contributor}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     ))}
                 </div>
@@ -193,6 +223,8 @@ export default function AdminPreviewContent({
     onQuestionEdit = () => { },     // Called when question is clicked for editing
     showAnswers = false,             // Controlled answer key state
     onToggleAnswers = () => { },     // Toggle answer key callback
+    sectionName = '',                // Section name for toolbar
+    toolbarActions = {},             // { onPassageClick, onAudioClick, onAssetClick, onLayoutClick }
 }) {
     const highlightContainerRef = useRef(null);
     const isListeningTest = skill === 'listening';
@@ -358,31 +390,75 @@ export default function AdminPreviewContent({
                     </div>
                 )}
 
-                {/* Admin Preview Toolbar - Always show for answer key toggle */}
+                {/* Unified Admin Toolbar - Section name + Edit actions + View toggles */}
                 <div className="admin-preview-toolbar">
-                    {/* Answer Key Toggle - available for all skills except writing */}
-                    {!isWritingTest && (
-                        <button
-                            className={`admin-preview-toggle answer-key-toggle ${answersVisible ? 'active' : ''}`}
-                            onClick={handleToggleAnswers}
-                            type="button"
-                            title={answersVisible ? 'Ẩn đáp án' : 'Hiện đáp án'}
-                        >
-                            {answersVisible ? <FiEyeOff size={14} /> : <FiEye size={14} />}
-                            <span>Đáp án</span>
-                        </button>
-                    )}
+                    {/* Left: Section name and edit actions */}
+                    <div className="admin-toolbar__left">
+                        {sectionName && <span className="admin-toolbar__section-name">{sectionName}</span>}
+                        {toolbarActions.onPassageClick && (
+                            <button
+                                className="admin-toolbar__btn"
+                                onClick={toolbarActions.onPassageClick}
+                                title="Nội dung"
+                            >
+                                Nội dung
+                            </button>
+                        )}
+                        {toolbarActions.onAudioClick && (
+                            <button
+                                className="admin-toolbar__btn"
+                                onClick={toolbarActions.onAudioClick}
+                                title="Audio"
+                            >
+                                Audio
+                            </button>
+                        )}
+                        {toolbarActions.onAssetClick && (
+                            <button
+                                className="admin-toolbar__btn"
+                                onClick={toolbarActions.onAssetClick}
+                                title="Asset"
+                            >
+                                Asset
+                            </button>
+                        )}
+                        {toolbarActions.onLayoutClick && (
+                            <button
+                                className="admin-toolbar__btn"
+                                onClick={toolbarActions.onLayoutClick}
+                                title="Layout"
+                            >
+                                Layout
+                            </button>
+                        )}
+                    </div>
 
-                    {/* Transcript Toggle - only for listening */}
-                    {isListeningTest && (
-                        <button
-                            className={`admin-preview-toggle ${showTranscript ? 'active' : ''}`}
-                            onClick={() => setShowTranscript(prev => !prev)}
-                            type="button"
-                        >
-                            Transcript
-                        </button>
-                    )}
+                    {/* Right: View toggles */}
+                    <div className="admin-toolbar__right">
+                        {/* Answer Key Toggle - available for all skills except writing */}
+                        {!isWritingTest && (
+                            <button
+                                className={`admin-preview-toggle ${answersVisible ? 'active' : ''}`}
+                                onClick={handleToggleAnswers}
+                                type="button"
+                                title={answersVisible ? 'Ẩn đáp án' : 'Hiện đáp án'}
+                            >
+                                {answersVisible ? <FiEyeOff size={14} /> : <FiEye size={14} />}
+                                <span>Đáp án</span>
+                            </button>
+                        )}
+
+                        {/* Transcript Toggle - only for listening */}
+                        {isListeningTest && (
+                            <button
+                                className={`admin-preview-toggle ${showTranscript ? 'active' : ''}`}
+                                onClick={() => setShowTranscript(prev => !prev)}
+                                type="button"
+                            >
+                                Transcript
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Main 2-column layout - EXACT structure from TestPageContent */}

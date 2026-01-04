@@ -2,10 +2,12 @@ package com.cramer.controller.admin;
 
 import com.cramer.dto.abts.GenerationRequestDTO;
 import com.cramer.dto.abts.GenerationResponseDTO;
+import com.cramer.dto.abts.RefinementRequestDTO;
 import com.cramer.dto.abts.SaveContentRequestDTO;
 import com.cramer.dto.abts.SaveContentResponseDTO;
 import com.cramer.dto.abts.StreamEventDTO;
 import com.cramer.service.abts.ABTSService;
+import com.cramer.service.abts.RefinementService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,9 +38,11 @@ public class ABTSController {
     private static final Logger logger = LoggerFactory.getLogger(ABTSController.class);
 
     private final ABTSService abtsService;
+    private final RefinementService refinementService;
 
-    public ABTSController(ABTSService abtsService) {
+    public ABTSController(ABTSService abtsService, RefinementService refinementService) {
         this.abtsService = abtsService;
+        this.refinementService = refinementService;
     }
 
     // ==================== GENERATION ENDPOINTS ====================
@@ -399,5 +403,71 @@ public class ABTSController {
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> getStatus() {
         return ResponseEntity.ok(abtsService.getStatus());
+    }
+
+    // ==================== REFINEMENT ENDPOINT (AGENT 2) ====================
+
+    /**
+     * Refine generated content by fixing user-selected validation issues.
+     * Uses Agent 2 (Refinement Agent) to make targeted fixes with streaming output.
+     */
+    @PostMapping("/refine/stream")
+    public SseEmitter refineContentStream(
+            @Valid @RequestBody RefinementRequestDTO request,
+            @RequestHeader("X-User-Id") String adminUserId) {
+
+        logger.info("ABTS refinement requested by admin: {} for {} issues",
+                adminUserId, request.getSelectedIssueIds() != null ? request.getSelectedIssueIds().size() : 0);
+
+        SseEmitter emitter = new SseEmitter(300000L); // 5 min timeout
+
+        // Cancellation flag
+        final java.util.concurrent.atomic.AtomicBoolean cancelled = new java.util.concurrent.atomic.AtomicBoolean(
+                false);
+
+        // Run refinement in background thread
+        Runnable task = new DelegatingSecurityContextRunnable(() -> {
+            try {
+                refinementService.refineWithStream(request, emitter, cancelled);
+            } catch (Exception e) {
+                if (cancelled.get()) {
+                    logger.info("Refinement was cancelled by user");
+                    return;
+                }
+                if (e instanceof IOException || (e.getCause() != null && e.getCause() instanceof IOException)) {
+                    logger.info("SSE Refinement connection closed by client: {}", e.getMessage());
+                    return;
+                }
+                logger.error("Streaming refinement failed: {}", e.getMessage());
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("error")
+                            .data(Objects.requireNonNull(StreamEventDTO.failed(e.getMessage()))));
+                    emitter.complete();
+                } catch (IOException ex) {
+                    logger.debug("Cannot send error to refinement client (already disconnected): {}", ex.getMessage());
+                } catch (IllegalStateException ex) {
+                    logger.debug("Refinement emitter already completed: {}", ex.getMessage());
+                }
+            }
+        });
+        CompletableFuture.runAsync(task);
+
+        emitter.onTimeout(() -> {
+            logger.warn("SSE refinement connection timed out");
+            cancelled.set(true);
+            emitter.complete();
+        });
+
+        emitter.onCompletion(() -> {
+            cancelled.set(true);
+        });
+
+        emitter.onError((ex) -> {
+            logger.info("SSE refinement connection error (client disconnected): {}", ex.getMessage());
+            cancelled.set(true);
+        });
+
+        return emitter;
     }
 }

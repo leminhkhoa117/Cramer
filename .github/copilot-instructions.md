@@ -77,6 +77,34 @@ Keep changes small, well-scoped and documented. If you modify DB schema, update 
 ## Recent Changes (2025-12-05)
 When adding new features, especially those that touch both the backend and frontend, please document the changes in the repo docs and update `GEMINI.md`/`AGENTS.md` accordingly.
 
+- **ABTS Multi-Part Mode Simplification (2026-01-04) ✅ COMPLETED:**
+  - Removed "Từng phần (1 part mỗi lần)" option from AI test generation UI
+  - Only "Chọn nhiều (Chọn parts cần tạo)" mode remains (always MULTI_PART)
+  - **StudioConfigView.jsx changes:**
+    - Removed toggle between SINGLE_PART and MULTI_PART scopes
+    - Removed SINGLE_PART-only elements (Part dropdown, global passage length, total questions slider)
+    - Enhanced per-part configuration panel with:
+      - Topic input per part
+      - Passage length dropdown per part (Reading only)
+      - Facts input per part (when generationMode === 'CUSTOM_FACTS')
+      - Question types chips (already existed)
+  - **useABTSStore.js changes:**
+    - Default scope changed to 'MULTI_PART' (was SINGLE_PART)
+    - `togglePartSelection` always maintains MULTI_PART scope
+    - `clearPartSelections` stays in MULTI_PART mode
+    - Per-part actions already existed: `setPartTopic`, `addPartFact`, `removePartFact`, `setPartPassageLength`
+    - Added `updateGeneratedQuestion` action for preview editing
+  - **StepPreview.jsx changes:**
+    - Already integrated with `QuestionEditModal` for editing questions in preview
+    - Connected `onQuestionEdit` handler to open modal
+  - **SaveAIContentModal.jsx changes:**
+    - Now accepts `selectedParts` prop (array of selected part numbers)
+    - Displays "Part 1, Part 2, Part 3" instead of hardcoded "Part 2"
+    - Also receives `questionCount` from generation result
+  - **AIGenerationPage.jsx changes:**
+    - Passes `selectedParts` and `questionCount` to SaveAIContentModal
+  - **Status:** Fully implemented, ready for testing
+
 - **DeepSeek V3.2 Migration (2025-12-12) ✅ COMPLETED:**
   - Migrated from Google Gemini to DeepSeek V3.2 for AI writing grading
   - Created `LLMGradingService.java` (new) - uses OpenAI-compatible API format

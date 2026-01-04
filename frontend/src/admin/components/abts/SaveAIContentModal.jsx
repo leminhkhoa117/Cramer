@@ -26,6 +26,7 @@ export default function SaveAIContentModal({
     initialTopic = '',
     suggestedSkill = 'reading',
     partNumber = 1,
+    selectedParts = [],
     questionCount = 0,
     passagePreview = '' // First 100 chars of passage/prompt
 }) {
@@ -57,6 +58,14 @@ export default function SaveAIContentModal({
         };
         return names[suggestedSkill?.toLowerCase()] || suggestedSkill;
     }, [suggestedSkill]);
+
+    // Parts display string
+    const partsDisplay = useMemo(() => {
+        if (selectedParts && selectedParts.length > 0) {
+            return selectedParts.map(p => `Part ${p}`).join(', ');
+        }
+        return `Part ${partNumber}`;
+    }, [selectedParts, partNumber]);
 
     // Difficulty options with Vietnamese labels
     const difficultyOptions = [
@@ -223,7 +232,7 @@ export default function SaveAIContentModal({
                                 <span style={{ fontWeight: 600, color: 'var(--primary, #4a90e2)' }}>{skillDisplayName}</span>
                                 
                                 <span style={{ color: 'var(--text-secondary, rgba(255,255,255,0.6))' }}>Phần:</span>
-                                <span style={{ fontWeight: 600 }}>Part {partNumber}</span>
+                                <span style={{ fontWeight: 600 }}>{partsDisplay}</span>
                                 
                                 <span style={{ color: 'var(--text-secondary, rgba(255,255,255,0.6))' }}>Số câu hỏi:</span>
                                 <span style={{ fontWeight: 600 }}>{questionCount || 'N/A'}</span>

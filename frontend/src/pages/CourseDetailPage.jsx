@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useCourseStore } from '../stores';
@@ -22,12 +22,15 @@ const skills = [
 
 export default function CourseDetailPage() {
     const { courseName } = useParams();
+    const [displayName, setDisplayName] = useState(null);
 
     // Zustand store for course tests caching
     const {
         courseTests,
         fetchCourseTests,
         getCachedTests,
+        fetchCourseDetails,
+        getCachedDetails,
         loading,
         error
     } = useCourseStore();
@@ -36,10 +39,21 @@ export default function CourseDetailPage() {
     const tests = courseTests[courseName] || [];
 
     useEffect(() => {
-        const loadTests = async () => {
-            // Check if already cached
-            const cached = getCachedTests(courseName);
-            if (!cached) {
+        const loadData = async () => {
+            // Fetch course details (name)
+            const cachedDetails = getCachedDetails(courseName);
+            if (cachedDetails) {
+                setDisplayName(cachedDetails.name);
+            } else {
+                const details = await fetchCourseDetails(courseName);
+                if (details?.name) {
+                    setDisplayName(details.name);
+                }
+            }
+
+            // Fetch tests
+            const cachedTests = getCachedTests(courseName);
+            if (!cachedTests) {
                 try {
                     await fetchCourseTests(courseName);
                 } catch (err) {
@@ -47,10 +61,13 @@ export default function CourseDetailPage() {
                 }
             }
         };
-        loadTests();
-    }, [courseName, getCachedTests, fetchCourseTests]);
+        loadData();
+    }, [courseName, getCachedTests, fetchCourseTests, getCachedDetails, fetchCourseDetails]);
 
     const showLoader = loading && !error && tests.length === 0;
+
+    // Use displayName if available, otherwise fallback to formatted courseName
+    const title = displayName || formatCourseName(courseName);
 
     return (
         <>
@@ -58,7 +75,7 @@ export default function CourseDetailPage() {
                 {showLoader && (
                     <FullPageLoader
                         key="loader"
-                        message={`Đang tải các bài test của ${formatCourseName(courseName)}...`}
+                        message={`Đang tải các bài test của ${title}...`}
                         subMessage="Vui lòng chờ trong giây lát, chúng tôi đang lấy danh sách bài test cho bạn."
                     />
                 )}
@@ -71,7 +88,7 @@ export default function CourseDetailPage() {
                         <Link to="/courses" className="back-link">
                             <FaArrowLeft /> Quay lại danh sách
                         </Link>
-                        <h1 className="course-detail-title">{formatCourseName(courseName)}</h1>
+                        <h1 className="course-detail-title">{title}</h1>
                         <p className="course-detail-subtitle">
                             Bộ đề thi chính thức với đầy đủ 4 kỹ năng. Hãy chọn một bài test để bắt đầu luyện tập.
                         </p>

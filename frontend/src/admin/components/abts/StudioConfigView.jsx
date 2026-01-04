@@ -5,7 +5,8 @@ import {
     FiCpu, FiFileText, FiList, FiPlus, FiX, FiCheck,
     FiSettings, FiChevronDown, FiChevronUp, FiShuffle,
     FiThermometer, FiCode, FiSliders, FiHash, FiAlertCircle,
-    FiMinus, FiUpload, FiMic, FiImage, FiLayers, FiGrid
+    FiMinus, FiUpload, FiMic, FiImage, FiLayers, FiGrid,
+    FiRefreshCw, FiGlobe, FiInfo
 } from 'react-icons/fi';
 import { SKILL_TYPES, DIFFICULTY_LEVELS, GENERATION_SCOPES } from '../../services/abtsApi';
 import TagInput from './TagInput';
@@ -109,10 +110,16 @@ export default function StudioConfigView({ onGenerate }) {
         // Per-part question type actions
         randomizePartConfig,
         randomizeAllParts,
-        togglePartQuestionType
+        togglePartQuestionType,
+        // Per-part config actions (topic, facts, passageLength)
+        setPartTopic,
+        addPartFact,
+        removePartFact,
+        setPartPassageLength
     } = useABTSStore();
 
     const [newFact, setNewFact] = useState('');
+    const [newPartFacts, setNewPartFacts] = useState({}); // Track new fact input per part
 
     // --- Computed ---
     const totalSelectedQuestions = useMemo(() => {
@@ -156,23 +163,38 @@ export default function StudioConfigView({ onGenerate }) {
         updateFormData({ questionTypes: [], questionTypeCounts: {} });
     };
 
-    const canGenerate = () => {
-        if (!formData.skill) return false;
-        if (!formData.topic || formData.topic.length < 3) return false;
-        if (formData.generationMode === 'CUSTOM_FACTS' && formData.facts.length < 3) return false;
+    // Computes specific validation errors
+    const validationErrors = useMemo(() => {
+        const errors = [];
+        if (!formData.skill) errors.push('Vui lòng chọn kỹ năng (Skill)');
+        if (!formData.selectedParts?.length) errors.push('Vui lòng chọn ít nhất một phần thi (Part)');
 
-        // Multi-part validation: All selected parts must have at least 2 question types
-        if (formData.scope === 'MULTI_PART') {
-            if (!formData.selectedParts?.length) return false;
-            for (const part of formData.selectedParts) {
-                const partConfig = formData.partConfigs?.[part];
-                if (!partConfig?.questionTypes || partConfig.questionTypes.length < 2) {
-                    return false;
+        formData.selectedParts?.forEach(part => {
+            const partConfig = formData.partConfigs?.[part];
+            const partLabel = `Part ${part}`;
+
+            // Each part must have a topic (at least 3 chars)
+            if (!partConfig?.topic || partConfig.topic.length < 3) {
+                errors.push(`${partLabel}: Nhập topic (tối thiểu 3 ký tự)`);
+            }
+
+            // Each part must have at least 2 question types
+            if (!partConfig?.questionTypes || partConfig.questionTypes.length < 2) {
+                errors.push(`${partLabel}: Chọn ít nhất 2 loại câu hỏi`);
+            }
+
+            // If CUSTOM_FACTS mode, each part must have at least 3 facts
+            if (formData.generationMode === 'CUSTOM_FACTS') {
+                if (!partConfig?.facts || partConfig.facts.length < 3) {
+                    errors.push(`${partLabel}: Thêm ít nhất 3 facts`);
                 }
             }
-        }
+        });
+        return errors;
+    }, [formData]);
 
-        return true;
+    const canGenerate = () => {
+        return validationErrors.length === 0;
     };
 
     // Build request preview for JSON panel
@@ -232,131 +254,239 @@ export default function StudioConfigView({ onGenerate }) {
                     />
                 </div>
 
-                {/* === ROW 2: Context & Source (full width) === */}
+                {/* === ROW 2: Generation Settings (full width) === */}
                 <div className="studio-card studio-config__section--full">
                     <div className="studio-card__header">
                         <h3 className="studio-card__title">
-                            <FiBookOpen className="studio-card__title-icon" />
-                            Context & Source
+                            <FiSliders className="studio-card__title-icon" />
+                            Generation Settings
                         </h3>
                     </div>
 
-                    {/* Mode Toggle */}
-                    <div className="studio-modes">
-                        <div
-                            className={`studio-mode ${formData.generationMode === 'AUTO' ? 'studio-mode--active' : ''}`}
-                            onClick={() => updateFormData({ generationMode: 'AUTO', enableWebSearch: true })}
-                        >
-                            <FiCpu className="studio-mode__icon" />
-                            <div className="studio-mode__text">
-                                <h4>Auto Research</h4>
-                                <p>AI uses web search to find facts</p>
-                            </div>
+                    <div className="studio-form-row">
+                        <div className="studio-form-group">
+                            <label className="studio-label">Difficulty</label>
+                            <select
+                                className="studio-select"
+                                value={formData.difficulty}
+                                onChange={(e) => setFormField('difficulty', e.target.value)}
+                            >
+                                {Object.values(DIFFICULTY_LEVELS).map(lvl => (
+                                    <option key={lvl.value} value={lvl.value}>
+                                        {lvl.label} ({lvl.bandRange})
+                                    </option>
+                                ))}
+                            </select>
                         </div>
-                        <div
-                            className={`studio-mode ${formData.generationMode === 'CUSTOM_FACTS' ? 'studio-mode--active' : ''}`}
-                            onClick={() => updateFormData({ generationMode: 'CUSTOM_FACTS', enableWebSearch: false })}
-                        >
-                            <FiFileText className="studio-mode__icon" />
-                            <div className="studio-mode__text">
-                                <h4>Custom Facts</h4>
-                                <p>You provide specific details</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Web Search Info for Auto Mode */}
-                    {formData.generationMode === 'AUTO' && (
-                        <div style={{
-                            padding: '10px 14px',
-                            marginTop: '12px',
-                            background: 'rgba(59, 130, 246, 0.1)',
-                            border: '1px solid rgba(59, 130, 246, 0.3)',
-                            borderRadius: '8px',
-                            color: '#93c5fd',
-                            fontSize: '0.8rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px'
-                        }}>
-                            <FiZap size={14} />
-                            <span>
-                                <strong>Web Search Enabled:</strong> AI will search the internet for accurate, up-to-date facts about your topic.
-                            </span>
-                        </div>
-                    )}
-
-                    {/* Topic + Hashtags Row */}
-                    <div className="studio-form-row" style={{ marginTop: '16px' }}>
-                        <div className="studio-form-group" style={{ flex: 2 }}>
-                            <label className="studio-label">Topic / Title</label>
-                            <input
-                                type="text"
-                                className="studio-input"
-                                placeholder={formData.generationMode === 'AUTO'
-                                    ? "e.g. The benefits of electric cars"
-                                    : "e.g. Analysis of renewable energy trends"}
-                                value={formData.topic}
-                                onChange={(e) => setFormField('topic', e.target.value)}
-                            />
-                        </div>
-                        <div className="studio-form-group" style={{ flex: 1 }}>
-                            <TagInput
-                                value={formData.hashtags}
-                                onChange={(tags) => updateFormData({ hashtags: tags })}
-                                placeholder="Add hashtags..."
-                                label="Hashtags"
-                            />
+                        <div className="studio-form-group">
+                            <label className="studio-label">Explanation Language</label>
+                            <select
+                                className="studio-select"
+                                value={formData.explanationLanguage}
+                                onChange={(e) => setFormField('explanationLanguage', e.target.value)}
+                            >
+                                {LANGUAGES.map(lang => (
+                                    <option key={lang.value} value={lang.value}>{lang.label}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 
-                    {/* Custom Facts Section */}
-                    {formData.generationMode === 'CUSTOM_FACTS' && (
-                        <div className="studio-form-group" style={{ marginTop: '12px' }}>
-                            <label className="studio-label">
-                                Key Facts / Outline
-                                <span className="studio-label__value">{formData.facts.length}/30</span>
+                    {/* Multi-Part Selection - Reading/Listening only */}
+                    {(formData.skill === SKILL_TYPES.READING || formData.skill === SKILL_TYPES.LISTENING) && (
+                        <div className="studio-form-group" style={{ marginBottom: '16px' }}>
+                            <label className="studio-label" style={{ marginBottom: '10px' }}>
+                                <FiLayers style={{ marginRight: '6px' }} />
+                                Chọn các Parts cần tạo
                             </label>
-                            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                                <textarea
-                                    className="studio-textarea"
-                                    rows={3}
-                                    placeholder="Paste facts here (one per line)..."
-                                    value={newFact}
-                                    onChange={(e) => setNewFact(e.target.value)}
-                                    style={{ flex: 1 }}
-                                />
-                                <button
-                                    className="studio-btn studio-btn--primary"
-                                    onClick={handleAddFact}
-                                    style={{ alignSelf: 'flex-end' }}
-                                >
-                                    <FiPlus /> Add
-                                </button>
-                            </div>
-
-                            <div className="studio-facts">
-                                {formData.facts.length === 0 ? (
-                                    <div className="studio-facts-empty">
-                                        No facts added yet. Add at least 3 for best results.
-                                    </div>
-                                ) : (
-                                    formData.facts.map((fact, i) => (
-                                        <div key={i} className="studio-fact">
-                                            <span className="studio-fact__num">{i + 1}.</span>
-                                            <span className="studio-fact__text">{fact}</span>
+                            <div style={{
+                                padding: '14px',
+                                background: 'rgba(16, 185, 129, 0.08)',
+                                border: '1px solid rgba(16, 185, 129, 0.3)',
+                                borderRadius: '8px'
+                            }}>
+                                <div style={{
+                                    fontSize: '0.8rem',
+                                    color: '#6ee7b7',
+                                    marginBottom: '10px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between'
+                                }}>
+                                    <span>
+                                        <FiCheck style={{ marginRight: '6px' }} />
+                                        Chọn các parts cần tạo:
+                                    </span>
+                                    {formData.selectedParts?.length > 0 && (
+                                        <span style={{ color: '#a7f3d0', fontSize: '0.75rem' }}>
+                                            ({formData.selectedParts.length} đã chọn)
+                                        </span>
+                                    )}
+                                </div>
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: formData.skill === SKILL_TYPES.READING
+                                        ? 'repeat(3, 1fr)'
+                                        : 'repeat(4, 1fr)',
+                                    gap: '8px'
+                                }}>
+                                    {(formData.skill === SKILL_TYPES.READING ? READING_PARTS : LISTENING_PARTS).map(part => {
+                                        const isSelected = formData.selectedParts?.includes(part.value);
+                                        return (
                                             <button
-                                                className="studio-fact__remove"
-                                                onClick={() => removeFact(i)}
+                                                key={part.value}
+                                                type="button"
+                                                onClick={() => togglePartSelection(part.value)}
+                                                style={{
+                                                    padding: '10px 12px',
+                                                    borderRadius: '8px',
+                                                    border: isSelected
+                                                        ? '2px solid #10b981'
+                                                        : '1px solid rgba(255,255,255,0.15)',
+                                                    background: isSelected
+                                                        ? 'rgba(16, 185, 129, 0.2)'
+                                                        : 'rgba(255,255,255,0.05)',
+                                                    color: isSelected ? '#6ee7b7' : 'rgba(255,255,255,0.7)',
+                                                    cursor: 'pointer',
+                                                    fontSize: '0.8rem',
+                                                    fontWeight: isSelected ? 600 : 400,
+                                                    textAlign: 'center',
+                                                    transition: 'all 150ms ease',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '6px'
+                                                }}
                                             >
-                                                <FiX size={14} />
+                                                {isSelected && <FiCheck size={14} />}
+                                                Part {part.value}
                                             </button>
-                                        </div>
-                                    ))
-                                )}
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     )}
+
+                    <div className="studio-form-row">
+                        {/* Essay Type Selector for Writing Task 2 */}
+                        {formData.skill === SKILL_TYPES.WRITING && formData.questionTypes?.includes('TASK_2') && (
+                            <div className="studio-form-group">
+                                <label className="studio-label">Essay Type</label>
+                                <select
+                                    className="studio-select"
+                                    value={formData.writingEssayType || 'OPINION'}
+                                    onChange={(e) => setFormField('writingEssayType', e.target.value)}
+                                >
+                                    {ESSAY_TYPES.map(type => (
+                                        <option key={type.value} value={type.value}>
+                                            {type.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <div style={{
+                                    fontSize: '0.75rem',
+                                    color: 'rgba(255,255,255,0.5)',
+                                    marginTop: '4px'
+                                }}>
+                                    {ESSAY_TYPES.find(t => t.value === (formData.writingEssayType || 'OPINION'))?.desc}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Audio/Figure Upload Placeholder for Listening */}
+                    {formData.skill === SKILL_TYPES.LISTENING && (
+                        <div className="studio-form-row">
+                            <div className="studio-form-group" style={{ flex: 1 }}>
+                                <label className="studio-label" style={{ marginBottom: '8px' }}>
+                                    <FiUpload style={{ marginRight: '6px' }} />
+                                    Audio File (Coming Soon)
+                                </label>
+                                <div style={{
+                                    padding: '20px',
+                                    border: '2px dashed rgba(255,255,255,0.15)',
+                                    borderRadius: '8px',
+                                    textAlign: 'center',
+                                    color: 'rgba(255,255,255,0.4)',
+                                    cursor: 'not-allowed',
+                                    background: 'rgba(255,255,255,0.02)'
+                                }}>
+                                    <FiMic size={24} style={{ marginBottom: '8px', opacity: 0.5 }} />
+                                    <div style={{ fontSize: '0.8rem' }}>
+                                        Upload audio for transcription
+                                    </div>
+                                    <div style={{ fontSize: '0.7rem', marginTop: '4px', opacity: 0.6 }}>
+                                        MP3, WAV, M4A supported
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="studio-form-group" style={{ flex: 1 }}>
+                                <label className="studio-label" style={{ marginBottom: '8px' }}>
+                                    <FiImage style={{ marginRight: '6px' }} />
+                                    Map/Diagram (Coming Soon)
+                                </label>
+                                <div style={{
+                                    padding: '20px',
+                                    border: '2px dashed rgba(255,255,255,0.15)',
+                                    borderRadius: '8px',
+                                    textAlign: 'center',
+                                    color: 'rgba(255,255,255,0.4)',
+                                    cursor: 'not-allowed',
+                                    background: 'rgba(255,255,255,0.02)'
+                                }}>
+                                    <FiImage size={24} style={{ marginBottom: '8px', opacity: 0.5 }} />
+                                    <div style={{ fontSize: '0.8rem' }}>
+                                        Upload map or diagram
+                                    </div>
+                                    <div style={{ fontSize: '0.7rem', marginTop: '4px', opacity: 0.6 }}>
+                                        PNG, JPG, SVG supported
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="studio-form-row">
+                        <div className="studio-form-group">
+                            <label className="studio-label">
+                                <span><FiThermometer style={{ marginRight: '4px' }} />Temperature</span>
+                                <span className="studio-label__value">{formData.temperature}</span>
+                            </label>
+                            <input
+                                type="range"
+                                className="studio-range"
+                                min="0"
+                                max="2"
+                                step="0.1"
+                                value={formData.temperature}
+                                onChange={(e) => setFormField('temperature', parseFloat(e.target.value))}
+                            />
+                            <div className="studio-range-labels">
+                                <span>Precise</span>
+                                <span>Creative</span>
+                            </div>
+                        </div>
+                        <div className="studio-form-group">
+                            <label className="studio-label">
+                                Max Tokens
+                                <span className="studio-label__value">{formData.maxTokens >= 1000 ? `${(formData.maxTokens / 1000).toFixed(0)}K` : formData.maxTokens}</span>
+                            </label>
+                            <input
+                                type="range"
+                                className="studio-range"
+                                min="4000"
+                                max="65000"
+                                step="5000"
+                                value={formData.maxTokens}
+                                onChange={(e) => setFormField('maxTokens', parseInt(e.target.value))}
+                            />
+                            <div className="studio-range-labels">
+                                <span>4K</span>
+                                <span>65K</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* === ROW 3: Question Types with Counts (full width) === */}
@@ -547,7 +677,191 @@ export default function StudioConfigView({ onGenerate }) {
                                                         </button>
                                                     </div>
 
-                                                    {/* Type Chips */}
+                                                    {/* Per-Part Topic & Settings Row */}
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        gap: '12px',
+                                                        marginBottom: '12px',
+                                                        flexWrap: 'wrap'
+                                                    }}>
+                                                        {/* Topic Input */}
+                                                        <div style={{ flex: '2 1 200px' }}>
+                                                            <label style={{
+                                                                fontSize: '0.7rem',
+                                                                color: 'rgba(255,255,255,0.5)',
+                                                                marginBottom: '4px',
+                                                                display: 'block'
+                                                            }}>
+                                                                Topic / Chủ đề
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                className="studio-input"
+                                                                placeholder={`Chủ đề Part ${partNumber}...`}
+                                                                value={partConfig.topic || ''}
+                                                                onChange={(e) => setPartTopic(partNumber, e.target.value)}
+                                                                style={{
+                                                                    fontSize: '0.8rem',
+                                                                    padding: '8px 10px'
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        {/* Passage Length (Reading only) */}
+                                                        {formData.skill === 'READING' && (
+                                                            <div style={{ flex: '1 1 140px' }}>
+                                                                <label style={{
+                                                                    fontSize: '0.7rem',
+                                                                    color: 'rgba(255,255,255,0.5)',
+                                                                    marginBottom: '4px',
+                                                                    display: 'block'
+                                                                }}>
+                                                                    Độ dài Passage
+                                                                </label>
+                                                                <select
+                                                                    className="studio-select"
+                                                                    value={partConfig.passageLength || 'MEDIUM'}
+                                                                    onChange={(e) => setPartPassageLength(partNumber, e.target.value)}
+                                                                    style={{
+                                                                        fontSize: '0.8rem',
+                                                                        padding: '8px 10px'
+                                                                    }}
+                                                                >
+                                                                    {PASSAGE_LENGTHS.map(pl => (
+                                                                        <option key={pl.value} value={pl.value}>{pl.label}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Per-Part Facts (only when CUSTOM_FACTS mode) */}
+                                                    {formData.generationMode === 'CUSTOM_FACTS' && (
+                                                        <div style={{ marginBottom: '12px' }}>
+                                                            <label style={{
+                                                                fontSize: '0.7rem',
+                                                                color: 'rgba(255,255,255,0.5)',
+                                                                marginBottom: '4px',
+                                                                display: 'flex',
+                                                                justifyContent: 'space-between'
+                                                            }}>
+                                                                <span>Key Facts / Outline</span>
+                                                                <span>{(partConfig.facts || []).length}/30</span>
+                                                            </label>
+
+                                                            {/* Multi-line textarea with Parse button */}
+                                                            <div style={{ marginBottom: '8px' }}>
+                                                                <textarea
+                                                                    className="studio-input"
+                                                                    placeholder="Nhập danh sách facts, mỗi dòng là 1 fact...&#10;Ví dụ:&#10;Fact 1&#10;Fact 2&#10;Fact 3"
+                                                                    rows={3}
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        fontSize: '0.75rem',
+                                                                        padding: '8px',
+                                                                        resize: 'vertical',
+                                                                        minHeight: '60px'
+                                                                    }}
+                                                                    id={`facts-textarea-${partNumber}`}
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    className="studio-btn studio-btn--ghost studio-btn--sm"
+                                                                    onClick={() => {
+                                                                        const textarea = document.getElementById(`facts-textarea-${partNumber}`);
+                                                                        if (textarea && textarea.value.trim()) {
+                                                                            const lines = textarea.value
+                                                                                .split('\n')
+                                                                                .map(line => line.trim())
+                                                                                .filter(line => line.length > 0);
+                                                                            lines.forEach(line => addPartFact(partNumber, line));
+                                                                            textarea.value = '';
+                                                                        }
+                                                                    }}
+                                                                    style={{ marginTop: '6px', width: '100%' }}
+                                                                >
+                                                                    <FiPlus size={12} /> Parse & Add Facts
+                                                                </button>
+                                                            </div>
+
+                                                            {/* Single-line quick add */}
+                                                            <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                                                                <input
+                                                                    type="text"
+                                                                    className="studio-input"
+                                                                    placeholder="Hoặc thêm 1 fact..."
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter' && e.target.value.trim()) {
+                                                                            addPartFact(partNumber, e.target.value);
+                                                                            e.target.value = '';
+                                                                        }
+                                                                    }}
+                                                                    style={{ flex: 1, fontSize: '0.75rem', padding: '6px 8px' }}
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    className="studio-btn studio-btn--ghost studio-btn--sm"
+                                                                    onClick={(e) => {
+                                                                        const input = e.target.closest('div').querySelector('input');
+                                                                        if (input.value.trim()) {
+                                                                            addPartFact(partNumber, input.value);
+                                                                            input.value = '';
+                                                                        }
+                                                                    }}
+                                                                    style={{ padding: '6px 10px' }}
+                                                                >
+                                                                    <FiPlus size={12} />
+                                                                </button>
+                                                            </div>
+                                                            {(partConfig.facts || []).length > 0 && (
+                                                                <div style={{
+                                                                    display: 'flex',
+                                                                    flexWrap: 'wrap',
+                                                                    gap: '4px',
+                                                                    maxHeight: '60px',
+                                                                    overflowY: 'auto'
+                                                                }}>
+                                                                    {(partConfig.facts || []).map((fact, i) => (
+                                                                        <span key={i} style={{
+                                                                            fontSize: '0.7rem',
+                                                                            padding: '3px 8px',
+                                                                            background: 'rgba(167, 139, 250, 0.15)',
+                                                                            border: '1px solid rgba(167, 139, 250, 0.3)',
+                                                                            borderRadius: '4px',
+                                                                            color: '#c4b5fd',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            gap: '4px'
+                                                                        }}>
+                                                                            <span style={{
+                                                                                maxWidth: '120px',
+                                                                                overflow: 'hidden',
+                                                                                textOverflow: 'ellipsis',
+                                                                                whiteSpace: 'nowrap'
+                                                                            }}>
+                                                                                {fact}
+                                                                            </span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => removePartFact(partNumber, i)}
+                                                                                style={{
+                                                                                    background: 'none',
+                                                                                    border: 'none',
+                                                                                    color: '#c4b5fd',
+                                                                                    cursor: 'pointer',
+                                                                                    padding: 0,
+                                                                                    display: 'flex'
+                                                                                }}
+                                                                            >
+                                                                                <FiX size={10} />
+                                                                            </button>
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Question Type Chips */}
                                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                                         {typePool.map(typeId => {
                                                             const isSelected = questionTypes.includes(typeId);
@@ -619,361 +933,107 @@ export default function StudioConfigView({ onGenerate }) {
                     </div>
                 )}
 
-                {/* === ROW 4: Advanced Settings (2 columns) === */}
-                <div className="studio-card">
+                {/* === ROW 4: Context & Source (full width) === */}
+                <div className="studio-card studio-config__section--full">
                     <div className="studio-card__header">
                         <h3 className="studio-card__title">
-                            <FiSliders className="studio-card__title-icon" />
-                            Generation Settings
+                            <FiBookOpen className="studio-card__title-icon" />
+                            Context & Source
                         </h3>
                     </div>
 
-                    <div className="studio-form-row">
-                        <div className="studio-form-group">
-                            <label className="studio-label">Difficulty</label>
-                            <select
-                                className="studio-select"
-                                value={formData.difficulty}
-                                onChange={(e) => setFormField('difficulty', e.target.value)}
+                    {/* Generation Mode Toggle */}
+                    <div className="studio-form-group" style={{ marginBottom: '16px' }}>
+                        <label className="studio-label" style={{ marginBottom: '10px' }}>
+                            <FiRefreshCw style={{ marginRight: '6px' }} />
+                            Generation Mode
+                        </label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                                type="button"
+                                className={`studio-btn ${formData.generationMode === 'AUTO' ? 'studio-btn--primary' : 'studio-btn--ghost'}`}
+                                onClick={() => setFormField('generationMode', 'AUTO')}
+                                style={{ flex: 1 }}
                             >
-                                {Object.values(DIFFICULTY_LEVELS).map(lvl => (
-                                    <option key={lvl.value} value={lvl.value}>
-                                        {lvl.label} ({lvl.bandRange})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="studio-form-group">
-                            <label className="studio-label">Explanation Language</label>
-                            <select
-                                className="studio-select"
-                                value={formData.explanationLanguage}
-                                onChange={(e) => setFormField('explanationLanguage', e.target.value)}
+                                <FiZap size={14} style={{ marginRight: '4px' }} />
+                                Auto (AI decides)
+                            </button>
+                            <button
+                                type="button"
+                                className={`studio-btn ${formData.generationMode === 'CUSTOM_FACTS' ? 'studio-btn--primary' : 'studio-btn--ghost'}`}
+                                onClick={() => setFormField('generationMode', 'CUSTOM_FACTS')}
+                                style={{ flex: 1 }}
                             >
-                                {LANGUAGES.map(lang => (
-                                    <option key={lang.value} value={lang.value}>{lang.label}</option>
-                                ))}
-                            </select>
+                                <FiEdit3 size={14} style={{ marginRight: '4px' }} />
+                                Custom Facts
+                            </button>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginTop: '6px' }}>
+                            {formData.generationMode === 'AUTO'
+                                ? 'AI will search the web and generate topic-relevant passages'
+                                : 'Provide specific facts for AI to incorporate into the passage'
+                            }
                         </div>
                     </div>
 
-                    {/* Generation Scope Toggle - Only for Reading/Listening */}
-                    {(formData.skill === SKILL_TYPES.READING || formData.skill === SKILL_TYPES.LISTENING) && (
-                        <div className="studio-form-group" style={{ marginBottom: '16px' }}>
-                            <label className="studio-label" style={{ marginBottom: '10px' }}>
-                                <FiLayers style={{ marginRight: '6px' }} />
-                                Phạm vi tạo nội dung
-                            </label>
-                            <div className="studio-modes">
-                                <div
-                                    className={`studio-mode ${formData.scope === GENERATION_SCOPES.SINGLE_PART ? 'studio-mode--active' : ''}`}
-                                    onClick={() => {
-                                        setFormField('scope', GENERATION_SCOPES.SINGLE_PART);
-                                        clearPartSelections();
-                                    }}
-                                >
-                                    <FiFileText className="studio-mode__icon" />
-                                    <div className="studio-mode__text">
-                                        <h4>Từng phần</h4>
-                                        <p>1 part mỗi lần</p>
-                                    </div>
-                                </div>
-                                <div
-                                    className={`studio-mode ${formData.scope === 'MULTI_PART' ? 'studio-mode--active' : ''}`}
-                                    onClick={() => setFormField('scope', 'MULTI_PART')}
-                                    style={{ position: 'relative' }}
-                                >
-                                    <FiLayers className="studio-mode__icon" />
-                                    <div className="studio-mode__text">
-                                        <h4>Chọn nhiều</h4>
-                                        <p>Chọn parts cần tạo</p>
-                                    </div>
-                                    <span style={{
-                                        position: 'absolute',
-                                        top: '4px',
-                                        right: '4px',
-                                        fontSize: '0.55rem',
-                                        padding: '2px 5px',
-                                        background: 'linear-gradient(135deg, #10b981, #059669)',
-                                        borderRadius: '4px',
-                                        fontWeight: 600,
-                                        color: '#fff'
-                                    }}>NEW</span>
-                                </div>
+                    {/* Web Search Info */}
+                    {formData.generationMode === 'AUTO' && (
+                        <div style={{
+                            padding: '12px',
+                            background: 'rgba(59, 130, 246, 0.1)',
+                            border: '1px solid rgba(59, 130, 246, 0.3)',
+                            borderRadius: '8px',
+                            marginBottom: '16px'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#93c5fd', fontSize: '0.85rem' }}>
+                                <FiGlobe size={16} />
+                                <span>Web Search Enabled</span>
                             </div>
-
-                            {/* Multi-Part Checkbox Selection */}
-                            {formData.scope === 'MULTI_PART' && (
-                                <div style={{
-                                    marginTop: '12px',
-                                    padding: '14px',
-                                    background: 'rgba(16, 185, 129, 0.08)',
-                                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                                    borderRadius: '8px'
-                                }}>
-                                    <div style={{
-                                        fontSize: '0.8rem',
-                                        color: '#6ee7b7',
-                                        marginBottom: '10px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between'
-                                    }}>
-                                        <span>
-                                            <FiCheck style={{ marginRight: '6px' }} />
-                                            Chọn các parts cần tạo:
-                                        </span>
-                                        {formData.selectedParts?.length > 0 && (
-                                            <span style={{ color: '#a7f3d0', fontSize: '0.75rem' }}>
-                                                ({formData.selectedParts.length} đã chọn)
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: formData.skill === SKILL_TYPES.READING
-                                            ? 'repeat(3, 1fr)'
-                                            : 'repeat(4, 1fr)',
-                                        gap: '8px'
-                                    }}>
-                                        {(formData.skill === SKILL_TYPES.READING ? READING_PARTS : LISTENING_PARTS).map(part => {
-                                            const isSelected = formData.selectedParts?.includes(part.value);
-                                            return (
-                                                <button
-                                                    key={part.value}
-                                                    type="button"
-                                                    onClick={() => togglePartSelection(part.value)}
-                                                    style={{
-                                                        padding: '10px 12px',
-                                                        borderRadius: '8px',
-                                                        border: isSelected
-                                                            ? '2px solid #10b981'
-                                                            : '1px solid rgba(255,255,255,0.15)',
-                                                        background: isSelected
-                                                            ? 'rgba(16, 185, 129, 0.2)'
-                                                            : 'rgba(255,255,255,0.05)',
-                                                        color: isSelected ? '#6ee7b7' : 'rgba(255,255,255,0.7)',
-                                                        cursor: 'pointer',
-                                                        fontSize: '0.8rem',
-                                                        fontWeight: isSelected ? 600 : 400,
-                                                        textAlign: 'center',
-                                                        transition: 'all 150ms ease',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        gap: '6px'
-                                                    }}
-                                                >
-                                                    {isSelected && <FiCheck size={14} />}
-                                                    Part {part.value}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
+                            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', marginTop: '4px' }}>
+                                AI will automatically search for relevant, up-to-date information based on the topic
+                            </div>
                         </div>
                     )}
 
-                    <div className="studio-form-row">
-                        {/* Part Selector - Reading or Listening (only when SINGLE_PART scope) */}
-                        {(formData.skill === SKILL_TYPES.READING || formData.skill === SKILL_TYPES.LISTENING) &&
-                            formData.scope === GENERATION_SCOPES.SINGLE_PART && (
-                                <div className="studio-form-group">
-                                    <label className="studio-label">Part</label>
-                                    <select
-                                        className="studio-select"
-                                        value={formData.partNumber || 1}
-                                        onChange={(e) => setFormField('partNumber', parseInt(e.target.value))}
-                                    >
-                                        {(formData.skill === SKILL_TYPES.READING ? READING_PARTS : LISTENING_PARTS).map(part => (
-                                            <option key={part.value} value={part.value}>{part.label}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
-                        {/* Passage length is only meaningful for Reading */}
-                        {formData.skill === SKILL_TYPES.READING && formData.scope === GENERATION_SCOPES.SINGLE_PART && (
-                            <div className="studio-form-group">
-                                <label className="studio-label">Passage Length</label>
-                                <select
-                                    className="studio-select"
-                                    value={formData.passageLength}
-                                    onChange={(e) => setFormField('passageLength', e.target.value)}
-                                >
-                                    {PASSAGE_LENGTHS.map(pl => (
-                                        <option key={pl.value} value={pl.value}>{pl.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-
-                        {/* Essay Type Selector for Writing Task 2 */}
-                        {formData.skill === SKILL_TYPES.WRITING && formData.questionTypes?.includes('TASK_2') && (
-                            <div className="studio-form-group">
-                                <label className="studio-label">Essay Type</label>
-                                <select
-                                    className="studio-select"
-                                    value={formData.writingEssayType || 'OPINION'}
-                                    onChange={(e) => setFormField('writingEssayType', e.target.value)}
-                                >
-                                    {ESSAY_TYPES.map(type => (
-                                        <option key={type.value} value={type.value}>
-                                            {type.label}
-                                        </option>
-                                    ))}
-                                </select>
-                                <div style={{
-                                    fontSize: '0.75rem',
-                                    color: 'rgba(255,255,255,0.5)',
-                                    marginTop: '4px'
-                                }}>
-                                    {ESSAY_TYPES.find(t => t.value === (formData.writingEssayType || 'OPINION'))?.desc}
-                                </div>
-                            </div>
-                        )}
+                    {/* Hashtags Input */}
+                    <div className="studio-form-group">
+                        <label className="studio-label">
+                            <FiHash style={{ marginRight: '6px' }} />
+                            Hashtags (Optional)
+                        </label>
+                        <input
+                            type="text"
+                            className="studio-input"
+                            placeholder="Add tags to categorize, e.g., #cambridge17 #test1 #part1"
+                            value={formData.hashtags?.join(' ') || ''}
+                            onChange={(e) => {
+                                const tags = e.target.value.split(/\s+/).filter(t => t.startsWith('#') || t.length > 0);
+                                setFormField('hashtags', tags.map(t => t.startsWith('#') ? t : `#${t}`).filter(t => t.length > 1));
+                            }}
+                        />
+                        <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>
+                            Tags help organize and filter generated content
+                        </div>
                     </div>
 
-                    {formData.skill === SKILL_TYPES.READING && formData.scope === GENERATION_SCOPES.SINGLE_PART && (
-                        <div className="studio-form-row">
-                            <div className="studio-form-group">
-                                <label className="studio-label">
-                                    Total Questions Target
-                                    <span className="studio-label__value">{formData.totalQuestions}</span>
-                                </label>
-                                <input
-                                    type="range"
-                                    className="studio-range"
-                                    min="8"
-                                    max="20"
-                                    step="1"
-                                    value={formData.totalQuestions}
-                                    onChange={(e) => setFormField('totalQuestions', parseInt(e.target.value))}
-                                />
-                                <div className="studio-range-labels">
-                                    <span>8</span>
-                                    <span>20</span>
-                                </div>
+                    {/* Note about per-part configuration */}
+                    {(formData.skill === SKILL_TYPES.READING || formData.skill === SKILL_TYPES.LISTENING) && formData.selectedParts?.length > 0 && (
+                        <div style={{
+                            padding: '12px',
+                            background: 'rgba(16, 185, 129, 0.08)',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            borderRadius: '8px',
+                            marginTop: '16px'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6ee7b7', fontSize: '0.85rem' }}>
+                                <FiInfo size={16} />
+                                <span>Per-Part Configuration</span>
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', marginTop: '4px' }}>
+                                Topic, passage length, and custom facts can be configured for each selected part in the Question Types section above
                             </div>
                         </div>
                     )}
-                    {formData.skill === SKILL_TYPES.LISTENING && (
-                        <div className="studio-form-row">
-                            <div className="studio-form-group">
-                                <label className="studio-label">
-                                    Total Questions
-                                    <span className="studio-label__value">10</span>
-                                </label>
-                                <input
-                                    type="range"
-                                    className="studio-range"
-                                    min="10"
-                                    max="10"
-                                    step="1"
-                                    value={10}
-                                    onChange={() => { }}
-                                    disabled
-                                />
-                                <div className="studio-range-labels">
-                                    <span>10</span>
-                                    <span>10</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Audio/Figure Upload Placeholder for Listening */}
-                    {formData.skill === SKILL_TYPES.LISTENING && (
-                        <div className="studio-form-row">
-                            <div className="studio-form-group" style={{ flex: 1 }}>
-                                <label className="studio-label" style={{ marginBottom: '8px' }}>
-                                    <FiUpload style={{ marginRight: '6px' }} />
-                                    Audio File (Coming Soon)
-                                </label>
-                                <div style={{
-                                    padding: '20px',
-                                    border: '2px dashed rgba(255,255,255,0.15)',
-                                    borderRadius: '8px',
-                                    textAlign: 'center',
-                                    color: 'rgba(255,255,255,0.4)',
-                                    cursor: 'not-allowed',
-                                    background: 'rgba(255,255,255,0.02)'
-                                }}>
-                                    <FiMic size={24} style={{ marginBottom: '8px', opacity: 0.5 }} />
-                                    <div style={{ fontSize: '0.8rem' }}>
-                                        Upload audio for transcription
-                                    </div>
-                                    <div style={{ fontSize: '0.7rem', marginTop: '4px', opacity: 0.6 }}>
-                                        MP3, WAV, M4A supported
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="studio-form-group" style={{ flex: 1 }}>
-                                <label className="studio-label" style={{ marginBottom: '8px' }}>
-                                    <FiImage style={{ marginRight: '6px' }} />
-                                    Map/Diagram (Coming Soon)
-                                </label>
-                                <div style={{
-                                    padding: '20px',
-                                    border: '2px dashed rgba(255,255,255,0.15)',
-                                    borderRadius: '8px',
-                                    textAlign: 'center',
-                                    color: 'rgba(255,255,255,0.4)',
-                                    cursor: 'not-allowed',
-                                    background: 'rgba(255,255,255,0.02)'
-                                }}>
-                                    <FiImage size={24} style={{ marginBottom: '8px', opacity: 0.5 }} />
-                                    <div style={{ fontSize: '0.8rem' }}>
-                                        Upload map or diagram
-                                    </div>
-                                    <div style={{ fontSize: '0.7rem', marginTop: '4px', opacity: 0.6 }}>
-                                        PNG, JPG, SVG supported
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="studio-form-row">
-                        <div className="studio-form-group">
-                            <label className="studio-label">
-                                <span><FiThermometer style={{ marginRight: '4px' }} />Temperature</span>
-                                <span className="studio-label__value">{formData.temperature}</span>
-                            </label>
-                            <input
-                                type="range"
-                                className="studio-range"
-                                min="0"
-                                max="2"
-                                step="0.1"
-                                value={formData.temperature}
-                                onChange={(e) => setFormField('temperature', parseFloat(e.target.value))}
-                            />
-                            <div className="studio-range-labels">
-                                <span>Precise</span>
-                                <span>Creative</span>
-                            </div>
-                        </div>
-                        <div className="studio-form-group">
-                            <label className="studio-label">
-                                Max Tokens
-                                <span className="studio-label__value">{formData.maxTokens >= 1000 ? `${(formData.maxTokens / 1000).toFixed(0)}K` : formData.maxTokens}</span>
-                            </label>
-                            <input
-                                type="range"
-                                className="studio-range"
-                                min="4000"
-                                max="65000"
-                                step="5000"
-                                value={formData.maxTokens}
-                                onChange={(e) => setFormField('maxTokens', parseInt(e.target.value))}
-                            />
-                            <div className="studio-range-labels">
-                                <span>4K</span>
-                                <span>65K</span>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Custom Instructions + JSON Preview */}
@@ -1062,11 +1122,17 @@ export default function StudioConfigView({ onGenerate }) {
                     {isGenerating ? 'Generating Content...' : 'Generate Content'}
                 </button>
 
-                {!canGenerate() && !isGenerating && (
+                {!canGenerate() && !isGenerating && validationErrors.length > 0 && (
                     <div className="studio-generate__error">
-                        <FiAlertCircle style={{ marginRight: '6px' }} />
-                        Please select a skill, enter a topic (min 3 chars)
-                        {formData.generationMode === 'CUSTOM_FACTS' && ', and add at least 3 facts'}
+                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px', fontWeight: 600 }}>
+                            <FiAlertCircle style={{ marginRight: '6px' }} />
+                            Vui lòng hoàn thành các mục sau:
+                        </div>
+                        <ul style={{ margin: 0, paddingLeft: '24px', listStyleType: 'disc' }}>
+                            {validationErrors.map((error, idx) => (
+                                <li key={idx} style={{ marginTop: '2px' }}>{error}</li>
+                            ))}
+                        </ul>
                     </div>
                 )}
             </div>

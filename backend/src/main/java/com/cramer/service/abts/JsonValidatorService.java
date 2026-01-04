@@ -1670,7 +1670,11 @@ public class JsonValidatorService {
         if (text == null) {
             return false;
         }
-        return text.matches(".*\\b\\d+\\b.*");
+        // Match a number in the text, including inside HTML tags like
+        // <strong>1</strong>
+        // Pattern matches: standalone numbers, or numbers inside <strong> tags
+        return text.matches(".*\\b\\d+\\b.*") ||
+                text.matches("(?s).*<strong>\\s*\\d+\\s*</strong>.*");
     }
 
     private int countPlaceholders(String text) {

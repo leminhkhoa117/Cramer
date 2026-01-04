@@ -79,6 +79,18 @@ public class TestSetService {
     }
 
     /**
+     * Get test set by code (returns Optional for controller use).
+     * 
+     * @param code the test set code
+     * @return optional TestSetDTO
+     */
+    @Transactional(readOnly = true)
+    public java.util.Optional<TestSetDTO> getByCode(String code) {
+        logger.info("Fetching test set by code (optional): {}", code);
+        return testSetRepository.findByCode(code).map(this::toDTO);
+    }
+
+    /**
      * Create a new test set.
      * 
      * @param request creation request

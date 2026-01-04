@@ -56,12 +56,12 @@ const TestReviewPage = () => {
     const handleRegrade = async () => {
         if (isRegrading || !reviewData) return;
         setIsRegrading(true);
-        
+
         try {
             // Call the regrade API to re-score existing answers
             const response = await testAttemptApi.regradeAttempt(attemptId);
             console.log('✅ Regrade completed:', response.data);
-            
+
             // Refresh the review data to show updated scores
             const reviewResponse = await testAttemptApi.getTestReview(attemptId);
             setReviewData(reviewResponse.data);
@@ -220,8 +220,8 @@ const TestReviewPage = () => {
                             </div>
                             <div className="review-header-right">
                                 <div className="header-actions">
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); handleRegrade(); }} 
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleRegrade(); }}
                                         className="btn btn-regrade"
                                         disabled={isRegrading}
                                     >
@@ -287,8 +287,8 @@ const TestReviewPage = () => {
                                             />
                                         ) : (
                                             <p className="no-content">
-                                                {isListeningTest 
-                                                    ? 'Không có transcript cho phần này.' 
+                                                {isListeningTest
+                                                    ? 'Không có transcript cho phần này.'
                                                     : 'Không có nội dung bài đọc cho phần này.'}
                                             </p>
                                         )}
@@ -412,7 +412,25 @@ const TestReviewPage = () => {
                                                             <div className="explanation-title">
                                                                 <FiHelpCircle size={14} /> Giải thích
                                                             </div>
-                                                            <p className="explanation-text">{q.explanation}</p>
+                                                            {typeof q.explanation === 'string' ? (
+                                                                <p className="explanation-text">{q.explanation}</p>
+                                                            ) : (
+                                                                <div className="explanation-structured">
+                                                                    {q.explanation.detail && (
+                                                                        <p className="explanation-detail">{q.explanation.detail}</p>
+                                                                    )}
+                                                                    {q.explanation.quote && (
+                                                                        <blockquote className="explanation-quote">
+                                                                            <em>"{q.explanation.quote}"</em>
+                                                                        </blockquote>
+                                                                    )}
+                                                                    {q.explanation.strategy && (
+                                                                        <p className="explanation-strategy">
+                                                                            <strong>Chiến lược:</strong> {q.explanation.strategy}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>

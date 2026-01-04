@@ -78,6 +78,39 @@ export default function AIGenerationPage() {
                 generatedContent.metadata?.topic ||
                 'AI Generated';
 
+            // Construct partsToSave if content has multiple sections
+            let partsToSave = null;
+            if (generatedContent.sections && generatedContent.sections.length > 0) {
+                partsToSave = generatedContent.sections.map(section => {
+                    const pn = section.partNumber;
+                    const skillUpper = skillLower.toUpperCase();
+
+                    // Filter questions by standard IELTS ranges
+                    const filteredQuestions = (generatedContent.questions || []).filter(q => {
+                        const qn = q.questionNumber;
+                        if (skillUpper === 'READING') {
+                            if (pn === 1) return qn >= 1 && qn <= 13;
+                            if (pn === 2) return qn >= 14 && qn <= 26;
+                            if (pn === 3) return qn >= 27 && qn <= 40;
+                        } else if (skillUpper === 'LISTENING') {
+                            if (pn === 1) return qn >= 1 && qn <= 10;
+                            if (pn === 2) return qn >= 11 && qn <= 20;
+                            if (pn === 3) return qn >= 21 && qn <= 30;
+                            if (pn === 4) return qn >= 31 && qn <= 40;
+                        }
+                        return true;
+                    });
+
+                    return {
+                        partNumber: pn,
+                        content: {
+                            section: section,
+                            questions: filteredQuestions
+                        }
+                    };
+                });
+            }
+
             // Build save request with modal data
             const saveRequest = {
                 examSource: 'AI-GEN', // Legacy field
@@ -87,15 +120,17 @@ export default function AIGenerationPage() {
                 topic: topic,
                 content: generatedContent,
 
-                // New Metadata fields
-                // New hierarchy fields from modal
+                // Use field names expected by abtsApi
                 setId: saveConfig.setId,
                 setCode: saveConfig.setCode,
-                setNameVi: saveConfig.setNameVi,
-                testId: saveConfig.testId, // Existing test ID (if adding to existing)
-                testNameVi: saveConfig.testName, // Test name (for new test)
+                setName: saveConfig.setNameVi, // Map to abtsApi param name
+                testId: saveConfig.testId,
+                testName: saveConfig.testName, // Already correct name
                 difficulty: saveConfig.difficulty,
-                hashtagIds: saveConfig.hashtagIds
+                hashtagIds: saveConfig.hashtagIds,
+
+                // Multi-part support
+                partsToSave: partsToSave
             };
 
             const result = await saveGeneratedTest(saveRequest);
@@ -200,6 +235,8 @@ export default function AIGenerationPage() {
                 initialTopic={formData.topic}
                 suggestedSkill={formData.skill}
                 partNumber={formData.partNumber || 1}
+                selectedParts={formData.selectedParts}
+                questionCount={generationResult?.content?.questions?.length || 0}
             />
         </div>
     );

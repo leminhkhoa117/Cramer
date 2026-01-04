@@ -88,10 +88,13 @@ export async function saveGeneratedTest({
     // New hierarchy fields
     setId,
     setCode,
+    setName, // Added
     testId,
+    testName, // Added
     hashtagCodes,
     hashtagIds,
-    generationConfig
+    generationConfig,
+    partsToSave // Added for multi-part support
 }) {
     const response = await fetch(`${API_BASE}/save`, {
         method: 'POST',
@@ -107,10 +110,13 @@ export async function saveGeneratedTest({
             // New fields
             setId,
             setCode,
+            setNameVi: setName, // Map to backend DTO field
             testId,
+            testNameVi: testName, // Map to backend DTO field
             hashtagCodes,
             hashtagIds,
-            generationConfig
+            generationConfig,
+            partsToSave // Pass multi-part data
         })
     });
     return handleResponse(response);
@@ -478,6 +484,100 @@ async function generateStreamInternal(skill, request, { onProgress, onComplete, 
 }
 
 /**
+ * Refine content with Agent 2 (streaming).
+ * Sends selected issues to be fixed by the refinement agent.
+ * @param {Object} request - Refinement request with originalJson, selectedIssueIds, etc.
+ * @param {Object} callbacks - Callback functions for events.
+ * @param {AbortSignal} signal - Optional abort signal.
+ */
+export async function refineContentStream(request, { onProgress, onComplete, onError }, signal) {
+    let timeoutId = null;
+    let lastEventTime = Date.now();
+
+    onProgress?.({
+        type: 'CONNECTING',
+        message: 'Connecting to refinement agent...',
+        progress: 5
+    });
+
+    try {
+        const headers = await getHeaders();
+
+        const response = await fetch(`${API_BASE}/refine/stream`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(request),
+            signal
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${response.statusText}. ${errorText}`);
+        }
+
+        onProgress?.({
+            type: 'CONNECTED',
+            message: 'Agent 2 connected, analyzing issues...',
+            progress: 15
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        timeoutId = setInterval(() => {
+            const elapsed = (Date.now() - lastEventTime) / 1000;
+            if (elapsed > 60) {
+                onProgress?.({
+                    type: 'TIMEOUT_WARNING',
+                    message: `Waiting for response (${Math.floor(elapsed)}s)...`
+                });
+            }
+        }, 15000);
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            lastEventTime = Date.now();
+            buffer += decoder.decode(value, { stream: true });
+
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                if (line.startsWith('data:')) {
+                    try {
+                        const data = JSON.parse(line.slice(5).trim());
+
+                        // Handle refinement-specific events
+                        if (data.type === 'REFINEMENT_COMPLETED') {
+                            onComplete?.(data.data);
+                        } else if (data.type === 'FAILED') {
+                            onError?.(data.message);
+                        } else {
+                            onProgress?.(data);
+                        }
+                    } catch (e) {
+                        console.warn('Failed to parse refinement SSE:', line, e);
+                    }
+                }
+            }
+        }
+
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            onProgress?.({ type: 'ABORTED', message: 'Refinement cancelled', progress: 0 });
+        } else {
+            console.error('Refinement stream error:', error);
+            onError?.(error.message || 'Refinement failed');
+        }
+    } finally {
+        if (timeoutId) clearInterval(timeoutId);
+    }
+}
+
+/**
  * Get headers with admin user ID and auth token.
  */
 async function getHeaders() {
@@ -597,6 +697,7 @@ export default {
     regenerateQuestions,
     validateContent,
     saveGeneratedTest,
+    refineContentStream,
     getTemplateCategories,
     getTemplatesByCategory,
     getAvailableModels,

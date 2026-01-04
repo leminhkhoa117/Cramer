@@ -254,7 +254,7 @@ This section details the required `jsonb` format for `question_content` and `cor
   ```
 
 ### `DIAGRAM_LABEL_COMPLETION`
-- **Description:** User labels parts of a diagram based on an image.
+- **Description:** User labels parts of a diagram/flowchart. Supports code-based JSON or image-based rendering.
 - **Special Note:** The `image_url` field on the question record **must** be populated with the URL of the diagram image.
 - **`question_content`**: The `text` field simply contains the label for the question, which corresponds to a number on the diagram.
   ```json
@@ -266,6 +266,40 @@ This section details the required `jsonb` format for `question_content` and `cor
   ```json
   ["Engine"]
   ```
+
+#### Code-based Flowchart (Recommended for AI generation)
+
+For AI-generated content, use the `diagram` JSON structure:
+
+```json
+{
+  "diagram": {
+    "direction": "vertical",
+    "nodes": [
+      { "id": "n1", "label": "Start: Raw Materials", "type": "start" },
+      { "id": "n2", "question_number": 5, "type": "blank" },
+      { "id": "n3", "label": "Processing", "type": "step" },
+      { "id": "n4", "question_number": 6, "type": "blank" },
+      { "id": "n5", "label": "End: Distribution", "type": "end" }
+    ]
+  },
+  "diagram_description": "Flowchart showing manufacturing process steps"
+}
+```
+
+**Node Properties:**
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | string | Unique identifier for the node |
+| `label` | string | Text to display (for step/start/end types) |
+| `type` | string | One of: `step`, `blank`, `start`, `end` |
+| `question_number` | number | Required for `blank` type — links to answer |
+
+**Diagram Properties:**
+| Property | Type | Description |
+|----------|------|-------------|
+| `direction` | string | `vertical` (default) or `horizontal` |
+| `nodes` | array | Array of nodes in display order |
 
 ---
 

@@ -3,7 +3,7 @@
 ## System rules
 Always report back your "Remaining context window" like the following in response, right at the beginning of every response:
 ```markdown
-## Remaining context window: <exact number of total token used>/<context window> (<percentage used>)
+## Remaining context window: <exact number of unused tokens>/<context window token count> (<percentage used>)
 ```
 
 ## Project Overview

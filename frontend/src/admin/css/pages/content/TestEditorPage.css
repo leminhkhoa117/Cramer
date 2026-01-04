@@ -37,7 +37,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--admin-spacing-md) var(--admin-spacing-lg);
+  padding: 6px var(--admin-spacing-md);
   background: var(--admin-glass-bg);
   border-bottom: 1px solid var(--admin-glass-border);
   flex-shrink: 0;
@@ -46,18 +46,18 @@
 .editor-header__left {
   display: flex;
   align-items: center;
-  gap: var(--admin-spacing-md);
+  gap: var(--admin-spacing-sm);
 }
 
 .back-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   background: transparent;
   border: 1px solid var(--admin-border-primary);
-  border-radius: var(--admin-radius-md);
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-text-muted);
   cursor: pointer;
   transition: all var(--admin-transition-fast);
@@ -74,15 +74,17 @@
 }
 
 .editor-header__breadcrumb {
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   color: var(--admin-text-muted);
+  line-height: 1;
 }
 
 .editor-header__title {
-  font-size: 1.125rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: var(--admin-text-primary);
   margin: 0;
+  line-height: 1.2;
 }
 
 .editor-header__actions {
@@ -98,7 +100,7 @@
   display: flex;
   background: var(--admin-bg-secondary);
   border-bottom: 1px solid var(--admin-border-primary);
-  padding: 0 var(--admin-spacing-lg);
+  padding: 0 var(--admin-spacing-md);
   flex-shrink: 0;
   overflow-x: auto;
 }
@@ -106,13 +108,13 @@
 .skill-tab {
   display: flex;
   align-items: center;
-  gap: var(--admin-spacing-sm);
-  padding: var(--admin-spacing-md) var(--admin-spacing-lg);
+  gap: 4px;
+  padding: 6px 12px;
   background: transparent;
   border: none;
-  border-bottom: 3px solid transparent;
+  border-bottom: 2px solid transparent;
   color: var(--admin-text-muted);
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--admin-transition-fast);
@@ -349,7 +351,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--admin-spacing-lg);
+  padding: var(--admin-spacing-sm) var(--admin-spacing-md);
   background: var(--admin-glass-bg);
   border-bottom: 1px solid var(--admin-glass-border);
   flex-shrink: 0;

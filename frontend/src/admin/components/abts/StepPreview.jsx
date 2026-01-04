@@ -14,6 +14,9 @@ import { FiInfo, FiChevronUp, FiChevronDown, FiClock, FiCpu, FiFileText, FiAlert
 import useABTSStore from '../../stores/useABTSStore';
 import AdminPreviewContent from '../content/AdminPreviewContent';
 import StreamingDisplay from './StreamingDisplay';
+import QuestionEditModal from '../content/QuestionEditModal';
+import IssueSelector from './IssueSelector';
+import RefinementModal from './RefinementModal';
 import './AIStudio.css';
 
 export default function StepPreview({ onBack }) {
@@ -26,16 +29,31 @@ export default function StepPreview({ onBack }) {
     generationProgress,
     generationError,
     reasoning,
-    abortGeneration
+    abortGeneration,
+    updateGeneratedQuestion
   } = useABTSStore();
 
   const [showMetadata, setShowMetadata] = useState(false);
   const [showReasoningPanel, setShowReasoningPanel] = useState(false);
   const [activePartIndex, setActivePartIndex] = useState(0);
   const [showAnswers, setShowAnswers] = useState(true);
+  const [showQuestionEditor, setShowQuestionEditor] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState(null);
 
   // Use onBack if provided, otherwise fallback to store's goToStep
   const handleGoBack = onBack || (() => goToStep(1));
+
+  // Question editing handlers
+  const handleQuestionEdit = (question) => {
+    setEditingQuestion(question);
+    setShowQuestionEditor(true);
+  };
+
+  const handleQuestionSave = async (questionId, updates) => {
+    updateGeneratedQuestion(questionId, updates);
+    setShowQuestionEditor(false);
+    setEditingQuestion(null);
+  };
 
   const content = generationResult?.content || {};
   const warnings = generationResult?.warnings || [];
@@ -201,51 +219,88 @@ export default function StepPreview({ onBack }) {
     </div>
   );
 
-  // Validation Panel Component
+  // Validation Panel Component - Collapsible
   const ValidationPanel = () => {
     const schemaErrors = validation?.schemaErrors || [];
     const contentErrors = validation?.contentErrors || [];
     const businessErrors = validation?.businessRuleErrors || [];
     const allWarnings = warnings || [];
 
-    if (schemaErrors.length === 0 && contentErrors.length === 0
-      && businessErrors.length === 0 && allWarnings.length === 0) {
+    const totalIssues = schemaErrors.length + contentErrors.length + businessErrors.length + allWarnings.length;
+    const [isExpanded, setIsExpanded] = useState(totalIssues <= 3);
+
+    if (totalIssues === 0) {
       return null;
     }
 
     return (
       <div className="studio-alerts">
-        {schemaErrors.length > 0 && (
-          <div className="studio-alerts__section">
-            <h4 className="studio-alerts__title"><FiAlertTriangle /> Schema Errors</h4>
-            <ul>
-              {schemaErrors.map((err, idx) => <li key={`schema-${idx}`}>{err}</li>)}
-            </ul>
-          </div>
-        )}
-        {contentErrors.length > 0 && (
-          <div className="studio-alerts__section">
-            <h4 className="studio-alerts__title"><FiAlertTriangle /> Content Errors</h4>
-            <ul>
-              {contentErrors.map((err, idx) => <li key={`content-${idx}`}>{err}</li>)}
-            </ul>
-          </div>
-        )}
-        {businessErrors.length > 0 && (
-          <div className="studio-alerts__section">
-            <h4 className="studio-alerts__title"><FiAlertTriangle /> Business Rule Errors</h4>
-            <ul>
-              {businessErrors.map((err, idx) => <li key={`business-${idx}`}>{err}</li>)}
-            </ul>
-          </div>
-        )}
-        {allWarnings.length > 0 && (
-          <div className="studio-alerts__section studio-alerts__section--warning">
-            <h4 className="studio-alerts__title">Warnings</h4>
-            <ul>
-              {allWarnings.map((warn, idx) => <li key={`warn-${idx}`}>{warn}</li>)}
-            </ul>
-          </div>
+        <div
+          className="studio-alerts__header"
+          onClick={() => setIsExpanded(!isExpanded)}
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            cursor: 'pointer',
+            padding: '8px 12px',
+            background: 'rgba(234, 179, 8, 0.1)',
+            borderRadius: '6px',
+            marginBottom: isExpanded ? '8px' : '0'
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#ca8a04' }}>
+            <FiAlertTriangle size={14} />
+            {totalIssues} issue{totalIssues > 1 ? 's' : ''} found
+          </span>
+          <button
+            className="studio-meta__toggle"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ca8a04' }}
+          >
+            {isExpanded ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+          </button>
+        </div>
+
+        {isExpanded && (
+          <>
+            {schemaErrors.length > 0 && (
+              <div className="studio-alerts__section">
+                <h4 className="studio-alerts__title"><FiAlertTriangle /> Schema Errors</h4>
+                <ul>
+                  {schemaErrors.map((err, idx) => <li key={`schema-${idx}`}>{err}</li>)}
+                </ul>
+              </div>
+            )}
+            {contentErrors.length > 0 && (
+              <div className="studio-alerts__section">
+                <h4 className="studio-alerts__title"><FiAlertTriangle /> Content Errors</h4>
+                <ul>
+                  {contentErrors.map((err, idx) => <li key={`content-${idx}`}>{err}</li>)}
+                </ul>
+              </div>
+            )}
+            {businessErrors.length > 0 && (
+              <div className="studio-alerts__section">
+                <h4 className="studio-alerts__title"><FiAlertTriangle /> Business Rule Errors</h4>
+                <ul>
+                  {businessErrors.map((err, idx) => <li key={`business-${idx}`}>{err}</li>)}
+                </ul>
+              </div>
+            )}
+            {allWarnings.length > 0 && (
+              <div className="studio-alerts__section studio-alerts__section--warning">
+                <h4 className="studio-alerts__title">Warnings</h4>
+                <ul>
+                  {allWarnings.map((warn, idx) => <li key={`warn-${idx}`}>{warn}</li>)}
+                </ul>
+                {/* Agent 2 Issue Selector */}
+                <IssueSelector
+                  issues={allWarnings.map((msg, idx) => ({ id: `warn-${idx}`, message: msg, type: 'WARNING' }))}
+                  type="warning"
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
     );
@@ -280,6 +335,7 @@ export default function StepPreview({ onBack }) {
       <div className="studio-preview">
         <MetadataBar />
         <ValidationPanel />
+        <RefinementModal />
         <ReasoningPanel />
         <div className="studio-panel__content" style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
           <h3>Writing Task</h3>
@@ -309,6 +365,7 @@ export default function StepPreview({ onBack }) {
     <div className="studio-preview">
       <MetadataBar />
       <ValidationPanel />
+      <RefinementModal />
       <ReasoningPanel />
 
       <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -319,11 +376,20 @@ export default function StepPreview({ onBack }) {
           skill={formData.skill?.toLowerCase() || 'reading'}
           onPartSelect={setActivePartIndex}
           onQuestionSelect={() => { }}
-          onQuestionEdit={() => { }}
+          onQuestionEdit={handleQuestionEdit}
           showAnswers={showAnswers}
           onToggleAnswers={() => setShowAnswers(!showAnswers)}
         />
       </div>
+
+      {showQuestionEditor && (
+        <QuestionEditModal
+          isOpen={showQuestionEditor}
+          onClose={() => { setShowQuestionEditor(false); setEditingQuestion(null); }}
+          question={editingQuestion}
+          onSave={handleQuestionSave}
+        />
+      )}
     </div>
   );
 }

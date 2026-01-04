@@ -1,5 +1,6 @@
 import React from 'react';
 import HighlightableHtmlContent from './HighlightableHtmlContent'; // Import the new component
+import FlowchartRenderer from './FlowchartRenderer';
 import '../css/question-renderer.css';
 
 const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, groupOptions, partId, groupedQuestions = [], groupAnswers = {} }) => {
@@ -39,6 +40,70 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
         } else {
             onAnswerChange(id, currentAnswers.filter(ans => ans !== value));
         }
+    };
+
+    /**
+     * Render HTML table/structure with inline input fields replacing ____ placeholders.
+     * Used for TABLE_COMPLETION, FLOW_CHART_COMPLETION, NOTE_COMPLETION.
+     * 
+     * Strategy: Replace ____ with actual <input> HTML, then render as a single HTML block.
+     * Uses onBlur instead of onInput to prevent re-render losing input values.
+     */
+    const renderTableWithInputs = (htmlContent) => {
+        if (!htmlContent) {
+            // Subsequent question in group - just render input
+            return (
+                <p className="question-text-interactive">
+                    <span className="question-number"><strong>{questionNumber}</strong></span>
+                    <input
+                        type="text"
+                        className="fill-in-blank-input"
+                        value={userAnswer || ''}
+                        onChange={handleSingleValueChange}
+                    />
+                </p>
+            );
+        }
+
+        // Replace <strong>N</strong> ____ patterns with input elements
+        // Default values are set but NOT controlled - we update on blur only
+        let processedHtml = htmlContent.replace(
+            /<strong>(\d+)<\/strong>\s*____/g,
+            (match, qNum) => {
+                const blankQNum = parseInt(qNum, 10);
+                let targetQId = id;
+                let currentValue = '';
+
+                if (blankQNum !== questionNumber) {
+                    const subQ = groupedQuestions.find(q => q.questionNumber === blankQNum);
+                    if (subQ) {
+                        targetQId = subQ.id !== undefined ? subQ.id : `temp-${blankQNum}`;
+                        currentValue = groupAnswers[targetQId] || '';
+                    }
+                } else {
+                    currentValue = userAnswer || '';
+                }
+
+                // Input with defaultValue - NOT controlled, updated on blur
+                return `<strong>${qNum}</strong> <input type="text" class="fill-in-blank-input table-inline-input" data-qid="${targetQId}" data-qnum="${qNum}" value="${currentValue.replace(/"/g, '&quot;')}" placeholder="${qNum}" />`;
+            }
+        );
+
+        // Handle blur events to save answer when user finishes typing
+        const handleBlur = (e) => {
+            if (e.target.classList.contains('table-inline-input')) {
+                const qId = e.target.dataset.qid;
+                onAnswerChange(qId, e.target.value);
+            }
+        };
+
+        return (
+            <div
+                className="table-completion-container"
+                dangerouslySetInnerHTML={{ __html: processedHtml }}
+                onBlur={handleBlur}
+            />
+        );
     };
 
     const renderTextWithInput = (text) => {
@@ -281,8 +346,68 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                         return renderTextWithSelect(questionText, questionContent.options);
                     case 'TABLE_COMPLETION':
                     case 'FLOW_CHART_COMPLETION':
-                    case 'DIAGRAM_LABEL_COMPLETION':
                     case 'NOTE_COMPLETION':
+                        return renderTableWithInputs(questionText);
+                    case 'DIAGRAM_LABEL_COMPLETION': {
+                        // Check if diagram JSON exists
+                        const diagramData = questionContent?.diagram;
+                        const diagramDescription = questionContent?.diagram_description;
+
+                        // If this question has no diagram data, it's a subsequent question
+                        // whose input is already in the first question's flowchart - hide it
+                        if (!diagramData && !diagramDescription) {
+                            return null; // Hidden - input is in flowchart
+                        }
+
+                        if (diagramData && diagramData.nodes) {
+                            // Render using FlowchartRenderer
+                            const diagramAnswers = {};
+                            groupedQuestions.forEach(q => {
+                                if (groupAnswers[q.id]) {
+                                    diagramAnswers[q.questionNumber] = groupAnswers[q.id];
+                                }
+                            });
+                            if (userAnswer) {
+                                diagramAnswers[questionNumber] = userAnswer;
+                            }
+
+                            return (
+                                <FlowchartRenderer
+                                    diagram={diagramData}
+                                    answers={diagramAnswers}
+                                    onAnswerChange={(qNum, value) => {
+                                        const q = groupedQuestions.find(gq => gq.questionNumber === qNum);
+                                        if (q) {
+                                            onAnswerChange(q.id, value);
+                                        } else if (qNum === questionNumber) {
+                                            onAnswerChange(id, value);
+                                        }
+                                    }}
+                                />
+                            );
+                        }
+
+                        // Fallback: show description text if available
+                        if (diagramDescription) {
+                            return (
+                                <div className="diagram-label-container">
+                                    <div className="diagram-description">
+                                        <em>{diagramDescription}</em>
+                                    </div>
+                                    <p className="question-text-interactive">
+                                        <span className="question-number"><strong>{questionNumber}</strong></span>
+                                        <input
+                                            type="text"
+                                            className="fill-in-blank-input"
+                                            value={userAnswer || ''}
+                                            onChange={handleSingleValueChange}
+                                        />
+                                    </p>
+                                </div>
+                            );
+                        }
+
+                        // Ultimate fallback: simple input
                         return (
                             <p className="question-text-interactive">
                                 <span className="question-number"><strong>{questionNumber}</strong></span>
@@ -294,6 +419,7 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                                 />
                             </p>
                         );
+                    }
                     default:
                         return <p>Unsupported question type: {questionType}</p>;
                 }

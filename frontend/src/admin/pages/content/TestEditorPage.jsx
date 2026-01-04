@@ -529,128 +529,25 @@ export default function TestEditorPage() {
 
             {/* Editor Content */}
             <div className="editor-content">
-                {/* Sidebar */}
-                <aside className="editor-sidebar">
-                    <div className="editor-sidebar__header">
-                        <h3>Sections</h3>
-                        <div className="editor-sidebar__actions">
-                            <button
-                                className="add-section-btn"
-                                onClick={handleAddSection}
-                                title="Thêm section"
-                            >
-                                <FiPlus size={16} />
-                            </button>
-                            <button
-                                className="ai-section-btn"
-                                onClick={openAIGeneration}
-                                title="Tạo nội dung bằng AI"
-                            >
-                                <FiZap size={14} />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="section-list">
-                        {isLoadingSections ? (
-                            <div className="sidebar-loading">
-                                <div className="spinner"></div>
-                                <p>Đang tải sections...</p>
-                            </div>
-                        ) : sections.length > 0 ? (
-                            sections.map(section => {
-                                const questionCount = questionCountBySection.get(section.id)
-                                    ?? section.questionCount
-                                    ?? 0;
-                                return (
-                                    <div
-                                        key={section.id}
-                                        className={`section-item ${activeSection === section.id ? 'section-item--active' : ''}`}
-                                        onClick={() => setActiveSection(section.id)}
-                                    >
-                                        <div className="section-item__info">
-                                            <span className="section-item__name">{getSectionName(section)}</span>
-                                            <span className="section-item__title">{getSectionSubtitle(section)}</span>
-                                        </div>
-                                        <div className="section-item__meta">
-                                            {section.passageText && <FiFileText size={12} className="section-item__passage" />}
-                                            {section.audioUrl && <FiHeadphones size={12} className="section-item__audio" />}
-                                            <span className="section-item__questions">{questionCount}Q</span>
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        ) : (
-                            <div className="sidebar-empty">
-                                <p>Chưa có section nào</p>
-                                <div className="sidebar-empty__actions">
-                                    <button className="admin-btn admin-btn--primary" onClick={handleAddSection}>
-                                        <FiPlus size={16} />
-                                        <span>Thêm Section</span>
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </aside>
-
                 {/* Main Editor Area */}
                 <div className="editor-main">
                     {activeSection ? (
-                        <>
-                            <div className="section-header">
-                                <div className="section-header__info">
-                                    <h2>{getSectionName(activeSectionData)}</h2>
-                                    <p>{getSectionSubtitle(activeSectionData)}</p>
-                                </div>
-                                <div className="section-header__actions">
-                                    <button
-                                        className="admin-btn admin-btn--secondary admin-btn--small"
-                                        onClick={() => setShowPassageModal(true)}
-                                    >
-                                        <FiFileText size={14} />
-                                        Nội dung
-                                    </button>
-                                    {activeSkill === 'listening' && (
-                                        <button
-                                            className="admin-btn admin-btn--secondary admin-btn--small"
-                                            onClick={() => setShowAudioModal(true)}
-                                        >
-                                            <FiHeadphones size={14} />
-                                            Audio
-                                        </button>
-                                    )}
-                                    {(activeSkill === 'listening' || activeSkill === 'writing') && (
-                                        <button
-                                            className="admin-btn admin-btn--secondary admin-btn--small"
-                                            onClick={() => setShowSectionMetaModal(true)}
-                                        >
-                                            <FiImage size={14} />
-                                            Asset
-                                        </button>
-                                    )}
-                                    {activeSkill === 'listening' && (
-                                        <button
-                                            className="admin-btn admin-btn--secondary admin-btn--small"
-                                            onClick={() => setShowLayoutModal(true)}
-                                        >
-                                            <FiSettings size={14} />
-                                            Layout
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            <AdminPreviewContent
-                                sections={sections}
-                                questions={allQuestions.length > 0 ? allQuestions : questions}
-                                activePartIndex={sections.findIndex(s => s.id === activeSection)}
-                                skill={activeSkill}
-                                onPartSelect={(index) => setActiveSection(sections[index]?.id)}
-                                onQuestionSelect={() => { }}
-                                onQuestionEdit={openQuestionEditor}
-                            />
-                        </>
+                        <AdminPreviewContent
+                            sections={sections}
+                            questions={allQuestions.length > 0 ? allQuestions : questions}
+                            activePartIndex={sections.findIndex(s => s.id === activeSection)}
+                            skill={activeSkill}
+                            onPartSelect={(index) => setActiveSection(sections[index]?.id)}
+                            onQuestionSelect={() => { }}
+                            onQuestionEdit={openQuestionEditor}
+                            sectionName={getSectionName(activeSectionData)}
+                            toolbarActions={{
+                                onPassageClick: () => setShowPassageModal(true),
+                                onAudioClick: activeSkill === 'listening' ? () => setShowAudioModal(true) : null,
+                                onAssetClick: (activeSkill === 'listening' || activeSkill === 'writing') ? () => setShowSectionMetaModal(true) : null,
+                                onLayoutClick: activeSkill === 'listening' ? () => setShowLayoutModal(true) : null,
+                            }}
+                        />
                     ) : (
                         <div className="no-section-selected">
                             <FiSettings size={48} />

@@ -444,11 +444,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--admin-spacing-sm);
-  padding: var(--admin-spacing-sm) var(--admin-spacing-md);
-  font-size: 0.875rem;
+  gap: 4px;
+  padding: 5px 10px;
+  font-size: 0.8125rem;
   font-weight: 500;
-  border-radius: var(--admin-radius-md);
+  border-radius: var(--admin-radius-sm);
   border: none;
   cursor: pointer;
   transition: all var(--admin-transition-fast);

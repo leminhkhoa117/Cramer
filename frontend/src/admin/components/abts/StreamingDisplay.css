@@ -124,6 +124,7 @@
     flex: 1;
     overflow-y: auto;
     overscroll-behavior: contain;
+    /* Prevent over-scrolling that reveals white background */
     padding: 24px;
     font-size: 0.9rem;
     line-height: 1.6;

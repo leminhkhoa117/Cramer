@@ -20,6 +20,7 @@ import {
     getTemplatesByCategory,
     getStatus,
     saveGeneratedTest,
+    refineContentStream,
     SKILL_TYPES,
     GENERATION_SCOPES
 } from '../services/abtsApi';
@@ -46,11 +47,23 @@ export const QUESTION_COUNTS = {
     LISTENING: { 1: 10, 2: 10, 3: 10, 4: 10 }
 };
 
+// Helper to extract issue category from warning message
+function extractCategory(message) {
+    if (!message) return 'UNKNOWN';
+    const lower = message.toLowerCase();
+    if (lower.includes('word count') || lower.includes('word limit')) return 'WORD_LIMIT';
+    if (lower.includes('placeholder') || lower.includes('____')) return 'MISSING_PLACEHOLDER';
+    if (lower.includes('options') || lower.includes('choices')) return 'INCONSISTENT_OPTIONS';
+    if (lower.includes('answer') && lower.includes('passage')) return 'ANSWER_NOT_IN_PASSAGE';
+    if (lower.includes('diagram') || lower.includes('label')) return 'DIAGRAM_NO_LABELS';
+    if (lower.includes('format')) return 'INVALID_WORD_LIMIT_FORMAT';
+    return 'GENERAL';
+}
 
 // Initial form state
 const initialFormState = {
     skill: null,
-    scope: GENERATION_SCOPES.SINGLE_PART,
+    scope: 'MULTI_PART', // Always use multi-part mode (v7.0 - removed SINGLE_PART toggle)
     partNumber: 1,
     topic: '',
     hashtags: [],
@@ -73,7 +86,7 @@ const initialFormState = {
     passageLength: 'MEDIUM', // 'SHORT' (800-900) | 'MEDIUM' (900-1000) | 'LONG' (1000-1200)
     customInstructions: '', // Custom prompt additions
     showJsonPreview: false, // Toggle JSON preview panel
-    maxTokens: 8000, // Max output tokens (4000-16000)
+    maxTokens: 64000, // Max output tokens (Gemini 3 Flash supports 65k)
     totalQuestions: 13, // Target total questions (10-20)
 
     // Multi-part generation (v6.0)
@@ -120,6 +133,13 @@ const useABTSStore = create((set, get) => ({
     selectedSetId: null,
     selectedSetCode: null,
     selectedTestId: null,
+
+    // ==================== REFINEMENT STATE (AGENT 2) ====================
+    selectedIssues: [],          // IDs of issues selected for refinement
+    isRefining: false,           // Refinement in progress
+    refinementResult: null,      // Result from Agent 2
+    refinementStream: [],        // Streaming events during refinement
+    abortRefinement: null,       // Function to abort refinement
 
     // ==================== WIZARD ACTIONS ====================
 
@@ -249,10 +269,10 @@ const useABTSStore = create((set, get) => ({
             formData: {
                 ...formData,
                 selectedParts: newParts,
-                // Update scope based on selection
-                scope: newParts.length > 1 ? 'MULTI_PART' : GENERATION_SCOPES.SINGLE_PART,
-                // If single part selected, also set partNumber for backward compatibility
-                partNumber: newParts.length === 1 ? newParts[0] : formData.partNumber
+                // Always use MULTI_PART mode (v7.0 - removed SINGLE_PART toggle)
+                scope: 'MULTI_PART',
+                // Set partNumber for backward compatibility with save logic
+                partNumber: newParts.length >= 1 ? newParts[0] : formData.partNumber
             }
         });
     },
@@ -300,7 +320,7 @@ const useABTSStore = create((set, get) => ({
                 ...state.formData,
                 selectedParts: [],
                 partConfigs: {},
-                scope: GENERATION_SCOPES.SINGLE_PART
+                scope: 'MULTI_PART' // Always stay in MULTI_PART mode (v7.0)
             }
         }));
     },
@@ -437,6 +457,95 @@ const useABTSStore = create((set, get) => ({
         };
 
         set({ formData: { ...formData, partConfigs: updatedConfigs } });
+    },
+
+    /**
+     * Set topic for a specific part
+     */
+    setPartTopic: (partNumber, topic) => {
+        const { formData } = get();
+        const updatedConfigs = {
+            ...formData.partConfigs,
+            [partNumber]: {
+                ...(formData.partConfigs[partNumber] || {}),
+                topic: topic
+            }
+        };
+        set({ formData: { ...formData, partConfigs: updatedConfigs } });
+    },
+
+    /**
+     * Add a fact to a specific part
+     */
+    addPartFact: (partNumber, fact) => {
+        const { formData } = get();
+        const partConfig = formData.partConfigs[partNumber] || { facts: [] };
+        const currentFacts = partConfig.facts || [];
+        if (fact.trim() && currentFacts.length < 30) {
+            const updatedConfigs = {
+                ...formData.partConfigs,
+                [partNumber]: {
+                    ...partConfig,
+                    facts: [...currentFacts, fact.trim()]
+                }
+            };
+            set({ formData: { ...formData, partConfigs: updatedConfigs } });
+        }
+    },
+
+    /**
+     * Remove a fact from a specific part
+     */
+    removePartFact: (partNumber, index) => {
+        const { formData } = get();
+        const partConfig = formData.partConfigs[partNumber] || { facts: [] };
+        const currentFacts = partConfig.facts || [];
+        const updatedConfigs = {
+            ...formData.partConfigs,
+            [partNumber]: {
+                ...partConfig,
+                facts: currentFacts.filter((_, i) => i !== index)
+            }
+        };
+        set({ formData: { ...formData, partConfigs: updatedConfigs } });
+    },
+
+    /**
+     * Set passage length for a specific part (Reading only)
+     */
+    setPartPassageLength: (partNumber, length) => {
+        const { formData } = get();
+        const updatedConfigs = {
+            ...formData.partConfigs,
+            [partNumber]: {
+                ...(formData.partConfigs[partNumber] || {}),
+                passageLength: length
+            }
+        };
+        set({ formData: { ...formData, partConfigs: updatedConfigs } });
+    },
+
+    /**
+     * Update a generated question in the result (for preview editing)
+     */
+    updateGeneratedQuestion: (questionId, updates) => {
+        const { generationResult } = get();
+        if (!generationResult?.content?.questions) return;
+
+        const updatedQuestions = generationResult.content.questions.map((q, idx) => {
+            const qId = q.id || `abts-q-${idx}`;
+            return qId === questionId ? { ...q, ...updates } : q;
+        });
+
+        set({
+            generationResult: {
+                ...generationResult,
+                content: {
+                    ...generationResult.content,
+                    questions: updatedQuestions
+                }
+            }
+        });
     },
 
     /**
@@ -936,13 +1045,53 @@ const useABTSStore = create((set, get) => ({
         set({ isSaving: true, saveError: null });
 
         try {
+            // Prepare multi-part data if sections array exists
+            let partsToSave = null;
+            if (generationResult.content.sections && generationResult.content.sections.length > 0) {
+                partsToSave = generationResult.content.sections.map(section => {
+                    // Filter questions by standard IELTS ranges based on part number
+                    const pn = section.partNumber;
+                    const skill = formData.skill?.toUpperCase();
+
+                    const filteredQuestions = generationResult.content.questions.filter(q => {
+                        const qn = q.questionNumber;
+
+                        if (skill === 'READING') {
+                            if (pn === 1) return qn >= 1 && qn <= 13;
+                            if (pn === 2) return qn >= 14 && qn <= 26;
+                            if (pn === 3) return qn >= 27 && qn <= 40;
+                        } else if (skill === 'LISTENING') {
+                            if (pn === 1) return qn >= 1 && qn <= 10;
+                            if (pn === 2) return qn >= 11 && qn <= 20;
+                            if (pn === 3) return qn >= 21 && qn <= 30;
+                            if (pn === 4) return qn >= 31 && qn <= 40;
+                        }
+                        return true; // Include question if skill/part not matched
+                    });
+
+                    // Match backend PartSaveData structure: { partNumber, content }
+                    return {
+                        partNumber: pn,
+                        content: {
+                            section: section,
+                            questions: filteredQuestions
+                        }
+                    };
+                });
+            }
+
+
             const saveRequest = {
                 skill: formData.skill?.toLowerCase() || 'reading',
                 partNumber: formData.partNumber || 1,
                 content: generationResult.content,
+                // New fields for naming
                 setId: options.setId ?? selectedSetId,
                 setCode: options.setCode ?? selectedSetCode ?? 'ai_generated',
+                setName: options.setName || null, // Pass user-provided set name
                 testId: options.testId ?? selectedTestId,
+                testName: options.testName || null, // Pass user-provided test name
+
                 topic: formData.topic || null,
                 difficulty: formData.difficulty || 'INTERMEDIATE',
                 hashtagCodes: formData.hashtags || [],
@@ -957,7 +1106,8 @@ const useABTSStore = create((set, get) => ({
                     writingEssayType: formData.writingEssayType || null
                 },
                 examSource: options.examSource || 'ai_generated',
-                testNumber: options.testNumber || null
+                testNumber: options.testNumber || null,
+                partsToSave: partsToSave // Include the split parts
             };
 
             const result = await saveGeneratedTest(saveRequest);
@@ -1151,6 +1301,183 @@ const useABTSStore = create((set, get) => ({
         if (formData.existingPassageText) return true;
 
         return formData.topic.trim().length >= 5 && formData.facts.length >= 5;
+    },
+
+    // ==================== REFINEMENT ACTIONS (AGENT 2) ====================
+
+    /**
+     * Toggle selection of an issue for refinement
+     */
+    toggleIssueSelection: (issueId) => {
+        const { selectedIssues } = get();
+        const newSelection = selectedIssues.includes(issueId)
+            ? selectedIssues.filter(id => id !== issueId)
+            : [...selectedIssues, issueId];
+        set({ selectedIssues: newSelection });
+    },
+
+    /**
+     * Select all issues for refinement
+     */
+    selectAllIssues: (issueIds) => {
+        set({ selectedIssues: [...issueIds] });
+    },
+
+    /**
+     * Clear all issue selections
+     */
+    clearIssueSelection: () => {
+        set({ selectedIssues: [] });
+    },
+
+    /**
+     * Start refinement with Agent 2
+     */
+    startRefinement: async () => {
+        const { selectedIssues, generationResult, formData } = get();
+
+        if (selectedIssues.length === 0) {
+            console.warn('No issues selected for refinement');
+            return;
+        }
+
+        set({
+            isRefining: true,
+            refinementResult: null,
+            refinementStream: []
+        });
+
+        try {
+            // Build validation result with proper issue objects
+            // Selected issues are from warnings, so we need to construct matching objects
+            const warnings = generationResult?.warnings || [];
+            const validationIssues = warnings.map((msg, idx) => ({
+                id: `warn-${idx}`,
+                type: 'WARNING',
+                message: typeof msg === 'string' ? msg : msg.message,
+                questionNumber: typeof msg === 'object' ? msg.questionNumber : null,
+                category: extractCategory(typeof msg === 'string' ? msg : msg.message)
+            }));
+
+            // Build request
+            const request = {
+                originalJson: JSON.stringify(generationResult.content),
+                selectedIssueIds: selectedIssues,
+                originalPrompt: null, // TODO: Store and pass original prompt for context caching
+                skill: formData.skill,
+                partNumber: formData.partNumber,
+                validationResult: {
+                    errors: [],
+                    warnings: validationIssues
+                }
+            };
+
+            // Create abort controller
+            const abortController = new AbortController();
+            set({ abortRefinement: () => abortController.abort() });
+
+            // Call streaming refinement API
+            const callbacks = {
+                onProgress: (event) => {
+                    set(state => ({
+                        refinementStream: [...state.refinementStream, event]
+                    }));
+                },
+                onComplete: (result) => {
+                    set({
+                        refinementResult: result,
+                        isRefining: false
+                    });
+                },
+                onError: (error) => {
+                    console.error('Refinement error:', error);
+                    set({
+                        isRefining: false,
+                        refinementResult: { error: error.message || 'Refinement failed' }
+                    });
+                }
+            };
+
+            await refineContentStream(request, callbacks, abortController.signal);
+
+        } catch (error) {
+            console.error('Refinement failed:', error);
+            set({
+                isRefining: false,
+                refinementResult: { error: error.message || 'Refinement failed' }
+            });
+        }
+    },
+
+    /**
+     * Apply refinement result to generation result
+     */
+    applyRefinement: () => {
+        const { refinementResult, generationResult } = get();
+
+        if (!refinementResult) {
+            console.warn('No refinement result to apply');
+            return;
+        }
+
+        // Check for errors from backend
+        if (!refinementResult.success || refinementResult.errorMessage) {
+            console.error('Refinement failed:', refinementResult.errorMessage);
+            set({
+                refinementResult: {
+                    ...refinementResult,
+                    error: refinementResult.errorMessage || 'Refinement failed'
+                }
+            });
+            return;
+        }
+
+        if (!refinementResult.refinedJson) {
+            console.warn('No refined JSON to apply');
+            return;
+        }
+
+        try {
+            const refinedContent = JSON.parse(refinementResult.refinedJson);
+            set({
+                generationResult: {
+                    ...generationResult,
+                    content: refinedContent,
+                    // Clear warnings that were fixed
+                    warnings: [] // New validation will be done on preview
+                },
+                refinementResult: null,
+                selectedIssues: [],
+                refinementStream: []
+            });
+            console.log('✅ Refinement applied successfully');
+        } catch (error) {
+            console.error('Failed to parse refined JSON:', error);
+            // Show error in modal instead of silently failing
+            set({
+                refinementResult: {
+                    ...refinementResult,
+                    error: `JSON parse error: ${error.message}`
+                }
+            });
+        }
+    },
+
+    /**
+     * Discard refinement result
+     */
+    discardRefinement: () => {
+        const { abortRefinement } = get();
+        if (abortRefinement) {
+            abortRefinement();
+        }
+        set({
+            isRefining: false,
+            refinementResult: null,
+            selectedIssues: [],
+            refinementStream: [],
+            abortRefinement: null
+        });
     }
 }));
 

@@ -217,41 +217,34 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                 ));
 
             // IMPORTANT: Fallback for backward compatibility with Reading tests
-            default:
-                // Special handling for legacy Reading TABLE_COMPLETION
-                if (group.questions[0]?.questionType === 'TABLE_COMPLETION') {
-                    const tableHtml = group.questions[0].questionContent.text;
-                    const groupId = group.uniqueGroupId || group.id || 'unknown';
+            default: {
+                // For TABLE_COMPLETION: first question contains full HTML, subsequent questions are empty
+                // We render only first question with table, skip others
+                const isTableCompletion = group.questions[0]?.questionType === 'TABLE_COMPLETION';
 
+                if (isTableCompletion) {
+                    const firstQ = group.questions[0];
                     return (
-                        <>
-                            <HighlightableHtmlContent
-                                htmlString={tableHtml}
-                                contentId={`table-${groupId}`}
-                                className="table-completion-container"
+                        <div id={`q-block-${firstQ.id}`} key={firstQ.id}>
+                            <QuestionRenderer
+                                question={firstQ}
+                                onAnswerChange={onAnswerChange}
+                                userAnswer={answers[firstQ.id]}
+                                partId={group.partId}
+                                groupedQuestions={group.questions}
+                                groupAnswers={answers}
                             />
-                            <div className="summary-completion-inputs">
-                                {group.questions.map(q => (
-                                    <div id={`q-block-${q.id}`} key={q.id}>
-                                        <QuestionRenderer
-                                            question={q}
-                                            onAnswerChange={onAnswerChange}
-                                            userAnswer={answers[q.id]}
-                                            partId={group.partId}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        </>
+                        </div>
                     );
                 }
 
-                // Default rendering for all other legacy question groups
+                // Default rendering for other question types
                 return group.questions.map(q => (
                     <div id={`q-block-${q.id}`} key={q.id}>
                         <QuestionRenderer question={q} onAnswerChange={onAnswerChange} userAnswer={answers[q.id]} partId={group.partId} />
                     </div>
                 ));
+            }
         }
     };
 

@@ -159,13 +159,21 @@ public class PromptBuilderService {
                 prompt.append("❌ INVALID (do NOT use these):\n");
                 prompt.append("- `\"ONE WORD\"` ← WRONG, use `\"ONE WORD ONLY\"`\n");
                 prompt.append("- `\"TWO WORDS\"` ← WRONG, use `\"NO MORE THAN TWO WORDS\"`\n");
-                prompt.append("- `\"THREE WORDS\"` ← WRONG, use `\"NO MORE THAN THREE WORDS\"`\n\n");
+                prompt.append("- `\"THREE WORDS\"` ← WRONG, use `\"NO MORE THAN THREE WORDS\"`\n");
+                prompt.append("- `\"FOUR WORDS\"` or `\"NO MORE THAN FOUR WORDS\"` ← WRONG, maximum is THREE WORDS\n\n");
 
                 // Question requirements
                 prompt.append("### Question Requirements\n");
-                // Default to 1 for flexibility in single-part generation. Real IELTS numbering
-                // depends on full test context.
-                int startNumber = 1;
+                // Set correct starting number based on part (IELTS Reading standard)
+                // Part 1: Q1-13, Part 2: Q14-26, Part 3: Q27-40
+                int startNumber;
+                if (partNumber == 1) {
+                        startNumber = 1;
+                } else if (partNumber == 2) {
+                        startNumber = 14;
+                } else {
+                        startNumber = 27; // Part 3
+                }
                 // Calculate effective total questions to avoid conflicts
                 // Cambridge IELTS: Part 1 has 13, Part 2 has 13, Part 3 has 14 questions
                 int effectiveTotalQuestions = (partNumber == 3) ? 14 : 13;
@@ -189,7 +197,11 @@ public class PromptBuilderService {
                         prompt.append("\n");
                 }
                 prompt.append("- **Numbering**: Use sequential numbering starting at ").append(startNumber)
-                                .append(".\n");
+                                .append(" (Part ").append(partNumber).append(" starts at Q").append(startNumber)
+                                .append(").\n");
+                prompt.append("- **⚠️ INLINE NUMBERS CRITICAL**: For completion questions, the bold number inside `<strong>X</strong> ____` MUST match the question_number. Example: Q")
+                                .append(startNumber).append(" uses `<strong>").append(startNumber)
+                                .append("</strong> ____`.\n");
                 prompt.append("- **word_limit**: Include `word_limit` for every question (null if not applicable).\n");
                 prompt.append("- **Question types to include**:\n");
 
@@ -268,30 +280,55 @@ public class PromptBuilderService {
 
                         // BLOCK COMPLETION TYPES
                         prompt.append("##### Block Completion Types (`TABLE_COMPLETION`, `FLOW_CHART_COMPLETION`):\n");
-                        prompt.append("- Q1 contains full HTML structure with ALL numbered blanks. Q2+ have empty `text`.\n\n");
+                        prompt.append("- Q1 contains full HTML structure with ALL numbered blanks. Q2+ have empty `text`.\n");
+                        prompt.append("- **CRITICAL FORMAT**: Each blank must be: `<strong>N</strong> ____` where N is the question number.\n");
+                        prompt.append("- Example TABLE_COMPLETION HTML for Q1:\n");
+                        prompt.append("```html\n");
+                        prompt.append("<table>\n");
+                        prompt.append("  <thead><tr><th>Topic</th><th>Key Detail</th></tr></thead>\n");
+                        prompt.append("  <tbody>\n");
+                        prompt.append("    <tr><td>First item</td><td><strong>5</strong> ____</td></tr>\n");
+                        prompt.append("    <tr><td>Second item</td><td><strong>6</strong> ____</td></tr>\n");
+                        prompt.append("    <tr><td>Third item</td><td>Use of <strong>7</strong> ____ (e.g., examples)</td></tr>\n");
+                        prompt.append("  </tbody>\n");
+                        prompt.append("</table>\n");
+                        prompt.append("```\n");
+                        prompt.append("- Q2+ (subsequent questions) have `\"text\": \"\"` (empty string).\n\n");
 
                         // DIAGRAM LABEL COMPLETION
-                        prompt.append("##### `DIAGRAM_LABEL_COMPLETION` (SPECIAL HANDLING):\n");
-                        prompt.append("- Set `image_url` to `null` (admin will upload the actual image).\n");
-                        prompt.append(
-                                        "- **CRITICAL**: Include a `diagram_description` field with EXTREMELY DETAILED description.\n");
-                        prompt.append("- The description must be detailed enough for an admin to create the diagram manually.\n");
-                        prompt.append(
-                                        "- Include: overall layout, all labeled parts, spatial relationships, arrows, and numbering.\n");
-                        prompt.append("- Example:\n");
+                        prompt.append("##### `DIAGRAM_LABEL_COMPLETION` (IELTS Diagram/Flowchart):\n\n");
+                        prompt.append("**Structure Requirements:**\n");
+                        prompt.append("- Include `diagram` JSON object with `direction` and `nodes` array.\n");
+                        prompt.append("- **CRITICAL**: `nodes` MUST be an array of OBJECTS with specific fields.\n");
+                        prompt.append("- Each node object MUST have: `id`, `type`, `label`.\n");
+                        prompt.append("- Node types: `start`, `step`, `blank`, `end`.\n\n");
+                        prompt.append("**Blank Node Format (IELTS-style):**\n");
+                        prompt.append("- `blank` nodes MUST have:\n");
+                        prompt.append("  - `question_number`: integer for user input\n");
+                        prompt.append("  - `label`: text WITH `____` placeholder where answer goes\n");
+                        prompt.append("- The `____` shows where the test-taker fills in their answer.\n");
+                        prompt.append("- Example: `\"label\": \"Brain perceives ____ is unnecessary\"`\n\n");
+                        prompt.append("**CORRECT Format (IELTS-style hybrid):**\n");
                         prompt.append("```json\n");
                         prompt.append("{\n");
-                        prompt.append("  \"question_number\": 7,\n");
-                        prompt.append("  \"question_type\": \"DIAGRAM_LABEL_COMPLETION\",\n");
-                        prompt.append("  \"question_content\": {\n");
-                        prompt.append("    \"text\": \"7. ____\",\n");
-                        prompt.append(
-                                        "    \"diagram_description\": \"Cross-section diagram of an electric car battery pack. Shows rectangular housing with 8 battery cells arranged in 2 rows of 4. Labels point to: (7) cooling system pipes running between cells, (8) battery management unit at top right, (9) high-voltage connector at bottom. Arrows show coolant flow direction.\"\n");
-                        prompt.append("  },\n");
-                        prompt.append("  \"correct_answer\": [\"cooling pipes\"],\n");
-                        prompt.append("  \"word_limit\": \"NO MORE THAN TWO WORDS\",\n");
-                        prompt.append("  \"image_url\": null\n");
+                        prompt.append("  \"diagram\": {\n");
+                        prompt.append("    \"direction\": \"vertical\",\n");
+                        prompt.append("    \"nodes\": [\n");
+                        prompt.append("      { \"id\": \"n1\", \"label\": \"Raw materials collected\", \"type\": \"start\" },\n");
+                        prompt.append("      { \"id\": \"n2\", \"label\": \"Materials undergo ____\", \"type\": \"blank\", \"question_number\": 9 },\n");
+                        prompt.append("      { \"id\": \"n3\", \"label\": \"Quality control check\", \"type\": \"step\" },\n");
+                        prompt.append("      { \"id\": \"n4\", \"label\": \"Products stored in ____\", \"type\": \"blank\", \"question_number\": 10 },\n");
+                        prompt.append("      { \"id\": \"n5\", \"label\": \"Distribution to retailers\", \"type\": \"end\" }\n");
+                        prompt.append("    ]\n");
+                        prompt.append("  }\n");
                         prompt.append("}\n");
+                        prompt.append("```\n\n");
+                        prompt.append("**WRONG Formats:**\n");
+                        prompt.append("```json\n");
+                        prompt.append("// ❌ Nodes as strings:\n");
+                        prompt.append("{ \"nodes\": [\"Step 1\", \"Step 2\"] }\n\n");
+                        prompt.append("// ❌ Blank node without label (just input box):\n");
+                        prompt.append("{ \"id\": \"n2\", \"type\": \"blank\", \"question_number\": 9 }\n");
                         prompt.append("```\n\n");
 
                         // MULTIPLE CHOICE
@@ -400,9 +437,12 @@ public class PromptBuilderService {
                         // SUMMARY COMPLETION OPTIONS
                         prompt.append("##### `SUMMARY_COMPLETION_OPTIONS` (CRITICAL FORMAT):\n");
                         prompt.append("- **EACH question MUST include an `options` array** with `{letter, text}` objects.\n");
-                        prompt.append("- The `options` array MUST be IDENTICAL for ALL questions in the group.\n");
+                        prompt.append("- 🚨 **CRITICAL: The `options` array MUST be IDENTICAL for ALL questions in the group.**\n");
+                        prompt.append("- 🚨 **DO NOT split options between questions!** Every question gets ALL 10 options (A-J).\n");
+                        prompt.append("- ❌ WRONG: Q36-37 have A-F, Q38-40 have G-J (splitting options)\n");
+                        prompt.append("- ✅ CORRECT: ALL questions have the same complete A-J options array\n");
                         prompt.append("- Each question's `text` has ONE blank with `<strong>{number}</strong> ____`.\n");
-                        prompt.append("- Example:\n");
+                        prompt.append("- Example (ALL questions in group have IDENTICAL options):\n");
                         prompt.append("```json\n");
                         prompt.append("[\n");
                         prompt.append("  {\n");
@@ -441,6 +481,7 @@ public class PromptBuilderService {
                         prompt.append("  }\n");
                         prompt.append("]\n");
                         prompt.append("```\n");
+                        prompt.append("⚠️ The options arrays above are IDENTICAL - this is REQUIRED. Validation will FAIL if options differ between questions.\n");
 
                         int totalQuestions = request.getTotalQuestions() != null ? request.getTotalQuestions() : 13;
                         int groupSize = Math.max(2, totalQuestions / requestedTypes.size());
@@ -686,7 +727,6 @@ public class PromptBuilderService {
                 system.append("- MATCHING_HEADINGS: options = [\"i. heading\", \"ii. heading\", ...] (roman numerals)\n");
                 system.append("- MATCHING_FEATURES: options = [\"A. Person/Category\", \"B. Person/Category\", ...]\n");
                 system.append("- MULTIPLE_CHOICE: options = [\"A. choice\", \"B. choice\", \"C. choice\", \"D. choice\"]\n");
-                system.append("- MULTIPLE_CHOICE_MULTIPLE_ANSWERS: options = [...], correct_answer must have 2 items\\n\");\n                system.append(\"- SUMMARY_COMPLETION_OPTIONS: options = [{\\\"letter\\\":\\\"A\\\",\\\"text\\\":\\\"word\\\"},{\\\"letter\\\":\\\"B\\\",\\\"text\\\":\\\"phrase\\\"},...]\n\n");
                 system.append("⚠️ WITHOUT the 'options' array, validation WILL FAIL. This is non-negotiable.\n\n");
                 system.append("### SUMMARY_COMPLETION_OPTIONS Example (Part 3 Style):\n");
                 system.append("```json\n");

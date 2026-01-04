@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { 
-    FiAlertTriangle, FiCheck, FiChevronDown, FiChevronUp, FiEye, 
+import {
+    FiAlertTriangle, FiCheck, FiChevronDown, FiChevronUp, FiEye,
     FiPlus, FiTrash2, FiX, FiInfo, FiFileText, FiHelpCircle
 } from 'react-icons/fi';
 import '../common/AdminModal.css';
@@ -259,14 +259,14 @@ const explanationToString = (structured) => {
  */
 const TextContentEditor = ({ content, onChange, config, questionNumber }) => {
     const hasSectionTitle = config.contentFields.includes('sectionTitle');
-    
+
     return (
         <div className="qem-editor-section">
             <div className="qem-editor-header">
                 <FiFileText />
                 <span>Nội dung câu hỏi</span>
             </div>
-            
+
             {hasSectionTitle && (
                 <div className="form-group">
                     <label>Tiêu đề phần (tùy chọn)</label>
@@ -274,15 +274,15 @@ const TextContentEditor = ({ content, onChange, config, questionNumber }) => {
                         type="text"
                         className="form-input"
                         value={content.section_title || content.sectionTitle || ''}
-                        onChange={(e) => onChange({ 
-                            ...content, 
-                            section_title: e.target.value 
+                        onChange={(e) => onChange({
+                            ...content,
+                            section_title: e.target.value
                         })}
                         placeholder="Ví dụ: Beach, Museum, etc."
                     />
                 </div>
             )}
-            
+
             <div className="form-group">
                 <label>
                     Nội dung câu hỏi
@@ -300,7 +300,7 @@ const TextContentEditor = ({ content, onChange, config, questionNumber }) => {
                     placeholder={`Nhập nội dung câu hỏi ${questionNumber}...`}
                 />
             </div>
-            
+
             <div className="qem-tip">
                 <FiInfo size={14} />
                 <span>
@@ -322,7 +322,7 @@ const BooleanContentEditor = ({ content, onChange, config, questionNumber }) => 
                 <FiFileText />
                 <span>Câu khẳng định</span>
             </div>
-            
+
             <div className="form-group">
                 <label>Nội dung câu khẳng định #{questionNumber}</label>
                 <textarea
@@ -333,7 +333,7 @@ const BooleanContentEditor = ({ content, onChange, config, questionNumber }) => 
                     placeholder="Nhập câu khẳng định để học sinh xác định True/False/Not Given..."
                 />
             </div>
-            
+
             <div className="qem-tip">
                 <FiInfo size={14} />
                 <span>
@@ -349,13 +349,13 @@ const BooleanContentEditor = ({ content, onChange, config, questionNumber }) => 
  */
 const ChoiceContentEditor = ({ content, onChange, config, questionNumber }) => {
     const options = parseOptionsFromStrings(content.options || []);
-    
+
     const handleAddOption = () => {
         const newLetter = getNextLetter(options);
         const newOptions = [...options, { letter: newLetter, text: '' }];
         onChange({ ...content, options: optionsToStrings(newOptions) });
     };
-    
+
     const handleRemoveOption = (index) => {
         const newOptions = options.filter((_, i) => i !== index);
         // Re-letter remaining options
@@ -365,13 +365,13 @@ const ChoiceContentEditor = ({ content, onChange, config, questionNumber }) => {
         }));
         onChange({ ...content, options: optionsToStrings(reletteredOptions) });
     };
-    
+
     const handleOptionChange = (index, text) => {
         const newOptions = [...options];
         newOptions[index] = { ...newOptions[index], text };
         onChange({ ...content, options: optionsToStrings(newOptions) });
     };
-    
+
     const moveOption = (index, direction) => {
         const newIndex = index + direction;
         if (newIndex < 0 || newIndex >= options.length) return;
@@ -384,14 +384,14 @@ const ChoiceContentEditor = ({ content, onChange, config, questionNumber }) => {
         }));
         onChange({ ...content, options: optionsToStrings(reletteredOptions) });
     };
-    
+
     return (
         <div className="qem-editor-section">
             <div className="qem-editor-header">
                 <FiFileText />
                 <span>Nội dung câu hỏi trắc nghiệm</span>
             </div>
-            
+
             <div className="form-group">
                 <label>Câu hỏi #{questionNumber}</label>
                 <textarea
@@ -402,7 +402,7 @@ const ChoiceContentEditor = ({ content, onChange, config, questionNumber }) => {
                     placeholder="Nhập nội dung câu hỏi..."
                 />
             </div>
-            
+
             <div className="form-group">
                 <label>Các lựa chọn</label>
                 <div className="qem-options-list">
@@ -417,7 +417,7 @@ const ChoiceContentEditor = ({ content, onChange, config, questionNumber }) => {
                                 placeholder={`Lựa chọn ${opt.letter}...`}
                             />
                             <div className="qem-option-actions">
-                                <button 
+                                <button
                                     type="button"
                                     className="qem-icon-btn"
                                     onClick={() => moveOption(index, -1)}
@@ -426,7 +426,7 @@ const ChoiceContentEditor = ({ content, onChange, config, questionNumber }) => {
                                 >
                                     <FiChevronUp size={14} />
                                 </button>
-                                <button 
+                                <button
                                     type="button"
                                     className="qem-icon-btn"
                                     onClick={() => moveOption(index, 1)}
@@ -435,7 +435,7 @@ const ChoiceContentEditor = ({ content, onChange, config, questionNumber }) => {
                                 >
                                     <FiChevronDown size={14} />
                                 </button>
-                                <button 
+                                <button
                                     type="button"
                                     className="qem-icon-btn qem-icon-btn--danger"
                                     onClick={() => handleRemoveOption(index)}
@@ -448,8 +448,8 @@ const ChoiceContentEditor = ({ content, onChange, config, questionNumber }) => {
                         </div>
                     ))}
                 </div>
-                
-                <button 
+
+                <button
                     type="button"
                     className="qem-add-btn"
                     onClick={handleAddOption}
@@ -473,7 +473,7 @@ const MatchingContentEditor = ({ content, onChange, config, questionNumber }) =>
                 <FiFileText />
                 <span>Nội dung cần ghép nối</span>
             </div>
-            
+
             <div className="form-group">
                 <label>Mục cần ghép nối #{questionNumber}</label>
                 <textarea
@@ -484,11 +484,11 @@ const MatchingContentEditor = ({ content, onChange, config, questionNumber }) =>
                     placeholder="Nhập nội dung mục cần ghép nối (ví dụ: tên đoạn văn, đặc điểm, etc.)..."
                 />
             </div>
-            
+
             <div className="qem-tip qem-tip--warning">
                 <FiInfo size={14} />
                 <span>
-                    <strong>Lưu ý:</strong> Các lựa chọn ghép nối (A, B, C...) được định nghĩa 
+                    <strong>Lưu ý:</strong> Các lựa chọn ghép nối (A, B, C...) được định nghĩa
                     ở cấp độ Section, không phải từng câu hỏi. Chỉnh sửa options tại Section Layout.
                 </span>
             </div>
@@ -506,33 +506,33 @@ const MatchingContentEditor = ({ content, onChange, config, questionNumber }) =>
 const TextAnswerEditor = ({ answer, onChange, questionNumber }) => {
     const primaryAnswer = answer[0] || '';
     const alternatives = answer.slice(1);
-    
+
     const handlePrimaryChange = (value) => {
         onChange([value, ...alternatives]);
     };
-    
+
     const handleAltChange = (index, value) => {
         const newAlts = [...alternatives];
         newAlts[index] = value;
         onChange([primaryAnswer, ...newAlts]);
     };
-    
+
     const handleAddAlt = () => {
         onChange([primaryAnswer, ...alternatives, '']);
     };
-    
+
     const handleRemoveAlt = (index) => {
         const newAlts = alternatives.filter((_, i) => i !== index);
         onChange([primaryAnswer, ...newAlts]);
     };
-    
+
     return (
         <div className="qem-editor-section">
             <div className="qem-editor-header">
                 <FiCheck />
                 <span>Đáp án đúng</span>
             </div>
-            
+
             <div className="form-group">
                 <label>Đáp án chính</label>
                 <input
@@ -543,7 +543,7 @@ const TextAnswerEditor = ({ answer, onChange, questionNumber }) => {
                     placeholder="Nhập đáp án đúng..."
                 />
             </div>
-            
+
             {alternatives.length > 0 && (
                 <div className="form-group">
                     <label>Đáp án thay thế (chấp nhận)</label>
@@ -556,7 +556,7 @@ const TextAnswerEditor = ({ answer, onChange, questionNumber }) => {
                                 onChange={(e) => handleAltChange(index, e.target.value)}
                                 placeholder="Đáp án thay thế..."
                             />
-                            <button 
+                            <button
                                 type="button"
                                 className="qem-icon-btn qem-icon-btn--danger"
                                 onClick={() => handleRemoveAlt(index)}
@@ -567,8 +567,8 @@ const TextAnswerEditor = ({ answer, onChange, questionNumber }) => {
                     ))}
                 </div>
             )}
-            
-            <button 
+
+            <button
                 type="button"
                 className="qem-add-btn qem-add-btn--small"
                 onClick={handleAddAlt}
@@ -585,14 +585,14 @@ const TextAnswerEditor = ({ answer, onChange, questionNumber }) => {
  */
 const BooleanAnswerEditor = ({ answer, onChange, options }) => {
     const selectedAnswer = answer[0] || '';
-    
+
     return (
         <div className="qem-editor-section">
             <div className="qem-editor-header">
                 <FiCheck />
                 <span>Đáp án đúng</span>
             </div>
-            
+
             <div className="qem-radio-group">
                 {options.map((opt) => (
                     <label key={opt} className="qem-radio-option">
@@ -619,14 +619,14 @@ const BooleanAnswerEditor = ({ answer, onChange, options }) => {
 const SingleSelectAnswerEditor = ({ answer, onChange, options }) => {
     const selectedAnswer = answer[0] || '';
     const parsedOptions = parseOptionsFromStrings(options);
-    
+
     return (
         <div className="qem-editor-section">
             <div className="qem-editor-header">
                 <FiCheck />
                 <span>Chọn đáp án đúng</span>
             </div>
-            
+
             <div className="qem-radio-group qem-radio-group--options">
                 {parsedOptions.map((opt) => (
                     <label key={opt.letter} className="qem-radio-option qem-radio-option--full">
@@ -642,7 +642,7 @@ const SingleSelectAnswerEditor = ({ answer, onChange, options }) => {
                     </label>
                 ))}
             </div>
-            
+
             {parsedOptions.length === 0 && (
                 <div className="qem-empty-state">
                     Chưa có lựa chọn nào. Vui lòng thêm options ở phần Nội dung câu hỏi.
@@ -658,7 +658,7 @@ const SingleSelectAnswerEditor = ({ answer, onChange, options }) => {
 const MultiSelectAnswerEditor = ({ answer, onChange, options }) => {
     const selectedAnswers = answer || [];
     const parsedOptions = parseOptionsFromStrings(options);
-    
+
     const handleToggle = (letter) => {
         if (selectedAnswers.includes(letter)) {
             onChange(selectedAnswers.filter(a => a !== letter));
@@ -666,14 +666,14 @@ const MultiSelectAnswerEditor = ({ answer, onChange, options }) => {
             onChange([...selectedAnswers, letter].sort());
         }
     };
-    
+
     return (
         <div className="qem-editor-section">
             <div className="qem-editor-header">
                 <FiCheck />
                 <span>Chọn tất cả đáp án đúng</span>
             </div>
-            
+
             <div className="qem-checkbox-group">
                 {parsedOptions.map((opt) => (
                     <label key={opt.letter} className="qem-checkbox-option">
@@ -687,7 +687,7 @@ const MultiSelectAnswerEditor = ({ answer, onChange, options }) => {
                     </label>
                 ))}
             </div>
-            
+
             {selectedAnswers.length > 0 && (
                 <div className="qem-selected-summary">
                     Đã chọn: <strong>{selectedAnswers.join(', ')}</strong>
@@ -702,19 +702,19 @@ const MultiSelectAnswerEditor = ({ answer, onChange, options }) => {
  */
 const LetterAnswerEditor = ({ answer, onChange, matchingOptions = [] }) => {
     const selectedAnswer = answer[0] || '';
-    
+
     // Generate available letters if no matching options provided
-    const availableLetters = matchingOptions.length > 0 
-        ? matchingOptions 
+    const availableLetters = matchingOptions.length > 0
+        ? matchingOptions
         : ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-    
+
     return (
         <div className="qem-editor-section">
             <div className="qem-editor-header">
                 <FiCheck />
                 <span>Đáp án ghép nối</span>
             </div>
-            
+
             <div className="form-group">
                 <label>Chọn lựa chọn đúng</label>
                 <select
@@ -730,7 +730,7 @@ const LetterAnswerEditor = ({ answer, onChange, matchingOptions = [] }) => {
                     ))}
                 </select>
             </div>
-            
+
             <div className="qem-tip">
                 <FiInfo size={14} />
                 <span>
@@ -748,15 +748,15 @@ const LetterAnswerEditor = ({ answer, onChange, matchingOptions = [] }) => {
 const ExplanationEditor = ({ explanation, onChange }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const structured = parseExplanation(explanation);
-    
+
     const handleFieldChange = (field, value) => {
         const newStructured = { ...structured, [field]: value };
         onChange(explanationToString(newStructured));
     };
-    
+
     return (
         <div className="qem-editor-section qem-editor-section--collapsible">
-            <button 
+            <button
                 type="button"
                 className="qem-editor-header qem-editor-header--clickable"
                 onClick={() => setIsExpanded(!isExpanded)}
@@ -767,7 +767,7 @@ const ExplanationEditor = ({ explanation, onChange }) => {
                 </div>
                 {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
             </button>
-            
+
             {isExpanded && (
                 <div className="qem-explanation-fields">
                     <div className="form-group">
@@ -780,7 +780,7 @@ const ExplanationEditor = ({ explanation, onChange }) => {
                             placeholder="Giải thích tại sao đáp án này đúng..."
                         />
                     </div>
-                    
+
                     <div className="form-group">
                         <label>Trích dẫn từ bài đọc/nghe</label>
                         <textarea
@@ -791,7 +791,7 @@ const ExplanationEditor = ({ explanation, onChange }) => {
                             placeholder="Trích dẫn câu văn hoặc đoạn liên quan (giữ nguyên tiếng Anh)..."
                         />
                     </div>
-                    
+
                     <div className="form-group">
                         <label>Chiến lược làm bài</label>
                         <textarea
@@ -818,18 +818,18 @@ const QuestionPreview = ({ questionNumber, questionType, content, answer, config
         const displayText = text
             .replace(/____/g, '<span class="qem-preview-blank">________</span>')
             .replace(/<b>(\d+)<\/b>/g, '<strong class="qem-preview-number">$1</strong>');
-        
+
         return (
-            <div 
+            <div
                 className="qem-preview-text"
                 dangerouslySetInnerHTML={{ __html: displayText }}
             />
         );
     };
-    
+
     const renderOptions = () => {
         if (!config) return null;
-        
+
         if (config.category === 'boolean') {
             return (
                 <div className="qem-preview-options">
@@ -844,7 +844,7 @@ const QuestionPreview = ({ questionNumber, questionType, content, answer, config
                 </div>
             );
         }
-        
+
         if (config.category === 'choice' && content.options) {
             const parsedOptions = parseOptionsFromStrings(content.options);
             return (
@@ -860,7 +860,7 @@ const QuestionPreview = ({ questionNumber, questionType, content, answer, config
                 </div>
             );
         }
-        
+
         if (config.category === 'matching') {
             return (
                 <div className="qem-preview-matching">
@@ -870,7 +870,7 @@ const QuestionPreview = ({ questionNumber, questionType, content, answer, config
                 </div>
             );
         }
-        
+
         if (config.category === 'text') {
             return (
                 <div className="qem-preview-text-answer">
@@ -878,17 +878,17 @@ const QuestionPreview = ({ questionNumber, questionType, content, answer, config
                 </div>
             );
         }
-        
+
         return null;
     };
-    
+
     return (
         <div className="qem-preview">
             <div className="qem-preview-header">
                 <FiEye />
                 <span>Xem trước</span>
             </div>
-            
+
             <div className="qem-preview-content">
                 <div className="qem-preview-question">
                     <span className="qem-preview-qnum">{questionNumber}.</span>
@@ -899,10 +899,10 @@ const QuestionPreview = ({ questionNumber, questionType, content, answer, config
                     )}
                     {renderContent()}
                 </div>
-                
+
                 {renderOptions()}
             </div>
-            
+
             <div className="qem-preview-type-badge">
                 {config?.label || questionType}
             </div>
@@ -930,15 +930,15 @@ export default function QuestionEditModal({
     const [explanation, setExplanation] = useState('');
     const [wordLimit, setWordLimit] = useState('');
     const [imageUrl, setImageUrl] = useState('');
-    
+
     // UI state
     const [errors, setErrors] = useState({});
     const [showPreview, setShowPreview] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    
+
     // Get type configuration
     const config = QUESTION_TYPE_CONFIG[questionType] || null;
-    
+
     // Build question type options
     const questionTypeOptions = useMemo(() => {
         if (questionTypes.length > 0) return questionTypes;
@@ -948,11 +948,11 @@ export default function QuestionEditModal({
             label: cfg.label
         }));
     }, [questionTypes]);
-    
+
     // Initialize form when modal opens or question changes
     useEffect(() => {
         if (!isOpen || !question) return;
-        
+
         setQuestionType(question.questionType || '');
         setContent(parseQuestionContent(question.questionContent));
         setAnswer(parseCorrectAnswer(question.correctAnswer));
@@ -962,7 +962,7 @@ export default function QuestionEditModal({
         setErrors({});
         setIsSaving(false);
     }, [isOpen, question]);
-    
+
     // Handle question type change
     const handleTypeChange = useCallback((newType) => {
         setQuestionType(newType);
@@ -970,23 +970,31 @@ export default function QuestionEditModal({
         setAnswer([]);
         setErrors({});
     }, []);
-    
+
     // Validate form
     const validate = useCallback(() => {
         const newErrors = {};
-        
+
         if (!questionType) {
             newErrors.questionType = 'Vui lòng chọn loại câu hỏi';
         }
-        
-        if (!content.text || !content.text.trim()) {
+
+        // Allow empty content for matching/table types (content comes from shared section layout)
+        const typesAllowingEmptyContent = [
+            'MATCHING_INFORMATION', 'MATCHING_HEADINGS', 'MATCHING_FEATURES',
+            'MATCHING_SENTENCE_ENDINGS', 'MAP_DIAGRAM_LABELLING', 'TABLE_COMPLETION',
+            'FLOW_CHART_COMPLETION', 'FORM_COMPLETION', 'NOTE_COMPLETION'
+        ];
+        const allowEmptyContent = typesAllowingEmptyContent.includes(questionType);
+
+        if (!allowEmptyContent && (!content.text || !content.text.trim())) {
             newErrors.content = 'Nội dung câu hỏi không được để trống';
         }
-        
+
         if (!answer || answer.length === 0 || !answer[0]) {
             newErrors.answer = 'Vui lòng nhập đáp án';
         }
-        
+
         // Type-specific validations
         if (config) {
             if (config.category === 'text' && config.placeholder) {
@@ -994,7 +1002,7 @@ export default function QuestionEditModal({
                     newErrors.content = 'Nội dung phải chứa chỗ trống (____) để học sinh điền';
                 }
             }
-            
+
             if (config.category === 'choice') {
                 const options = parseOptionsFromStrings(content.options || []);
                 if (options.length < 2) {
@@ -1004,24 +1012,24 @@ export default function QuestionEditModal({
                     newErrors.answer = 'Đáp án phải là một trong các lựa chọn';
                 }
             }
-            
+
             if (config.category === 'boolean') {
                 if (answer[0] && !config.options.includes(answer[0])) {
                     newErrors.answer = `Đáp án phải là: ${config.options.join(', ')}`;
                 }
             }
         }
-        
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     }, [questionType, content, answer, config]);
-    
+
     // Handle save
     const handleSave = useCallback(async () => {
         if (!validate()) return;
-        
+
         setIsSaving(true);
-        
+
         try {
             // Build the data object
             const data = {
@@ -1032,7 +1040,7 @@ export default function QuestionEditModal({
                 wordLimit: wordLimit.trim() || null,
                 imageUrl: imageUrl.trim() || null,
             };
-            
+
             await onSave(question.id, data);
         } catch (error) {
             console.error('Save error:', error);
@@ -1041,7 +1049,7 @@ export default function QuestionEditModal({
             setIsSaving(false);
         }
     }, [questionType, content, answer, explanation, wordLimit, imageUrl, question, onSave, validate]);
-    
+
     // Render content editor based on question type
     const renderContentEditor = () => {
         if (!config) {
@@ -1053,7 +1061,7 @@ export default function QuestionEditModal({
                 </div>
             );
         }
-        
+
         switch (config.category) {
             case 'text':
                 return (
@@ -1102,11 +1110,11 @@ export default function QuestionEditModal({
                 );
         }
     };
-    
+
     // Render answer editor based on question type
     const renderAnswerEditor = () => {
         if (!config) return null;
-        
+
         switch (config.answerType) {
             case 'text':
                 return (
@@ -1159,9 +1167,9 @@ export default function QuestionEditModal({
                 );
         }
     };
-    
+
     if (!isOpen || !question) return null;
-    
+
     return (
         <div className="modal-overlay">
             <div className="modal-content modal-xl qem-modal">
@@ -1174,7 +1182,7 @@ export default function QuestionEditModal({
                         )}
                     </h3>
                     <div className="qem-header-actions">
-                        <button 
+                        <button
                             type="button"
                             className={`qem-preview-toggle ${showPreview ? 'active' : ''}`}
                             onClick={() => setShowPreview(!showPreview)}
@@ -1187,7 +1195,7 @@ export default function QuestionEditModal({
                         </button>
                     </div>
                 </div>
-                
+
                 {/* Body */}
                 <div className="modal-body qem-body">
                     <div className={`qem-layout ${showPreview ? 'qem-layout--with-preview' : ''}`}>
@@ -1214,7 +1222,7 @@ export default function QuestionEditModal({
                                     </span>
                                 )}
                             </div>
-                            
+
                             {/* Content Editor */}
                             {renderContentEditor()}
                             {errors.content && (
@@ -1227,7 +1235,7 @@ export default function QuestionEditModal({
                                     <FiAlertTriangle size={14} /> {errors.options}
                                 </span>
                             )}
-                            
+
                             {/* Answer Editor */}
                             {renderAnswerEditor()}
                             {errors.answer && (
@@ -1235,13 +1243,13 @@ export default function QuestionEditModal({
                                     <FiAlertTriangle size={14} /> {errors.answer}
                                 </span>
                             )}
-                            
+
                             {/* Explanation Editor (3 fields: giải thích, trích dẫn, chiến lược) */}
                             <ExplanationEditor
                                 explanation={explanation}
                                 onChange={setExplanation}
                             />
-                            
+
                             {/* Optional Fields */}
                             <div className="qem-optional-fields">
                                 <div className="form-group qem-half">
@@ -1254,7 +1262,7 @@ export default function QuestionEditModal({
                                         placeholder="ONE WORD ONLY"
                                     />
                                 </div>
-                                
+
                                 <div className="form-group qem-half">
                                     <label>URL Hình ảnh (tùy chọn)</label>
                                     <input
@@ -1267,7 +1275,7 @@ export default function QuestionEditModal({
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* Right: Preview */}
                         {showPreview && (
                             <div className="qem-preview-panel">
@@ -1281,7 +1289,7 @@ export default function QuestionEditModal({
                             </div>
                         )}
                     </div>
-                    
+
                     {/* Global Error */}
                     {errors.save && (
                         <div className="qem-global-error">
@@ -1290,18 +1298,18 @@ export default function QuestionEditModal({
                         </div>
                     )}
                 </div>
-                
+
                 {/* Footer */}
                 <div className="modal-footer">
-                    <button 
+                    <button
                         type="button"
-                        className="admin-btn admin-btn--secondary" 
+                        className="admin-btn admin-btn--secondary"
                         onClick={onClose}
                         disabled={isSaving}
                     >
                         Hủy
                     </button>
-                    
+
                     {onDelete && (
                         <button
                             type="button"
@@ -1313,10 +1321,10 @@ export default function QuestionEditModal({
                             Xóa câu hỏi
                         </button>
                     )}
-                    
-                    <button 
+
+                    <button
                         type="button"
-                        className="admin-btn admin-btn--primary" 
+                        className="admin-btn admin-btn--primary"
                         onClick={handleSave}
                         disabled={isSaving}
                     >
