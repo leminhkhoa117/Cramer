@@ -1790,3 +1790,119 @@
     box-shadow: 0 0 0 2px var(--studio-accent-glow) !important;
     background: rgba(0, 0, 0, 0.5) !important;
 }
+
+/* ==========================================================================
+   LISTENING TOOLS PANEL (Audio URLs + Transcript Copy)
+   ========================================================================== */
+.studio-listening-tools {
+    margin: 12px 16px;
+    padding: 14px;
+    border-radius: var(--studio-radius-md);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(6, 95, 70, 0.08));
+}
+
+.studio-listening-tools__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6ee7b7;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--studio-border);
+}
+
+.studio-listening-tools__audio {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.audio-url-input {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.audio-url-input label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--studio-text-muted);
+}
+
+.audio-url-input input {
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--studio-border);
+    border-radius: var(--studio-radius-sm);
+    color: var(--studio-text-primary);
+    font-size: 0.82rem;
+    transition: var(--studio-transition);
+}
+
+.audio-url-input input::placeholder {
+    color: var(--studio-text-muted);
+}
+
+.audio-url-input input:focus {
+    outline: none;
+    border-color: rgba(16, 185, 129, 0.6);
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.studio-listening-tools__actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--studio-border);
+}
+
+.studio-listening-tools__actions .studio-btn--success {
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #6ee7b7;
+}
+
+.studio-listening-tools__actions .active {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+.studio-listening-tools__transcript {
+    margin-top: 12px;
+    max-height: 300px;
+    overflow: auto;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--studio-border);
+    border-radius: var(--studio-radius-sm);
+}
+
+.transcript-section {
+    padding: 12px;
+    border-bottom: 1px solid var(--studio-border);
+}
+
+.transcript-section:last-child {
+    border-bottom: none;
+}
+
+.transcript-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.8rem;
+    color: #6ee7b7;
+}
+
+.transcript-section pre {
+    margin: 0;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    color: var(--studio-text-secondary);
+}

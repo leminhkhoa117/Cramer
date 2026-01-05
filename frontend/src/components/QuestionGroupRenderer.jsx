@@ -209,12 +209,53 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                     </>
                 );
 
-            case 'INSTRUCTIONS_ONLY':
+            case 'INSTRUCTIONS_ONLY': {
+                // Check if this is a MATCHING group
+                const isMatchingGroup = group.questions[0]?.questionType === 'MATCHING';
+
+                // Try to get options from block content, or fallback to first question's content
+                let groupOptions = group.content?.options;
+                if ((!groupOptions || groupOptions.length === 0) && isMatchingGroup) {
+                    // Fallback: extract from first question's questionContent.options
+                    groupOptions = group.questions[0]?.questionContent?.options;
+                }
+
+                const hasOptions = Array.isArray(groupOptions) && groupOptions.length > 0;
+
+                if (hasOptions && isMatchingGroup) {
+                    // Render options box for MATCHING questions within INSTRUCTIONS_ONLY
+                    return (
+                        <>
+                            <div className="options-list matching-options-box">
+                                <h4>{group.content?.options_title || 'Options'}</h4>
+                                {groupOptions.map(opt => {
+                                    const letter = typeof opt === 'object' ? opt.letter : opt;
+                                    const text = typeof opt === 'object' ? opt.text : '';
+                                    return <p key={letter}><strong>{letter}</strong> {text}</p>;
+                                })}
+                            </div>
+                            {group.questions.map(q => (
+                                <div id={`q-block-${q.id}`} key={q.id}>
+                                    <QuestionRenderer
+                                        question={q}
+                                        onAnswerChange={onAnswerChange}
+                                        userAnswer={answers[q.id]}
+                                        groupOptions={groupOptions}
+                                        partId={group.partId}
+                                    />
+                                </div>
+                            ))}
+                        </>
+                    );
+                }
+
+                // Default INSTRUCTIONS_ONLY: no options box
                 return group.questions.map(q => (
                     <div id={`q-block-${q.id}`} key={q.id}>
                         <QuestionRenderer question={q} onAnswerChange={onAnswerChange} userAnswer={answers[q.id]} partId={group.partId} />
                     </div>
                 ));
+            }
 
             // IMPORTANT: Fallback for backward compatibility with Reading tests
             default: {
@@ -235,6 +276,46 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                                 groupAnswers={answers}
                             />
                         </div>
+                    );
+                }
+
+                // Check if this is a MATCHING group (fallback for old data or AI preview)
+                const isMatchingType = group.questions[0]?.questionType === 'MATCHING' ||
+                    group.questions[0]?.questionType?.startsWith('MATCHING_') ||
+                    group.type === 'MATCHING';
+
+                // Try to get options from block content, or fallback to first question's content
+                let groupOptions = group.content?.options;
+                if ((!groupOptions || groupOptions.length === 0) && isMatchingType) {
+                    // Fallback: extract from first question's questionContent.options
+                    groupOptions = group.questions[0]?.questionContent?.options;
+                }
+
+                const hasOptions = Array.isArray(groupOptions) && groupOptions.length > 0;
+
+                if (hasOptions && isMatchingType) {
+                    return (
+                        <>
+                            <div className="options-list matching-options-box">
+                                <h4>{group.content?.options_title || 'Options'}</h4>
+                                {groupOptions.map(opt => {
+                                    const letter = typeof opt === 'object' ? opt.letter : opt;
+                                    const text = typeof opt === 'object' ? opt.text : '';
+                                    return <p key={letter}><strong>{letter}</strong> {text}</p>;
+                                })}
+                            </div>
+                            {group.questions.map(q => (
+                                <div id={`q-block-${q.id}`} key={q.id}>
+                                    <QuestionRenderer
+                                        question={q}
+                                        onAnswerChange={onAnswerChange}
+                                        userAnswer={answers[q.id]}
+                                        groupOptions={groupOptions}
+                                        partId={group.partId}
+                                    />
+                                </div>
+                            ))}
+                        </>
                     );
                 }
 

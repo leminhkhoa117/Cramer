@@ -269,11 +269,50 @@ export default function QuestionPreviewRenderer({
                     <div className="admin-question-answer">
                         <strong>Answer:</strong> <span>{formatAnswer()}</span>
                     </div>
-                    {explanation && (
-                        <div className="admin-question-explanation">
-                            <strong>Explanation:</strong> <span>{explanation}</span>
-                        </div>
-                    )}
+                    {explanation && (() => {
+                        // Parse explanation if it's a JSON string or object
+                        let exp = explanation;
+                        if (typeof exp === 'string') {
+                            try {
+                                exp = JSON.parse(exp);
+                            } catch {
+                                // Not valid JSON, render as plain text
+                                return (
+                                    <div className="admin-question-explanation">
+                                        <strong>Explanation:</strong> <span>{exp}</span>
+                                    </div>
+                                );
+                            }
+                        }
+                        // Structured explanation with quote/detail/strategy
+                        if (typeof exp === 'object' && exp !== null) {
+                            return (
+                                <div className="admin-question-explanation structured">
+                                    {exp.quote && (
+                                        <div className="explanation-quote">
+                                            <strong>Trích dẫn:</strong> <em>"{exp.quote}"</em>
+                                        </div>
+                                    )}
+                                    {exp.detail && (
+                                        <div className="explanation-detail">
+                                            <strong>Giải thích:</strong> {exp.detail}
+                                        </div>
+                                    )}
+                                    {exp.strategy && (
+                                        <div className="explanation-strategy">
+                                            <strong>Chiến lược:</strong> {exp.strategy}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }
+                        // Fallback for unexpected formats
+                        return (
+                            <div className="admin-question-explanation">
+                                <strong>Explanation:</strong> <span>{String(exp)}</span>
+                            </div>
+                        );
+                    })()}
                 </div>
             )}
 

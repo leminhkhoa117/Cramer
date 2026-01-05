@@ -26,11 +26,23 @@ public class RefinementPromptBuilder {
         prompt.append("You are a JSON Refinement Specialist for IELTS test content.\n\n");
         prompt.append("Your role is to FIX SPECIFIC ISSUES in AI-generated IELTS test questions.\n\n");
 
-        prompt.append("## Rules\n");
+        prompt.append("## Critical Rules\n");
         prompt.append("1. **FIX ONLY the specified issues** - do not modify anything else\n");
         prompt.append("2. **Preserve all formatting** - maintain the exact JSON structure\n");
         prompt.append("3. **Use passage context** - answers must come from the original passage\n");
         prompt.append("4. **Follow IELTS standards** - word limits, question formats, etc.\n\n");
+
+        prompt.append("## Word Limit Enforcement (CRITICAL)\n");
+        prompt.append("- 'ONE WORD ONLY' → Answer MUST be exactly 1 word from the passage\n");
+        prompt.append("- 'NO MORE THAN TWO WORDS' → Answer MUST be 1-2 words from the passage\n");
+        prompt.append("- 'NO MORE THAN THREE WORDS' → Answer MUST be 1-3 words from the passage\n");
+        prompt.append("- Extract the EXACT word(s) as they appear in the passage, not paraphrased versions\n");
+        prompt.append("- If the original answer violates word limit, find a SHORTER equivalent from the passage\n\n");
+
+        prompt.append("## Quotation Accuracy (CRITICAL)\n");
+        prompt.append("- The 'quote' field in explanations must match the passage EXACTLY\n");
+        prompt.append("- Copy the exact phrase from the passage, character for character\n");
+        prompt.append("- Do NOT paraphrase, reorder words, or change punctuation in quotes\n\n");
 
         prompt.append("## Output Format\n");
         prompt.append("Return ONLY the complete fixed JSON. Before the JSON, include a brief summary:\n");
@@ -101,8 +113,11 @@ public class RefinementPromptBuilder {
 
         switch (issue.getCategory()) {
             case "WORD_LIMIT":
-                prompt.append("   → Find a shorter phrase from the passage with the same meaning\n");
-                prompt.append("   → Valid limits: ONE WORD ONLY, NO MORE THAN TWO WORDS, NO MORE THAN THREE WORDS\n");
+                prompt.append("   → The current answer exceeds the word limit specified in the question\n");
+                prompt.append("   → Find the EXACT word(s) from the passage, not a paraphrase\n");
+                prompt.append("   → For 'ONE WORD ONLY': Use exactly 1 word from the passage\n");
+                prompt.append("   → Hyphenated words count as 1 word (e.g., 'self-esteem')\n");
+                prompt.append("   → Also update the 'quote' field in explanation to match the passage exactly\n");
                 break;
 
             case "MISSING_PLACEHOLDER":
@@ -121,12 +136,34 @@ public class RefinementPromptBuilder {
                 break;
 
             case "ANSWER_NOT_IN_PASSAGE":
-                prompt.append("   → Find the exact phrase in the passage that answers this question\n");
+                prompt.append("   → The answer does not appear in the passage text\n");
+                prompt.append("   → Search the passage for the EXACT phrase that answers this question\n");
+                prompt.append("   → Copy the word(s) exactly as written in the passage (same spelling, form)\n");
+                prompt.append("   → Update both 'correct_answer' AND the 'quote' field in explanation\n");
                 break;
 
             case "DIAGRAM_NO_LABELS":
                 prompt.append("   → Add labeled nodes (type: 'step', 'start', 'end') between blank nodes\n");
                 prompt.append("   → Diagram should mix labeled steps with blank input nodes\n");
+                break;
+
+            // Listening-specific categories
+            case "TRANSCRIPT_ANSWER_MISMATCH":
+                prompt.append(
+                        "   → The answer must appear EXACTLY in the transcript (possibly with minor form changes)\n");
+                prompt.append("   → Search the transcript for the closest matching phrase\n");
+                prompt.append("   → If no exact match exists, adjust the question to match what's in the transcript\n");
+                break;
+
+            case "SPEAKER_LABEL_MISSING":
+                prompt.append(
+                        "   → Add speaker labels (e.g., 'Speaker 1:', 'Man:', 'Woman:', 'Tutor:') to dialogue sections\n");
+                prompt.append("   → Each speaker turn should be clearly labeled\n");
+                break;
+
+            case "LISTENING_WORD_LIMIT":
+                prompt.append("   → Find a shorter phrase from the transcript that means the same thing\n");
+                prompt.append("   → Listening answers are typically 1-2 words, follow exact word limit\n");
                 break;
 
             default:
@@ -158,18 +195,34 @@ public class RefinementPromptBuilder {
     }
 
     /**
-     * Extract passage text from the original prompt for context
+     * Extract passage/transcript text from the original prompt for context
      */
     private String extractPassageFromPrompt(String originalPrompt) {
         if (originalPrompt == null)
             return null;
 
-        // Try to extract passage between markers
+        // Try to extract passage between markers (Reading)
         int passageStart = originalPrompt.indexOf("## Passage");
-        int passageEnd = originalPrompt.indexOf("##", passageStart + 10);
+        int passageEnd = passageStart != -1 ? originalPrompt.indexOf("##", passageStart + 10) : -1;
 
         if (passageStart != -1 && passageEnd != -1) {
             return originalPrompt.substring(passageStart, passageEnd).trim();
+        }
+
+        // Try to extract transcript between markers (Listening)
+        int transcriptStart = originalPrompt.indexOf("## Transcript");
+        int transcriptEnd = transcriptStart != -1 ? originalPrompt.indexOf("##", transcriptStart + 12) : -1;
+
+        if (transcriptStart != -1 && transcriptEnd != -1) {
+            return originalPrompt.substring(transcriptStart, transcriptEnd).trim();
+        }
+
+        // Fallback: try to find any section with conversation or transcript content
+        int contextStart = originalPrompt.indexOf("## Context");
+        int contextEnd = contextStart != -1 ? originalPrompt.indexOf("##", contextStart + 10) : -1;
+
+        if (contextStart != -1 && contextEnd != -1) {
+            return originalPrompt.substring(contextStart, contextEnd).trim();
         }
 
         return null;

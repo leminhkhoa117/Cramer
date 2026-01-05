@@ -867,6 +867,20 @@ public class PromptBuilderService {
                 prompt.append("```\n");
                 prompt.append(
                                 "Block types: NOTE_COMPLETION, INSTRUCTIONS_ONLY, MATCHING_FEATURES, PLAN_MAP_DIAGRAM_LABELING\n\n");
+
+                // CRITICAL: Mandatory question_numbers requirement
+                prompt.append("### ⚠️ MANDATORY: question_numbers Array (EVERY BLOCK MUST HAVE THIS)\n");
+                prompt.append("**CRITICAL REQUIREMENT**: Every block in section_layout.blocks[] MUST include:\n");
+                prompt.append("```json\n");
+                prompt.append("\"question_numbers\": [list of question numbers this block contains]\n");
+                prompt.append("```\n");
+                prompt.append("**Examples:**\n");
+                prompt.append("- Block for Q1-5: `\"question_numbers\": [1, 2, 3, 4, 5]`\n");
+                prompt.append("- Block for Q6-10: `\"question_numbers\": [6, 7, 8, 9, 10]`\n");
+                prompt.append("- Block for Q11-15: `\"question_numbers\": [11, 12, 13, 14, 15]`\n\n");
+                prompt.append("**FAILURE TO INCLUDE question_numbers WILL BREAK THE UI - QUESTIONS WILL NOT DISPLAY!**\n");
+                prompt.append("**EVERY question must be assigned to exactly ONE block via its question_numbers array.**\n\n");
+
                 prompt.append("Rendering rules:\n");
                 prompt.append("- `content.title` is plain text only (no HTML)\n");
                 prompt.append("- `content.instructions_text` is HTML\n");
@@ -914,7 +928,26 @@ public class PromptBuilderService {
 
                 prompt.append("### Matching Format\n");
                 prompt.append("- MATCHING questions: `question_content` must include only `text`.\n");
-                prompt.append("- All options belong in the block content (`section_layout.blocks[].content.options`).\n\n");
+                prompt.append("- All options belong in the block content (`section_layout.blocks[].content.options`).\n");
+                prompt.append("- **CRITICAL**: Options MUST be an array of `{letter, text}` objects, NOT strings.\n");
+                prompt.append("- ❌ WRONG: `\"options\": [\"A. North Wing\", \"B. South Wing\"]`\n");
+                prompt.append("- ✅ CORRECT: `\"options\": [{\"letter\": \"A\", \"text\": \"North Wing\"}, {\"letter\": \"B\", \"text\": \"South Wing\"}]`\n\n");
+                prompt.append("Example MATCHING_FEATURES block:\n");
+                prompt.append("```json\n");
+                prompt.append("{\n");
+                prompt.append("  \"block_type\": \"MATCHING_FEATURES\",\n");
+                prompt.append("  \"content\": {\n");
+                prompt.append("    \"title\": \"Questions 8-10\",\n");
+                prompt.append("    \"instructions_text\": \"<b>Instructions</b><br/>Where are the following offices located?<br/>Choose the correct letter, <b>A, B, or C</b>.\",\n");
+                prompt.append("    \"options\": [\n");
+                prompt.append("      {\"letter\": \"A\", \"text\": \"North Wing\"},\n");
+                prompt.append("      {\"letter\": \"B\", \"text\": \"South Wing\"},\n");
+                prompt.append("      {\"letter\": \"C\", \"text\": \"Central Plaza\"}\n");
+                prompt.append("    ]\n");
+                prompt.append("  },\n");
+                prompt.append("  \"question_numbers\": [8, 9, 10]\n");
+                prompt.append("}\n");
+                prompt.append("```\n\n");
 
                 // Figure descriptions if needed (Part 2)
                 if (partNumber == 2) {
@@ -963,6 +996,28 @@ public class PromptBuilderService {
                                 "\"question_content\":{\"text\":\"...\"},\"correct_answer\":[\"...\"],\"word_limit\":\"ONE WORD ONLY\",\"explanation\":\"...\"}],");
                 prompt.append(
                                 "\"audio_placeholder\":{\"duration_estimate\":\"6:30\",\"speaker_count\":2,\"tts_ready\":false}}\n\n");
+
+                // CRITICAL: Self-validation checklist
+                prompt.append("### ⚠️ MANDATORY VALIDATION CHECKLIST (Verify before output)\n");
+                prompt.append("Before generating your response, VERIFY each of these requirements:\n\n");
+                prompt.append("**□ Block Requirements:**\n");
+                prompt.append("  - [ ] Every block has `question_numbers` array with ALL question numbers it contains\n");
+                prompt.append("  - [ ] Every question is assigned to exactly ONE block\n");
+                prompt.append("  - [ ] Block types are ONLY: NOTE_COMPLETION, INSTRUCTIONS_ONLY, MATCHING_FEATURES, or PLAN_MAP_DIAGRAM_LABELING\n");
+                prompt.append("  - [ ] NO other block types like MULTIPLE_CHOICE (wrap MC questions in INSTRUCTIONS_ONLY block)\n\n");
+                prompt.append("**□ Question Requirements:**\n");
+                prompt.append("  - [ ] Every FILL_IN_BLANK question has `word_limit` field (e.g., \"ONE WORD ONLY\")\n");
+                prompt.append("  - [ ] Every question has its own individual `correct_answer` array (NOT duplicated)\n");
+                prompt.append("  - [ ] Every question has its own individual `explanation` object (NOT duplicated)\n");
+                prompt.append("  - [ ] All question numbers are sequential and complete for this part\n\n");
+                prompt.append("**□ audio_placeholder Requirements:**\n");
+                prompt.append("  - [ ] duration_estimate (string, e.g., \"6:30\")\n");
+                prompt.append("  - [ ] speaker_count (integer)\n");
+                prompt.append("  - [ ] speaker_genders (array of strings)\n");
+                prompt.append("  - [ ] accent_recommendation (string)\n");
+                prompt.append("  - [ ] pacing_notes (string)\n");
+                prompt.append("  - [ ] background_ambient (string)\n\n");
+                prompt.append("**FAILURE TO MEET ANY CHECKPOINT = INVALID OUTPUT**\n\n");
 
                 if (request.getCustomInstructions() != null && !request.getCustomInstructions().isBlank()) {
                         prompt.append("### Custom Instructions (Highest Priority)\n");

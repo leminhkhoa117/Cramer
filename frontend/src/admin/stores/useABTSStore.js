@@ -35,10 +35,10 @@ export const READING_PART_TYPES = {
 };
 
 export const LISTENING_PART_TYPES = {
-    1: ['FILL_IN_BLANK', 'MULTIPLE_CHOICE'],
-    2: ['FILL_IN_BLANK', 'MATCHING'],
-    3: ['MULTIPLE_CHOICE', 'MULTIPLE_CHOICE_MULTIPLE_ANSWERS'],
-    4: ['FILL_IN_BLANK', 'MULTIPLE_CHOICE']
+    1: ['FILL_IN_BLANK', 'MULTIPLE_CHOICE', 'MATCHING'],
+    2: ['FILL_IN_BLANK', 'MATCHING', 'MULTIPLE_CHOICE'],
+    3: ['MULTIPLE_CHOICE', 'MULTIPLE_CHOICE_MULTIPLE_ANSWERS', 'MATCHING', 'FILL_IN_BLANK'],
+    4: ['FILL_IN_BLANK', 'MULTIPLE_CHOICE', 'MULTIPLE_CHOICE_MULTIPLE_ANSWERS']
 };
 
 // Fixed question counts per part
@@ -140,6 +140,9 @@ const useABTSStore = create((set, get) => ({
     refinementResult: null,      // Result from Agent 2
     refinementStream: [],        // Streaming events during refinement
     abortRefinement: null,       // Function to abort refinement
+
+    // ==================== AUDIO URLS (Listening) ====================
+    audioUrls: {},               // { partNumber: url } - Audio URLs for Listening parts
 
     // ==================== WIZARD ACTIONS ====================
 
@@ -249,8 +252,18 @@ const useABTSStore = create((set, get) => ({
             formData: { ...initialFormState },
             generationResult: null,
             generationError: null,
-            currentStep: 1
+            currentStep: 1,
+            audioUrls: {}
         });
+    },
+
+    /**
+     * Set audio URL for a specific part (Listening only)
+     */
+    setAudioUrl: (partNumber, url) => {
+        set(state => ({
+            audioUrls: { ...state.audioUrls, [partNumber]: url }
+        }));
     },
 
     // ==================== MULTI-PART ACTIONS ====================

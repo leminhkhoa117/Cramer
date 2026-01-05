@@ -27,7 +27,9 @@ export default function AIGenerationPage() {
         isGenerating,
         generationResult,
         abortGeneration,
-        formData
+        formData,
+        audioUrls,
+        setAudioUrl
     } = useABTSStore();
     const toast = useToast();
 
@@ -124,7 +126,8 @@ export default function AIGenerationPage() {
                 setId: saveConfig.setId,
                 setCode: saveConfig.setCode,
                 setName: saveConfig.setNameVi, // Map to abtsApi param name
-                testId: saveConfig.testId,
+                // Support append mode: use existingTestId if provided
+                testId: saveConfig.existingTestId || saveConfig.testId,
                 testName: saveConfig.testName, // Already correct name
                 difficulty: saveConfig.difficulty,
                 hashtagIds: saveConfig.hashtagIds,
@@ -237,6 +240,8 @@ export default function AIGenerationPage() {
                 partNumber={formData.partNumber || 1}
                 selectedParts={formData.selectedParts}
                 questionCount={generationResult?.content?.questions?.length || 0}
+                audioUrls={audioUrls}
+                onAudioUrlChange={setAudioUrl}
             />
         </div>
     );

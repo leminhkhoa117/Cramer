@@ -163,7 +163,9 @@ const groupQuestionsFromLayout = (part) => {
     // New logic for Listening tests with sectionLayout
     if (part.sectionLayout && part.sectionLayout.blocks) {
         return part.sectionLayout.blocks.map((block, blockIndex) => {
-            const blockQuestions = block.question_numbers
+            // Safely get question_numbers array, fallback to empty array
+            const questionNumbers = block.question_numbers || [];
+            const blockQuestions = questionNumbers
                 .map(num => questionsMap.get(num))
                 .filter(Boolean);
 
@@ -246,14 +248,16 @@ export default function AdminPreviewContent({
     }, [showAnswers, onToggleAnswers]);
 
     // Build testData format (same as TestPageContent expects)
-    // Each part has questions array attached
+    // Each part has questions array attached, sorted by partNumber
     const testData = useMemo(() => {
-        return sections.map(section => ({
-            ...section,
-            questions: questions
-                .filter(q => q.sectionId === section.id)
-                .sort((a, b) => a.questionNumber - b.questionNumber)
-        }));
+        return [...sections]
+            .sort((a, b) => a.partNumber - b.partNumber)
+            .map(section => ({
+                ...section,
+                questions: questions
+                    .filter(q => q.sectionId === section.id)
+                    .sort((a, b) => a.questionNumber - b.questionNumber)
+            }));
     }, [sections, questions]);
 
     // Current displayed part

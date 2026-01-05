@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiX, FiSave, FiFolder, FiType, FiBarChart2, FiHash, FiEye, FiPlus, FiAlertCircle } from 'react-icons/fi';
+import { FiX, FiSave, FiFolder, FiType, FiBarChart2, FiHash, FiEye, FiPlus, FiAlertCircle, FiLink } from 'react-icons/fi';
 import useTestSetStore from '../../stores/useTestSetStore';
 import { testsApi } from '../../api/adminApi';
 import TagInput from './TagInput';
@@ -28,7 +28,9 @@ export default function SaveAIContentModal({
     partNumber = 1,
     selectedParts = [],
     questionCount = 0,
-    passagePreview = '' // First 100 chars of passage/prompt
+    passagePreview = '', // First 100 chars of passage/prompt
+    audioUrls = {}, // { partNumber: url } - Audio URLs from StepPreview
+    onAudioUrlChange = null // Callback for audio URL updates
 }) {
     const { testSets, fetchTestSets, isLoading } = useTestSetStore();
 
@@ -48,13 +50,30 @@ export default function SaveAIContentModal({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
 
+    // Append to existing test mode
+    const [appendToExistingTest, setAppendToExistingTest] = useState(false);
+    const [selectedExistingTestId, setSelectedExistingTestId] = useState('');
+
+    // Filter tests that DON'T have the current skill (can append to them)
+    const testsLackingCurrentSkill = useMemo(() => {
+        if (!testsInSet || testsInSet.length === 0) return [];
+        const currentSkill = suggestedSkill?.toLowerCase();
+        return testsInSet.filter(test => {
+            // Use skillSectionCounts map from API - if skill key exists and count > 0, test has that skill
+            const skillCounts = test.skillSectionCounts;
+            if (!skillCounts) return true; // No section info, assume can append
+            const hasSkill = skillCounts[currentSkill] && skillCounts[currentSkill] > 0;
+            return !hasSkill;
+        });
+    }, [testsInSet, suggestedSkill]);
+
     // Skill display name mapping
     const skillDisplayName = useMemo(() => {
-        const names = { 
-            reading: 'Reading', 
-            listening: 'Listening', 
-            writing: 'Writing', 
-            speaking: 'Speaking' 
+        const names = {
+            reading: 'Reading',
+            listening: 'Listening',
+            writing: 'Writing',
+            speaking: 'Speaking'
         };
         return names[suggestedSkill?.toLowerCase()] || suggestedSkill;
     }, [suggestedSkill]);
@@ -92,6 +111,8 @@ export default function SaveAIContentModal({
             });
             setTestsInSet([]);
             setErrors({});
+            setAppendToExistingTest(false);
+            setSelectedExistingTestId('');
         }
     }, [isOpen, fetchTestSets]);
 
@@ -104,7 +125,7 @@ export default function SaveAIContentModal({
                     const tests = await testsApi.getBySetId(formData.setId);
                     setTestsInSet(tests || []);
                     // Auto-increment test number
-                    const maxNumber = (tests || []).reduce((max, t) => 
+                    const maxNumber = (tests || []).reduce((max, t) =>
                         Math.max(max, t.testNumber || 0), 0);
                     setFormData(prev => ({ ...prev, testNumber: maxNumber + 1 }));
                 } catch (error) {
@@ -146,23 +167,30 @@ export default function SaveAIContentModal({
     const validateForm = () => {
         const newErrors = {};
 
-        // Validate test set
-        if (formData.createNewSet) {
-            if (!formData.setCode.trim()) {
-                newErrors.setCode = 'Vui lòng nhập mã bộ đề';
+        // Validate test set (not needed if appending)
+        if (!appendToExistingTest) {
+            if (formData.createNewSet) {
+                if (!formData.setCode.trim()) {
+                    newErrors.setCode = 'Vui lòng nhập mã bộ đề';
+                }
+                if (!formData.setName.trim()) {
+                    newErrors.setName = 'Vui lòng nhập tên bộ đề';
+                }
+            } else {
+                if (!formData.setId) {
+                    newErrors.setId = 'Vui lòng chọn bộ đề thi';
+                }
             }
-            if (!formData.setName.trim()) {
-                newErrors.setName = 'Vui lòng nhập tên bộ đề';
+
+            // Validate test name - REQUIRED when not appending
+            if (!formData.testName.trim()) {
+                newErrors.testName = 'Vui lòng nhập tên đề thi';
             }
         } else {
-            if (!formData.setId) {
-                newErrors.setId = 'Vui lòng chọn bộ đề thi';
+            // Validate existing test selection when appending
+            if (!selectedExistingTestId) {
+                newErrors.existingTest = 'Vui lòng chọn đề thi để thêm vào';
             }
-        }
-
-        // Validate test name - REQUIRED
-        if (!formData.testName.trim()) {
-            newErrors.testName = 'Vui lòng nhập tên đề thi';
         }
 
         setErrors(newErrors);
@@ -172,7 +200,7 @@ export default function SaveAIContentModal({
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!validateForm()) {
             return;
         }
@@ -183,10 +211,13 @@ export default function SaveAIContentModal({
                 setId: formData.createNewSet ? null : (formData.setId || null),
                 setCode: formData.createNewSet ? formData.setCode.trim() : null,
                 setNameVi: formData.createNewSet ? formData.setName.trim() : null,
-                testNumber: formData.testNumber,
-                testName: formData.testName.trim(),
-                difficulty: formData.difficulty,
-                hashtagIds: formData.hashtags
+                testNumber: appendToExistingTest ? null : formData.testNumber,
+                testName: appendToExistingTest ? null : formData.testName.trim(),
+                difficulty: appendToExistingTest ? null : formData.difficulty,
+                hashtagIds: appendToExistingTest ? null : formData.hashtags,
+                audioUrls: suggestedSkill?.toLowerCase() === 'listening' ? audioUrls : null,
+                // NEW: Append to existing test
+                existingTestId: appendToExistingTest ? selectedExistingTestId : null
             };
             await onSave(saveConfig);
         } finally {
@@ -222,26 +253,26 @@ export default function SaveAIContentModal({
                             borderRadius: 'var(--radius-md, 8px)',
                             border: '1px solid var(--border-color, rgba(255,255,255,0.1))'
                         }}>
-                            <div style={{ 
-                                display: 'grid', 
-                                gridTemplateColumns: 'auto 1fr', 
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'auto 1fr',
                                 gap: '8px 16px',
                                 fontSize: '14px'
                             }}>
                                 <span style={{ color: 'var(--text-secondary, rgba(255,255,255,0.6))' }}>Kỹ năng:</span>
                                 <span style={{ fontWeight: 600, color: 'var(--primary, #4a90e2)' }}>{skillDisplayName}</span>
-                                
+
                                 <span style={{ color: 'var(--text-secondary, rgba(255,255,255,0.6))' }}>Phần:</span>
                                 <span style={{ fontWeight: 600 }}>{partsDisplay}</span>
-                                
+
                                 <span style={{ color: 'var(--text-secondary, rgba(255,255,255,0.6))' }}>Số câu hỏi:</span>
                                 <span style={{ fontWeight: 600 }}>{questionCount || 'N/A'}</span>
-                                
+
                                 {passagePreview && (
                                     <>
                                         <span style={{ color: 'var(--text-secondary, rgba(255,255,255,0.6))' }}>Tiêu đề:</span>
-                                        <span style={{ 
-                                            fontStyle: 'italic', 
+                                        <span style={{
+                                            fontStyle: 'italic',
                                             color: 'var(--text-primary, #fff)',
                                             overflow: 'hidden',
                                             textOverflow: 'ellipsis',
@@ -296,8 +327,8 @@ export default function SaveAIContentModal({
                                     )}
                                 </>
                             ) : (
-                                <div style={{ 
-                                    padding: '12px', 
+                                <div style={{
+                                    padding: '12px',
                                     background: 'var(--surface-card, rgba(255,255,255,0.03))',
                                     borderRadius: 'var(--radius-md, 8px)',
                                     border: '1px dashed var(--primary, #4a90e2)'
@@ -344,48 +375,95 @@ export default function SaveAIContentModal({
                             )}
                         </div>
 
-                        {/* 3. TEST NUMBER */}
-                        <div className="form-group">
-                            <label className="form-label">
-                                Số thứ tự đề thi
-                            </label>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <input
-                                    type="number"
-                                    className="form-input"
-                                    value={formData.testNumber}
-                                    onChange={(e) => handleChange('testNumber', parseInt(e.target.value) || 1)}
-                                    min={1}
-                                    style={{ width: '100px' }}
-                                />
-                                <small style={{ color: 'var(--text-secondary, rgba(255,255,255,0.6))' }}>
-                                    {formData.setId && !formData.createNewSet 
-                                        ? `(${testsInSet.length} đề hiện có trong bộ)`
-                                        : '(Tự động tăng)'
-                                    }
-                                </small>
-                            </div>
-                        </div>
+                        {/* 2b. APPEND TO EXISTING TEST (conditional) */}
+                        {!formData.createNewSet && testsLackingCurrentSkill.length > 0 && (
+                            <div className="form-group">
+                                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={appendToExistingTest}
+                                        onChange={(e) => {
+                                            setAppendToExistingTest(e.target.checked);
+                                            if (!e.target.checked) {
+                                                setSelectedExistingTestId('');
+                                            }
+                                        }}
+                                        style={{ width: '16px', height: '16px' }}
+                                    />
+                                    <FiPlus className="form-icon" />
+                                    Thêm vào đề thi có sẵn (thiếu {skillDisplayName})
+                                </label>
 
-                        {/* 4. TEST NAME - REQUIRED */}
-                        <div className="form-group">
-                            <label className="form-label">
-                                <FiType className="form-icon" />
-                                Tên đề thi <span className="required">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                className={`form-input ${errors.testName ? 'is-invalid' : ''}`}
-                                placeholder="VD: IELTS Academic Reading Test 1"
-                                value={formData.testName}
-                                onChange={(e) => handleChange('testName', e.target.value)}
-                            />
-                            {errors.testName && (
-                                <div className="form-error">
-                                    <FiAlertCircle /> {errors.testName}
+                                {appendToExistingTest && (
+                                    <div style={{ marginTop: '8px' }}>
+                                        <select
+                                            className="form-select"
+                                            value={selectedExistingTestId}
+                                            onChange={(e) => setSelectedExistingTestId(e.target.value)}
+                                        >
+                                            <option value="">-- Chọn đề thi --</option>
+                                            {testsLackingCurrentSkill.map(test => (
+                                                <option key={test.id} value={test.id}>
+                                                    {test.name || `Test ${test.testNumber}`}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {appendToExistingTest && !selectedExistingTestId && (
+                                            <div className="form-error" style={{ marginTop: '4px' }}>
+                                                <FiAlertCircle /> Vui lòng chọn đề thi
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* 3. TEST NUMBER - hidden when appending */}
+                        {!appendToExistingTest && (
+                            <div className="form-group">
+                                <label className="form-label">
+                                    Số thứ tự đề thi
+                                </label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <input
+                                        type="number"
+                                        className="form-input"
+                                        value={formData.testNumber}
+                                        onChange={(e) => handleChange('testNumber', parseInt(e.target.value) || 1)}
+                                        min={1}
+                                        style={{ width: '100px' }}
+                                    />
+                                    <small style={{ color: 'var(--text-secondary, rgba(255,255,255,0.6))' }}>
+                                        {formData.setId && !formData.createNewSet
+                                            ? `(${testsInSet.length} đề hiện có trong bộ)`
+                                            : '(Tự động tăng)'
+                                        }
+                                    </small>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
+
+                        {/* 4. TEST NAME - REQUIRED, hidden when appending */}
+                        {!appendToExistingTest && (
+                            <div className="form-group">
+                                <label className="form-label">
+                                    <FiType className="form-icon" />
+                                    Tên đề thi <span className="required">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    className={`form-input ${errors.testName ? 'is-invalid' : ''}`}
+                                    placeholder="VD: IELTS Academic Reading Test 1"
+                                    value={formData.testName}
+                                    onChange={(e) => handleChange('testName', e.target.value)}
+                                />
+                                {errors.testName && (
+                                    <div className="form-error">
+                                        <FiAlertCircle /> {errors.testName}
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         {/* 5. DIFFICULTY */}
                         <div className="form-group">
@@ -411,11 +489,11 @@ export default function SaveAIContentModal({
                             <label className="form-label">
                                 <FiHash className="form-icon" />
                                 Hashtags
-                                <span style={{ 
-                                    marginLeft: '8px', 
-                                    fontSize: '12px', 
-                                    color: formData.hashtags.length >= 20 
-                                        ? 'var(--danger, #f56565)' 
+                                <span style={{
+                                    marginLeft: '8px',
+                                    fontSize: '12px',
+                                    color: formData.hashtags.length >= 20
+                                        ? 'var(--danger, #f56565)'
                                         : 'var(--text-secondary, rgba(255,255,255,0.6))'
                                 }}>
                                     Đã chọn: {formData.hashtags.length}/20
@@ -432,6 +510,47 @@ export default function SaveAIContentModal({
                                 Gắn thẻ để dễ dàng tìm kiếm và phân loại sau này
                             </small>
                         </div>
+
+                        {/* 7. AUDIO URLs - Listening only */}
+                        {suggestedSkill?.toLowerCase() === 'listening' && selectedParts?.length > 0 && (
+                            <div className="form-group">
+                                <label className="form-label">
+                                    <FiLink className="form-icon" />
+                                    Audio URLs
+                                    <span style={{
+                                        marginLeft: '8px',
+                                        fontSize: '12px',
+                                        color: 'var(--text-secondary, rgba(255,255,255,0.6))'
+                                    }}>
+                                        (tùy chọn)
+                                    </span>
+                                </label>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {selectedParts.map(partNum => (
+                                        <div key={partNum} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{
+                                                minWidth: '60px',
+                                                fontSize: '13px',
+                                                color: 'var(--text-secondary, rgba(255,255,255,0.6))'
+                                            }}>
+                                                Part {partNum}:
+                                            </span>
+                                            <input
+                                                type="url"
+                                                className="form-input"
+                                                placeholder="https://example.com/audio.mp3"
+                                                value={audioUrls[partNum] || ''}
+                                                onChange={(e) => onAudioUrlChange && onAudioUrlChange(partNum, e.target.value)}
+                                                style={{ flex: 1 }}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                                <small className="form-hint">
+                                    Paste audio URLs for each part (will be saved to database)
+                                </small>
+                            </div>
+                        )}
 
                     </form>
                 </div>

@@ -84,8 +84,9 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                     currentValue = userAnswer || '';
                 }
 
-                // Input with defaultValue - NOT controlled, updated on blur
-                return `<strong>${qNum}</strong> <input type="text" class="fill-in-blank-input table-inline-input" data-qid="${targetQId}" data-qnum="${qNum}" value="${currentValue.replace(/"/g, '&quot;')}" placeholder="${qNum}" />`;
+                // Input with question number as placeholder only
+                // The bold number is NOT rendered in text - only shown inside input box as placeholder
+                return `<input type="text" class="fill-in-blank-input table-inline-input" data-qid="${targetQId}" data-qnum="${qNum}" value="${currentValue.replace(/"/g, '&quot;')}" placeholder="${qNum}" />`;
             }
         );
 
@@ -117,26 +118,33 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                     let targetQId = null;
                     let currentValue = '';
                     let showInput = !isLast;
+                    let placeholderNum = '';
 
                     if (!isLast) {
                         if (index === 0) {
                             targetQId = id;
                             currentValue = typeof userAnswer !== 'undefined' ? userAnswer : '';
+                            placeholderNum = questionNumber || '';
                         } else {
                             const subQ = groupedQuestions && groupedQuestions[index - 1];
                             if (subQ) {
                                 targetQId = subQ.id !== undefined ? subQ.id : `temp-sub-${index}`;
                                 currentValue = groupAnswers && groupAnswers[targetQId] !== undefined ? groupAnswers[targetQId] : '';
+                                placeholderNum = subQ.questionNumber || '';
                             } else {
                                 showInput = false;
                             }
                         }
                     }
 
+                    // Strip trailing <strong>N</strong> pattern from part (the number before blank)
+                    // This number will be shown ONLY in the input placeholder
+                    const cleanPart = part.replace(/<strong>\d+<\/strong>\s*$/, '').replace(/\s*\d+\s*$/, '');
+
                     return (
                         <React.Fragment key={index}>
                             <HighlightableHtmlContent
-                                htmlString={part.replace(/(\b\d+\b)/g, '<strong>$1</strong>')}
+                                htmlString={cleanPart}
                                 contentId={`${contentIdPrefix}-part${index}`}
                             />
                             {showInput && (
@@ -145,7 +153,7 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                                     className="fill-in-blank-input"
                                     value={currentValue}
                                     onChange={(e) => onAnswerChange(targetQId, e.target.value)}
-                                    placeholder={index === 0 ? (questionNumber ? `${questionNumber}` : '') : (groupedQuestions?.[index - 1]?.questionNumber ? `${groupedQuestions[index - 1].questionNumber}` : '')}
+                                    placeholder={placeholderNum ? `${placeholderNum}` : '...'}
                                 />
                             )}
                         </React.Fragment>

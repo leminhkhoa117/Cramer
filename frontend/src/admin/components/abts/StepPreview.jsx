@@ -9,8 +9,8 @@
  * @since 2025-12-22
  */
 
-import React, { useState, useMemo } from 'react';
-import { FiInfo, FiChevronUp, FiChevronDown, FiClock, FiCpu, FiFileText, FiAlertTriangle } from 'react-icons/fi';
+import React, { useState, useMemo, useCallback } from 'react';
+import { FiInfo, FiChevronUp, FiChevronDown, FiClock, FiCpu, FiFileText, FiAlertTriangle, FiCopy, FiLink, FiHeadphones, FiCheck } from 'react-icons/fi';
 import useABTSStore from '../../stores/useABTSStore';
 import AdminPreviewContent from '../content/AdminPreviewContent';
 import StreamingDisplay from './StreamingDisplay';
@@ -30,7 +30,9 @@ export default function StepPreview({ onBack }) {
     generationError,
     reasoning,
     abortGeneration,
-    updateGeneratedQuestion
+    updateGeneratedQuestion,
+    audioUrls,
+    setAudioUrl
   } = useABTSStore();
 
   const [showMetadata, setShowMetadata] = useState(false);
@@ -39,6 +41,8 @@ export default function StepPreview({ onBack }) {
   const [showAnswers, setShowAnswers] = useState(true);
   const [showQuestionEditor, setShowQuestionEditor] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
+  const [showTranscriptPanel, setShowTranscriptPanel] = useState(false);
+  const [copiedTranscript, setCopiedTranscript] = useState(false);
 
   // Use onBack if provided, otherwise fallback to store's goToStep
   const handleGoBack = onBack || (() => goToStep(1));
@@ -111,6 +115,35 @@ export default function StepPreview({ onBack }) {
 
     return { previewSections: transformedSections, previewQuestions: transformedQuestions };
   }, [content, formData.skill]);
+
+  // Get combined transcripts for all parts (MUST be before early returns)
+  const allTranscripts = useMemo(() => {
+    const rawSections = content.sections || (content.section ? [content.section] : []);
+    return rawSections.map((sec, idx) => ({
+      partNumber: sec.partNumber || idx + 1,
+      transcript: sec.transcript || sec.passageText || ''
+    })).filter(s => s.transcript);
+  }, [content]);
+
+  // Copy transcript handler (MUST be before early returns)
+  const handleCopyTranscript = useCallback(async () => {
+    const fullTranscript = allTranscripts
+      .map(s => `=== Part ${s.partNumber} ===\n\n${s.transcript}`)
+      .join('\n\n');
+
+    try {
+      await navigator.clipboard.writeText(fullTranscript);
+      setCopiedTranscript(true);
+      setTimeout(() => setCopiedTranscript(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy transcript:', err);
+    }
+  }, [allTranscripts]);
+
+  // Update audio URL for a part (MUST be before early returns)
+  const handleAudioUrlChange = useCallback((partNumber, url) => {
+    setAudioUrl(partNumber, url);
+  }, [setAudioUrl]);
 
   // Format correct answer for display
   function formatCorrectAnswer(answer) {
@@ -328,6 +361,73 @@ export default function StepPreview({ onBack }) {
     );
   };
 
+  // Check if skill is Listening
+  const isListening = formData.skill === 'LISTENING';
+
+  // Listening Tools Panel (Audio URLs + Transcript Copy)
+  const ListeningToolsPanel = () => {
+    if (!isListening || !generationResult?.content) return null;
+
+    return (
+      <div className="studio-listening-tools">
+        {/* Audio URL Inputs */}
+        <div className="studio-listening-tools__header">
+          <FiHeadphones size={14} />
+          <span>Audio & Transcript</span>
+        </div>
+
+        <div className="studio-listening-tools__audio">
+          {allTranscripts.map(section => (
+            <div key={section.partNumber} className="audio-url-input">
+              <label>
+                <FiLink size={12} />
+                Part {section.partNumber} Audio URL:
+              </label>
+              <input
+                type="url"
+                placeholder="https://example.com/audio.mp3"
+                value={audioUrls[section.partNumber] || ''}
+                onChange={(e) => handleAudioUrlChange(section.partNumber, e.target.value)}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Transcript Actions */}
+        <div className="studio-listening-tools__actions">
+          <button
+            className={`studio-btn ${copiedTranscript ? 'studio-btn--success' : 'studio-btn--ghost'}`}
+            onClick={handleCopyTranscript}
+            disabled={allTranscripts.length === 0}
+          >
+            {copiedTranscript ? <FiCheck size={14} /> : <FiCopy size={14} />}
+            {copiedTranscript ? 'Đã copy!' : 'Copy Transcript'}
+          </button>
+          <button
+            className={`studio-btn studio-btn--ghost ${showTranscriptPanel ? 'active' : ''}`}
+            onClick={() => setShowTranscriptPanel(prev => !prev)}
+          >
+            <FiFileText size={14} />
+            {showTranscriptPanel ? 'Ẩn Transcript' : 'Xem Transcript'}
+          </button>
+        </div>
+
+        {/* Transcript Preview Panel */}
+        {showTranscriptPanel && (
+          <div className="studio-listening-tools__transcript">
+            {allTranscripts.map(section => (
+              <div key={section.partNumber} className="transcript-section">
+                <h4>Part {section.partNumber}</h4>
+                <pre>{section.transcript}</pre>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+
   // Writing has special layout (no AdminPreviewContent for now)
   if (isWriting) {
     const taskText = content.section?.taskText || content.section?.passageText || '';
@@ -365,6 +465,7 @@ export default function StepPreview({ onBack }) {
     <div className="studio-preview">
       <MetadataBar />
       <ValidationPanel />
+      <ListeningToolsPanel />
       <RefinementModal />
       <ReasoningPanel />
 

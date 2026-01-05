@@ -1289,15 +1289,15 @@ export default function QuestionEditModal({
                             </div>
                         )}
                     </div>
-
-                    {/* Global Error */}
-                    {errors.save && (
-                        <div className="qem-global-error">
-                            <FiAlertTriangle size={16} />
-                            {errors.save}
-                        </div>
-                    )}
                 </div>
+
+                {/* Global Error - Outside modal-body for visibility */}
+                {errors.save && (
+                    <div className="qem-global-error" style={{ margin: '0 24px 16px' }}>
+                        <FiAlertTriangle size={16} />
+                        {errors.save}
+                    </div>
+                )}
 
                 {/* Footer */}
                 <div className="modal-footer">

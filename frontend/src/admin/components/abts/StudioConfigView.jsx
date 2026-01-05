@@ -401,7 +401,7 @@ export default function StudioConfigView({ onGenerate }) {
                             <div className="studio-form-group" style={{ flex: 1 }}>
                                 <label className="studio-label" style={{ marginBottom: '8px' }}>
                                     <FiUpload style={{ marginRight: '6px' }} />
-                                    Audio File (Coming Soon)
+                                    Audio File
                                 </label>
                                 <div style={{
                                     padding: '20px',
@@ -414,10 +414,10 @@ export default function StudioConfigView({ onGenerate }) {
                                 }}>
                                     <FiMic size={24} style={{ marginBottom: '8px', opacity: 0.5 }} />
                                     <div style={{ fontSize: '0.8rem' }}>
-                                        Upload audio for transcription
+                                        Audio URLs can be added after generation
                                     </div>
                                     <div style={{ fontSize: '0.7rem', marginTop: '4px', opacity: 0.6 }}>
-                                        MP3, WAV, M4A supported
+                                        Paste URLs in the preview step
                                     </div>
                                 </div>
                             </div>

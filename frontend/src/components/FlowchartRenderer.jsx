@@ -38,8 +38,38 @@ const FlowchartRenderer = ({
         );
     }
 
-    const { direction = 'vertical', nodes, connections = [] } = diagram;
+    const { direction = 'vertical', connections = [] } = diagram;
     const isVertical = direction === 'vertical';
+
+    /**
+     * Normalize nodes: Convert string arrays to proper node objects.
+     * Handles AI-generated data where nodes may be strings instead of objects.
+     */
+    const normalizeNodes = (rawNodes) => {
+        return rawNodes.map((node, index) => {
+            // Already a proper object
+            if (typeof node === 'object' && node !== null && node.label !== undefined) {
+                return node;
+            }
+
+            // String node - convert to object
+            const nodeStr = typeof node === 'string' ? node : String(node);
+
+            // Extract question number from <strong>N</strong> ____ pattern
+            const qnumMatch = nodeStr.match(/<strong>(\d+)<\/strong>\s*____/);
+            const hasBlank = nodeStr.includes('____');
+
+            return {
+                id: `node-${index}`,
+                label: nodeStr,
+                type: hasBlank ? 'blank' : 'step',
+                question_number: qnumMatch ? parseInt(qnumMatch[1], 10) : undefined
+            };
+        });
+    };
+
+    const nodes = normalizeNodes(diagram.nodes);
+
 
     /**
      * Renders the input/answer element for blank nodes
@@ -60,7 +90,7 @@ const FlowchartRenderer = ({
                 className="flowchart-node__inline-input"
                 value={answers[question_number] || ''}
                 onChange={(e) => onAnswerChange?.(question_number, e.target.value)}
-                placeholder="..."
+                placeholder={question_number || '...'}
             />
         );
     };
@@ -83,15 +113,18 @@ const FlowchartRenderer = ({
         // CASE 1: Blank node WITH label containing ____ (IELTS-style hybrid)
         if (isBlank && hasLabelWithBlank) {
             const parts = label.split('____');
+            // Strip trailing <strong>N</strong> from the part before blank
+            // The number will only appear in the input placeholder
+            const cleanPart0 = parts[0].replace(/<strong>\d+<\/strong>\s*$/, '').replace(/\s*\d+\s*$/, '');
+
             return (
                 <div
                     key={id || index}
                     className={`flowchart-node flowchart-node--blank ${statusClass}`}
                 >
                     <div className="flowchart-node__content flowchart-node__hybrid">
-                        <span className="flowchart-node__qnum">{question_number}</span>
                         <span className="flowchart-node__label-with-blank">
-                            <span dangerouslySetInnerHTML={{ __html: parts[0] }} />
+                            <span dangerouslySetInnerHTML={{ __html: cleanPart0 }} />
                             {renderInputOrAnswer(question_number, statusClass)}
                             {parts[1] && <span dangerouslySetInnerHTML={{ __html: parts[1] }} />}
                         </span>
@@ -113,9 +146,6 @@ const FlowchartRenderer = ({
                     className={`flowchart-node flowchart-node--blank ${statusClass}`}
                 >
                     <div className="flowchart-node__content">
-                        {question_number && (
-                            <span className="flowchart-node__qnum">{question_number}</span>
-                        )}
                         {readOnly || reviewData ? (
                             <span className={`flowchart-node__answer ${statusClass}`}>
                                 {reviewData?.userAnswers?.[question_number] ||
@@ -128,7 +158,7 @@ const FlowchartRenderer = ({
                                 className="flowchart-node__input"
                                 value={answers[question_number] || ''}
                                 onChange={(e) => onAnswerChange?.(question_number, e.target.value)}
-                                placeholder={`${question_number}`}
+                                placeholder="..."
                             />
                         )}
                         {reviewData?.correctAnswers?.[question_number] && statusClass === 'incorrect' && (
