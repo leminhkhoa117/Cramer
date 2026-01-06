@@ -90,6 +90,12 @@
     font-size: 0.75rem;
     line-height: 1.4;
     color: var(--admin-text-primary, #e0e0e0);
+    /* Prevent long text from extending horizontally */
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Small spinner for loading state */

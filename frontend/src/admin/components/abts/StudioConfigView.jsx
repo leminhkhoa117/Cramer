@@ -69,7 +69,7 @@ const ESSAY_TYPES = [
 ];
 
 const LANGUAGES = [
-    { value: 'VI', label: 'Tieng Viet' },
+    { value: 'VI', label: 'Tiếng Việt' },
     { value: 'EN', label: 'English' }
 ];
 
@@ -656,9 +656,12 @@ export default function StudioConfigView({ onGenerate }) {
                                             const questionTypeCounts = partConfig.questionTypeCounts || {};
                                             const totalQuestions = QUESTION_COUNTS[formData.skill]?.[partNumber] || 13;
                                             const currentTotal = Object.values(questionTypeCounts).reduce((a, b) => a + b, 0);
+                                            // Get type pool based on skill - fallback to empty array for WRITING or invalid skill
                                             const typePool = formData.skill === 'READING'
-                                                ? READING_PART_TYPES[partNumber]
-                                                : LISTENING_PART_TYPES[partNumber];
+                                                ? (READING_PART_TYPES[partNumber] || [])
+                                                : formData.skill === 'LISTENING'
+                                                    ? (LISTENING_PART_TYPES[partNumber] || [])
+                                                    : [];
 
                                             return (
                                                 <div key={partNumber} style={{

@@ -19,41 +19,81 @@ public class RefinementPromptBuilder {
 
     /**
      * Build the system prompt for Agent 2 (Refinement Agent)
+     * Comprehensive patch system with multiple operation types
      */
     public String buildSystemPrompt() {
         StringBuilder prompt = new StringBuilder();
 
-        prompt.append("You are a JSON Refinement Specialist for IELTS test content.\n\n");
-        prompt.append("Your role is to FIX SPECIFIC ISSUES in AI-generated IELTS test questions.\n\n");
+        prompt.append("You are a JSON Patch Specialist for IELTS test content.\n\n");
+        prompt.append("Your role is to generate PATCHES to fix issues without regenerating content.\n\n");
 
-        prompt.append("## Critical Rules\n");
-        prompt.append("1. **FIX ONLY the specified issues** - do not modify anything else\n");
-        prompt.append("2. **Preserve all formatting** - maintain the exact JSON structure\n");
-        prompt.append("3. **Use passage context** - answers must come from the original passage\n");
-        prompt.append("4. **Follow IELTS standards** - word limits, question formats, etc.\n\n");
+        prompt.append("## Patch Operations\n");
+        prompt.append("You have 3 operations available:\n\n");
+        prompt.append("| Operation | Use Case |\n");
+        prompt.append("|-----------|----------|\n");
+        prompt.append("| `replace` | Change existing value (answer, quote, format) |\n");
+        prompt.append("| `insert`  | Add new element to array (add missing question) |\n");
+        prompt.append("| `append`  | Add text to string field (extend transcript) |\n\n");
 
-        prompt.append("## Word Limit Enforcement (CRITICAL)\n");
-        prompt.append("- 'ONE WORD ONLY' → Answer MUST be exactly 1 word from the passage\n");
-        prompt.append("- 'NO MORE THAN TWO WORDS' → Answer MUST be 1-2 words from the passage\n");
-        prompt.append("- 'NO MORE THAN THREE WORDS' → Answer MUST be 1-3 words from the passage\n");
-        prompt.append("- Extract the EXACT word(s) as they appear in the passage, not paraphrased versions\n");
-        prompt.append("- If the original answer violates word limit, find a SHORTER equivalent from the passage\n\n");
+        prompt.append("## Path Strategy (SIMPLIFIED)\n");
+        prompt.append("You do NOT need to calculate array indices (e.g., `questions[6]`) yourself.\n");
+        prompt.append("Instead, provide the **`questionNumber`** and the **`field`** name.\n\n");
 
-        prompt.append("## Quotation Accuracy (CRITICAL)\n");
-        prompt.append("- The 'quote' field in explanations must match the passage EXACTLY\n");
-        prompt.append("- Copy the exact phrase from the passage, character for character\n");
-        prompt.append("- Do NOT paraphrase, reorder words, or change punctuation in quotes\n\n");
+        prompt.append("## Example Patches\n\n");
 
-        prompt.append("## Output Format\n");
-        prompt.append("Return ONLY the complete fixed JSON. Before the JSON, include a brief summary:\n");
-        prompt.append("```\n");
-        prompt.append("FIXES APPLIED:\n");
-        prompt.append("- Q2: Changed answer from \"Urban Heat Island\" to \"heat island\" (word limit)\n");
-        prompt.append("- Q8: Added <strong>8</strong> ____ placeholder\n");
-        prompt.append("\n");
+        prompt.append("### REPLACE - Fix answer value\n");
         prompt.append("```json\n");
-        prompt.append("{ ... fixed JSON ... }\n");
+        prompt.append("{\n");
+        prompt.append("  \"operation\": \"replace\",\n");
+        prompt.append("  \"questionNumber\": 7,\n");
+        prompt.append("  \"path\": \"correct_answer[0]\",\n");
+        prompt.append("  \"oldValue\": \"pears\",\n");
+        prompt.append("  \"newValue\": \"peers\",\n");
+        prompt.append("  \"reason\": \"Spelling error\"\n");
+        prompt.append("}\n");
         prompt.append("```\n");
+        prompt.append("*(Note: System will automatically map this to `questions[6].correct_answer[0]`)*\n\n");
+
+        prompt.append("### INSERT - Add missing question\n");
+        prompt.append("```json\n");
+        prompt.append("{\n");
+        prompt.append("  \"operation\": \"insert\",\n");
+        prompt.append("  \"path\": \"questions\",\n");
+        prompt.append("  \"index\": 5,\n");
+        prompt.append("  \"newValue\": {\n");
+        prompt.append("    \"question_number\": 6,\n");
+        prompt.append("    \"question_type\": \"MULTIPLE_CHOICE\",\n");
+        prompt.append("    \"correct_answer\": [\"B\"],\n");
+        prompt.append("    \"options\": [\"A. ...\", \"B. ...\"],\n");
+        prompt.append("    \"question_content\": { \"text\": \"...\" },\n");
+        prompt.append("    \"explanation\": { \"detail\": \"...\", \"quote\": \"...\" }\n");
+        prompt.append("  },\n");
+        prompt.append("  \"reason\": \"Missing question 6\"\n");
+        prompt.append("}\n");
+        prompt.append("```\n\n");
+
+        prompt.append("### APPEND - Extend transcript\n");
+        prompt.append("```json\n");
+        prompt.append("{\n");
+        prompt.append("  \"operation\": \"append\",\n");
+        prompt.append("  \"path\": \"transcript\",\n");
+        prompt.append(
+                "  \"newValue\": \"\\n\\nSPEAKER 1: Also...\",\n");
+        prompt.append("  \"reason\": \"Low word count\"\n");
+        prompt.append("}\n");
+        prompt.append("```\n\n");
+
+        prompt.append("## MANDATORY Fields\n");
+        prompt.append("1. `operation`: replace, insert, or append\n");
+        prompt.append(
+                "2. `questionNumber`: The visual question number (1, 2, 14, etc.) - REQUIRED for question edits\n");
+        prompt.append("3. `path`: The field name (e.g., `correct_answer`, `explanation.quote`) OR full path\n");
+        prompt.append("4. `newValue`: The new value\n");
+        prompt.append("5. `reason`: Brief explanation\n\n");
+
+        prompt.append("## Rules\n");
+        prompt.append("- NEVER modify passage_text - answers must match passage\n");
+        prompt.append("- Output ONLY the JSON patches object, wrapped in {\"patches\": [...]}\n");
 
         return prompt.toString();
     }
@@ -96,10 +136,15 @@ public class RefinementPromptBuilder {
         }
 
         prompt.append("\n## Instructions\n");
-        prompt.append("1. Fix EACH issue listed above\n");
-        prompt.append("2. Do NOT change anything else in the JSON\n");
-        prompt.append("3. Return the COMPLETE fixed JSON (not just the changed parts)\n");
-        prompt.append("4. Include the FIXES APPLIED summary before the JSON\n");
+        prompt.append("Generate a JSON object with 'patches' array to fix each issue above.\n");
+        prompt.append("For each issue, create a patch with:\n");
+        prompt.append("- `issueId`: Use 'warning-N' where N is the issue number (1-based)\n");
+        prompt.append("- `questionNumber`: The affected question number (e.g., 27)\n");
+        prompt.append("- `path`: The specific field to change (e.g., 'correct_answer', 'explanation.quote')\n");
+        prompt.append("- `oldValue`: The current incorrect value\n");
+        prompt.append("- `newValue`: The corrected value\n");
+        prompt.append("- `reason`: Brief explanation\n\n");
+        prompt.append("Output ONLY the patches JSON. Do NOT output the full content.\n");
 
         return prompt.toString();
     }
@@ -164,6 +209,20 @@ public class RefinementPromptBuilder {
             case "LISTENING_WORD_LIMIT":
                 prompt.append("   → Find a shorter phrase from the transcript that means the same thing\n");
                 prompt.append("   → Listening answers are typically 1-2 words, follow exact word limit\n");
+                break;
+
+            case "INVALID_SECTION_LAYOUT":
+                prompt.append(
+                        "   → The structure of the section_layout is invalid (missing blocks or question_numbers)\n");
+                prompt.append("   → Ensure 'blocks' array exists and contains valid block objects\n");
+                prompt.append("   → Add specific 'question_numbers' array to each block (e.g., [1, 2, 3, 4, 5])\n");
+                prompt.append("   → Verify every question is assigned to exactly one block\n");
+                break;
+
+            case "JSON_VALIDATION_ERROR":
+                prompt.append("   → The original output was not valid JSON\n");
+                prompt.append("   → Fix syntax errors (missing commas, unclosed brackets/braces)\n");
+                prompt.append("   → Ensure all keys are quoted and special characters are escaped\n");
                 break;
 
             default:

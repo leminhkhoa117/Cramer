@@ -91,6 +91,15 @@ public class JsonValidatorService {
 
     public JsonValidatorService() {
         this.objectMapper = new ObjectMapper();
+        // Enable lenient parsing features to handle common AI JSON quirks
+        this.objectMapper.enable(com.fasterxml.jackson.core.json.JsonReadFeature.ALLOW_TRAILING_COMMA.mappedFeature());
+        this.objectMapper.enable(com.fasterxml.jackson.core.json.JsonReadFeature.ALLOW_JAVA_COMMENTS.mappedFeature());
+        this.objectMapper.enable(com.fasterxml.jackson.core.json.JsonReadFeature.ALLOW_YAML_COMMENTS.mappedFeature());
+        this.objectMapper
+                .enable(com.fasterxml.jackson.core.json.JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES.mappedFeature());
+        this.objectMapper.enable(com.fasterxml.jackson.core.json.JsonReadFeature.ALLOW_SINGLE_QUOTES.mappedFeature());
+        this.objectMapper
+                .enable(com.fasterxml.jackson.core.json.JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS.mappedFeature());
     }
 
     /**
@@ -518,7 +527,9 @@ public class JsonValidatorService {
             validateListeningBusinessRules(root, part, request, result);
 
         } catch (Exception e) {
-            logger.error("Failed to parse Listening JSON for validation: {}", e.getMessage());
+            String snippet = jsonContent.length() > 500 ? jsonContent.substring(0, 500) + "..." : jsonContent;
+            logger.error("Failed to parse Listening JSON for validation: {}. Content snippet: {}", e.getMessage(),
+                    snippet);
             result.addSchemaError("Invalid JSON: " + e.getMessage());
         }
 

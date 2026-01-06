@@ -23,6 +23,7 @@ import com.cramer.repository.TestSetRepository;
 import com.cramer.service.HashtagService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -452,10 +453,9 @@ public class ABTSService {
     }
 
     /**
-     * Generate Reading content for a single part with streaming tokens forwarded to
-     * parent.
-     * This is a simplified version of generateReadingWithStream that returns a
-     * response instead of completing an emitter.
+     * Generate Reading content for a single part using TWO-PASS strategy.
+     * Phase 1: Generate passage only
+     * Phase 2: Generate questions based on passage
      */
     private GenerationResponseDTO generateReadingForPart(
             GenerationRequestDTO request,
@@ -472,138 +472,117 @@ public class ABTSService {
             }
 
             try {
-                // 1. Build prompt
-                sendEvent(parentEmitter, StreamEventDTO.progress(10,
-                        "📝 Part " + partNumber + ": Building AI prompt..."));
-                String userPrompt = promptBuilderService.buildReadingPrompt(request);
-                String systemPrompt = "You are an expert IELTS exam content creator.";
+                Map<String, Object> reasoningConfig = buildReasoningConfig(request);
 
-                // 2. Get JSON schema for validation
-                Map<String, Object> jsonSchema = promptBuilderService.getReadingJsonSchema();
+                // ==========================================
+                // PHASE 1: PASSAGE GENERATION
+                // ==========================================
+                sendEvent(parentEmitter, StreamEventDTO.progress(5,
+                        "📝 Part " + partNumber + " (Phase 1/2): Generating Passage..."));
 
-                // 3. Build reasoning config
-                Map<String, Object> reasoningConfig = new HashMap<>();
-                if (Boolean.TRUE.equals(request.getEnableReasoning())) {
-                    reasoningConfig.put("effort", request.getReasoningEffort() != null
-                            ? request.getReasoningEffort()
-                            : "high");
+                String passagePrompt = promptBuilderService.buildReadingPassagePrompt(request);
+                Map<String, Object> passageSchema = promptBuilderService.getReadingPassageSchema();
+
+                OpenRouterClient.OpenRouterResponse passageResponse = performStreamingCall(
+                        request, passagePrompt, passageSchema, reasoningConfig,
+                        parentEmitter, cancelled, 5, 45, "Passage");
+
+                if (passageResponse == null) {
+                    return null; // Cancelled
                 }
 
-                // 4. Call AI with streaming
-                sendEvent(parentEmitter, StreamEventDTO.progress(15,
-                        "🤖 Part " + partNumber + ": Calling AI (streaming)..."));
+                // Parse Phase 1 output
+                JsonNode passageRoot = objectMapper.readTree(passageResponse.getContent());
+                String passageText = passageRoot.has("passage_text")
+                        ? passageRoot.get("passage_text").asText()
+                        : "";
+                int wordCount = passageRoot.has("word_count")
+                        ? passageRoot.get("word_count").asInt()
+                        : 0;
 
-                // Use synchronization to wait for streaming to complete
-                final Object lock = new Object();
-                final boolean[] completed = { false };
-                final OpenRouterClient.OpenRouterResponse[] responseHolder = new OpenRouterClient.OpenRouterResponse[1];
-                final Exception[] errorHolder = new Exception[1];
+                if (passageText.isBlank()) {
+                    throw new RuntimeException("AI failed to generate a valid passage in Phase 1");
+                }
 
-                openRouterClient.callChatCompletionStreaming(
-                        request.getModel(),
-                        systemPrompt,
-                        userPrompt,
-                        jsonSchema,
-                        reasoningConfig,
-                        request.getTemperature(),
-                        8192,
-                        new OpenRouterClient.StreamCallback() {
-                            @Override
-                            public void onReasoningChunk(String chunk) {
-                                // Forward AI thinking tokens to parent emitter
-                                sendEvent(parentEmitter, StreamEventDTO.aiThinking(chunk));
-                            }
+                logger.info("Phase 1 complete: Generated passage with {} words", wordCount);
 
-                            @Override
-                            public void onContentChunk(String chunk) {
-                                // Forward content chunks to parent emitter
-                                sendEvent(parentEmitter, StreamEventDTO.aiChunk(chunk));
-                            }
+                // ==========================================
+                // PHASE 2: QUESTION GENERATION
+                // ==========================================
+                sendEvent(parentEmitter, StreamEventDTO.progress(50,
+                        "❓ Part " + partNumber + " (Phase 2/2): Generating Questions..."));
 
-                            @Override
-                            public void onProgress(int percent, String message) {
-                                sendEvent(parentEmitter, StreamEventDTO.progress(15 + percent / 2,
-                                        "Part " + partNumber + ": " + message));
-                            }
+                String questionsPrompt = promptBuilderService.buildReadingQuestionsPrompt(request, passageText);
+                Map<String, Object> questionsSchema = promptBuilderService.getReadingQuestionsSchema();
 
-                            @Override
-                            public void onComplete(OpenRouterClient.OpenRouterResponse response) {
-                                synchronized (lock) {
-                                    responseHolder[0] = response;
-                                    completed[0] = true;
-                                    lock.notify();
-                                }
-                            }
+                OpenRouterClient.OpenRouterResponse questionsResponse = performStreamingCall(
+                        request, questionsPrompt, questionsSchema, reasoningConfig,
+                        parentEmitter, cancelled, 50, 85, "Questions");
 
-                            @Override
-                            public void onError(String error) {
-                                synchronized (lock) {
-                                    errorHolder[0] = new RuntimeException(error);
-                                    completed[0] = true;
-                                    lock.notify();
-                                }
-                            }
-                        },
-                        cancelled);
+                if (questionsResponse == null) {
+                    return null; // Cancelled
+                }
 
-                // Wait for streaming to complete
-                synchronized (lock) {
-                    while (!completed[0]) {
-                        lock.wait();
+                // ==========================================
+                // PHASE 3: MERGE & VALIDATE
+                // ==========================================
+                sendEvent(parentEmitter, StreamEventDTO.progress(90,
+                        "🔍 Part " + partNumber + ": Validating..."));
+
+                JsonNode questionsRoot = objectMapper.readTree(questionsResponse.getContent());
+
+                if (questionsRoot instanceof ObjectNode mergedRoot) {
+                    // Inject passage section into questions response
+                    ObjectNode sectionNode = objectMapper.createObjectNode();
+                    sectionNode.put("passage_text", passageText);
+                    sectionNode.put("word_count", wordCount);
+                    mergedRoot.set("section", sectionNode);
+
+                    String mergedJson = objectMapper.writeValueAsString(mergedRoot);
+
+                    // Validate merged content
+                    JsonValidatorService.ValidationResult validationResult = jsonValidatorService
+                            .validateReadingContent(mergedJson, request);
+
+                    if (!validationResult.isValid() && !validationResult.getSchemaErrors().isEmpty()) {
+                        lastError = String.join("; ", validationResult.getAllErrors());
+                        if (attempts < MAX_RETRIES) {
+                            logger.warn("Validation failed on attempt {}, retrying: {}", attempts, lastError);
+                            continue;
+                        }
                     }
-                }
 
-                // Check for errors
-                if (errorHolder[0] != null) {
-                    if (shouldFallbackToNonStreaming(errorHolder[0])) {
-                        sendEvent(parentEmitter, StreamEventDTO.progress(25,
-                                "Part " + partNumber + ": Falling back to non-streaming..."));
-                        return generateReading(request);
+                    // Parse to DTO
+                    GeneratedContentDTO content = jsonValidatorService.parseGeneratedContent(mergedJson);
+
+                    // NOTE: Do NOT renumber here - renumbering is handled by
+                    // generateMultiplePartsWithStream
+                    // to ensure consistent numbering across all parts
+
+                    GenerationResponseDTO response = new GenerationResponseDTO();
+                    response.setStatus(validationResult.isValid()
+                            ? GenerationResponseDTO.GenerationStatus.SUCCESS
+                            : GenerationResponseDTO.GenerationStatus.PARTIAL_SUCCESS);
+                    response.setContent(content);
+                    response.setReasoning(passageResponse.getReasoning() + "\n\n---\n\n"
+                            + questionsResponse.getReasoning());
+                    response.setValidation(buildValidationDto(validationResult));
+
+                    List<String> allWarnings = new ArrayList<>(validationResult.getWarnings());
+                    if (!validationResult.isValid()) {
+                        allWarnings.addAll(validationResult.getAllErrors());
                     }
-                    throw errorHolder[0];
-                }
-
-                OpenRouterClient.OpenRouterResponse aiResponse = responseHolder[0];
-
-                // 3. Validate response
-                sendEvent(parentEmitter, StreamEventDTO.progress(60,
-                        "🔍 Part " + partNumber + ": Validating response..."));
-                JsonValidatorService.ValidationResult validationResult = jsonValidatorService
-                        .validateReadingContent(aiResponse.getContent(), request);
-
-                if (!validationResult.isValid() && !validationResult.getSchemaErrors().isEmpty()) {
-                    lastError = String.join("; ", validationResult.getAllErrors());
-                    if (attempts < MAX_RETRIES) {
-                        continue;
+                    if (!allWarnings.isEmpty()) {
+                        response.setWarnings(allWarnings);
                     }
+
+                    GenerationMetadataDTO metadata = buildMetadata(request, questionsResponse, content);
+                    response.setMetadata(metadata);
+
+                    return response;
+                } else {
+                    throw new RuntimeException("Phase 2 output was not a JSON object");
                 }
-
-                // 4. Parse and build response
-                GeneratedContentDTO content = jsonValidatorService.parseGeneratedContent(aiResponse.getContent());
-
-                // 5. Post-process: Renumber questions for Parts 2/3 if AI started at 1
-                content = jsonValidatorService.renumberQuestionsForReadingPart(content, partNumber);
-
-                GenerationResponseDTO response = new GenerationResponseDTO();
-                response.setStatus(validationResult.isValid()
-                        ? GenerationResponseDTO.GenerationStatus.SUCCESS
-                        : GenerationResponseDTO.GenerationStatus.PARTIAL_SUCCESS);
-                response.setContent(content);
-                response.setReasoning(aiResponse.getReasoning());
-                response.setValidation(buildValidationDto(validationResult));
-
-                List<String> allWarnings = new ArrayList<>(validationResult.getWarnings());
-                if (!validationResult.isValid()) {
-                    allWarnings.addAll(validationResult.getAllErrors());
-                }
-                if (!allWarnings.isEmpty()) {
-                    response.setWarnings(allWarnings);
-                }
-
-                GenerationMetadataDTO metadata = buildMetadata(request, aiResponse, content);
-                response.setMetadata(metadata);
-
-                return response;
 
             } catch (Exception e) {
                 lastError = e.getMessage();
@@ -622,6 +601,11 @@ public class ABTSService {
      * Generate Listening content for a single part with streaming tokens forwarded
      * to parent.
      */
+    /**
+     * Generate Listening content for a single part using the Two-Pass Strategy:
+     * Pass 1: Generate Transcript & Audio Metadata
+     * Pass 2: Generate Questions & Layout based on Transcript
+     */
     private GenerationResponseDTO generateListeningForPart(
             GenerationRequestDTO request,
             SseEmitter parentEmitter,
@@ -637,145 +621,218 @@ public class ABTSService {
             }
 
             try {
-                // 1. Build prompt
+                // ==========================================
+                // PHASE 1: TRANSCRIPT GENERATION
+                // ==========================================
                 sendEvent(parentEmitter, StreamEventDTO.progress(10,
-                        "📝 Part " + partNumber + ": Building AI prompt..."));
-                String userPrompt = promptBuilderService.buildListeningPrompt(request);
-                String systemPrompt = "You are an expert IELTS exam content creator.";
+                        "📝 Part " + partNumber + " (Phase 1/2): Generating Transcript..."));
 
-                // 2. Get JSON schema for validation
-                Map<String, Object> jsonSchema = promptBuilderService.getListeningJsonSchema();
+                String transcriptPrompt = promptBuilderService.buildListeningTranscriptPrompt(request);
+                Map<String, Object> transcriptSchema = promptBuilderService.getListeningTranscriptSchema();
+                Map<String, Object> reasoningConfig = buildReasoningConfig(request);
 
-                // 3. Build reasoning config
-                Map<String, Object> reasoningConfig = new HashMap<>();
-                if (Boolean.TRUE.equals(request.getEnableReasoning())) {
-                    reasoningConfig.put("effort", request.getReasoningEffort() != null
-                            ? request.getReasoningEffort()
-                            : "high");
+                // Call AI for Transcript (Streaming)
+                OpenRouterClient.OpenRouterResponse transcriptResponse = performStreamingCall(
+                        request, transcriptPrompt, transcriptSchema, reasoningConfig,
+                        parentEmitter, cancelled,
+                        10, 50, // Progress range 10% -> 50%
+                        "Transcript");
+
+                if (transcriptResponse == null)
+                    return null; // Cancelled
+
+                // Parse Phase 1 Output
+                JsonNode transcriptRoot = objectMapper.readTree(transcriptResponse.getContent());
+
+                // Safety check for transcript
+                String transcriptText = "";
+                if (transcriptRoot.has("transcript")) {
+                    transcriptText = transcriptRoot.get("transcript").asText();
                 }
 
-                // 4. Call AI with streaming
-                sendEvent(parentEmitter, StreamEventDTO.progress(15,
-                        "🤖 Part " + partNumber + ": Calling AI (streaming)..."));
+                JsonNode audioPlaceholder = transcriptRoot.get("audio_placeholder");
 
-                final Object lock = new Object();
-                final boolean[] completed = { false };
-                final OpenRouterClient.OpenRouterResponse[] responseHolder = new OpenRouterClient.OpenRouterResponse[1];
-                final Exception[] errorHolder = new Exception[1];
+                if (transcriptText == null || transcriptText.isBlank()) {
+                    throw new RuntimeException("AI failed to generate a valid transcript in Phase 1");
+                }
 
-                openRouterClient.callChatCompletionStreaming(
-                        request.getModel(),
-                        systemPrompt,
-                        userPrompt,
-                        jsonSchema,
-                        reasoningConfig,
-                        request.getTemperature(),
-                        8192,
-                        new OpenRouterClient.StreamCallback() {
-                            @Override
-                            public void onReasoningChunk(String chunk) {
-                                sendEvent(parentEmitter, StreamEventDTO.aiThinking(chunk));
-                            }
+                // ==========================================
+                // PHASE 2: QUESTION GENERATION
+                // ==========================================
+                sendEvent(parentEmitter, StreamEventDTO.progress(50,
+                        "❓ Part " + partNumber + " (Phase 2/2): Generating Questions..."));
 
-                            @Override
-                            public void onContentChunk(String chunk) {
-                                sendEvent(parentEmitter, StreamEventDTO.aiChunk(chunk));
-                            }
+                String questionsPrompt = promptBuilderService.buildListeningQuestionsPrompt(request, transcriptText);
+                Map<String, Object> questionsSchema = promptBuilderService.getListeningQuestionsSchema();
 
-                            @Override
-                            public void onProgress(int percent, String message) {
-                                sendEvent(parentEmitter, StreamEventDTO.progress(15 + percent / 2,
-                                        "Part " + partNumber + ": " + message));
-                            }
+                // Call AI for Questions (Streaming)
+                OpenRouterClient.OpenRouterResponse questionsResponse = performStreamingCall(
+                        request, questionsPrompt, questionsSchema, reasoningConfig,
+                        parentEmitter, cancelled,
+                        50, 90, // Progress range 50% -> 90%
+                        "Questions");
 
-                            @Override
-                            public void onComplete(OpenRouterClient.OpenRouterResponse response) {
-                                synchronized (lock) {
-                                    responseHolder[0] = response;
-                                    completed[0] = true;
-                                    lock.notify();
-                                }
-                            }
+                if (questionsResponse == null)
+                    return null; // Cancelled
 
-                            @Override
-                            public void onError(String error) {
-                                synchronized (lock) {
-                                    errorHolder[0] = new RuntimeException(error);
-                                    completed[0] = true;
-                                    lock.notify();
-                                }
-                            }
-                        },
-                        cancelled);
+                // ==========================================
+                // PHASE 3: MERGE & VALIDATE
+                // ==========================================
+                sendEvent(parentEmitter, StreamEventDTO.progress(90,
+                        "🔍 Part " + partNumber + ": Validate & Formatting..."));
 
-                // Wait for streaming to complete
-                synchronized (lock) {
-                    while (!completed[0]) {
-                        lock.wait();
+                JsonNode questionsRoot = objectMapper.readTree(questionsResponse.getContent());
+
+                // Merge Transcript into Questions object
+                if (questionsRoot instanceof com.fasterxml.jackson.databind.node.ObjectNode mergedRoot) {
+                    mergedRoot.put("transcript", transcriptText);
+                    if (audioPlaceholder != null)
+                        mergedRoot.set("audio_placeholder", audioPlaceholder);
+
+                    // Convert back to string for validation
+                    String mergedContentJson = objectMapper.writeValueAsString(mergedRoot);
+
+                    // Validate
+                    JsonValidatorService.ValidationResult validationResult = jsonValidatorService
+                            .validateListeningContent(mergedContentJson, request);
+
+                    if (!validationResult.isValid() && !validationResult.getSchemaErrors().isEmpty()) {
+                        lastError = String.join("; ", validationResult.getAllErrors());
+                        logger.warn("Validation failed for Part {}: {}", partNumber, lastError);
+                        if (attempts < MAX_RETRIES)
+                            continue; // Retry the whole flow
                     }
-                }
 
-                // Check for errors
-                if (errorHolder[0] != null) {
-                    if (shouldFallbackToNonStreaming(errorHolder[0])) {
-                        sendEvent(parentEmitter, StreamEventDTO.progress(25,
-                                "Part " + partNumber + ": Falling back to non-streaming..."));
-                        return generateListening(request);
+                    // Parse & Build Response
+                    GeneratedContentDTO content = jsonValidatorService.parseGeneratedContent(mergedContentJson);
+
+                    GenerationResponseDTO response = new GenerationResponseDTO();
+                    response.setStatus(validationResult.isValid()
+                            ? GenerationResponseDTO.GenerationStatus.SUCCESS
+                            : GenerationResponseDTO.GenerationStatus.PARTIAL_SUCCESS);
+                    response.setContent(content);
+
+                    // Combine reasoning from both phases
+                    String fullReasoning = "--- PHASE 1 (TRANSCRIPT) ---\n" +
+                            (transcriptResponse.getReasoning() != null ? transcriptResponse.getReasoning() : "N/A") +
+                            "\n\n--- PHASE 2 (QUESTIONS) ---\n" +
+                            (questionsResponse.getReasoning() != null ? questionsResponse.getReasoning() : "N/A");
+                    response.setReasoning(fullReasoning);
+
+                    response.setValidation(buildValidationDto(validationResult));
+
+                    List<String> allWarnings = new ArrayList<>(validationResult.getWarnings());
+                    if (!validationResult.isValid()) {
+                        allWarnings.addAll(validationResult.getAllErrors());
                     }
-                    throw errorHolder[0];
-                }
-
-                OpenRouterClient.OpenRouterResponse aiResponse = responseHolder[0];
-
-                // 3. Validate response
-                sendEvent(parentEmitter, StreamEventDTO.progress(60,
-                        "🔍 Part " + partNumber + ": Validating response..."));
-                JsonValidatorService.ValidationResult validationResult = jsonValidatorService
-                        .validateListeningContent(aiResponse.getContent(), request);
-
-                if (!validationResult.isValid() && !validationResult.getSchemaErrors().isEmpty()) {
-                    lastError = String.join("; ", validationResult.getAllErrors());
-                    if (attempts < MAX_RETRIES) {
-                        continue;
+                    if (!allWarnings.isEmpty()) {
+                        response.setWarnings(allWarnings);
                     }
+
+                    GenerationMetadataDTO metadata = buildMetadata(request, questionsResponse, content);
+                    response.setMetadata(metadata);
+
+                    return response;
+                } else {
+                    throw new RuntimeException("Phase 2 output was not a JSON object");
                 }
-
-                // 4. Parse and build response
-                GeneratedContentDTO content = jsonValidatorService.parseGeneratedContent(aiResponse.getContent());
-
-                GenerationResponseDTO response = new GenerationResponseDTO();
-                response.setStatus(validationResult.isValid()
-                        ? GenerationResponseDTO.GenerationStatus.SUCCESS
-                        : GenerationResponseDTO.GenerationStatus.PARTIAL_SUCCESS);
-                response.setContent(content);
-                response.setReasoning(aiResponse.getReasoning());
-                response.setValidation(buildValidationDto(validationResult));
-
-                List<String> allWarnings = new ArrayList<>(validationResult.getWarnings());
-                if (!validationResult.isValid()) {
-                    allWarnings.addAll(validationResult.getAllErrors());
-                }
-                if (!allWarnings.isEmpty()) {
-                    response.setWarnings(allWarnings);
-                }
-
-                GenerationMetadataDTO metadata = buildMetadata(request, aiResponse, content);
-                response.setMetadata(metadata);
-
-                return response;
 
             } catch (Exception e) {
                 lastError = e.getMessage();
-                logger.error("Error generating listening for part {} on attempt {}: {}",
-                        partNumber, attempts, lastError);
-                if (attempts >= MAX_RETRIES) {
+                logger.error("Error generating listening for part {} on attempt {}: {}", partNumber, attempts,
+                        lastError);
+                if (attempts >= MAX_RETRIES)
                     throw e;
-                }
             }
         }
 
         return GenerationResponseDTO.error("GENERATION_FAILED", lastError, true);
+    }
 
+    /**
+     * Helper to reuse streaming logic for both phases
+     */
+    private OpenRouterClient.OpenRouterResponse performStreamingCall(
+            GenerationRequestDTO request,
+            String prompt,
+            Map<String, Object> schema,
+            Map<String, Object> reasoningConfig,
+            SseEmitter parentEmitter,
+            java.util.concurrent.atomic.AtomicBoolean cancelled,
+            int startProgress, int endProgress,
+            String phaseLabel) throws Exception {
+
+        String systemPrompt = "You are an expert IELTS exam content creator.";
+        final Object lock = new Object();
+        final boolean[] completed = { false };
+        final OpenRouterClient.OpenRouterResponse[] responseHolder = new OpenRouterClient.OpenRouterResponse[1];
+        final Exception[] errorHolder = new Exception[1];
+
+        openRouterClient.callChatCompletionStreaming(
+                request.getModel(),
+                systemPrompt,
+                prompt,
+                schema,
+                reasoningConfig,
+                request.getTemperature(),
+                8192,
+                new OpenRouterClient.StreamCallback() {
+                    @Override
+                    public void onReasoningChunk(String chunk) {
+                        sendEvent(parentEmitter, StreamEventDTO.aiThinking(chunk));
+                    }
+
+                    @Override
+                    public void onContentChunk(String chunk) {
+                        sendEvent(parentEmitter, StreamEventDTO.aiChunk(chunk));
+                    }
+
+                    @Override
+                    public void onProgress(int percent, String message) {
+                        // Map local percent (0-100) to global range (start-end)
+                        int globalPercent = startProgress + (percent * (endProgress - startProgress) / 100);
+                        sendEvent(parentEmitter, StreamEventDTO.progress(globalPercent,
+                                phaseLabel + ": " + message));
+                    }
+
+                    @Override
+                    public void onComplete(OpenRouterClient.OpenRouterResponse response) {
+                        synchronized (lock) {
+                            responseHolder[0] = response;
+                            completed[0] = true;
+                            lock.notify();
+                        }
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        synchronized (lock) {
+                            errorHolder[0] = new RuntimeException(error);
+                            completed[0] = true;
+                            lock.notify();
+                        }
+                    }
+                },
+                cancelled);
+
+        synchronized (lock) {
+            while (!completed[0])
+                lock.wait();
+        }
+
+        if (errorHolder[0] != null)
+            throw errorHolder[0];
+        return responseHolder[0];
+    }
+
+    private Map<String, Object> buildReasoningConfig(GenerationRequestDTO request) {
+        Map<String, Object> reasoningConfig = new HashMap<>();
+        if (Boolean.TRUE.equals(request.getEnableReasoning())) {
+            reasoningConfig.put("effort", request.getReasoningEffort() != null
+                    ? request.getReasoningEffort()
+                    : "high");
+        }
+        return reasoningConfig;
     }
 
     /**

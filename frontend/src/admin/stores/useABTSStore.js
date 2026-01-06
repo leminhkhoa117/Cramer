@@ -233,11 +233,33 @@ const useABTSStore = create((set, get) => ({
 
     /**
      * Update form data
+     * When skill changes, filter selectedParts to only include valid parts for the new skill
      */
     updateFormData: (updates) => {
-        set(state => ({
-            formData: { ...state.formData, ...updates }
-        }));
+        set(state => {
+            const newFormData = { ...state.formData, ...updates };
+
+            // If skill is being changed, filter selectedParts to valid parts for that skill
+            if (updates.skill && updates.skill !== state.formData.skill) {
+                const maxParts = updates.skill === 'READING' ? 3 :
+                    updates.skill === 'LISTENING' ? 4 : 2;
+                newFormData.selectedParts = (newFormData.selectedParts || [])
+                    .filter(p => p >= 1 && p <= maxParts);
+                // Also clear partConfigs for invalid parts
+                if (newFormData.partConfigs) {
+                    const validConfigs = {};
+                    Object.keys(newFormData.partConfigs).forEach(key => {
+                        const partNum = parseInt(key, 10);
+                        if (partNum >= 1 && partNum <= maxParts) {
+                            validConfigs[key] = newFormData.partConfigs[key];
+                        }
+                    });
+                    newFormData.partConfigs = validConfigs;
+                }
+            }
+
+            return { formData: newFormData };
+        });
     },
 
     /**
@@ -551,8 +573,12 @@ const useABTSStore = create((set, get) => ({
         if (!generationResult?.content?.questions) return;
 
         const updatedQuestions = generationResult.content.questions.map((q, idx) => {
-            const qId = q.id || `abts-q-${idx}`;
-            return qId === questionId ? { ...q, ...updates } : q;
+            const syntheticId = `abts-q-${idx}`;
+            // Match against real ID or synthetic ID (StepPreview uses synthetic)
+            if (questionId === q.id || questionId === syntheticId) {
+                return { ...q, ...updates };
+            }
+            return q;
         });
 
         set({
@@ -1431,10 +1457,10 @@ const useABTSStore = create((set, get) => ({
     },
 
     /**
-     * Apply refinement result to generation result
+     * Apply refinement result to generation result and revalidate
      */
-    applyRefinement: () => {
-        const { refinementResult, generationResult } = get();
+    applyRefinement: async () => {
+        const { refinementResult, generationResult, formData } = get();
 
         if (!refinementResult) {
             console.warn('No refinement result to apply');
@@ -1460,21 +1486,57 @@ const useABTSStore = create((set, get) => ({
 
         try {
             const refinedContent = JSON.parse(refinementResult.refinedJson);
+
+            // Apply refined content first
             set({
                 generationResult: {
                     ...generationResult,
                     content: refinedContent,
-                    // Clear warnings that were fixed
-                    warnings: [] // New validation will be done on preview
+                    warnings: [] // Will be updated by validation
                 },
                 refinementResult: null,
                 selectedIssues: [],
                 refinementStream: []
             });
-            console.log('✅ Refinement applied successfully');
+            console.log('Refinement applied, now revalidating...');
+
+            // Call backend to revalidate the refined content
+            try {
+                const userId = localStorage.getItem('userId');
+                const response = await fetch('/api/admin/abts/validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': userId || 'admin'
+                    },
+                    body: JSON.stringify({
+                        skill: formData.skill,
+                        content: refinedContent
+                    })
+                });
+
+                if (response.ok) {
+                    const validationResult = await response.json();
+                    const newWarnings = validationResult.warnings || [];
+
+                    // Update with new validation warnings
+                    set((state) => ({
+                        generationResult: {
+                            ...state.generationResult,
+                            warnings: newWarnings
+                        }
+                    }));
+
+                    console.log(`Revalidation complete: ${newWarnings.length} warnings remaining`);
+                } else {
+                    console.warn('Validation request failed, warnings not updated');
+                }
+            } catch (validationError) {
+                console.warn('Revalidation failed:', validationError);
+                // Content is already applied, just log the validation error
+            }
         } catch (error) {
             console.error('Failed to parse refined JSON:', error);
-            // Show error in modal instead of silently failing
             set({
                 refinementResult: {
                     ...refinementResult,

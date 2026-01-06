@@ -7,6 +7,7 @@
 ```
 - Never uses emojis in codes.
 - Never put your thoughts as comments in codes.
+- NEVER START MAKING CHANGES UNLESS APPROVED.
 
 ## Project Overview
 

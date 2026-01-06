@@ -98,6 +98,10 @@ const readingInstructionsMap = {
 
 
 const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
+    // Defensive: ensure group is a valid object
+    if (!group || typeof group !== 'object') {
+        return <div className="question-group">Invalid question group data</div>;
+    }
 
     const renderGroupInstructions = () => {
         // Use uniqueGroupId for guaranteed uniqueness across parts
@@ -112,8 +116,8 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
         if (group.content?.title || group.content?.instructions_text) {
             return (
                 <>
-                    {group.content.title && <p><strong>{group.content.title}</strong></p>}
-                    {group.content.instructions_text &&
+                    {group.content?.title && <p><strong>{group.content.title}</strong></p>}
+                    {group.content?.instructions_text &&
                         <HighlightableHtmlContent
                             htmlString={group.content.instructions_text}
                             contentId={`instruction-${groupId}`}
@@ -144,14 +148,20 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
     const renderGroupBody = () => {
         let lastSectionTitle = null;
 
+        // Defensive: ensure questions array exists
+        const questions = Array.isArray(group.questions) ? group.questions : [];
+        if (questions.length === 0) {
+            return <div className="no-questions">No questions in this group</div>;
+        }
+
         // Switch based on the new block_type for Listening
         switch (group.block_type) {
             case 'NOTE_COMPLETION':
                 return (
                     <div className="note-completion-wrapper">
-                        {group.content.main_title && <h3>{group.content.main_title}</h3>}
-                        {group.questions.map(q => {
-                            const showSectionTitle = q.questionContent.section_title && q.questionContent.section_title !== lastSectionTitle;
+                        {group.content?.main_title && <h3>{group.content.main_title}</h3>}
+                        {questions.map(q => {
+                            const showSectionTitle = q.questionContent?.section_title && q.questionContent.section_title !== lastSectionTitle;
                             if (showSectionTitle) {
                                 lastSectionTitle = q.questionContent.section_title;
                             }
@@ -175,17 +185,17 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
             case 'PLAN_MAP_DIAGRAM_LABELING':
                 return (
                     <>
-                        {group.content.image_url && <img src={group.content.image_url} alt="Diagram for questions" className="question-diagram" />}
+                        {group.content?.image_url && <img src={group.content.image_url} alt="Diagram for questions" className="question-diagram" />}
                         <div className="options-list matching-options-box">
-                            {group.content.options.map(opt => <p key={opt.letter || opt}><strong>{opt.letter || opt}</strong> {opt.text || ''}</p>)}
+                            {group.content?.options?.map(opt => <p key={opt.letter || opt}><strong>{opt.letter || opt}</strong> {opt.text || ''}</p>)}
                         </div>
-                        {group.questions.map(q => (
+                        {questions.map(q => (
                             <div id={`q-block-${q.id}`} key={q.id}>
                                 <QuestionRenderer
                                     question={q}
                                     onAnswerChange={onAnswerChange}
                                     userAnswer={answers[q.id]}
-                                    groupOptions={group.content.options}
+                                    groupOptions={group.content?.options}
                                     partId={group.partId}
                                 />
                             </div>
@@ -197,16 +207,16 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                 return (
                     <>
                         <div className="options-list matching-options-box">
-                            <h4>{group.content.options_title || 'Options'}</h4>
-                            {group.content.options.map(opt => <p key={opt.letter}><strong>{opt.letter}</strong> {opt.text}</p>)}
+                            <h4>{group.content?.options_title || 'Options'}</h4>
+                            {group.content?.options?.map(opt => <p key={opt.letter}><strong>{opt.letter}</strong> {opt.text}</p>)}
                         </div>
-                        {group.questions.map(q => (
+                        {questions.map(q => (
                             <div id={`q-block-${q.id}`} key={q.id}>
                                 <QuestionRenderer
                                     question={q}
                                     onAnswerChange={onAnswerChange}
                                     userAnswer={answers[q.id]}
-                                    groupOptions={group.content.options}
+                                    groupOptions={group.content?.options}
                                     partId={group.partId}
                                 />
                             </div>
@@ -216,13 +226,13 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
 
             case 'INSTRUCTIONS_ONLY': {
                 // Check if this is a MATCHING group
-                const isMatchingGroup = group.questions[0]?.questionType === 'MATCHING';
+                const isMatchingGroup = questions[0]?.questionType === 'MATCHING';
 
                 // Try to get options from block content, or fallback to first question's content
                 let groupOptions = group.content?.options;
                 if ((!groupOptions || groupOptions.length === 0) && isMatchingGroup) {
                     // Fallback: extract from first question's questionContent.options
-                    groupOptions = group.questions[0]?.questionContent?.options;
+                    groupOptions = questions[0]?.questionContent?.options;
                 }
 
                 const hasOptions = Array.isArray(groupOptions) && groupOptions.length > 0;
@@ -239,7 +249,7 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                                     return <p key={letter}><strong>{letter}</strong> {text}</p>;
                                 })}
                             </div>
-                            {group.questions.map(q => (
+                            {questions.map(q => (
                                 <div id={`q-block-${q.id}`} key={q.id}>
                                     <QuestionRenderer
                                         question={q}
@@ -255,7 +265,7 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                 }
 
                 // Default INSTRUCTIONS_ONLY: no options box
-                return group.questions.map(q => (
+                return questions.map(q => (
                     <div id={`q-block-${q.id}`} key={q.id}>
                         <QuestionRenderer question={q} onAnswerChange={onAnswerChange} userAnswer={answers[q.id]} partId={group.partId} />
                     </div>
@@ -266,10 +276,10 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
             default: {
                 // For TABLE_COMPLETION: first question contains full HTML, subsequent questions are empty
                 // We render only first question with table, skip others
-                const isTableCompletion = group.questions[0]?.questionType === 'TABLE_COMPLETION';
+                const isTableCompletion = questions[0]?.questionType === 'TABLE_COMPLETION';
 
                 if (isTableCompletion) {
-                    const firstQ = group.questions[0];
+                    const firstQ = questions[0];
                     return (
                         <div id={`q-block-${firstQ.id}`} key={firstQ.id}>
                             <QuestionRenderer
@@ -277,7 +287,7 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                                 onAnswerChange={onAnswerChange}
                                 userAnswer={answers[firstQ.id]}
                                 partId={group.partId}
-                                groupedQuestions={group.questions}
+                                groupedQuestions={questions}
                                 groupAnswers={answers}
                             />
                         </div>
@@ -285,15 +295,15 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                 }
 
                 // Check if this is a MATCHING group (fallback for old data or AI preview)
-                const isMatchingType = group.questions[0]?.questionType === 'MATCHING' ||
-                    group.questions[0]?.questionType?.startsWith('MATCHING_') ||
+                const isMatchingType = questions[0]?.questionType === 'MATCHING' ||
+                    questions[0]?.questionType?.startsWith('MATCHING_') ||
                     group.type === 'MATCHING';
 
                 // Try to get options from block content, or fallback to first question's content
                 let groupOptions = group.content?.options;
                 if ((!groupOptions || groupOptions.length === 0) && isMatchingType) {
                     // Fallback: extract from first question's questionContent.options
-                    groupOptions = group.questions[0]?.questionContent?.options;
+                    groupOptions = questions[0]?.questionContent?.options;
                 }
 
                 const hasOptions = Array.isArray(groupOptions) && groupOptions.length > 0;
@@ -309,7 +319,7 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                                     return <p key={letter}><strong>{letter}</strong> {text}</p>;
                                 })}
                             </div>
-                            {group.questions.map(q => (
+                            {questions.map(q => (
                                 <div id={`q-block-${q.id}`} key={q.id}>
                                     <QuestionRenderer
                                         question={q}
@@ -325,7 +335,7 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
                 }
 
                 // Default rendering for other question types
-                return group.questions.map(q => (
+                return questions.map(q => (
                     <div id={`q-block-${q.id}`} key={q.id}>
                         <QuestionRenderer question={q} onAnswerChange={onAnswerChange} userAnswer={answers[q.id]} partId={group.partId} />
                     </div>

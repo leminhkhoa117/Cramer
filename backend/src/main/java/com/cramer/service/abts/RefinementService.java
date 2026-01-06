@@ -40,17 +40,20 @@ public class RefinementService {
     private final OpenRouterClient openRouterClient;
     private final RefinementPromptBuilder refinementPromptBuilder;
     private final JsonValidatorService jsonValidatorService;
+    private final JsonPatcher jsonPatcher;
     private final ObjectMapper objectMapper;
 
     public RefinementService(
             OpenRouterConfig config,
             OpenRouterClient openRouterClient,
             RefinementPromptBuilder refinementPromptBuilder,
-            JsonValidatorService jsonValidatorService) {
+            JsonValidatorService jsonValidatorService,
+            JsonPatcher jsonPatcher) {
         this.config = config;
         this.openRouterClient = openRouterClient;
         this.refinementPromptBuilder = refinementPromptBuilder;
         this.jsonValidatorService = jsonValidatorService;
+        this.jsonPatcher = jsonPatcher;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -89,7 +92,7 @@ public class RefinementService {
             String refinementPrompt = refinementPromptBuilder.buildRefinementPrompt(
                     request.getOriginalJson(),
                     selectedIssues,
-                    extractPassageText(request.getOriginalPrompt()));
+                    extractPassageContext(request.getOriginalJson()));
 
             // Check cancellation
             if (cancelled != null && cancelled.get()) {
@@ -118,8 +121,9 @@ public class RefinementService {
                     : false;
 
             // Build reasoning config if enabled (for models like DeepSeek R1)
+            // API only allows ONE of: "effort" OR "max_tokens" (not both)
             Map<String, Object> reasoningConfig = enableReasoning
-                    ? Map.of("effort", "high", "max_tokens", 16000)
+                    ? Map.of("effort", "high")
                     : Map.of();
 
             logger.info("Refinement using model: {} (caching: {}, reasoning: {})", model, enableCaching,
@@ -191,9 +195,12 @@ public class RefinementService {
                 return;
             }
 
-            // Parse response
-            sendEvent(emitter, StreamEventDTO.progress(90, "Processing refinement result..."));
-            RefinementResponseDTO response = parseRefinementResponse(fullResponse.toString(), selectedIssues);
+            // Parse response - now expects patch format
+            sendEvent(emitter, StreamEventDTO.progress(90, "Processing patches..."));
+            RefinementResponseDTO response = parseAndApplyPatches(
+                    fullResponse.toString(),
+                    request.getOriginalJson(),
+                    selectedIssues);
 
             // Validate refined JSON
             if (response.getRefinedJson() != null && !response.getRefinedJson().isEmpty()) {
@@ -251,23 +258,40 @@ public class RefinementService {
     }
 
     /**
-     * Extract passage text from the original prompt
+     * Extract passage or transcript text from the original JSON response.
+     * This provides the necessary context for the Refinement AI.
      */
-    private String extractPassageText(String originalPrompt) {
-        if (originalPrompt == null)
+    private String extractPassageContext(String originalJson) {
+        if (originalJson == null || originalJson.isBlank())
             return null;
 
-        // Look for passage section
-        int passageStart = originalPrompt.indexOf("## Passage");
-        if (passageStart == -1) {
-            passageStart = originalPrompt.indexOf("passage_text");
-        }
+        try {
+            // Parse the original JSON from Agent 1
+            com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(originalJson);
 
-        if (passageStart != -1) {
-            int passageEnd = originalPrompt.indexOf("##", passageStart + 10);
-            if (passageEnd == -1)
-                passageEnd = originalPrompt.length();
-            return originalPrompt.substring(passageStart, Math.min(passageEnd, passageStart + 5000));
+            // 1. Try to find 'transcript' (Listening)
+            if (root.has("transcript")) {
+                String transcript = root.get("transcript").asText();
+                if (transcript != null && !transcript.isBlank()) {
+                    return "## Transcript Context\n" + transcript;
+                }
+            }
+
+            // 2. Try to find 'section.passage_text' (Reading)
+            if (root.has("section") && root.get("section").has("passage_text")) {
+                String passage = root.get("section").get("passage_text").asText();
+                if (passage != null && !passage.isBlank()) {
+                    return "## Passage Context\n" + passage;
+                }
+            }
+
+            // 3. Try generic 'passage_text' at root
+            if (root.has("passage_text")) {
+                return "## Passage Context\n" + root.get("passage_text").asText();
+            }
+
+        } catch (Exception e) {
+            logger.warn("Failed to extract context from original JSON: {}", e.getMessage());
         }
 
         return null;
@@ -294,75 +318,148 @@ public class RefinementService {
     }
 
     /**
-     * Parse the AI response to extract refined JSON and patches
+     * Parse AI response to extract patches and apply them to the original JSON.
+     * New patch-based approach - AI returns patches, we apply them.
      */
-    private RefinementResponseDTO parseRefinementResponse(String response, List<ValidationIssue> issues) {
+    private RefinementResponseDTO parseAndApplyPatches(
+            String aiResponse,
+            String originalJson,
+            List<ValidationIssue> issues) {
+
         RefinementResponseDTO result = new RefinementResponseDTO();
         List<RefinementPatch> patches = new ArrayList<>();
 
-        // Extract FIXES APPLIED section
-        Pattern fixesPattern = Pattern.compile("FIXES APPLIED:\\s*\\n(.*?)\\n```", Pattern.DOTALL);
-        Matcher fixesMatcher = fixesPattern.matcher(response);
-
-        if (fixesMatcher.find()) {
-            String fixesSection = fixesMatcher.group(1);
-            // Parse each fix line
-            String[] fixLines = fixesSection.split("\\n");
-            for (int i = 0; i < fixLines.length; i++) {
-                String line = fixLines[i].trim();
-                if (line.startsWith("-") || line.startsWith("•")) {
-                    RefinementPatch patch = RefinementPatch.builder()
-                            .description(line.substring(1).trim())
-                            .issueId(issues.size() > i ? issues.get(i).getId() : "unknown")
-                            .build();
-
-                    // Try to extract question number
-                    Pattern qNumPattern = Pattern.compile("Q(\\d+)");
-                    Matcher qNumMatcher = qNumPattern.matcher(line);
-                    if (qNumMatcher.find()) {
-                        patch.setQuestionNumber(Integer.parseInt(qNumMatcher.group(1)));
-                    }
-
-                    patches.add(patch);
-                }
+        try {
+            // Extract JSON from response (may be in code block)
+            String patchJson = extractJsonFromResponse(aiResponse);
+            if (patchJson == null) {
+                result.setSuccess(false);
+                result.setErrorMessage("Could not extract patches JSON from AI response");
+                return result;
             }
+
+            // Parse the patches object
+            com.fasterxml.jackson.databind.JsonNode patchRoot = objectMapper.readTree(patchJson);
+            com.fasterxml.jackson.databind.JsonNode patchesArray = patchRoot.get("patches");
+
+            if (patchesArray == null || !patchesArray.isArray()) {
+                result.setSuccess(false);
+                result.setErrorMessage("AI response missing 'patches' array");
+                return result;
+            }
+
+            // Convert to JsonPatcher.Patch objects
+            List<JsonPatcher.Patch> patcherPatches = new ArrayList<>();
+            for (com.fasterxml.jackson.databind.JsonNode patchNode : patchesArray) {
+                JsonPatcher.Patch patch = new JsonPatcher.Patch();
+                patch.setIssueId(getTextOrNull(patchNode, "issueId"));
+                patch.setQuestionNumber(getIntOrNull(patchNode, "questionNumber"));
+                patch.setOperationFromString(getTextOrNull(patchNode, "operation"));
+                patch.setPath(getTextOrNull(patchNode, "path"));
+                patch.setIndex(getIntOrNull(patchNode, "index"));
+                patch.setOldValue(getValueOrNull(patchNode, "oldValue"));
+
+                // newValue can be complex object for insert operations
+                com.fasterxml.jackson.databind.JsonNode newValueNode = patchNode.get("newValue");
+                if (newValueNode != null) {
+                    if (newValueNode.isTextual()) {
+                        patch.setNewValue(newValueNode.asText());
+                    } else if (newValueNode.isObject() || newValueNode.isArray()) {
+                        // Keep as JsonNode for complex objects (insert)
+                        patch.setNewValue(newValueNode);
+                    } else if (newValueNode.isNumber()) {
+                        patch.setNewValue(newValueNode.asInt());
+                    } else {
+                        patch.setNewValue(newValueNode.asText());
+                    }
+                }
+
+                patch.setReason(getTextOrNull(patchNode, "reason"));
+                patcherPatches.add(patch);
+
+                // Also create RefinementPatch for response
+                RefinementPatch refinementPatch = RefinementPatch.builder()
+                        .issueId(patch.getIssueId())
+                        .questionNumber(patch.getQuestionNumber())
+                        .description(patch.getReason())
+                        .build();
+                patches.add(refinementPatch);
+            }
+
+            // Apply patches to original JSON
+            JsonPatcher.PatchResult patchResult = jsonPatcher.applyPatches(originalJson, patcherPatches);
+
+            result.setRefinedJson(patchResult.getPatchedJson());
+            result.setPatches(patches);
+            result.setSuccess(patchResult.getFailCount() == 0);
+
+            // Extract summary if present
+            com.fasterxml.jackson.databind.JsonNode summaryNode = patchRoot.get("summary");
+            if (summaryNode != null && summaryNode.isTextual()) {
+                logger.info("Refinement summary: {}", summaryNode.asText());
+            }
+
+            if (patchResult.getFailCount() > 0) {
+                result.setErrorMessage(String.format("Applied %d patches, %d failed: %s",
+                        patchResult.getSuccessCount(),
+                        patchResult.getFailCount(),
+                        String.join("; ", patchResult.getErrors())));
+            }
+
+            logger.info("Applied {} patches successfully, {} failed",
+                    patchResult.getSuccessCount(), patchResult.getFailCount());
+
+        } catch (Exception e) {
+            logger.error("Failed to parse/apply patches: {}", e.getMessage(), e);
+            result.setSuccess(false);
+            result.setErrorMessage("Failed to process patches: " + e.getMessage());
         }
 
-        // Extract JSON block
+        return result;
+    }
+
+    /**
+     * Extract JSON from AI response, handling code blocks.
+     */
+    private String extractJsonFromResponse(String response) {
+        // Try to find JSON in code block first
         Pattern jsonPattern = Pattern.compile("```json\\s*\\n(.*?)\\n```", Pattern.DOTALL);
         Matcher jsonMatcher = jsonPattern.matcher(response);
-
-        String jsonContent = null;
         if (jsonMatcher.find()) {
-            jsonContent = jsonMatcher.group(1).trim();
-        } else {
-            // Try to find raw JSON if no code block
-            int jsonStart = response.indexOf("{");
-            int jsonEnd = response.lastIndexOf("}");
-            if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
-                jsonContent = response.substring(jsonStart, jsonEnd + 1);
-            }
+            return jsonMatcher.group(1).trim();
         }
 
-        // Validate and clean JSON if found
-        if (jsonContent != null) {
-            try {
-                // Parse to validate - this will throw if invalid
-                objectMapper.readTree(jsonContent);
-                result.setRefinedJson(jsonContent);
-                result.setSuccess(true);
-            } catch (Exception e) {
-                logger.warn("Extracted JSON is invalid: {}", e.getMessage());
-                result.setSuccess(false);
-                result.setErrorMessage("AI returned invalid JSON: " + e.getMessage());
-            }
-        } else {
-            result.setSuccess(false);
-            result.setErrorMessage("Could not extract JSON from AI response");
+        // Try to find raw JSON
+        int jsonStart = response.indexOf("{");
+        int jsonEnd = response.lastIndexOf("}");
+        if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
+            return response.substring(jsonStart, jsonEnd + 1);
         }
 
-        result.setPatches(patches);
-        return result;
+        return null;
+    }
+
+    private String getTextOrNull(com.fasterxml.jackson.databind.JsonNode node, String field) {
+        com.fasterxml.jackson.databind.JsonNode fieldNode = node.get(field);
+        return (fieldNode != null && fieldNode.isTextual()) ? fieldNode.asText() : null;
+    }
+
+    private Integer getIntOrNull(com.fasterxml.jackson.databind.JsonNode node, String field) {
+        com.fasterxml.jackson.databind.JsonNode fieldNode = node.get(field);
+        return (fieldNode != null && fieldNode.isNumber()) ? fieldNode.asInt() : null;
+    }
+
+    private Object getValueOrNull(com.fasterxml.jackson.databind.JsonNode node, String field) {
+        com.fasterxml.jackson.databind.JsonNode fieldNode = node.get(field);
+        if (fieldNode == null || fieldNode.isNull())
+            return null;
+        if (fieldNode.isTextual())
+            return fieldNode.asText();
+        if (fieldNode.isNumber())
+            return fieldNode.asInt();
+        if (fieldNode.isBoolean())
+            return fieldNode.asBoolean();
+        return fieldNode.asText(); // Fallback to text
     }
 
     /**

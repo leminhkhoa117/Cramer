@@ -747,6 +747,260 @@ public class PromptBuilderService {
                 return system.toString();
         }
 
+        /**
+         * PASS 1: Build prompt for Reading Passage Generation ONLY.
+         * strictly prioritizes user facts.
+         */
+        public String buildReadingPassagePrompt(GenerationRequestDTO request) {
+                StringBuilder prompt = new StringBuilder();
+
+                Integer partNumber = request.getPartNumber() != null ? request.getPartNumber() : 1;
+
+                prompt.append("## TASK: Generate IELTS Academic Reading Passage (Phase 1/2)\n\n");
+                prompt.append("Your goal is to write a high-quality, academic passage suitable for IELTS Reading Part ")
+                                .append(partNumber).append(".\n");
+                prompt.append("Do NOT generate questions yet. Focus ONLY on the text.\n\n");
+
+                // Part-specific specs
+                prompt.append("### Part ").append(partNumber).append(" Specifications\n");
+                switch (partNumber) {
+                        case 1:
+                                prompt.append("- **Context**: General interest, social, or factual topic.\n");
+                                prompt.append("- **Style**: Descriptive and factual.\n");
+                                prompt.append("- **Word Count**: 900-1000 words.\n");
+                                break;
+                        case 2:
+                                prompt.append("- **Context**: Workplace, training, or general interest topic.\n");
+                                prompt.append("- **Style**: Discursive, logical argument or detailed description.\n");
+                                prompt.append("- **Word Count**: 1000-1100 words.\n");
+                                break;
+                        case 3:
+                                prompt.append("- **Context**: Complex academic topic.\n");
+                                prompt.append("- **Style**: Argumentative, abstract, complex sentence structures.\n");
+                                prompt.append("- **Word Count**: 1100-1200 words.\n");
+                                break;
+                }
+
+                // Topic & Facts
+                prompt.append("\n### Topic: ").append(request.getTopic()).append("\n");
+                List<String> facts = request.getFacts();
+                if (facts != null && !facts.isEmpty()) {
+                        prompt.append("### Content Source (Strict Mode)\n");
+                        prompt.append("You MUST base the passage content primarily on the following verified facts.\n");
+                        prompt.append("You may connect them with logical transitions, but do not contradict them.\n");
+                        for (int i = 0; i < facts.size(); i++) {
+                                prompt.append(String.format("- %s\n", facts.get(i)));
+                        }
+                } else {
+                        prompt.append("### Content Generation\n");
+                        prompt.append("No specific facts provided. Research the topic and use realistic, verifiable academic details.\n");
+                }
+
+                prompt.append("\n### Output Requirements\n");
+                prompt.append("Return valid JSON with exactly:\n");
+                prompt.append("1. `passage_text`: The full academic text (HTML formatted with paragraph labels like <strong>A.</strong>).\n");
+                prompt.append("2. `word_count`: Integer count of words.\n");
+                prompt.append("Do NOT include `questions`.\n");
+
+                return prompt.toString();
+        }
+
+        /**
+         * PASS 2: Build prompt for Reading Questions Generation ONLY.
+         * ENHANCED: Includes ALL critical formatting rules from buildReadingPrompt.
+         */
+        public String buildReadingQuestionsPrompt(GenerationRequestDTO request, String passageText) {
+                StringBuilder prompt = new StringBuilder();
+
+                Integer partNumber = request.getPartNumber() != null ? request.getPartNumber() : 1;
+                int startNumber = (partNumber == 1) ? 1 : (partNumber == 2 ? 14 : 27);
+                int totalQuestions = (partNumber == 3) ? 14 : 13;
+
+                prompt.append("## TASK: Generate IELTS Reading Questions (Phase 2/2)\n\n");
+                prompt.append("Based on the provided passage, generate the exam questions.\n\n");
+
+                // Provide the passage
+                prompt.append("### Source Passage\n");
+                prompt.append("```html\n").append(passageText).append("\n```\n\n");
+
+                // Question Numbering
+                prompt.append("### Question Numbering (STRICT)\n");
+                prompt.append("- **Start at**: Q").append(startNumber).append("\n");
+                prompt.append("- **End at**: Q").append(startNumber + totalQuestions - 1).append("\n");
+                prompt.append("- **Total**: ").append(totalQuestions).append(" questions\n\n");
+
+                // Requested Types
+                List<String> requestedTypes = request.getQuestionTypes();
+                if ((requestedTypes == null || requestedTypes.isEmpty())
+                                && request.getQuestionTypeCounts() != null
+                                && !request.getQuestionTypeCounts().isEmpty()) {
+                        requestedTypes = new ArrayList<>(request.getQuestionTypeCounts().keySet());
+                }
+
+                if (requestedTypes != null && !requestedTypes.isEmpty()) {
+                        prompt.append("### Requested Question Types\n");
+                        if (request.getQuestionTypeCounts() != null && !request.getQuestionTypeCounts().isEmpty()) {
+                                request.getQuestionTypeCounts().forEach((type, count) -> {
+                                        prompt.append("- ").append(type).append(": ").append(count)
+                                                        .append(" questions\n");
+                                });
+                        } else {
+                                for (String type : requestedTypes) {
+                                        prompt.append("- ").append(type).append("\n");
+                                }
+                        }
+                        prompt.append("\n");
+                }
+
+                // ==========================================
+                // QUESTION TYPE RULES (Critical Section)
+                // ==========================================
+                prompt.append("### Question Type Rules (CRITICAL - MUST FOLLOW EXACTLY)\n\n");
+
+                // FILL_IN_BLANK / SUMMARY_COMPLETION
+                prompt.append("#### FILL_IN_BLANK / SUMMARY_COMPLETION / NOTE_COMPLETION\n");
+                prompt.append("- **INLINE STRATEGY**: Each question MUST have its own text with ONE blank.\n");
+                prompt.append("- **BLANK FORMAT**: Use `<strong>N</strong> ____` (bold number + 4 underscores)\n");
+                prompt.append("- **word_limit**: REQUIRED. Use EXACT strings:\n");
+                prompt.append("  - `\"ONE WORD ONLY\"`\n");
+                prompt.append("  - `\"NO MORE THAN TWO WORDS\"`\n");
+                prompt.append("  - `\"NO MORE THAN THREE WORDS\"`\n");
+                prompt.append("  - `\"ONE WORD AND/OR A NUMBER\"`\n");
+                prompt.append("- Example:\n");
+                prompt.append("```json\n");
+                prompt.append("{\"question_number\": ").append(startNumber)
+                                .append(", \"question_type\": \"FILL_IN_BLANK\",\n");
+                prompt.append(" \"question_content\": {\"text\": \"The <strong>").append(startNumber)
+                                .append("</strong> ____ of the city grew rapidly.\"},\n");
+                prompt.append(" \"correct_answer\": [\"population\"], \"word_limit\": \"ONE WORD ONLY\"}\n");
+                prompt.append("```\n\n");
+
+                // TRUE_FALSE_NOT_GIVEN / YES_NO_NOT_GIVEN
+                prompt.append("#### TRUE_FALSE_NOT_GIVEN / YES_NO_NOT_GIVEN\n");
+                prompt.append("- `question_content.text`: The statement to evaluate\n");
+                prompt.append("- `correct_answer`: EXACTLY `[\"TRUE\"]`, `[\"FALSE\"]`, or `[\"NOT GIVEN\"]`\n");
+                prompt.append("  (or `[\"YES\"]`, `[\"NO\"]`, `[\"NOT GIVEN\"]` for YES_NO type)\n");
+                prompt.append("- `word_limit`: null\n\n");
+
+                // MATCHING_INFORMATION
+                prompt.append("#### MATCHING_INFORMATION\n");
+                prompt.append("- Match statements to paragraphs (A, B, C...)\n");
+                prompt.append("- `question_content.text`: The statement\n");
+                prompt.append("- `question_content.options`: Array of paragraph letters `[\"A\",\"B\",\"C\",\"D\",\"E\",\"F\"]`\n");
+                prompt.append("- `correct_answer`: Single letter `[\"C\"]`\n\n");
+
+                // MATCHING_HEADINGS
+                prompt.append("#### MATCHING_HEADINGS\n");
+                prompt.append("- Match paragraphs to headings\n");
+                prompt.append("- `question_content.text`: Paragraph reference (e.g., \"Paragraph A\")\n");
+                prompt.append("- `question_content.options`: Array of heading objects with roman numerals\n");
+                prompt.append("  `[{\"letter\":\"i\",\"text\":\"Origins of...\"},{\"letter\":\"ii\",\"text\":\"Health benefits\"}...]`\n");
+                prompt.append("- Options must be IDENTICAL for all questions in the group\n");
+                prompt.append("- `correct_answer`: `[\"ii\"]`\n\n");
+
+                // MULTIPLE_CHOICE
+                prompt.append("#### MULTIPLE_CHOICE\n");
+                prompt.append("- `question_content.text`: The question\n");
+                prompt.append("- `question_content.options`: `[\"A. First option\", \"B. Second option\", \"C. Third option\", \"D. Fourth option\"]`\n");
+                prompt.append("- `correct_answer`: `[\"B\"]`\n\n");
+
+                // MULTIPLE_CHOICE_MULTIPLE_ANSWERS
+                prompt.append("#### MULTIPLE_CHOICE_MULTIPLE_ANSWERS (Choose TWO)\n");
+                prompt.append("- Create TWO consecutive questions with IDENTICAL text/options\n");
+                prompt.append("- BOTH questions have the SAME `correct_answer` array with TWO letters\n");
+                prompt.append("- Example (Q").append(startNumber + 5).append(" and Q").append(startNumber + 6)
+                                .append(" are a pair):\n");
+                prompt.append("```json\n");
+                prompt.append("[{\"question_number\": ").append(startNumber + 5)
+                                .append(", \"question_type\": \"MULTIPLE_CHOICE_MULTIPLE_ANSWERS\",\n");
+                prompt.append("  \"question_content\": {\"text\": \"Which TWO advantages are mentioned?\",\n");
+                prompt.append("   \"options\": [\"A Lower costs\",\"B Quieter\",\"C Faster\",\"D Cleaner\",\"E Safer\"]},\n");
+                prompt.append("  \"correct_answer\": [\"B\",\"D\"]},\n");
+                prompt.append(" {\"question_number\": ").append(startNumber + 6)
+                                .append(", \"question_type\": \"MULTIPLE_CHOICE_MULTIPLE_ANSWERS\",\n");
+                prompt.append("  \"question_content\": {\"text\": \"Which TWO advantages are mentioned?\",\n");
+                prompt.append("   \"options\": [\"A Lower costs\",\"B Quieter\",\"C Faster\",\"D Cleaner\",\"E Safer\"]},\n");
+                prompt.append("  \"correct_answer\": [\"B\",\"D\"]}]\n");
+                prompt.append("```\n\n");
+
+                // SUMMARY_COMPLETION_OPTIONS
+                prompt.append("#### SUMMARY_COMPLETION_OPTIONS (Word Box)\n");
+                prompt.append("- Each question has inline blank + selects from word box\n");
+                prompt.append("- `question_content.options`: Array of `{letter, text}` objects\n");
+                prompt.append("- **CRITICAL**: ALL questions in group MUST have IDENTICAL options array\n");
+                prompt.append("- Provide 10 options (A-J) for 5-7 questions\n\n");
+
+                // Explanation Format
+                prompt.append("### Explanation Format (CRITICAL)\n");
+                prompt.append("All explanations must be JSON objects in Vietnamese:\n");
+                prompt.append("```json\n");
+                prompt.append("{\n");
+                prompt.append("  \"detail\": \"<Vietnamese explanation: why is this correct?>\",\n");
+                prompt.append("  \"quote\": \"<EXACT English quote from passage that proves the answer>\",\n");
+                prompt.append("  \"strategy\": \"<Vietnamese strategy tip for this question type>\"\n");
+                prompt.append("}\n");
+                prompt.append("```\n\n");
+
+                // Answer Validation
+                prompt.append("### Answer Validation Rules\n");
+                prompt.append("- Each question MUST have its OWN `correct_answer` array\n");
+                prompt.append("- For completion types: answer MUST appear EXACTLY in the passage\n");
+                prompt.append("- Answer word count MUST respect `word_limit`:\n");
+                prompt.append("  - ONE WORD ONLY = 1 word (no spaces)\n");
+                prompt.append("  - NO MORE THAN TWO WORDS = 1-2 words max\n");
+                prompt.append("  - NO MORE THAN THREE WORDS = 1-3 words max\n\n");
+
+                // Validation Checklist
+                prompt.append("### MANDATORY VALIDATION CHECKLIST\n");
+                prompt.append("Before outputting, verify:\n");
+                prompt.append("- [ ] Question numbers start at ").append(startNumber).append(" and are sequential\n");
+                prompt.append("- [ ] OPTIONS array is INSIDE `question_content` for MATCHING/MCQ types\n");
+                prompt.append("- [ ] Every FILL_IN_BLANK has `<strong>N</strong> ____` in text\n");
+                prompt.append("- [ ] Every question has individual `correct_answer` array\n");
+                prompt.append("- [ ] Every question has individual `explanation` object\n");
+                prompt.append("- [ ] Word limits use EXACT format strings\n");
+                prompt.append("- [ ] MCMA pairs have IDENTICAL text/options and correct_answer\n\n");
+
+                // Output
+                prompt.append("### Output Requirements\n");
+                prompt.append("Return valid JSON with:\n");
+                prompt.append("1. `questions`: Array of ").append(totalQuestions).append(" question objects.\n");
+                prompt.append("Do NOT re-output the passage.\n");
+
+                return prompt.toString();
+        }
+
+        /**
+         * Get JSON Schema for Pass 1 (Reading Passage).
+         */
+        public Map<String, Object> getReadingPassageSchema() {
+                Map<String, Object> schema = new LinkedHashMap<>();
+                schema.put("type", "object");
+                schema.put("properties", Map.of(
+                                "passage_text", Map.of("type", "string"),
+                                "word_count", Map.of("type", "integer")));
+                schema.put("required", List.of("passage_text", "word_count"));
+                return schema;
+        }
+
+        /**
+         * Get JSON Schema for Pass 2 (Reading Questions).
+         */
+        @SuppressWarnings("unchecked")
+        public Map<String, Object> getReadingQuestionsSchema() {
+                // Reuse full schema but remove section/passage requirement
+                Map<String, Object> fullSchema = getReadingJsonSchema();
+                Map<String, Object> properties = new LinkedHashMap<>(
+                                (Map<String, Object>) fullSchema.get("properties"));
+                properties.remove("section"); // Remove passage section
+
+                Map<String, Object> schema = new LinkedHashMap<>();
+                schema.put("type", "object");
+                schema.put("properties", properties);
+                schema.put("required", List.of("questions"));
+                return schema;
+        }
+
         // ==================== LISTENING PROMPTS (Phase 3 Enhanced)
         // ====================
 
@@ -831,13 +1085,9 @@ public class PromptBuilderService {
                                 .append(" to ").append(startNumber + 9).append(" for Part ").append(partNumber)
                                 .append(".\n\n");
 
-                if (requestedTypes != null && !requestedTypes.isEmpty()) {
-                        prompt.append("### Required Question Types\n");
-                        for (String type : requestedTypes) {
-                                prompt.append("- ").append(type).append("\n");
-                        }
-                        prompt.append("\n");
-                }
+                // NOTE: "Required Question Types" section removed - per-part specs already
+                // define allowed types
+                // Adding both was confusing AI into thinking there was a conflict
 
                 if (request.getQuestionTypeCounts() != null && !request.getQuestionTypeCounts().isEmpty()) {
                         prompt.append("### Exact Question Type Counts (STRICT)\n");
@@ -1031,7 +1281,8 @@ public class PromptBuilderService {
                 prompt.append("**Context**: Everyday social conversation between 2 speakers\n");
                 prompt.append(
                                 "**Scenario Examples**: Booking accommodation, registering for service, asking about facilities\n");
-                prompt.append("**Word count**: 900-1000 words for transcript\n");
+                prompt.append("**Transcript Length**: 900-1000 words (approximately 6-7 minutes of natural dialogue)\n");
+                prompt.append("**Important**: Do NOT count words yourself - just write a complete, natural conversation.\n");
                 prompt.append("**Questions**: 10 questions (Q1-10)\n");
                 prompt.append("**Typical Block Structure**:\n");
                 prompt.append("  - NOTE_COMPLETION block for Q1-10\n");
@@ -1050,7 +1301,8 @@ public class PromptBuilderService {
         private void buildListeningPart2Prompt(StringBuilder prompt) {
                 prompt.append("**Context**: Monologue in everyday social context\n");
                 prompt.append("**Scenario Examples**: Tour guide speech, public announcement, facility orientation\n");
-                prompt.append("**Word count**: 1000-1100 words for transcript\n");
+                prompt.append("**Transcript Length**: 1000-1100 words (approximately 7-8 minutes of natural speech)\n");
+                prompt.append("**Important**: Do NOT count words yourself - just write a complete, detailed monologue.\n");
                 prompt.append("**Questions**: 10 questions (Q11-20)\n");
                 prompt.append("**Typical Block Structure (choose one realistic pattern)**:\n");
                 prompt.append("  - 4 MULTIPLE_CHOICE (Q11-14) + 6 MATCHING (Q15-20)\n");
@@ -1069,7 +1321,8 @@ public class PromptBuilderService {
         private void buildListeningPart3Prompt(StringBuilder prompt) {
                 prompt.append("**Context**: Conversation between 2-4 speakers in academic context\n");
                 prompt.append("**Scenario Examples**: Student-tutor discussion, group project planning\n");
-                prompt.append("**Word count**: 1100-1200 words for transcript\n");
+                prompt.append("**Transcript Length**: 1100-1200 words (approximately 7-8 minutes of academic discussion)\n");
+                prompt.append("**Important**: Do NOT count words yourself - just write a complete, substantial conversation.\n");
                 prompt.append("**Questions**: 10 questions (Q21-30)\n");
                 prompt.append("**Typical Block Structure**:\n");
                 prompt.append("  - 2 MULTIPLE_CHOICE_MULTIPLE_ANSWERS (Q21-22) OR 4 MULTIPLE_CHOICE (Q21-24)\n");
@@ -1087,7 +1340,8 @@ public class PromptBuilderService {
         private void buildListeningPart4Prompt(StringBuilder prompt) {
                 prompt.append("**Context**: Monologue on academic subject\n");
                 prompt.append("**Scenario Examples**: University lecture, research presentation\n");
-                prompt.append("**Word count**: 1100-1200 words for transcript\n");
+                prompt.append("**Transcript Length**: 1100-1200 words (approximately 7-8 minutes of academic lecture)\n");
+                prompt.append("**Important**: Do NOT count words yourself - just write a complete, detailed lecture.\n");
                 prompt.append("**Questions**: 10 questions (Q31-40)\n");
                 prompt.append("**Typical Block Structure**:\n");
                 prompt.append("  - NOTE_COMPLETION block for Q31-40\n");
@@ -1117,7 +1371,7 @@ public class PromptBuilderService {
                 system.append("- Knowledge of authentic distractor patterns and paraphrasing techniques\n\n");
 
                 system.append("## Critical Rules\n");
-                system.append("1. **WORD COUNT**: Transcript must match the specified word count range\n");
+                system.append("1. **COMPLETENESS**: Write a full, natural transcript matching the time estimate. Do NOT count words yourself.\\n");
                 system.append("2. **NATURAL SPEECH**: Dialogue must sound authentic when read aloud\n");
                 system.append("3. **ANSWER CLARITY**: Each answer must be clearly spoken in the transcript\n");
                 system.append("4. **DISTRACTION**: Include plausible distractors mentioned before the answer\n");
@@ -1166,6 +1420,334 @@ public class PromptBuilderService {
                 system.append("You MUST respond with valid JSON only. No markdown, no explanations outside JSON.\n");
 
                 return system.toString();
+        }
+
+        /**
+         * PASS 1: Build prompt for Transcript Generation ONLY.
+         * ENHANCED: Includes audio_placeholder field requirements, speaker labels, word
+         * counts.
+         */
+        public String buildListeningTranscriptPrompt(GenerationRequestDTO request) {
+                StringBuilder prompt = new StringBuilder();
+
+                prompt.append("## TASK: Generate IELTS Listening Transcript (Phase 1/2)\n\n");
+                prompt.append("Your goal is to write a high-quality, authentic IELTS Listening transcript.\n");
+                prompt.append("Do NOT generate questions yet. Focus ONLY on the dialogue/monologue.\n\n");
+
+                Integer partNumber = request.getPartNumber() != null ? request.getPartNumber() : 1;
+                prompt.append("### Part ").append(partNumber).append(" Specifications\n");
+                switch (partNumber) {
+                        case 1:
+                                buildListeningPart1Prompt(prompt);
+                                break;
+                        case 2:
+                                buildListeningPart2Prompt(prompt);
+                                break;
+                        case 3:
+                                buildListeningPart3Prompt(prompt);
+                                break;
+                        case 4:
+                                buildListeningPart4Prompt(prompt);
+                                break;
+                }
+
+                // Speaker Label Requirements
+                prompt.append("\n### Speaker Labels (MANDATORY)\n");
+                switch (partNumber) {
+                        case 1:
+                                prompt.append("- Two named speakers with clear conversational roles (e.g., AGENT:, CALLER:)\n");
+                                prompt.append("- Each line MUST start with the speaker label followed by a colon.\n");
+                                break;
+                        case 2:
+                                prompt.append("- Single speaker monologue (e.g., CURATOR:, COORDINATOR:, TOUR GUIDE:)\n");
+                                prompt.append("- Each paragraph MUST start with the speaker label.\n");
+                                break;
+                        case 3:
+                                prompt.append("- 2-4 speakers in academic discussion (e.g., TUTOR:, ANNA:, BEN:, CARLOS:)\n");
+                                prompt.append("- Each line MUST start with the speaker label followed by a colon.\n");
+                                break;
+                        case 4:
+                                prompt.append("- Single speaker academic lecture (e.g., PROFESSOR:, DR. SMITH:, LECTURER:)\n");
+                                prompt.append("- Each paragraph MUST start with the speaker label.\n");
+                                break;
+                }
+
+                // Word Count Limits
+                prompt.append("\n### Transcript Word Count (STRICT LIMITS)\n");
+                switch (partNumber) {
+                        case 1:
+                                prompt.append("- Target: 700-900 words. Maximum: 1050 words.\n");
+                                break;
+                        case 2:
+                                prompt.append("- Target: 800-1000 words. Maximum: 1150 words.\n");
+                                break;
+                        case 3:
+                                prompt.append("- Target: 900-1100 words. Maximum: 1250 words.\n");
+                                break;
+                        case 4:
+                                prompt.append("- Target: 1000-1200 words. Maximum: 1400 words.\n");
+                                break;
+                }
+                prompt.append("- Do NOT exceed maximum. The transcript will be validated for word count.\n");
+
+                // Topic & Facts
+                prompt.append("\n### Topic: ").append(request.getTopic()).append("\n");
+                prompt.append("### Facts to incorporate:\n");
+                List<String> facts = request.getFacts();
+                if (facts != null && !facts.isEmpty()) {
+                        for (int i = 0; i < facts.size(); i++) {
+                                prompt.append("- ").append(facts.get(i)).append("\n");
+                        }
+                } else {
+                        prompt.append("- Use realistic details.\n");
+                }
+
+                // Audio Placeholder Requirements
+                prompt.append("\n### audio_placeholder Object (ALL FIELDS MANDATORY)\n");
+                prompt.append("You MUST include an `audio_placeholder` object with the following fields:\n");
+                prompt.append("```json\n");
+                prompt.append("{\n");
+                prompt.append("  \"duration_estimate\": \"4-5 minutes\",\n");
+                prompt.append("  \"speaker_count\": 2,\n");
+                prompt.append("  \"speaker_genders\": [\"male\", \"female\"],\n");
+                prompt.append("  \"accent_recommendation\": \"British RP\",\n");
+                prompt.append("  \"pacing_notes\": \"Moderate pace with natural pauses\",\n");
+                prompt.append("  \"background_ambient\": \"Office environment sounds\",\n");
+                prompt.append("  \"tts_ready\": true\n");
+                prompt.append("}\n");
+                prompt.append("```\n");
+                prompt.append("**Required fields:** duration_estimate, speaker_count, accent_recommendation, pacing_notes, background_ambient\n\n");
+
+                // Output Requirements
+                prompt.append("### Output Requirements\n");
+                prompt.append("Return valid JSON with exactly:\n");
+                prompt.append("1. `transcript`: The full dialogue/monologue with speaker labels on every line.\n");
+                prompt.append("2. `audio_placeholder`: Metadata object with all required fields.\n");
+                prompt.append("Do NOT include `questions` or `section_layout`.\n");
+
+                return prompt.toString();
+        }
+
+        /**
+         * PASS 2: Build prompt for Question Generation ONLY (using existing
+         * transcript).
+         * ENHANCED: Includes all critical formatting rules from buildListeningPrompt.
+         */
+        public String buildListeningQuestionsPrompt(GenerationRequestDTO request, String transcript) {
+                StringBuilder prompt = new StringBuilder();
+
+                prompt.append("## TASK: Generate IELTS Listening Questions (Phase 2/2)\n\n");
+                prompt.append("Based on the provided transcript, generate the exam questions.\n\n");
+
+                // Provide the transcript
+                prompt.append("### Source Transcript\n");
+                prompt.append("```\n").append(transcript).append("\n```\n\n");
+
+                Integer partNumber = request.getPartNumber() != null ? request.getPartNumber() : 1;
+                int startNumber = (partNumber - 1) * 10 + 1;
+
+                // Part-specific requirements
+                prompt.append("### Part ").append(partNumber).append(" Requirements\n");
+                switch (partNumber) {
+                        case 1:
+                                buildListeningPart1Prompt(prompt);
+                                break;
+                        case 2:
+                                buildListeningPart2Prompt(prompt);
+                                break;
+                        case 3:
+                                buildListeningPart3Prompt(prompt);
+                                break;
+                        case 4:
+                                buildListeningPart4Prompt(prompt);
+                                break;
+                }
+
+                // === REQUESTED QUESTION TYPES (CRITICAL - USER CONFIG) ===
+                List<String> requestedTypes = request.getQuestionTypes();
+                if ((requestedTypes == null || requestedTypes.isEmpty())
+                                && request.getQuestionTypeCounts() != null
+                                && !request.getQuestionTypeCounts().isEmpty()) {
+                        requestedTypes = new ArrayList<>(request.getQuestionTypeCounts().keySet());
+                }
+
+                if (requestedTypes != null && !requestedTypes.isEmpty()) {
+                        prompt.append("\n### Requested Question Types (MUST INCLUDE ALL)\n");
+                        prompt.append("The user has specifically requested these question types. You MUST include ALL of them:\n");
+                        if (request.getQuestionTypeCounts() != null && !request.getQuestionTypeCounts().isEmpty()) {
+                                request.getQuestionTypeCounts().forEach((type, count) -> {
+                                        prompt.append("- **").append(type).append("**: ").append(count)
+                                                        .append(" questions\n");
+                                });
+                        } else {
+                                for (String type : requestedTypes) {
+                                        prompt.append("- **").append(type).append("**\n");
+                                }
+                        }
+                        prompt.append("\n");
+                }
+
+                // === CRITICAL FORMATTING RULES ===
+                prompt.append("\n### Question Numbering (STRICT)\n");
+                prompt.append("- Use sequential numbers from ").append(startNumber)
+                                .append(" to ").append(startNumber + 9).append(" for Part ").append(partNumber)
+                                .append(".\n\n");
+
+                // Section layout requirements
+                prompt.append("### Section Layout (CRITICAL - EXACT FORMAT REQUIRED)\n");
+                prompt.append("The `section_layout` MUST be an object with a `blocks` array:\n");
+                prompt.append("```json\n");
+                prompt.append("{\n");
+                prompt.append("  \"blocks\": [\n");
+                prompt.append("    {\n");
+                prompt.append("      \"block_type\": \"NOTE_COMPLETION\",\n");
+                prompt.append("      \"content\": {\n");
+                prompt.append("        \"title\": \"Questions ").append(startNumber).append("-").append(startNumber + 9)
+                                .append("\",\n");
+                prompt.append("        \"main_title\": \"Topic Title Here\",\n");
+                prompt.append("        \"instructions_text\": \"<b>Instructions</b><br/>Complete the notes below.\"\n");
+                prompt.append("      },\n");
+                prompt.append("      \"question_numbers\": [").append(startNumber);
+                for (int i = 1; i < 10; i++)
+                        prompt.append(",").append(startNumber + i);
+                prompt.append("]\n");
+                prompt.append("    }\n");
+                prompt.append("  ]\n");
+                prompt.append("}\n");
+                prompt.append("```\n");
+                prompt.append("Block types: NOTE_COMPLETION, INSTRUCTIONS_ONLY, MATCHING_FEATURES, PLAN_MAP_DIAGRAM_LABELING\n\n");
+
+                // CRITICAL: question_numbers requirement
+                prompt.append("### MANDATORY: question_numbers Array (EVERY BLOCK MUST HAVE THIS)\n");
+                prompt.append("Every block in section_layout.blocks[] MUST include:\n");
+                prompt.append("`\"question_numbers\": [list of question numbers this block contains]`\n\n");
+
+                // Question Content Format for FILL_IN_BLANK / NOTE_COMPLETION
+                prompt.append("### Question Content Format for FILL_IN_BLANK / NOTE_COMPLETION\n");
+                prompt.append("**CRITICAL: INLINE STRATEGY (Each question has its own text)**\n");
+                prompt.append("- **Each question object MUST contain its specific bullet point or sentence fragment.**\n");
+                prompt.append("- **Do NOT leave the 'text' field empty for any question.**\n");
+                prompt.append("- **BLANK FORMAT**: Use `<strong>{number}</strong> ____` (bold number followed by 4 underscores).\n");
+                prompt.append("- **section_title**: Optional, use to create section headers.\n\n");
+
+                prompt.append("Example (generating Q").append(startNumber).append(", Q").append(startNumber + 1)
+                                .append("):\n");
+                prompt.append("```json\n");
+                prompt.append("// Question ").append(startNumber).append("\n");
+                prompt.append("{\"text\": \"• making sure the beach does not have <strong>").append(startNumber)
+                                .append("</strong> ____ on it\", \"section_title\": \"Beach\"}\n");
+                prompt.append("// Question ").append(startNumber + 1).append("\n");
+                prompt.append("{\"text\": \"• no <strong>").append(startNumber + 1)
+                                .append("</strong> ____ allowed\"}\n");
+                prompt.append("```\n");
+                prompt.append("**Failure to include text in each question will cause the test to render blank/broken questions.**\n");
+                prompt.append("Always include `word_limit` for ALL questions (e.g., \"ONE WORD ONLY\").\n\n");
+
+                // Multiple Choice Format - ENHANCED
+                prompt.append("### Multiple Choice Format (CRITICAL)\n");
+                prompt.append("**block_type for MC questions**: Use `INSTRUCTIONS_ONLY` (NOT `MULTIPLE_CHOICE` - that is invalid!)\n\n");
+                prompt.append("**MULTIPLE_CHOICE** (single answer):\n");
+                prompt.append("- `question_content.options`: array of strings `[\"A ...\", \"B ...\", \"C ...\"]`\n");
+                prompt.append("- `correct_answer`: single-element array `[\"B\"]`\n\n");
+                prompt.append("**MULTIPLE_CHOICE_MULTIPLE_ANSWERS** (Choose TWO letters) - STRICT FORMAT:\n");
+                prompt.append("- Create **TWO consecutive questions** (e.g., Q21 and Q22)\n");
+                prompt.append("- **BOTH questions MUST have IDENTICAL** `text` and `options`\n");
+                prompt.append("- **BOTH questions MUST have the SAME** `correct_answer` array with **EXACTLY 2 letters**\n");
+                prompt.append("- Example:\n");
+                prompt.append("```json\n");
+                prompt.append("[\n");
+                prompt.append("  {\"question_number\": 21, \"question_type\": \"MULTIPLE_CHOICE_MULTIPLE_ANSWERS\",\n");
+                prompt.append("   \"question_content\": {\"text\": \"Which TWO benefits are mentioned?\",\n");
+                prompt.append("    \"options\": [\"A Lower cost\", \"B Better quality\", \"C Faster delivery\", \"D More options\", \"E Eco-friendly\"]},\n");
+                prompt.append("   \"correct_answer\": [\"B\", \"E\"]},\n");
+                prompt.append("  {\"question_number\": 22, \"question_type\": \"MULTIPLE_CHOICE_MULTIPLE_ANSWERS\",\n");
+                prompt.append("   \"question_content\": {\"text\": \"Which TWO benefits are mentioned?\",\n");
+                prompt.append("    \"options\": [\"A Lower cost\", \"B Better quality\", \"C Faster delivery\", \"D More options\", \"E Eco-friendly\"]},\n");
+                prompt.append("   \"correct_answer\": [\"B\", \"E\"]}\n");
+                prompt.append("]\n");
+                prompt.append("```\n");
+                prompt.append("**FAILURE**: If correct_answer has only 1 letter, validation will fail!\n\n");
+
+                // Matching Format
+                prompt.append("### Matching Format\n");
+                prompt.append("- MATCHING questions: `question_content` must include only `text`.\n");
+                prompt.append("- All options belong in the block content (`section_layout.blocks[].content.options`).\n");
+                prompt.append("- **CRITICAL**: Options MUST be an array of `{letter, text}` objects, NOT strings.\n\n");
+
+                // Answer Validation - ENHANCED
+                prompt.append("### CRITICAL: Answer Validation Rules\n");
+                prompt.append("1. **Answers MUST appear in transcript**: For FILL_IN_BLANK questions, the correct_answer word(s) MUST appear EXACTLY (or nearly exactly) in the transcript you generated.\n");
+                prompt.append("2. **Each question has OWN answer**: Each question MUST have its OWN `correct_answer` array.\n");
+                prompt.append("3. **MCMA = TWO answers**: For MULTIPLE_CHOICE_MULTIPLE_ANSWERS, `correct_answer` MUST have EXACTLY 2 letters.\n");
+                prompt.append("4. **DO NOT duplicate answers**: Question ").append(startNumber)
+                                .append("'s correct_answer = [\"answer1\"] (just this question's answer)\n\n");
+
+                // Explanation format
+                prompt.append("### Explanation Format\n");
+                prompt.append("All explanations must be JSON objects in Vietnamese:\n");
+                prompt.append("```json\n");
+                prompt.append("{\n");
+                prompt.append("  \"detail\": \"<Vietnamese explanation: why is this correct?>\",\n");
+                prompt.append("  \"quote\": \"<EXACT English quote from transcript that PROVES the answer>\",\n");
+                prompt.append("  \"strategy\": \"<Vietnamese strategy tip for this question type>\"\n");
+                prompt.append("}\n");
+                prompt.append("```\n\n");
+
+                // Validation Checklist - ENHANCED
+                prompt.append("### MANDATORY VALIDATION CHECKLIST (Verify before output)\n\n");
+                prompt.append("**Block Requirements (CRITICAL):**\n");
+                prompt.append("  - [ ] `block_type` is ONLY one of: `NOTE_COMPLETION`, `INSTRUCTIONS_ONLY`, `MATCHING_FEATURES`, `PLAN_MAP_DIAGRAM_LABELING`\n");
+                prompt.append("  - [ ] **DO NOT USE** `MULTIPLE_CHOICE` as block_type (use `INSTRUCTIONS_ONLY` for MC questions)\n");
+                prompt.append("  - [ ] Every block has `question_numbers` array\n");
+                prompt.append("  - [ ] **Each question number appears in ONLY ONE block** (no duplicates across blocks)\n");
+                prompt.append("  - [ ] Every block has `content.instructions_text` (HTML string, even if brief)\n\n");
+                prompt.append("**Question Requirements:**\n");
+                prompt.append("  - [ ] Every FILL_IN_BLANK question has `word_limit` field\n");
+                prompt.append("  - [ ] Every FILL_IN_BLANK answer appears in the transcript\n");
+                prompt.append("  - [ ] Every MCMA question has correct_answer with EXACTLY 2 letters\n");
+                prompt.append("  - [ ] Every question has its own individual `correct_answer` (NOT duplicated)\n");
+                prompt.append("  - [ ] Every question has its own individual `explanation` object\n\n");
+
+                prompt.append("### Output Requirements\n");
+                prompt.append("Return valid JSON with:\n");
+                prompt.append("1. `section_layout`: The block layout.\n");
+                prompt.append("2. `questions`: The array of 10 questions.\n");
+                prompt.append("3. `figure_description`: If needed for Part 2 map/plan.\n");
+                prompt.append("Do NOT re-output the transcript.\n");
+
+                return prompt.toString();
+        }
+
+        /**
+         * Get JSON Schema for Pass 1 (Transcript).
+         */
+        public Map<String, Object> getListeningTranscriptSchema() {
+                Map<String, Object> schema = new LinkedHashMap<>();
+                schema.put("type", "object");
+                schema.put("properties", Map.of(
+                                "transcript", Map.of("type", "string"),
+                                "audio_placeholder", Map.of("type", "object")));
+                schema.put("required", List.of("transcript", "audio_placeholder"));
+                return schema;
+        }
+
+        /**
+         * Get JSON Schema for Pass 2 (Questions).
+         */
+        @SuppressWarnings("unchecked")
+        public Map<String, Object> getListeningQuestionsSchema() {
+                // Reuse the full schema but remove transcript requirement/property
+                Map<String, Object> fullSchema = getListeningJsonSchema();
+                Map<String, Object> properties = new LinkedHashMap<>(
+                                (Map<String, Object>) fullSchema.get("properties"));
+                properties.remove("transcript");
+                properties.remove("audio_placeholder");
+
+                Map<String, Object> schema = new LinkedHashMap<>();
+                schema.put("type", "object");
+                schema.put("properties", properties);
+                schema.put("required", List.of("section_layout", "questions"));
+                return schema;
         }
 
         // ==================== WRITING PROMPTS ====================

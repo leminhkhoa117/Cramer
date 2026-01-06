@@ -1031,12 +1031,26 @@ export default function QuestionEditModal({
         setIsSaving(true);
 
         try {
+            // Handle explanation (can be string or object)
+            let finalExplanation = explanation;
+            if (typeof explanation === 'string') {
+                finalExplanation = explanation.trim() || null;
+            } else if (typeof explanation === 'object' && explanation !== null) {
+                // Check if object is effectively empty
+                const hasContent = (explanation.detail && explanation.detail.trim()) ||
+                    (explanation.quote && explanation.quote.trim()) ||
+                    (explanation.strategy && explanation.strategy.trim());
+                if (!hasContent) {
+                    finalExplanation = null;
+                }
+            }
+
             // Build the data object
             const data = {
                 questionType,
                 questionContent: content,
                 correctAnswer: answer,
-                explanation: explanation.trim() || null,
+                explanation: finalExplanation,
                 wordLimit: wordLimit.trim() || null,
                 imageUrl: imageUrl.trim() || null,
             };
