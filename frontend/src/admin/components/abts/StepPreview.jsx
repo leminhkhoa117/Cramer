@@ -10,7 +10,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { FiInfo, FiChevronUp, FiChevronDown, FiClock, FiCpu, FiFileText, FiAlertTriangle, FiCopy, FiLink, FiHeadphones, FiCheck } from 'react-icons/fi';
+import { FiInfo, FiChevronUp, FiChevronDown, FiClock, FiCpu, FiFileText, FiAlertTriangle, FiCopy, FiHeadphones, FiCheck } from 'react-icons/fi';
 import useABTSStore from '../../stores/useABTSStore';
 import AdminPreviewContent from '../content/AdminPreviewContent';
 import StreamingDisplay from './StreamingDisplay';
@@ -30,9 +30,7 @@ export default function StepPreview({ onBack }) {
     generationError,
     reasoning,
     abortGeneration,
-    updateGeneratedQuestion,
-    audioUrls,
-    setAudioUrl
+    updateGeneratedQuestion
   } = useABTSStore();
 
   const [showMetadata, setShowMetadata] = useState(false);
@@ -43,6 +41,7 @@ export default function StepPreview({ onBack }) {
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [showTranscriptPanel, setShowTranscriptPanel] = useState(false);
   const [copiedTranscript, setCopiedTranscript] = useState(false);
+  const [isValidationExpanded, setIsValidationExpanded] = useState(null); // null = auto
 
   // Use onBack if provided, otherwise fallback to store's goToStep
   const handleGoBack = onBack || (() => goToStep(1));
@@ -139,11 +138,6 @@ export default function StepPreview({ onBack }) {
       console.error('Failed to copy transcript:', err);
     }
   }, [allTranscripts]);
-
-  // Update audio URL for a part (MUST be before early returns)
-  const handleAudioUrlChange = useCallback((partNumber, url) => {
-    setAudioUrl(partNumber, url);
-  }, [setAudioUrl]);
 
   // Format correct answer for display
   function formatCorrectAnswer(answer) {
@@ -252,7 +246,7 @@ export default function StepPreview({ onBack }) {
     </div>
   );
 
-  // Validation Panel Component - Collapsible
+  // Validation Panel Component - Collapsible (uses parent state to prevent reset on re-render)
   const ValidationPanel = () => {
     const schemaErrors = validation?.schemaErrors || [];
     const contentErrors = validation?.contentErrors || [];
@@ -260,7 +254,12 @@ export default function StepPreview({ onBack }) {
     const allWarnings = warnings || [];
 
     const totalIssues = schemaErrors.length + contentErrors.length + businessErrors.length + allWarnings.length;
-    const [isExpanded, setIsExpanded] = useState(totalIssues <= 3);
+    // Use parent state, with auto-expand default based on issue count
+    const isExpanded = isValidationExpanded === null ? totalIssues <= 3 : isValidationExpanded;
+    const handleToggle = (e) => {
+      e.stopPropagation(); // Prevent event bubbling
+      setIsValidationExpanded(!isExpanded);
+    };
 
     if (totalIssues === 0) {
       return null;
@@ -270,7 +269,7 @@ export default function StepPreview({ onBack }) {
       <div className="studio-alerts">
         <div
           className="studio-alerts__header"
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={handleToggle}
           style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -370,27 +369,10 @@ export default function StepPreview({ onBack }) {
 
     return (
       <div className="studio-listening-tools">
-        {/* Audio URL Inputs */}
+        {/* Audio URL section removed - use Save to Database modal instead */}
         <div className="studio-listening-tools__header">
           <FiHeadphones size={14} />
-          <span>Audio & Transcript</span>
-        </div>
-
-        <div className="studio-listening-tools__audio">
-          {allTranscripts.map(section => (
-            <div key={section.partNumber} className="audio-url-input">
-              <label>
-                <FiLink size={12} />
-                Part {section.partNumber} Audio URL:
-              </label>
-              <input
-                type="url"
-                placeholder="https://example.com/audio.mp3"
-                value={audioUrls[section.partNumber] || ''}
-                onChange={(e) => handleAudioUrlChange(section.partNumber, e.target.value)}
-              />
-            </div>
-          ))}
+          <span>Transcript</span>
         </div>
 
         {/* Transcript Actions */}

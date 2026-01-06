@@ -1,10 +1,12 @@
 # Cramer CMS - GEMINI.md
 
 ## System rules
-Always report back your "Remaining context window" like the following in response, right at the beginning of every response:
+- Always report back your "Remaining context window" like the following in response, right at the beginning of every response:
 ```markdown
 ## Remaining context window: <exact number of unused tokens>/<context window token count> (<percentage used>)
 ```
+- Never uses emojis in codes.
+- Never put your thoughts as comments in codes.
 
 ## Project Overview
 
@@ -19,7 +21,7 @@ Cramer CMS is an IELTS test management system with:
 |-----------|---------|
 | `backend/src/main/java/com/cramer/` | Java source code |
 | `frontend/src/admin/` | Admin React components |
-| `docs/` | Technical specifications |
+| `docs/library/` | Technical specifications |
 
 ## ABTS (AI-Based Test Generation System)
 

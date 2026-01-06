@@ -50,6 +50,25 @@ public class RefinementRequestDTO {
     private ValidationResultDTO validationResult;
 
     /**
+     * AI model to use for refinement (optional).
+     * If null, defaults to google/gemini-3-flash-preview.
+     * Example: "deepseek/deepseek-chat", "google/gemini-3-flash-preview"
+     */
+    private String model;
+
+    /**
+     * Enable context caching for cost reduction (defaults to true).
+     * Uses OpenRouter's cache_control feature for supported models.
+     */
+    private Boolean enableCaching;
+
+    /**
+     * Enable reasoning/thinking tokens for refinement (defaults to false).
+     * Set to true for models like DeepSeek R1 that benefit from chain-of-thought.
+     */
+    private Boolean enableReasoning;
+
+    /**
      * Nested DTO for validation issues
      */
     @Data

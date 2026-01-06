@@ -378,6 +378,166 @@ public class OpenRouterClient {
     }
 
     /**
+     * Call OpenRouter API with streaming and explicit caching control.
+     * For Gemini models, adds cache_control markers to reduce costs.
+     */
+    public void callChatCompletionStreaming(
+            String model,
+            String systemPrompt,
+            String userPrompt,
+            Map<String, Object> jsonSchema,
+            Map<String, Object> reasoningConfig,
+            Double temperature,
+            Integer maxTokens,
+            boolean enableCaching,
+            StreamCallback callback,
+            java.util.concurrent.atomic.AtomicBoolean cancelled) {
+
+        if (!config.hasApiKey()) {
+            callback.onError("OpenRouter API key not configured");
+            return;
+        }
+
+        String url = config.getBaseUrl() + CHAT_ENDPOINT;
+
+        try {
+            // Build streaming request body with caching support
+            Map<String, Object> body = buildStreamingRequestBodyWithCaching(
+                    model, systemPrompt, userPrompt, jsonSchema,
+                    reasoningConfig, temperature, maxTokens, enableCaching);
+
+            String requestJson = objectMapper.writeValueAsString(body);
+
+            // Create HTTP connection
+            java.net.URL apiUrl = java.net.URI.create(url).toURL();
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) apiUrl.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(30000);
+            conn.setReadTimeout(config.getTimeoutMs());
+
+            // Set headers
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Authorization", "Bearer " + config.getApiKey());
+            conn.setRequestProperty("HTTP-Referer", config.getSiteUrl());
+            conn.setRequestProperty("X-Title", config.getSiteName());
+            conn.setRequestProperty("Accept", "text/event-stream");
+
+            // Send request body
+            try (java.io.OutputStream os = conn.getOutputStream()) {
+                os.write(requestJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+
+            int responseCode = conn.getResponseCode();
+            if (responseCode != 200) {
+                String errorBody = readStream(conn.getErrorStream());
+                callback.onError("API error " + responseCode + ": " + parseErrorMessage(errorBody));
+                return;
+            }
+
+            // Parse SSE stream (same logic as non-cached version)
+            long startTime = System.currentTimeMillis();
+            StringBuilder reasoningBuilder = new StringBuilder();
+            StringBuilder contentBuilder = new StringBuilder();
+            String modelUsed = model;
+            Integer promptTokens = null;
+            Integer completionTokens = null;
+            Integer reasoningTokens = null;
+
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(conn.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
+
+                String line;
+                int chunkCount = 0;
+
+                while ((line = reader.readLine()) != null) {
+                    if (cancelled != null && cancelled.get()) {
+                        throw new OpenRouterException("Generation cancelled by user", "CANCELLED", false);
+                    }
+                    if (line.isEmpty())
+                        continue;
+                    if (!line.startsWith("data: "))
+                        continue;
+
+                    String data = line.substring(6).trim();
+                    if (data.equals("[DONE]")) {
+                        break;
+                    }
+
+                    try {
+                        JsonNode chunk = objectMapper.readTree(data);
+                        chunkCount++;
+
+                        if (chunk.has("model")) {
+                            modelUsed = chunk.get("model").asText();
+                        }
+
+                        JsonNode choices = chunk.path("choices");
+                        if (choices.isArray() && choices.size() > 0) {
+                            JsonNode delta = choices.get(0).path("delta");
+
+                            if (delta.hasNonNull("reasoning")) {
+                                String reasoningDelta = delta.get("reasoning").asText();
+                                if (reasoningDelta != null && !reasoningDelta.equals("null")) {
+                                    reasoningBuilder.append(reasoningDelta);
+                                    callback.onReasoningChunk(reasoningDelta);
+                                }
+                            }
+
+                            if (delta.hasNonNull("content")) {
+                                String contentDelta = delta.get("content").asText();
+                                if (contentDelta != null && !contentDelta.equals("null")) {
+                                    contentBuilder.append(contentDelta);
+                                    callback.onContentChunk(contentDelta);
+                                }
+                            }
+                        }
+
+                        if (chunk.has("usage")) {
+                            JsonNode usage = chunk.get("usage");
+                            if (usage.has("prompt_tokens"))
+                                promptTokens = usage.get("prompt_tokens").asInt();
+                            if (usage.has("completion_tokens"))
+                                completionTokens = usage.get("completion_tokens").asInt();
+                            if (usage.has("reasoning_tokens"))
+                                reasoningTokens = usage.get("reasoning_tokens").asInt();
+                        }
+
+                        if (chunkCount % 100 == 0) {
+                            int percent = Math.min(75, 25 + (chunkCount / 20));
+                            callback.onProgress(percent, "AI is generating content...");
+                        }
+
+                    } catch (Exception e) {
+                        logger.warn("Failed to parse SSE chunk: {}", e.getMessage());
+                    }
+                }
+            }
+
+            long duration = System.currentTimeMillis() - startTime;
+            OpenRouterResponse response = new OpenRouterResponse();
+            response.setContent(contentBuilder.toString());
+            response.setReasoning(reasoningBuilder.toString());
+            response.setModelUsed(modelUsed);
+            response.setDurationMs(duration);
+            response.setPromptTokens(promptTokens);
+            response.setCompletionTokens(completionTokens);
+            response.setReasoningTokens(reasoningTokens);
+
+            if (enableCaching) {
+                logger.info("Streaming completed with caching enabled (model: {})", model);
+            }
+
+            callback.onComplete(response);
+
+        } catch (Exception e) {
+            logger.error("Streaming API call failed: {}", e.getMessage(), e);
+            callback.onError("Streaming failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 
      * Build request body for streaming API call.
      */
     private Map<String, Object> buildStreamingRequestBody(
@@ -404,6 +564,70 @@ public class OpenRouterClient {
 
         // JSON Schema mode (NOTE: some models may not support streaming + JSON schema
         // together)
+        if (jsonSchema != null && !jsonSchema.isEmpty()) {
+            body.put("response_format", Map.of(
+                    "type", "json_schema",
+                    "json_schema", Map.of(
+                            "name", "ielts_content_response",
+                            "strict", true,
+                            "schema", jsonSchema)));
+        }
+
+        body.put("provider", Map.of(
+                "allow_fallbacks", true,
+                "data_collection", "allow"));
+
+        if (reasoningConfig != null && !reasoningConfig.isEmpty()) {
+            body.put("reasoning", reasoningConfig);
+        }
+
+        return body;
+    }
+
+    /**
+     * Build request body for streaming API call with optional caching support.
+     * For Gemini/Anthropic models, adds cache_control markers to system message.
+     */
+    private Map<String, Object> buildStreamingRequestBodyWithCaching(
+            String model,
+            String systemPrompt,
+            String userPrompt,
+            Map<String, Object> jsonSchema,
+            Map<String, Object> reasoningConfig,
+            Double temperature,
+            Integer maxTokens,
+            boolean enableCaching) {
+
+        Map<String, Object> body = new HashMap<>();
+
+        body.put("model", model);
+
+        // Build messages with optional cache_control for Gemini/Anthropic
+        List<Map<String, Object>> messages = new ArrayList<>();
+
+        if (enableCaching && (model.contains("gemini") || model.contains("claude"))) {
+            // Use cache_control for Gemini/Anthropic models per OpenRouter docs
+            // The system message is cached so repeated calls with same context are cheaper
+            Map<String, Object> systemMessage = new HashMap<>();
+            systemMessage.put("role", "system");
+            systemMessage.put("content", List.of(Map.of(
+                    "type", "text",
+                    "text", systemPrompt,
+                    "cache_control", Map.of("type", "ephemeral"))));
+            messages.add(systemMessage);
+            logger.debug("Added cache_control to system message for model: {}", model);
+        } else {
+            messages.add(Map.of("role", "system", "content", systemPrompt));
+        }
+
+        messages.add(Map.of("role", "user", "content", userPrompt));
+        body.put("messages", messages);
+
+        body.put("temperature", temperature != null ? temperature : 1.0);
+        body.put("max_tokens", maxTokens != null ? maxTokens : 8192);
+        body.put("stream", true);
+
+        // JSON Schema mode
         if (jsonSchema != null && !jsonSchema.isEmpty()) {
             body.put("response_format", Map.of(
                     "type", "json_schema",

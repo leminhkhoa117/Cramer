@@ -107,3 +107,52 @@
         transform: rotate(360deg);
     }
 }
+
+/* Model selector for refinement - Cost optimization v8.0 */
+.issue-selector__model {
+    margin: 12px 0;
+    padding: 10px;
+    background: rgba(99, 102, 241, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.issue-selector__model-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--admin-text-secondary, #a0a0b0);
+    margin-bottom: 6px;
+}
+
+.issue-selector__model-hint {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--admin-text-muted, #888);
+    margin-top: 6px;
+}
+
+/* Reasoning toggle checkbox */
+.issue-selector__toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 8px;
+    background: rgba(139, 92, 246, 0.08);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--admin-text-secondary, #a0a0b0);
+    transition: background 0.2s;
+}
+
+.issue-selector__toggle:hover {
+    background: rgba(139, 92, 246, 0.15);
+}
+
+.issue-selector__toggle input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #8b5cf6;
+}

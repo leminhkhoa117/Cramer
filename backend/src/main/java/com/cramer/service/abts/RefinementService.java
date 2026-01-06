@@ -106,17 +106,34 @@ public class RefinementService {
             final boolean[] completed = { false };
             final Exception[] errorHolder = new Exception[1];
 
-            // Use the same model as generation (configurable)
-            String model = "google/gemini-3-flash-preview";
+            // Use model from request, or default to Gemini Flash
+            String model = request.getModel() != null
+                    ? request.getModel()
+                    : "google/gemini-3-flash-preview";
+            boolean enableCaching = request.getEnableCaching() != null
+                    ? request.getEnableCaching()
+                    : true;
+            boolean enableReasoning = request.getEnableReasoning() != null
+                    ? request.getEnableReasoning()
+                    : false;
+
+            // Build reasoning config if enabled (for models like DeepSeek R1)
+            Map<String, Object> reasoningConfig = enableReasoning
+                    ? Map.of("effort", "high", "max_tokens", 16000)
+                    : Map.of();
+
+            logger.info("Refinement using model: {} (caching: {}, reasoning: {})", model, enableCaching,
+                    enableReasoning);
 
             openRouterClient.callChatCompletionStreaming(
                     model,
                     systemPrompt,
                     buildConversationPrompt(request, refinementPrompt),
                     null, // No JSON schema for refinement (we want free-form with JSON block)
-                    Map.of(), // No reasoning config for refinement
+                    reasoningConfig, // Reasoning config from request
                     0.3, // Lower temperature for precise fixes
                     32000, // Increased from 8192 to handle large JSON output
+                    enableCaching, // Enable caching for cost reduction
                     new OpenRouterClient.StreamCallback() {
                         @Override
                         public void onReasoningChunk(String chunk) {

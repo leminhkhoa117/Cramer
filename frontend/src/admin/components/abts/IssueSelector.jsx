@@ -4,12 +4,15 @@
  * Displays within the warnings panel and allows users to:
  * - Toggle individual issues for refinement
  * - Select/deselect all issues
+ * - Choose AI model for refinement (cost optimization)
  * - Trigger refinement with selected issues
  * 
  * @since 2026-01-04
+ * @updated 2026-01-06 - Added model selection for cost optimization
  */
 import React from 'react';
 import useABTSStore from '../../stores/useABTSStore';
+import ModelSelector from './ModelSelector';
 import './IssueSelector.css';
 
 const IssueSelector = ({ issues = [], type = 'warning' }) => {
@@ -19,7 +22,9 @@ const IssueSelector = ({ issues = [], type = 'warning' }) => {
         selectAllIssues,
         clearIssueSelection,
         startRefinement,
-        isRefining
+        isRefining,
+        formData,
+        setFormField
     } = useABTSStore();
 
     // Generate IDs for issues if not present
@@ -74,6 +79,30 @@ const IssueSelector = ({ issues = [], type = 'warning' }) => {
                         <>🔧 Sửa ({selectedIssues.length})</>
                     )}
                 </button>
+            </div>
+
+            {/* Model Selection for Refinement - Cost Optimization */}
+            <div className="issue-selector__model">
+                <label className="issue-selector__model-label">
+                    Model sửa lỗi:
+                </label>
+                <ModelSelector
+                    value={formData.refinementModel}
+                    onChange={(model) => setFormField('refinementModel', model)}
+                />
+                <span className="issue-selector__model-hint">
+                    💡 Chọn model rẻ hơn (Free, DeepSeek) để tiết kiệm
+                </span>
+
+                {/* Reasoning toggle for thinking models */}
+                <label className="issue-selector__toggle">
+                    <input
+                        type="checkbox"
+                        checked={formData.enableRefinementReasoning || false}
+                        onChange={(e) => setFormField('enableRefinementReasoning', e.target.checked)}
+                    />
+                    <span>🧠 Bật Reasoning (cho model DeepSeek R1, o1, etc.)</span>
+                </label>
             </div>
 
             <div className="issue-selector__list">

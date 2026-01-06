@@ -92,6 +92,11 @@ const initialFormState = {
     // Multi-part generation (v6.0)
     selectedParts: [], // e.g., [1, 2] for Parts 1 and 2
     partConfigs: {}, // { 1: { topic: '', facts: [], questionTypes: [] }, 2: {...} }
+
+    // Refinement settings (v8.0 - cost optimization)
+    refinementModel: null, // Model for refinement (null = use default Gemini Flash)
+    enableRefinementCaching: true, // Enable context caching for cost reduction
+    enableRefinementReasoning: false, // Enable reasoning/thinking tokens for refinement (default OFF for speed)
 };
 
 const useABTSStore = create((set, get) => ({
@@ -1372,13 +1377,16 @@ const useABTSStore = create((set, get) => ({
                 category: extractCategory(typeof msg === 'string' ? msg : msg.message)
             }));
 
-            // Build request
+            // Build request with model and caching settings for cost optimization
             const request = {
                 originalJson: JSON.stringify(generationResult.content),
                 selectedIssueIds: selectedIssues,
-                originalPrompt: null, // TODO: Store and pass original prompt for context caching
+                originalPrompt: generationResult.metadata?.fullPrompt || null,
                 skill: formData.skill,
                 partNumber: formData.partNumber,
+                model: formData.refinementModel, // User-selected model for refinement
+                enableCaching: formData.enableRefinementCaching !== false, // Default to true
+                enableReasoning: formData.enableRefinementReasoning === true, // Default to false
                 validationResult: {
                     errors: [],
                     warnings: validationIssues

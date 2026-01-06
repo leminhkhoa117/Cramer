@@ -1,4 +1,9 @@
-# AI Agent Guide: Generating SQL for IELTS Test Ingestion
+# AI Agent Guide: Generating SQL for IELTS Reading Test Ingestion
+
+> **📋 Migration Note (2026-01-06)**  
+> This file was migrated from `docs/backend/DATA_INGESTION_GUIDE_READING.md` to the library structure for better organization. Content has been reviewed and updated for consistency with current schema and frontend rendering logic.
+
+---
 
 ## 1. Objective
 
@@ -11,6 +16,8 @@ This document provides a comprehensive guide for an AI agent to parse an IELTS R
 - **Connection:** Configured via environment variables in `.env` file
 - **JDBC URL Format:** `jdbc:postgresql://db.xxx.supabase.co:6543/postgres?sslmode=require&prepareThreshold=0`
 - **Important:** The `prepareThreshold=0` parameter is required to prevent prepared statement cache conflicts with HikariCP connection pooling
+
+---
 
 ## 2. Core Database Schema (Legacy Model for Reading)
 
@@ -394,6 +401,9 @@ This section highlights critical data authoring rules that are required for the 
 - **Solution:** For any `SUMMARY_COMPLETION`, `TABLE_COMPLETION`, or `FLOW_CHART_COMPLETION` group, only the **first question** should contain the main text/HTML block in its `question_content.text`. All subsequent questions in that group **must** have `{"text": ""}`. The frontend relies on this structure to render the main block once and then create the list of numbered inputs.
 
 ### 2. Missing `options` Array in Grouped Questions
+- **Problem:** Matching or dropdown questions fail to render options.
+- **Cause:** The `options` array was not duplicated across all questions in the group.
+- **Solution:** For `SUMMARY_COMPLETION_OPTIONS`, `MATCHING_HEADINGS`, `MATCHING_FEATURES`, and `MATCHING_SENTENCE_ENDINGS`, the `options` array must be present and identical in every question of the group.
 
 ---
 
@@ -421,7 +431,6 @@ This section highlights critical data authoring rules that are required for the 
 - Backend uses `prepareThreshold=0` to avoid PostgreSQL prepared statement cache conflicts
 - Frontend deduplicates questions by ID using `Map` data structure
 - HikariCP connection pool: max 10, min idle 5 connections
-
 
 ---
 
@@ -498,11 +507,11 @@ Use this as a step-by-step list when generating SQL for a new IELTS Reading test
 8. **Set optional fields appropriately**
    - `word_limit`: Set for completion questions when the instructions state a limit (e.g., `"ONE WORD ONLY"`, `"NO MORE THAN TWO WORDS"`). Leave `NULL` for other types.
    - `image_url`: Set only when a diagram or image is required to answer the question.
-   - `explanation`: Currently unused in production; you may leave it `NULL`.
 
-9. **Validate before running**
-   - Check that:
-     - `question_number` values cover the intended Cambridge range without gaps or duplicates.
-     - Every question’s `section_id` references the correct section variable in your `DO $$` block.
-     - All JSON snippets are valid (use a JSON validator if needed).
-   - Only then generate the final SQL script for execution in Supabase.
+---
+
+## Related Documentation
+
+- [Database Schema](../../../docs/backend/DATABASE_SCHEMA.md)
+- [Supabase Backend Setup](../../../docs/backend/supabase-backend.md)
+- [Listening Test Ingestion Guide](./DATA_INGESTION_LISTENING.md)

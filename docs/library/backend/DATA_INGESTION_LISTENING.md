@@ -1,5 +1,10 @@
 # AI Agent Guide: Generating SQL for IELTS Listening Test Ingestion
 
+> **📋 Migration Note (2026-01-06)**  
+> This file was migrated from `docs/backend/DATA_INGESTION_GUIDE_LISTENING.md` to the library structure for better organization. Content has been reviewed and updated for consistency with current schema and frontend rendering logic.
+
+---
+
 ## 1. Objective
 
 This document provides a comprehensive guide for an AI agent to parse an IELTS Listening Test from a source (like a PDF and its accompanying audio) and generate the corresponding SQL `INSERT` statements. The goal is to accurately populate the PostgreSQL database (hosted on Supabase) used by the Cramer application with new test materials.
@@ -12,9 +17,11 @@ This document provides a comprehensive guide for an AI agent to parse an IELTS L
 - **JDBC URL Format:** `jdbc:postgresql://db.xxx.supabase.co:6543/postgres?sslmode=require&prepareThreshold=0`
 - **Important:** The `prepareThreshold=0` parameter is required to prevent prepared statement cache conflicts with HikariCP connection pooling.
 
-## 2. Core Database Schema Redesign: The "Question Block" Model
+---
 
-To accommodate the complex and varied layouts of IELTS Listening tests, the data model has been redesigned around a "Question Block" concept. Instead of a single, optional image per section, each section's layout is now defined by an array of blocks, where each block represents a distinct visual or instructional part of the test.
+## 2. Core Database Schema: The "Question Block" Model
+
+To accommodate the complex and varied layouts of IELTS Listening tests, the data model has been designed around a "Question Block" concept. Instead of a single, optional image per section, each section's layout is defined by an array of blocks, where each block represents a distinct visual or instructional part of the test.
 
 ### `sections` Table
 The `display_content_url` column has been **replaced** with `section_layout`.
@@ -27,8 +34,8 @@ The `display_content_url` column has been **replaced** with `section_layout`.
 | `skill`         | `varchar`| The skill being tested. For Listening, this will always be `listening`.                                 |
 | `part_number`   | `integer`| The part number within the test, i.e., `1`, `2`, `3`, or `4`.                                           |
 | `audio_url`     | `varchar`| **Required.** The URL for the part's audio file.                                                        |
-| `passage_text`    | `text`  | The full transcript of the audio. Used for review purposes.                                             |
-| `section_layout`| `jsonb` | **New.** A JSON object defining the layout as a series of "Question Blocks". See Section 4 for details. |
+| `passage_text`  | `text`  | The full transcript of the audio. Used for review purposes.                                             |
+| `section_layout`| `jsonb` | **Required.** A JSON object defining the layout as a series of "Question Blocks". See Section 4.        |
 
 ### `questions` Table
 The structure of `question_content` is now dependent on the `block_type` of the block it belongs to.
@@ -40,7 +47,7 @@ The structure of `question_content` is now dependent on the `block_type` of the 
 | `question_number`  | `integer`     | The overall question number in the test (1-40).                                                         |
 | `question_uid`     | `varchar`     | Unique identifier: `{exam_source}-t{test_number}-l-q{question_number}`.                                 |
 | `question_type`    | `varchar`     | An enum string representing the fundamental interaction type. See Section 3.                            |
-| `question_content` | `jsonb`       | The specific text, options, and subtitles for the question. See Section 4.              |
+| `question_content` | `jsonb`       | The specific text, options, and subtitles for the question. See Section 4.                              |
 | `correct_answer`   | `jsonb`       | The correct answer(s) for the question.                                                                 |
 | `explanation`      | `text`        | Optional explanation for the answer.                                                                    |
 | `word_limit`       | `varchar`     | Optional constraint on answer length, e.g., "ONE WORD AND/OR A NUMBER".                                 |
@@ -60,7 +67,7 @@ The `question_type` still defines the core *interaction* type for a single quest
 
 ## 4. Detailed JSON Structures: `section_layout` and `question_content`
 
-This is the core of the new model. The `section_layout` column in the `sections` table holds a JSON object containing a `blocks` array.
+This is the core of the data model. The `section_layout` column in the `sections` table holds a JSON object containing a `blocks` array.
 
 ### 4.1. The `section_layout` Object
 
@@ -147,7 +154,7 @@ This is the core of the new model. The `section_layout` column in the `sections`
   }
   ```
 
-### 4.5. Block Type: `NOTE_COMPLETION` (New, Robust Structure)
+### 4.5. Block Type: `NOTE_COMPLETION` (Robust Structure)
 - **Use Case:** For note, summary, or table completion where questions are presented as a list under various headings.
 - **Rendering Rules (CRITICAL):**
     - The `main_title` field is rendered as **plain text** inside `<h3>` tags. It does not support HTML.
@@ -307,7 +314,7 @@ Use this when generating SQL for a new IELTS Listening test.
 3. **Generate `sections` INSERTs (one per part)**
    - For each part (1–4), insert one row into `public.sections` with:
      - `exam_source`, `test_number`, `skill = 'listening'`, `part_number`.
-     - `audio_url` pointing to the Supabase or CDN URL for that part’s audio.
+     - `audio_url` pointing to the Supabase or CDN URL for that part's audio.
      - `passage_text` containing the full transcript (for review only).
      - `section_layout` as a JSON object with a `blocks` array describing all question groups in that part.
    - Cast `section_layout` to `jsonb` in SQL (e.g., `' {...}'::jsonb`).
@@ -315,7 +322,7 @@ Use this when generating SQL for a new IELTS Listening test.
 
 4. **Define `section_layout.blocks` correctly**
    - Choose a `block_type` for each visual group exactly as defined in this guide:
-     - `INSTRUCTIONS_ONLY`, `NOTE_COMPLETION`, `MATCHING_FEATURES`, etc.
+     - `INSTRUCTIONS_ONLY`, `NOTE_COMPLETION`, `MATCHING_FEATURES`, `PLAN_MAP_DIAGRAM_LABELING`, etc.
    - For each block:
      - Set `content.title` (plain text) and `content.main_title` as needed.
      - Put any formatted instructions (bold, line breaks) into `content.instructions_text` (HTML allowed).
@@ -353,8 +360,16 @@ Use this when generating SQL for a new IELTS Listening test.
    - `explanation`: Currently unused; leave `NULL` unless you have a clear use case.
 
 10. **Validate consistency before running**
-   - Check that:
-     - All question numbers 1–40 are present exactly once across parts 1–4.
-     - Each `question_number` appears in exactly one block’s `question_numbers` array.
-     - All JSON (`section_layout` and `question_content`) is valid.
-   - Only then finalize and run the SQL in Supabase.
+    - Check that:
+      - All question numbers 1–40 are present exactly once across parts 1–4.
+      - Each `question_number` appears in exactly one block's `question_numbers` array.
+      - All JSON (`section_layout` and `question_content`) is valid.
+    - Only then finalize and run the SQL in Supabase.
+
+---
+
+## Related Documentation
+
+- [Database Schema](../../../docs/backend/DATABASE_SCHEMA.md)
+- [Supabase Backend Setup](../../../docs/backend/supabase-backend.md)
+- [Reading Test Ingestion Guide](./DATA_INGESTION_READING.md)

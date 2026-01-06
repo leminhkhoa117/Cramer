@@ -163,38 +163,34 @@ export default function StudioConfigView({ onGenerate }) {
         updateFormData({ questionTypes: [], questionTypeCounts: {} });
     };
 
-    // Computes specific validation errors
-    const validationErrors = useMemo(() => {
-        const errors = [];
-        if (!formData.skill) errors.push('Vui lòng chọn kỹ năng (Skill)');
-        if (!formData.selectedParts?.length) errors.push('Vui lòng chọn ít nhất một phần thi (Part)');
+    const canGenerate = () => {
+        if (!formData.skill) return false;
 
-        formData.selectedParts?.forEach(part => {
+        // Multi-part validation (always in MULTI_PART mode now)
+        if (!formData.selectedParts?.length) return false;
+
+        for (const part of formData.selectedParts) {
             const partConfig = formData.partConfigs?.[part];
-            const partLabel = `Part ${part}`;
 
             // Each part must have a topic (at least 3 chars)
             if (!partConfig?.topic || partConfig.topic.length < 3) {
-                errors.push(`${partLabel}: Nhập topic (tối thiểu 3 ký tự)`);
+                return false;
             }
 
             // Each part must have at least 2 question types
             if (!partConfig?.questionTypes || partConfig.questionTypes.length < 2) {
-                errors.push(`${partLabel}: Chọn ít nhất 2 loại câu hỏi`);
+                return false;
             }
 
             // If CUSTOM_FACTS mode, each part must have at least 3 facts
             if (formData.generationMode === 'CUSTOM_FACTS') {
                 if (!partConfig?.facts || partConfig.facts.length < 3) {
-                    errors.push(`${partLabel}: Thêm ít nhất 3 facts`);
+                    return false;
                 }
             }
-        });
-        return errors;
-    }, [formData]);
+        }
 
-    const canGenerate = () => {
-        return validationErrors.length === 0;
+        return true;
     };
 
     // Build request preview for JSON panel
@@ -252,6 +248,27 @@ export default function StudioConfigView({ onGenerate }) {
                         value={formData.model}
                         onChange={(m) => setFormField('model', m)}
                     />
+                    {/* Reasoning toggle for thinking models */}
+                    <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginTop: '10px',
+                        padding: '8px 10px',
+                        background: 'rgba(139, 92, 246, 0.08)',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        color: 'rgba(255,255,255,0.7)'
+                    }}>
+                        <input
+                            type="checkbox"
+                            checked={formData.enableReasoning || false}
+                            onChange={(e) => setFormField('enableReasoning', e.target.checked)}
+                            style={{ width: '16px', height: '16px', accentColor: '#8b5cf6' }}
+                        />
+                        <span>Bật 'reasoning' (thinking) cho các mô hình có hỗ trợ (Gemini, Deepseek, ...)</span>
+                    </label>
                 </div>
 
                 {/* === ROW 2: Generation Settings (full width) === */}
@@ -401,7 +418,7 @@ export default function StudioConfigView({ onGenerate }) {
                             <div className="studio-form-group" style={{ flex: 1 }}>
                                 <label className="studio-label" style={{ marginBottom: '8px' }}>
                                     <FiUpload style={{ marginRight: '6px' }} />
-                                    Audio File
+                                    Audio File (Coming Soon)
                                 </label>
                                 <div style={{
                                     padding: '20px',
@@ -414,10 +431,10 @@ export default function StudioConfigView({ onGenerate }) {
                                 }}>
                                     <FiMic size={24} style={{ marginBottom: '8px', opacity: 0.5 }} />
                                     <div style={{ fontSize: '0.8rem' }}>
-                                        Audio URLs can be added after generation
+                                        Upload audio for transcription
                                     </div>
                                     <div style={{ fontSize: '0.7rem', marginTop: '4px', opacity: 0.6 }}>
-                                        Paste URLs in the preview step
+                                        MP3, WAV, M4A supported
                                     </div>
                                 </div>
                             </div>
@@ -747,48 +764,11 @@ export default function StudioConfigView({ onGenerate }) {
                                                                 <span>Key Facts / Outline</span>
                                                                 <span>{(partConfig.facts || []).length}/30</span>
                                                             </label>
-
-                                                            {/* Multi-line textarea with Parse button */}
-                                                            <div style={{ marginBottom: '8px' }}>
-                                                                <textarea
-                                                                    className="studio-input"
-                                                                    placeholder="Nhập danh sách facts, mỗi dòng là 1 fact...&#10;Ví dụ:&#10;Fact 1&#10;Fact 2&#10;Fact 3"
-                                                                    rows={3}
-                                                                    style={{
-                                                                        width: '100%',
-                                                                        fontSize: '0.75rem',
-                                                                        padding: '8px',
-                                                                        resize: 'vertical',
-                                                                        minHeight: '60px'
-                                                                    }}
-                                                                    id={`facts-textarea-${partNumber}`}
-                                                                />
-                                                                <button
-                                                                    type="button"
-                                                                    className="studio-btn studio-btn--ghost studio-btn--sm"
-                                                                    onClick={() => {
-                                                                        const textarea = document.getElementById(`facts-textarea-${partNumber}`);
-                                                                        if (textarea && textarea.value.trim()) {
-                                                                            const lines = textarea.value
-                                                                                .split('\n')
-                                                                                .map(line => line.trim())
-                                                                                .filter(line => line.length > 0);
-                                                                            lines.forEach(line => addPartFact(partNumber, line));
-                                                                            textarea.value = '';
-                                                                        }
-                                                                    }}
-                                                                    style={{ marginTop: '6px', width: '100%' }}
-                                                                >
-                                                                    <FiPlus size={12} /> Parse & Add Facts
-                                                                </button>
-                                                            </div>
-
-                                                            {/* Single-line quick add */}
                                                             <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
                                                                 <input
                                                                     type="text"
                                                                     className="studio-input"
-                                                                    placeholder="Hoặc thêm 1 fact..."
+                                                                    placeholder="Thêm fact..."
                                                                     onKeyDown={(e) => {
                                                                         if (e.key === 'Enter' && e.target.value.trim()) {
                                                                             addPartFact(partNumber, e.target.value);
@@ -1122,17 +1102,11 @@ export default function StudioConfigView({ onGenerate }) {
                     {isGenerating ? 'Generating Content...' : 'Generate Content'}
                 </button>
 
-                {!canGenerate() && !isGenerating && validationErrors.length > 0 && (
+                {!canGenerate() && !isGenerating && (
                     <div className="studio-generate__error">
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px', fontWeight: 600 }}>
-                            <FiAlertCircle style={{ marginRight: '6px' }} />
-                            Vui lòng hoàn thành các mục sau:
-                        </div>
-                        <ul style={{ margin: 0, paddingLeft: '24px', listStyleType: 'disc' }}>
-                            {validationErrors.map((error, idx) => (
-                                <li key={idx} style={{ marginTop: '2px' }}>{error}</li>
-                            ))}
-                        </ul>
+                        <FiAlertCircle style={{ marginRight: '6px' }} />
+                        Chọn skill, parts, nhập topic cho mỗi part (tối thiểu 3 ký tự), và chọn ít nhất 2 loại câu hỏi
+                        {formData.generationMode === 'CUSTOM_FACTS' && '. Thêm ít nhất 3 facts cho mỗi part.'}
                     </div>
                 )}
             </div>

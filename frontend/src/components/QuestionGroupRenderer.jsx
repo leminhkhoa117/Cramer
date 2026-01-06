@@ -103,6 +103,11 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
         // Use uniqueGroupId for guaranteed uniqueness across parts
         const groupId = group.uniqueGroupId || group.id || 'unknown';
 
+        // Safety: check if questions exist
+        const hasQuestions = group.questions && group.questions.length > 0;
+        const lastQuestion = hasQuestions ? group.questions[group.questions.length - 1] : null;
+        const lastQuestionNumber = lastQuestion?.questionNumber ?? group.startNum;
+
         // New data-driven instructions for Listening
         if (group.content?.title || group.content?.instructions_text) {
             return (
@@ -119,11 +124,11 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
         }
 
         // Dynamic instructions for Reading tests
-        if (skill === 'reading' && readingInstructionsMap[group.type]) {
+        if (skill === 'reading' && readingInstructionsMap[group.type] && hasQuestions) {
             const instructionText = readingInstructionsMap[group.type](group);
             return (
                 <>
-                    <p><strong>Questions {group.startNum}-{group.questions[group.questions.length - 1].questionNumber}</strong></p>
+                    <p><strong>Questions {group.startNum}-{lastQuestionNumber}</strong></p>
                     <HighlightableHtmlContent
                         htmlString={instructionText}
                         contentId={`instruction-${groupId}`}
@@ -133,7 +138,7 @@ const QuestionGroupRenderer = ({ group, onAnswerChange, answers, skill }) => {
         }
 
         // Fallback for old Reading Test structure or if no specific instruction is found
-        return <p><strong>Questions {group.startNum}-{group.questions[group.questions.length - 1].questionNumber}</strong></p>;
+        return <p><strong>Questions {group.startNum}-{lastQuestionNumber}</strong></p>;
     };
 
     const renderGroupBody = () => {

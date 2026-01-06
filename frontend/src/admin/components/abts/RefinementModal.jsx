@@ -57,11 +57,14 @@ const RefinementModal = () => {
                             </div>
                             {refinementStream.length > 0 && (
                                 <div className="refinement-modal__log">
-                                    {refinementStream.slice(-5).map((evt, idx) => (
-                                        <div key={idx} className="log-entry">
-                                            {evt.message || evt.type}
-                                        </div>
-                                    ))}
+                                    {refinementStream
+                                        .filter(evt => evt.type !== 'AI_CHUNK' && evt.type !== 'AI_THINKING')
+                                        .slice(-5)
+                                        .map((evt, idx) => (
+                                            <div key={idx} className="log-entry">
+                                                {evt.message || evt.type}
+                                            </div>
+                                        ))}
                                 </div>
                             )}
                         </div>
