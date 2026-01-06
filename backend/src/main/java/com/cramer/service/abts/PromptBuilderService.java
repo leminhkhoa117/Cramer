@@ -796,9 +796,23 @@ public class PromptBuilderService {
                         prompt.append("No specific facts provided. Research the topic and use realistic, verifiable academic details.\n");
                 }
 
+                // PARAGRAPH FORMATTING - CRITICAL
+                prompt.append("\n### Paragraph Formatting (CRITICAL)\n");
+                prompt.append("Each paragraph MUST follow this EXACT format:\n\n");
+                prompt.append("```\n");
+                prompt.append("<strong>A.</strong> First paragraph text here. This should be a complete paragraph with multiple sentences developing one main idea.\n");
+                prompt.append("\n");
+                prompt.append("<strong>B.</strong> Second paragraph text here. Continue developing the topic with a new aspect or argument.\n");
+                prompt.append("```\n\n");
+                prompt.append("**CRITICAL RULES:**\n");
+                prompt.append("1. Start each paragraph with `<strong>X.</strong>` where X is A, B, C, D, etc.\n");
+                prompt.append("2. **BLANK LINE between paragraphs** - Use `\\n\\n` (double newline) to separate paragraphs\n");
+                prompt.append("3. Each paragraph should be 80-150 words of continuous prose\n");
+                prompt.append("4. Do NOT use bullet points or numbered lists within paragraphs\n\n");
+
                 prompt.append("\n### Output Requirements\n");
                 prompt.append("Return valid JSON with exactly:\n");
-                prompt.append("1. `passage_text`: The full academic text (HTML formatted with paragraph labels like <strong>A.</strong>).\n");
+                prompt.append("1. `passage_text`: The full academic text with paragraph labels. Use `\\n\\n` between paragraphs.\n");
                 prompt.append("2. `word_count`: Integer count of words.\n");
                 prompt.append("Do NOT include `questions`.\n");
 
@@ -1518,10 +1532,27 @@ public class PromptBuilderService {
                 prompt.append("```\n");
                 prompt.append("**Required fields:** duration_estimate, speaker_count, accent_recommendation, pacing_notes, background_ambient\n\n");
 
+                // TRANSCRIPT FORMATTING - CRITICAL
+                prompt.append("### Transcript Formatting (CRITICAL)\n");
+                prompt.append("The transcript MUST follow this EXACT format with BLANK LINES between speaker turns:\n\n");
+                prompt.append("```\n");
+                prompt.append("SPEAKER_NAME: First speaker's complete turn. This should be a full sentence or paragraph of natural dialogue.\n");
+                prompt.append("\n");
+                prompt.append("SECOND_SPEAKER: Response from second speaker. Continue the conversation naturally.\n");
+                prompt.append("\n");
+                prompt.append("SPEAKER_NAME: Next turn from first speaker...\n");
+                prompt.append("```\n\n");
+                prompt.append("**CRITICAL RULES:**\n");
+                prompt.append("1. Each speaker turn starts with `SPEAKER_NAME:` followed by their dialogue\n");
+                prompt.append("2. **BLANK LINE between turns** - Use `\\n\\n` (double newline) to separate speaker turns\n");
+                prompt.append("3. Use ALL CAPS for speaker labels (e.g., DR. RICHARDS:, MAYA:, SAM:)\n");
+                prompt.append("4. Each turn should be a complete thought (1-4 sentences typically)\n");
+                prompt.append("5. For monologues (Parts 2, 4), break into logical paragraphs with blank lines between\n\n");
+
                 // Output Requirements
                 prompt.append("### Output Requirements\n");
                 prompt.append("Return valid JSON with exactly:\n");
-                prompt.append("1. `transcript`: The full dialogue/monologue with speaker labels on every line.\n");
+                prompt.append("1. `transcript`: The full dialogue/monologue with speaker labels. Use `\\n\\n` between turns.\n");
                 prompt.append("2. `audio_placeholder`: Metadata object with all required fields.\n");
                 prompt.append("Do NOT include `questions` or `section_layout`.\n");
 

@@ -1040,28 +1040,9 @@ const useABTSStore = create((set, get) => ({
         }
     },
 
-    /**
-     * Update a specific generated question
-     */
-    updateGeneratedQuestion: (questionIndex, updatedQuestion) => {
-        const { generationResult } = get();
-        if (generationResult?.content?.questions) {
-            const newQuestions = [...generationResult.content.questions];
-            // Ensure we're updating the right question by index if questionNumber matches
-            if (newQuestions[questionIndex]) {
-                newQuestions[questionIndex] = updatedQuestion;
-                set({
-                    generationResult: {
-                        ...generationResult,
-                        content: {
-                            ...generationResult.content,
-                            questions: newQuestions
-                        }
-                    }
-                });
-            }
-        }
-    },
+    // NOTE: updateGeneratedQuestion is defined earlier in the file (around line 571)
+    // It handles both questionId string matching (e.g., 'abts-q-0') and partial updates
+    // DO NOT add a duplicate here - the one above handles StepPreview editing correctly
 
     // ==================== SAVE ACTIONS ====================
 

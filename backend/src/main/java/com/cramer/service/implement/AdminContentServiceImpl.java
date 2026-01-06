@@ -763,39 +763,67 @@ public class AdminContentServiceImpl implements AdminContentService {
     @Override
     public Map<String, Object> updateQuestion(Long questionId, Map<String, Object> questionData, String adminUserId) {
         try {
-            StringBuilder sql = new StringBuilder("UPDATE public.questions SET id = id"); // id = id is a no-op
+            // Build SET clause dynamically - collect field assignments first
+            List<String> setClauses = new ArrayList<>();
             List<Object> params = new ArrayList<>();
 
             if (questionData.containsKey("questionType")) {
-                sql.append(", question_type = ?");
+                setClauses.add("question_type = ?");
                 params.add(questionData.get("questionType"));
             }
             if (questionData.containsKey("questionContent")) {
-                sql.append(", question_content = ?::jsonb");
+                setClauses.add("question_content = ?::jsonb");
                 params.add(serializeJsonValue(questionData.get("questionContent")));
             }
             if (questionData.containsKey("correctAnswer")) {
-                sql.append(", correct_answer = ?::jsonb");
+                setClauses.add("correct_answer = ?::jsonb");
                 params.add(serializeJsonValue(questionData.get("correctAnswer")));
             }
             if (questionData.containsKey("explanation")) {
-                sql.append(", explanation = ?");
-                params.add(questionData.get("explanation"));
+                setClauses.add("explanation = ?::jsonb");
+                Object explanationValue = questionData.get("explanation");
+                // Handle null, string, or object - serialize to JSON string for JSONB column
+                if (explanationValue == null) {
+                    params.add(null);
+                } else if (explanationValue instanceof String strVal) {
+                    // If it's already a JSON string, use it; otherwise wrap in quotes
+                    String trimmed = strVal.trim();
+                    if (trimmed.isEmpty()) {
+                        params.add(null);
+                    } else if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+                        params.add(trimmed);
+                    } else {
+                        // Plain string - wrap as JSON string
+                        params.add("\"" + trimmed.replace("\"", "\\\"") + "\"");
+                    }
+                } else {
+                    params.add(serializeJsonValue(explanationValue));
+                }
             }
             if (questionData.containsKey("imageUrl")) {
-                sql.append(", image_url = ?");
+                setClauses.add("image_url = ?");
                 params.add(questionData.get("imageUrl"));
             }
             if (questionData.containsKey("wordLimit")) {
-                sql.append(", word_limit = ?");
+                setClauses.add("word_limit = ?");
                 params.add(questionData.get("wordLimit"));
             }
 
-            sql.append(" WHERE id = ?");
+            // If no fields to update, return early
+            if (setClauses.isEmpty()) {
+                logger.warn("No fields to update for question {}", questionId);
+                Map<String, Object> result = new HashMap<>();
+                result.put("success", true);
+                result.put("updated", 0);
+                result.put("message", "Không có thay đổi");
+                return result;
+            }
+
+            // Build final SQL
+            String sql = "UPDATE public.questions SET " + String.join(", ", setClauses) + " WHERE id = ?";
             params.add(questionId);
 
-            int updated = jdbcTemplate.update(Objects.requireNonNull(sql.toString()),
-                    Objects.requireNonNull(params.toArray()));
+            int updated = jdbcTemplate.update(sql, params.toArray());
 
             logger.info("Admin {} updated question {} - {} rows affected", adminUserId, questionId, updated);
 
