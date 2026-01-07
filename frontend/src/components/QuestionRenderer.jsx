@@ -361,12 +361,6 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                         const diagramData = questionContent?.diagram;
                         const diagramDescription = questionContent?.diagram_description;
 
-                        // If this question has no diagram data, it's a subsequent question
-                        // whose input is already in the first question's flowchart - hide it
-                        if (!diagramData && !diagramDescription) {
-                            return null; // Hidden - input is in flowchart
-                        }
-
                         if (diagramData && diagramData.nodes) {
                             // Render using FlowchartRenderer
                             const diagramAnswers = {};
@@ -415,7 +409,12 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                             );
                         }
 
-                        // Ultimate fallback: simple input
+                        // No diagram data - render as fill-in-blank if text exists
+                        if (questionText) {
+                            return renderTextWithInput(questionText);
+                        }
+
+                        // Ultimate fallback: simple input with question number
                         return (
                             <p className="question-text-interactive">
                                 <span className="question-number"><strong>{questionNumber}</strong></span>

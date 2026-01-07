@@ -13,6 +13,8 @@
     background: #0f0f14;
     color: #e4e4e7;
     overflow: hidden;
+    overscroll-behavior: none;
+    /* Prevent infinite scroll / bounce */
     /* CSS Variable for dynamic sidebar width adjustment */
     --sidebar-width: var(--admin-sidebar-width, 56px);
 }
@@ -159,6 +161,8 @@
     background: var(--admin-bg-primary);
     flex: 1;
     overflow: hidden;
+    overscroll-behavior: none;
+    /* Prevent infinite scroll / bounce */
 }
 
 .admin-preview-wrapper .passage-container {

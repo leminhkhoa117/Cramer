@@ -10,7 +10,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { FiInfo, FiChevronUp, FiChevronDown, FiClock, FiCpu, FiFileText, FiAlertTriangle, FiCopy, FiHeadphones, FiCheck } from 'react-icons/fi';
+import { FiInfo, FiChevronUp, FiChevronDown, FiClock, FiCpu, FiFileText, FiAlertTriangle, FiCopy, FiHeadphones, FiCheck, FiImage } from 'react-icons/fi';
 import useABTSStore from '../../stores/useABTSStore';
 import AdminPreviewContent from '../content/AdminPreviewContent';
 import StreamingDisplay from './StreamingDisplay';
@@ -42,6 +42,7 @@ export default function StepPreview({ onBack }) {
   const [showTranscriptPanel, setShowTranscriptPanel] = useState(false);
   const [copiedTranscript, setCopiedTranscript] = useState(false);
   const [isValidationExpanded, setIsValidationExpanded] = useState(null); // null = auto
+  const [imageUrls, setImageUrls] = useState({}); // { partNumber: url }
 
   // Use onBack if provided, otherwise fallback to store's goToStep
   const handleGoBack = onBack || (() => goToStep(1));
@@ -65,21 +66,50 @@ export default function StepPreview({ onBack }) {
   const isWriting = formData.skill === 'WRITING';
   const reasoningText = generationResult?.reasoning || reasoning;
 
+  // Extract figure/image description from content (for map/plan labeling)
+  const figureDescription = content.figureDescription;
+
   // Transform ABTS data to AdminPreviewContent format
   const { previewSections, previewQuestions } = useMemo(() => {
     const rawSections = content.sections || (content.section ? [content.section] : []);
     const rawQuestions = content.questions || [];
 
     // Transform sections: ABTS format -> AdminPreviewContent format
-    const transformedSections = rawSections.map((sec, idx) => ({
-      id: `abts-section-${idx}`,
-      partNumber: sec.partNumber || idx + 1,
-      passageText: sec.passageText || sec.taskText || sec.transcript || '',
-      sectionLayout: sec.sectionLayout,
-      wordCount: sec.wordCount,
-      displayContentUrl: null, // AI-generated doesn't have images yet
-      audioUrl: null // AI-generated doesn't have audio yet
-    }));
+    const transformedSections = rawSections.map((sec, idx) => {
+      // Filter out blocks with invalid/missing question_numbers
+      let filteredLayout = sec.sectionLayout;
+      if (sec.sectionLayout?.blocks && Array.isArray(sec.sectionLayout.blocks)) {
+        const validBlocks = sec.sectionLayout.blocks.filter(block => {
+          // Block must have question_numbers array with at least one element
+          if (!block.question_numbers || !Array.isArray(block.question_numbers) || block.question_numbers.length === 0) {
+            console.warn('[StepPreview] Filtering out block with missing question_numbers:', block);
+            return false;
+          }
+          // Block must have valid block_type
+          const validTypes = ['NOTE_COMPLETION', 'INSTRUCTIONS_ONLY', 'MATCHING_FEATURES', 'PLAN_MAP_DIAGRAM_LABELING'];
+          if (!block.block_type || !validTypes.includes(block.block_type.toUpperCase())) {
+            console.warn('[StepPreview] Filtering out block with invalid block_type:', block.block_type);
+            return false;
+          }
+          return true;
+        });
+
+        // If all blocks were invalid, set layout to null to trigger fallback grouping
+        filteredLayout = validBlocks.length > 0 ? { ...sec.sectionLayout, blocks: validBlocks } : null;
+      }
+
+      const partNum = sec.partNumber || idx + 1;
+
+      return {
+        id: `abts-section-${idx}`,
+        partNumber: partNum,
+        passageText: sec.passageText || sec.taskText || sec.transcript || '',
+        sectionLayout: filteredLayout,
+        wordCount: sec.wordCount,
+        displayContentUrl: imageUrls[partNum] || null, // User-entered image URL
+        audioUrl: null
+      };
+    });
 
     // Transform questions: ABTS format -> AdminPreviewContent format  
     const transformedQuestions = rawQuestions.map((q, idx) => {
@@ -364,11 +394,62 @@ export default function StepPreview({ onBack }) {
   const isListening = formData.skill === 'LISTENING';
 
   // Listening Tools Panel (Audio URLs + Transcript Copy)
+  // Check if current part needs image (PLAN_MAP_DIAGRAM_LABELING)
+  const currentPartNeedsImage = useMemo(() => {
+    const currentSection = previewSections[activePartIndex];
+    if (!currentSection?.sectionLayout?.blocks) return false;
+    return currentSection.sectionLayout.blocks.some(
+      block => block.block_type === 'PLAN_MAP_DIAGRAM_LABELING'
+    );
+  }, [previewSections, activePartIndex]);
+
+  // Get current part number for image URL state
+  const currentPartNumber = previewSections[activePartIndex]?.partNumber || 1;
+
+  // Handle image URL change
+  const handleImageUrlChange = useCallback((url) => {
+    setImageUrls(prev => ({ ...prev, [currentPartNumber]: url }));
+  }, [currentPartNumber]);
+
+  // Listening Tools Panel (Audio URLs + Transcript Copy + Image URL)
   const ListeningToolsPanel = () => {
     if (!isListening || !generationResult?.content) return null;
 
     return (
       <div className="studio-listening-tools">
+        {/* Figure Description & Image URL section - only when needed */}
+        {(figureDescription || currentPartNeedsImage) && (
+          <div className="studio-listening-tools__image-section">
+            <div className="studio-listening-tools__header">
+              <FiImage size={14} />
+              <span>Image / Map (Part {currentPartNumber})</span>
+            </div>
+
+            {figureDescription && (
+              <div className="studio-listening-tools__figure-desc">
+                <details>
+                  <summary>Figure Description (for manual recreation)</summary>
+                  <pre>{typeof figureDescription === 'string'
+                    ? figureDescription
+                    : JSON.stringify(figureDescription, null, 2)}</pre>
+                </details>
+              </div>
+            )}
+
+            <div className="studio-listening-tools__url-input">
+              <input
+                type="text"
+                placeholder="Enter image URL..."
+                value={imageUrls[currentPartNumber] || ''}
+                onChange={(e) => handleImageUrlChange(e.target.value)}
+              />
+              {imageUrls[currentPartNumber] && (
+                <span className="studio-listening-tools__url-preview">Image loaded</span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Audio URL section removed - use Save to Database modal instead */}
         <div className="studio-listening-tools__header">
           <FiHeadphones size={14} />
@@ -383,14 +464,14 @@ export default function StepPreview({ onBack }) {
             disabled={allTranscripts.length === 0}
           >
             {copiedTranscript ? <FiCheck size={14} /> : <FiCopy size={14} />}
-            {copiedTranscript ? 'Đã copy!' : 'Copy Transcript'}
+            {copiedTranscript ? 'Copied!' : 'Copy Transcript'}
           </button>
           <button
             className={`studio-btn studio-btn--ghost ${showTranscriptPanel ? 'active' : ''}`}
             onClick={() => setShowTranscriptPanel(prev => !prev)}
           >
             <FiFileText size={14} />
-            {showTranscriptPanel ? 'Ẩn Transcript' : 'Xem Transcript'}
+            {showTranscriptPanel ? 'Hide Transcript' : 'View Transcript'}
           </button>
         </div>
 

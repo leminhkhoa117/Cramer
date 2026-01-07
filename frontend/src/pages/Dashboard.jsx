@@ -17,7 +17,12 @@ import Pagination from '../components/Pagination';
 import AttemptHistoryDropdown from '../components/AttemptHistoryDropdown';
 
 // Helper functions moved to the top level
-const formatCourseSeries = (course) => `Cambridge ${course.examSource.substring(3)} - Test ${course.testNumber}`;
+const formatCourseSeries = (course) => {
+  // Use human-readable names from backend if available
+  const setName = course.setName || course.examSource;
+  const testName = course.testName || `Test ${course.testNumber}`;
+  return `${setName} - ${testName}`;
+};
 
 const formatSkillName = (skill) => {
   if (!skill) return '';

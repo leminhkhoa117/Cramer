@@ -53,7 +53,7 @@ const readingInstructionsMap = {
     },
     'TRUE_FALSE_NOT_GIVEN': (group) => `
         <p>Do the following statements agree with the information given in Reading Passage ${group.partNumber}?</p>
-        <p>In boxes ${group.startNum}–${group.questions[group.questions.length - 1].questionNumber} on your answer sheet, write</p>
+        <p>In boxes ${group.startNum}–${group.questions[group.questions.length - 1].questionNumber} on your answer sheet, select</p>
         <div class="ielts-instruction-list">
             <div class="ielts-instruction-item"><strong>TRUE</strong><span>if the statement agrees with the information</span></div>
             <div class="ielts-instruction-item"><strong>FALSE</strong><span>if the statement contradicts the information</span></div>
@@ -61,7 +61,7 @@ const readingInstructionsMap = {
         </div>`,
     'YES_NO_NOT_GIVEN': (group) => `
         <p>Do the following statements agree with the claims of the writer in Reading Passage ${group.partNumber}?</p>
-        <p>In boxes ${group.startNum}–${group.questions[group.questions.length - 1].questionNumber} on your answer sheet, write</p>
+        <p>In boxes ${group.startNum}–${group.questions[group.questions.length - 1].questionNumber} on your answer sheet, select</p>
         <div class="ielts-instruction-list">
             <div class="ielts-instruction-item"><strong>YES</strong><span>if the statement agrees with the claims of the writer</span></div>
             <div class="ielts-instruction-item"><strong>NO</strong><span>if the statement contradicts the claims of the writer</span></div>
@@ -92,6 +92,10 @@ const readingInstructionsMap = {
             <p>Reading Passage ${group.partNumber} has ${group.questions.length} paragraphs, <strong>A–${String.fromCharCode(64 + group.questions.length)}</strong>.</p>
             <p>Choose the correct heading for each paragraph from the list of headings below.</p>
             <p>Write the correct number, <strong>i–${lastOptionNum <= 10 ? ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'][lastOptionNum - 1] : lastOptionNum}</strong>, in boxes ${group.startNum}–${group.questions[group.questions.length - 1].questionNumber} on your answer sheet.</p>`;
+    },
+    'DIAGRAM_LABEL_COMPLETION': (group) => {
+        const wordLimit = group.questions[0]?.wordLimit;
+        return `Complete the diagram below.<br/>Write <strong>${wordLimit || 'NO MORE THAN TWO WORDS'}</strong> from the passage for each answer.`;
     },
 };
 

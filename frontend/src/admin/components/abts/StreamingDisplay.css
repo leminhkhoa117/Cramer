@@ -11,6 +11,7 @@
     border: 1px solid var(--st-border, rgba(255, 255, 255, 0.08));
     border-radius: var(--st-radius, 12px);
     overflow: hidden;
+    overscroll-behavior: contain;
     /* Keep monospace for the "terminal" feel */
     font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', monospace;
     display: flex;

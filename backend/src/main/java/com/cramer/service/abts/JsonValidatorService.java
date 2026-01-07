@@ -839,19 +839,37 @@ public class JsonValidatorService {
             }
             if (blocks != null && blocks.isArray()) {
                 Set<Integer> assignedNumbers = new HashSet<>();
+                int blockIndex = 0;
                 for (JsonNode block : blocks) {
                     if (!block.has("block_type")) {
-                        result.addWarning("section_layout block missing block_type");
+                        result.addContentError("section_layout block " + blockIndex + " missing block_type");
+                        blockIndex++;
                         continue;
                     }
-                    String blockType = block.get("block_type").asText().toUpperCase();
+
+                    // Get and validate block_type
+                    String rawBlockType = block.get("block_type").asText();
+
+                    // Truncate hallucinated block_type values (AI sometimes outputs garbage)
+                    if (rawBlockType.length() > 50) {
+                        result.addContentError("Block " + blockIndex + " has malformed block_type (truncated): "
+                                + rawBlockType.substring(0, 50) + "...");
+                        blockIndex++;
+                        continue;
+                    }
+
+                    String blockType = rawBlockType.toUpperCase().trim();
                     if (!LISTENING_BLOCK_TYPES.contains(blockType)) {
-                        result.addWarning("Unknown block_type: " + blockType);
+                        result.addContentError("Block " + blockIndex + " has invalid block_type: '" + blockType
+                                + "'. Must be one of: " + LISTENING_BLOCK_TYPES);
+                        blockIndex++;
+                        continue;
                     }
 
                     JsonNode numberNode = block.get("question_numbers");
                     if (numberNode == null || !numberNode.isArray() || numberNode.isEmpty()) {
-                        result.addContentError("section_layout block missing question_numbers array");
+                        result.addContentError("Block " + blockIndex + " missing question_numbers array");
+                        blockIndex++;
                         continue;
                     }
 
@@ -950,8 +968,9 @@ public class JsonValidatorService {
                             }
                         }
                     }
-                }
 
+                    blockIndex++;
+                }
                 if (questionMap.size() > 0 && assignedNumbers.size() != questionMap.size()) {
                     result.addWarning("Some questions are not assigned to any section_layout block");
                 }

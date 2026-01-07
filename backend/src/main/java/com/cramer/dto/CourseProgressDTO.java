@@ -3,7 +3,8 @@ package com.cramer.dto;
 import java.time.OffsetDateTime;
 
 /**
- * Represents aggregated progress for a Cambridge exam course (exam source + test number + skill).
+ * Represents aggregated progress for a Cambridge exam course (exam source +
+ * test number + skill).
  */
 public class CourseProgressDTO {
 
@@ -11,6 +12,8 @@ public class CourseProgressDTO {
     private String examSource;
     private Integer testNumber;
     private String skill;
+    private String setName; // Human-readable set name from test_sets
+    private String testName; // Human-readable test name from tests
     private int totalQuestions;
     private int answersAttempted;
     private int correctAnswers;
@@ -24,6 +27,7 @@ public class CourseProgressDTO {
     }
 
     public CourseProgressDTO(Long attemptId, String examSource, Integer testNumber, String skill,
+            String setName, String testName,
             int totalQuestions, int answersAttempted, int correctAnswers,
             OffsetDateTime lastAttempt, double completionRate, String status, Double bandScore,
             java.util.List<AttemptHistoryDTO> history) {
@@ -31,6 +35,8 @@ public class CourseProgressDTO {
         this.examSource = examSource;
         this.testNumber = testNumber;
         this.skill = skill;
+        this.setName = setName;
+        this.testName = testName;
         this.totalQuestions = totalQuestions;
         this.answersAttempted = answersAttempted;
         this.correctAnswers = correctAnswers;
@@ -53,7 +59,6 @@ public class CourseProgressDTO {
         return examSource;
     }
 
-
     public void setExamSource(String examSource) {
         this.examSource = examSource;
     }
@@ -72,6 +77,22 @@ public class CourseProgressDTO {
 
     public void setSkill(String skill) {
         this.skill = skill;
+    }
+
+    public String getSetName() {
+        return setName;
+    }
+
+    public void setSetName(String setName) {
+        this.setName = setName;
+    }
+
+    public String getTestName() {
+        return testName;
+    }
+
+    public void setTestName(String testName) {
+        this.testName = testName;
     }
 
     public int getTotalQuestions() {

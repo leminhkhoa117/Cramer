@@ -1213,13 +1213,30 @@ public class PromptBuilderService {
                 prompt.append("}\n");
                 prompt.append("```\n\n");
 
-                // Figure descriptions if needed (Part 2)
+                // Figure descriptions REQUIRED for Part 2 map labeling
                 if (partNumber == 2) {
-                        prompt.append("### Figure Description (for Map/Plan)\n");
-                        prompt.append("If including map labelling, provide `figure_description` with:\n");
-                        prompt.append("- title: Description of the map/plan\n");
-                        prompt.append("- elements: Array of labeled locations\n");
-                        prompt.append("- answer_locations: Which letters correspond to which blanks\n\n");
+                        prompt.append("### FIGURE DESCRIPTION (REQUIRED for Map/Plan Labeling)\n");
+                        prompt.append("When using PLAN_MAP_DIAGRAM_LABELING block_type, you MUST provide a DETAILED `figure_description`.\n");
+                        prompt.append("This description allows manual recreation of the map/diagram.\n\n");
+                        prompt.append("**Required structure:**\n");
+                        prompt.append("```json\n");
+                        prompt.append("\"figure_description\": {\n");
+                        prompt.append("  \"title\": \"Map of Newtown Community Center\",\n");
+                        prompt.append("  \"type\": \"floor_plan\",  // floor_plan, campus_map, town_map, building_layout\n");
+                        prompt.append("  \"description\": \"A floor plan showing the main building of the community center with labeled rooms and facilities.\",\n");
+                        prompt.append("  \"elements\": [\n");
+                        prompt.append("    { \"label\": \"A\", \"name\": \"Main Entrance\", \"position\": \"south side, center\" },\n");
+                        prompt.append("    { \"label\": \"B\", \"name\": \"Reception Desk\", \"position\": \"immediately inside entrance\" },\n");
+                        prompt.append("    { \"label\": \"C\", \"name\": \"Gymnasium\", \"position\": \"east wing, large rectangular room\" },\n");
+                        prompt.append("    { \"label\": \"D\", \"name\": \"Cafe\", \"position\": \"west wing, near windows\" },\n");
+                        prompt.append("    { \"label\": \"E\", \"name\": \"Library\", \"position\": \"second floor, northwest corner\" }\n");
+                        prompt.append("  ],\n");
+                        prompt.append("  \"answer_locations\": { \"11\": \"B\", \"12\": \"C\", \"13\": \"D\", \"14\": \"E\" },\n");
+                        prompt.append("  \"orientation\": \"North is at the top\",\n");
+                        prompt.append("  \"scale\": \"Each grid square represents approximately 10 meters\"\n");
+                        prompt.append("}\n");
+                        prompt.append("```\n\n");
+                        prompt.append("**CRITICAL:** Without a detailed figure_description, the map cannot be created!\n\n");
                 }
 
                 // Explanation language and format
@@ -1570,6 +1587,15 @@ public class PromptBuilderService {
                 prompt.append("## TASK: Generate IELTS Listening Questions (Phase 2/2)\n\n");
                 prompt.append("Based on the provided transcript, generate the exam questions.\n\n");
 
+                // CRITICAL: block_type constraint at the TOP
+                prompt.append("### CRITICAL: Valid block_type Values (EXACT STRINGS ONLY)\n");
+                prompt.append("You MUST use EXACTLY one of these strings for block_type:\n");
+                prompt.append("- `NOTE_COMPLETION` - for fill-in-blank/note completion\n");
+                prompt.append("- `INSTRUCTIONS_ONLY` - for multiple choice questions\n");
+                prompt.append("- `MATCHING_FEATURES` - for matching questions\n");
+                prompt.append("- `PLAN_MAP_DIAGRAM_LABELING` - for map/diagram labeling\n\n");
+                prompt.append("**ANY OTHER VALUE WILL CAUSE FAILURE.**\n\n");
+
                 // Provide the transcript
                 prompt.append("### Source Transcript\n");
                 prompt.append("```\n").append(transcript).append("\n```\n\n");
@@ -1712,6 +1738,14 @@ public class PromptBuilderService {
                 prompt.append("3. **MCMA = TWO answers**: For MULTIPLE_CHOICE_MULTIPLE_ANSWERS, `correct_answer` MUST have EXACTLY 2 letters.\n");
                 prompt.append("4. **DO NOT duplicate answers**: Question ").append(startNumber)
                                 .append("'s correct_answer = [\"answer1\"] (just this question's answer)\n\n");
+
+                // FILL_IN_BLANK word_limit requirement
+                prompt.append("### FILL_IN_BLANK: word_limit Requirement (MANDATORY)\n");
+                prompt.append("Every FILL_IN_BLANK question MUST have a `word_limit` field with one of these values:\n");
+                prompt.append("- `\"ONE WORD ONLY\"`\n");
+                prompt.append("- `\"ONE WORD AND/OR A NUMBER\"`\n");
+                prompt.append("- `\"NO MORE THAN TWO WORDS\"`\n");
+                prompt.append("- `\"NO MORE THAN THREE WORDS\"`\n\n");
 
                 // Explanation format
                 prompt.append("### Explanation Format\n");
@@ -2182,8 +2216,16 @@ public class PromptBuilderService {
                 // Section layout object with blocks
                 Map<String, Object> blockSchema = new LinkedHashMap<>();
                 blockSchema.put("type", "object");
+                // CRITICAL: Add enum constraint to block_type to prevent AI hallucination
+                Map<String, Object> blockTypeSchema = new LinkedHashMap<>();
+                blockTypeSchema.put("type", "string");
+                blockTypeSchema.put("enum", List.of(
+                                "NOTE_COMPLETION",
+                                "INSTRUCTIONS_ONLY",
+                                "MATCHING_FEATURES",
+                                "PLAN_MAP_DIAGRAM_LABELING"));
                 blockSchema.put("properties", Map.of(
-                                "block_type", Map.of("type", "string"),
+                                "block_type", blockTypeSchema,
                                 "content", Map.of("type", "object"),
                                 "question_numbers", Map.of("type", "array", "items", Map.of("type", "integer"))));
 

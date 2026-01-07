@@ -161,22 +161,37 @@ const groupQuestionsFromLayout = (part) => {
     const questionsMap = new Map(part.questions.map(q => [q.questionNumber, q]));
 
     // New logic for Listening tests with sectionLayout
-    if (part.sectionLayout && part.sectionLayout.blocks) {
-        return part.sectionLayout.blocks.map((block, blockIndex) => {
-            // Safely get question_numbers array, fallback to empty array
-            const questionNumbers = block.question_numbers || [];
-            const blockQuestions = questionNumbers
-                .map(num => questionsMap.get(num))
-                .filter(Boolean);
+    if (part.sectionLayout && part.sectionLayout.blocks && Array.isArray(part.sectionLayout.blocks)) {
+        const groups = part.sectionLayout.blocks
+            .map((block, blockIndex) => {
+                // Safely get question_numbers array, fallback to empty array
+                const questionNumbers = block.question_numbers || [];
+                const blockQuestions = questionNumbers
+                    .map(num => questionsMap.get(num))
+                    .filter(Boolean);
 
-            return {
-                ...block,
-                questions: blockQuestions,
-                startNum: blockQuestions[0]?.questionNumber,
-                uniqueGroupId: `part${part.id}-block${blockIndex}-${block.id || blockIndex}`,
-                partId: part.id,
-            };
-        });
+                // Skip blocks with no valid questions
+                if (blockQuestions.length === 0) {
+                    console.warn('[AdminPreviewContent] Skipping block with no matching questions:', block);
+                    return null;
+                }
+
+                return {
+                    ...block,
+                    questions: blockQuestions,
+                    startNum: blockQuestions[0]?.questionNumber,
+                    uniqueGroupId: `part${part.id}-block${blockIndex}-${block.id || blockIndex}`,
+                    partId: part.id,
+                };
+            })
+            .filter(Boolean); // Remove null entries
+
+        // If we got valid groups from sectionLayout, use them
+        // Otherwise, fall through to fallback grouping
+        if (groups.length > 0) {
+            return groups;
+        }
+        console.warn('[AdminPreviewContent] All sectionLayout blocks were invalid, using fallback grouping');
     }
 
     // Fallback logic for Reading tests or old data structure

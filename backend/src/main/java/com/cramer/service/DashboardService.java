@@ -19,6 +19,9 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.cramer.entity.TestSet;
+import com.cramer.entity.IeltsTest;
+
 @Service
 public class DashboardService {
 
@@ -29,6 +32,8 @@ public class DashboardService {
     private final QuestionRepository questionRepository;
     private final SectionRepository sectionRepository;
     private final WritingSubmissionRepository writingSubmissionRepository;
+    private final TestSetRepository testSetRepository;
+    private final IeltsTestRepository ieltsTestRepository;
 
     public DashboardService(ProfileRepository profileRepository,
             TargetRepository targetRepository,
@@ -36,7 +41,9 @@ public class DashboardService {
             UserAnswerRepository userAnswerRepository,
             QuestionRepository questionRepository,
             SectionRepository sectionRepository,
-            WritingSubmissionRepository writingSubmissionRepository) {
+            WritingSubmissionRepository writingSubmissionRepository,
+            TestSetRepository testSetRepository,
+            IeltsTestRepository ieltsTestRepository) {
         this.profileRepository = profileRepository;
         this.targetRepository = targetRepository;
         this.testAttemptRepository = testAttemptRepository;
@@ -44,6 +51,8 @@ public class DashboardService {
         this.questionRepository = questionRepository;
         this.sectionRepository = sectionRepository;
         this.writingSubmissionRepository = writingSubmissionRepository;
+        this.testSetRepository = testSetRepository;
+        this.ieltsTestRepository = ieltsTestRepository;
     }
 
     public DashboardSummaryDTO buildDashboardSummary(UUID userId, int page, int size, String search) {
@@ -118,6 +127,23 @@ public class DashboardService {
                 : allAnswers.stream().collect(Collectors.groupingBy(a -> a.getAttempt().getId()));
         Map<TestKey, Integer> totalQuestionsCache = new HashMap<>();
 
+        // 3. Build name resolution cache for examSource -> setName, testNumber ->
+        // testName
+        Set<String> examSources = attempts.stream().map(TestAttempt::getExamSource).collect(Collectors.toSet());
+        Map<String, TestSet> setsByCode = examSources.stream()
+                .map(code -> testSetRepository.findByCode(code).orElse(null))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(TestSet::getCode, Function.identity()));
+
+        // Build testName lookup: "examSource_testNumber" -> testName
+        Map<String, String> testNameLookup = new HashMap<>();
+        for (TestSet ts : setsByCode.values()) {
+            List<IeltsTest> tests = ieltsTestRepository.findByTestSetIdOrderByTestNumberAsc(ts.getId());
+            for (IeltsTest t : tests) {
+                testNameLookup.put(ts.getCode() + "_" + t.getTestNumber(), t.getName());
+            }
+        }
+
         List<CourseProgressDTO> courseProgressList = new ArrayList<>();
 
         for (Map.Entry<TestKey, List<TestAttempt>> entry : attemptsByTest.entrySet()) {
@@ -189,11 +215,30 @@ public class DashboardService {
 
             double completionRate = totalQuestions > 0 ? (double) answersAttempted / totalQuestions : 0.0;
 
+            // Resolve human-readable names
+            String setName = null;
+            String testName = null;
+            TestSet ts = setsByCode.get(latestAttempt.getExamSource());
+            if (ts != null) {
+                setName = ts.getName();
+                String lookupKey = ts.getCode() + "_" + parseTestNumber(latestAttempt.getTestNumber());
+                testName = testNameLookup.get(lookupKey);
+            }
+            // Fallback to formatted exam source if no set found
+            if (setName == null) {
+                setName = latestAttempt.getExamSource();
+            }
+            if (testName == null) {
+                testName = "Test " + latestAttempt.getTestNumber();
+            }
+
             courseProgressList.add(new CourseProgressDTO(
                     latestAttempt.getId(),
                     latestAttempt.getExamSource(),
                     parseTestNumber(latestAttempt.getTestNumber()),
                     latestAttempt.getSkill(),
+                    setName,
+                    testName,
                     totalQuestions,
                     answersAttempted,
                     correctCount,
