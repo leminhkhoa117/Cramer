@@ -601,6 +601,139 @@ export const selectHasFeature = (featureCode) => (state) =>
 
 ---
 
+### 11. `useABTSStore` — AI-Based Test Generation (Admin)
+
+**Location:** [src/admin/stores/useABTSStore.js](../../../frontend/src/admin/stores/useABTSStore.js) (~1,549 lines)
+
+**Purpose:** Central state management for the AI Generation Studio in the admin panel.
+
+**State Shape:**
+```typescript
+{
+  // Wizard State
+  currentStep: number;           // 1-4 wizard steps
+  isWizardOpen: boolean;
+
+  // Form Data
+  formData: {
+    skill: 'READING' | 'LISTENING' | 'WRITING' | null;
+    scope: 'MULTI_PART';         // Always multi-part mode (v7.0+)
+    partNumber: number;
+    topic: string;
+    hashtags: string[];
+    facts: string[];
+    difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+    model: string;               // OpenRouter model ID
+    temperature: number;
+    enableReasoning: boolean;    // Chain-of-thought tokens
+    selectedParts: number[];     // [1, 2, 3] for Reading
+    partConfigs: Record<number, PartConfig>;
+    refinementModel: string | null;
+    enableRefinementCaching: boolean;
+    enableRefinementReasoning: boolean;
+  };
+
+  // Generation State
+  isGenerating: boolean;
+  generationResult: GenerationResult | null;
+  generationStream: StreamEvent[];
+  validationIssues: ValidationIssue[];
+  abortController: AbortController | null;
+
+  // Save State
+  isSaving: boolean;
+  saveError: string | null;
+  selectedSetId: string | null;
+  selectedTestId: string | null;
+
+  // Refinement State (Agent 2)
+  selectedIssues: string[];      // IDs of issues for refinement
+  isRefining: boolean;
+  refinementResult: RefinementResult | null;
+  refinementStream: StreamEvent[];
+  abortRefinement: () => void | null;
+
+  // Audio URLs (Listening)
+  audioUrls: Record<number, string>;
+}
+```
+
+**Key Actions (Wizard):**
+| Action | Description |
+|--------|-------------|
+| `openWizard()` | Open generation wizard |
+| `closeWizard()` | Close and reset wizard |
+| `goToStep(step)` | Navigate to specific step |
+| `nextStep()` / `prevStep()` | Step navigation |
+| `isStepValid(step)` | Validate step completion |
+
+**Key Actions (Form):**
+| Action | Description |
+|--------|-------------|
+| `updateFormData(updates)` | Bulk update form fields |
+| `setFormField(field, value)` | Set single field |
+| `resetForm()` | Reset to initial state |
+| `setAudioUrl(part, url)` | Set Listening audio URL |
+
+**Key Actions (Multi-Part):**
+| Action | Description |
+|--------|-------------|
+| `togglePartSelection(part)` | Toggle part for generation |
+| `setPartConfig(part, config)` | Set part-specific config |
+| `applyGlobalConfigToAllParts()` | Copy global to all parts |
+| `randomizePartConfig(part)` | Randomize question types |
+| `randomizeAllParts()` | Randomize all selected parts |
+
+**Key Actions (Generation):**
+| Action | Description |
+|--------|-------------|
+| `startGeneration()` | Begin AI generation |
+| `cancelGeneration()` | Abort in-progress generation |
+| `clearGenerationResult()` | Clear results |
+| `setValidationIssues(issues)` | Set validation issues |
+
+**Key Actions (Refinement):**
+| Action | Description |
+|--------|-------------|
+| `toggleIssueSelection(id)` | Toggle issue for refinement |
+| `selectAllIssues()` | Select all issues |
+| `clearSelectedIssues()` | Clear selection |
+| `startRefinement()` | Begin AI refinement |
+| `cancelRefinement()` | Abort refinement |
+| `applyRefinementResult()` | Apply refined content |
+
+**Key Actions (Save):**
+| Action | Description |
+|--------|-------------|
+| `saveToDatabase(setId, testId)` | Save generated content |
+| `setSelectedSet(id, code)` | Set target set |
+| `setSelectedTest(id)` | Set target test |
+
+**Question Type Constants:**
+```javascript
+export const READING_PART_TYPES = {
+  1: ['TRUE_FALSE_NOT_GIVEN', 'FILL_IN_BLANK', 'MATCHING_HEADINGS', ...],
+  2: ['MATCHING_INFORMATION', 'MATCHING_FEATURES', ...],
+  3: ['MULTIPLE_CHOICE', 'YES_NO_NOT_GIVEN', ...]
+};
+
+export const LISTENING_PART_TYPES = {
+  1: ['FILL_IN_BLANK', 'MULTIPLE_CHOICE', 'MATCHING'],
+  2: ['FILL_IN_BLANK', 'MATCHING', 'MULTIPLE_CHOICE'],
+  3: ['MULTIPLE_CHOICE', 'MULTIPLE_CHOICE_MULTIPLE_ANSWERS', ...],
+  4: ['FILL_IN_BLANK', 'MULTIPLE_CHOICE', ...]
+};
+
+export const QUESTION_COUNTS = {
+  READING: { 1: 13, 2: 13, 3: 14 },
+  LISTENING: { 1: 10, 2: 10, 3: 10, 4: 10 }
+};
+```
+
+**Middleware:** `devtools`
+
+---
+
 ## Store Naming Conventions
 
 | Convention | Example |
@@ -628,6 +761,7 @@ export const selectHasFeature = (featureCode) => (state) =>
 | useUserStatsStore | ✅ | ❌ | ❌ | ✅ |
 | useSubscriptionStore | ✅ | ❌ | ❌ | ✅ |
 | useQuotaStore | ✅ | ❌ | ❌ | ✅ |
+| useABTSStore | ✅ | ❌ | ❌ | ❌ |
 
 ---
 
@@ -694,4 +828,4 @@ Install [Redux DevTools Extension](https://github.com/zalmoxisus/redux-devtools-
 
 ## Migration Notes
 
-The stores replace the deprecated `AuthContext.jsx` which is kept for reference only and not imported anywhere in the codebase.
+The stores replaced the deprecated `AuthContext.jsx` which was removed from the codebase in January 2026.

@@ -1,6 +1,6 @@
 # Cramer Backend - Service Layer Documentation
 
-> **Last Updated:** January 6, 2026  
+> **Last Updated:** January 10, 2026  
 > **Spring Boot Version:** 3.x  
 > **Architecture:** Interface + Implementation pattern
 
@@ -17,10 +17,11 @@ This document provides a comprehensive reference for all services in the Cramer 
 5. [Subscription & Credit Services](#subscription--credit-services)
 6. [Quota & Billing Services](#quota--billing-services)
 7. [AI & Grading Services](#ai--grading-services)
-8. [Vocabulary & Translation Services](#vocabulary--translation-services)
-9. [Admin Services](#admin-services)
-10. [Utility Services](#utility-services)
-11. [Service Dependencies Diagram](#service-dependencies-diagram)
+8. [ABTS Services](#abts-services)
+9. [Vocabulary & Translation Services](#vocabulary--translation-services)
+10. [Admin Services](#admin-services)
+11. [Utility Services](#utility-services)
+12. [Service Dependencies Diagram](#service-dependencies-diagram)
 
 ---
 
@@ -49,18 +50,24 @@ This document provides a comprehensive reference for all services in the Cramer 
 | 19 | `ChatService` | Interface | service | AI chatbot operations |
 | 20 | `LLMGradingService` | Concrete | service | DeepSeek AI grading |
 | 21 | `AsyncGradingService` | Concrete | service | Async grading executor |
-| 22 | `GeminiGradingService` | Concrete | service | Legacy Gemini grading |
-| 23 | `VocabularyService` | Interface | service | Vocabulary notebook |
-| 24 | `DashboardService` | Concrete | service | Dashboard aggregation |
-| 25 | `CourseService` | Concrete | service | Course listing |
-| 26 | `UserActivityService` | Interface | service | Activity logging |
-| 27 | `AdminUserService` | Interface | service | Admin user management |
-| 28 | `AdminContentService` | Interface | service | Admin content management |
-| 29 | `AdminAuditService` | Interface | service | Admin audit logging |
-| 30 | `SupabaseAdminService` | Concrete | service | Supabase Admin API client |
-| 31 | `SupabaseClient` | Concrete | service | Supabase REST client |
+| 22 | `VocabularyService` | Interface | service | Vocabulary notebook |
+| 23 | `DashboardService` | Concrete | service | Dashboard aggregation |
+| 24 | `CourseService` | Concrete | service | Course listing |
+| 25 | `UserActivityService` | Interface | service | Activity logging |
+| 26 | `AdminUserService` | Interface | service | Admin user management |
+| 27 | `AdminContentService` | Interface | service | Admin content management |
+| 28 | `AdminAuditService` | Interface | service | Admin audit logging |
+| 29 | `SupabaseAdminService` | Concrete | service | Supabase Admin API client |
+| 30 | `SupabaseClient` | Concrete | service | Supabase REST client |
+| 31 | `ABTSService` | Concrete | service.abts | AI test generation orchestration |
+| 32 | `OpenRouterClient` | Concrete | service.abts | OpenRouter API client |
+| 33 | `PromptBuilderService` | Concrete | service.abts | AI prompt generation |
+| 34 | `JsonValidatorService` | Concrete | service.abts | AI output validation |
+| 35 | `RefinementService` | Concrete | service.abts | AI content refinement |
+| 36 | `RefinementPromptBuilder` | Concrete | service.abts | Refinement prompt generation |
+| 37 | `JsonPatcher` | Concrete | service.abts | JSON patch application |
 
-**Total Services: 31** (Interface: 15, Concrete: 16)
+**Total Services: 37** (Interface: 15, Concrete: 22)
 
 ---
 
@@ -675,20 +682,239 @@ Asynchronous grading executor.
 
 ---
 
-### 22. GeminiGradingService
+## ABTS Services
 
-Legacy Google Gemini grading (deprecated).
+The **AI-Based Test Generation System (ABTS)** is a comprehensive suite of services for generating IELTS test content using AI models via OpenRouter.
 
-**Location:** `com.cramer.service.GeminiGradingService`  
+### 31. ABTSService
+
+Core orchestration service for AI-based test generation.
+
+**Location:** `com.cramer.service.abts.ABTSService` (~2,805 lines)  
 **Type:** Concrete `@Service`
 
-**Note:** Replaced by `LLMGradingService` as of 2025-12-12. Kept for reference.
+**Dependencies:**
+- `OpenRouterConfig`
+- `OpenRouterClient`
+- `PromptBuilderService`
+- `JsonValidatorService`
+- `JdbcTemplate`
+- `ObjectMapper`
+
+**Key Methods:**
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `generate(request)` | `GeneratedContentDTO` | Main generation entry point |
+| `generateWithStream(request, emitter, cancelled)` | `void` | SSE streaming generation |
+| `generateMultiplePartsWithStream(...)` | `void` | Multi-part sequential generation |
+| `generateReadingForPart(...)` | `GenerationResponseDTO` | Two-pass Reading generation |
+| `generateListeningForPart(...)` | `GenerationResponseDTO` | Two-pass Listening generation |
+| `saveGeneratedContent(request)` | `SaveContentResponseDTO` | Persist to database |
+
+**Generation Strategy (Two-Pass):**
+1. **Phase 1:** Generate passage/transcript only
+2. **Phase 2:** Generate questions based on Phase 1 output
+
+**Retry Logic:** 3-retry fail-hard strategy for JSON parsing errors
+
+---
+
+### 32. OpenRouterClient
+
+HTTP client for OpenRouter unified AI API (400+ models).
+
+**Location:** `com.cramer.service.abts.OpenRouterClient` (~1,158 lines)  
+**Type:** Concrete `@Component`
+
+**Configuration:**
+- `openrouter.api-key` - OpenRouter API key
+- `openrouter.base-url` - API base URL (default: `https://openrouter.ai/api/v1`)
+
+**Key Methods:**
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `callChatCompletion(model, systemPrompt, userPrompt, jsonSchema)` | `OpenRouterResponse` | Synchronous call |
+| `callChatCompletionStreaming(...)` | `void` | SSE streaming with callback |
+| `callChatCompletionWithFeatures(...)` | `OpenRouterResponse` | With web search and caching |
+
+**StreamCallback Interface:**
+```java
+interface StreamCallback {
+    void onReasoningChunk(String chunk);  // Chain-of-thought tokens
+    void onContentChunk(String chunk);    // Main content tokens
+    void onProgress(int percent, String message);
+    void onComplete(OpenRouterResponse response);
+    void onError(String error);
+}
+```
+
+**Features:**
+- JSON Schema mode (structured output)
+- Model fallbacks for reliability
+- Reasoning tokens (Chain-of-Thought) support
+- Context caching for Gemini/Anthropic models
+- Cancellation support via `AtomicBoolean`
+
+---
+
+### 33. PromptBuilderService
+
+Service for building AI prompts for IELTS test generation.
+
+**Location:** `com.cramer.service.abts.PromptBuilderService` (~4,200 lines)  
+**Type:** Concrete `@Service`
+
+**Key Methods:**
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `buildReadingPassagePrompt(request)` | `String` | Phase 1 Reading prompt |
+| `buildReadingQuestionsPrompt(request, passage)` | `String` | Phase 2 Reading prompt |
+| `buildListeningTranscriptPrompt(request)` | `String` | Phase 1 Listening prompt |
+| `buildListeningQuestionsPrompt(request, transcript)` | `String` | Phase 2 Listening prompt |
+| `buildWritingPrompt(request)` | `String` | Writing task prompt |
+| `getReadingPassageJsonSchema(request)` | `Map` | JSON schema for passage |
+| `getReadingQuestionsJsonSchema(request)` | `Map` | JSON schema for questions |
+| `getListeningJsonSchema(request)` | `Map` | JSON schema for Listening |
+
+**Question Types Supported:**
+
+| Skill | Question Types |
+|-------|----------------|
+| Reading | TRUE_FALSE_NOT_GIVEN, FILL_IN_BLANK, MATCHING_HEADINGS, MATCHING_INFORMATION, SUMMARY_COMPLETION, MULTIPLE_CHOICE, SENTENCE_COMPLETION, etc. |
+| Listening | FILL_IN_BLANK, MULTIPLE_CHOICE, MATCHING, TABLE_COMPLETION, FLOW_CHART_COMPLETION, NOTE_COMPLETION, etc. |
+
+---
+
+### 34. JsonValidatorService
+
+Multi-layer validation for AI-generated content.
+
+**Location:** `com.cramer.service.abts.JsonValidatorService` (~2,134 lines)  
+**Type:** Concrete `@Service`
+
+**Validation Layers:**
+1. **Schema Validation** - JSON structure correctness
+2. **Content Validation** - Word counts, question counts
+3. **Business Rule Validation** - IELTS compliance
+
+**Key Methods:**
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `validateReadingContent(json, request)` | `ValidationResult` | Validate Reading output |
+| `validateListeningContent(json, request)` | `ValidationResult` | Validate Listening output |
+| `validateWritingContent(json, request)` | `ValidationResult` | Validate Writing output |
+
+**ValidationResult:**
+```java
+class ValidationResult {
+    boolean valid;
+    List<String> schemaErrors;      // Structural errors
+    List<String> contentErrors;     // Content issues
+    List<String> businessRuleErrors; // IELTS rule violations
+    List<String> warnings;          // Non-blocking issues
+}
+```
+
+---
+
+### 35. RefinementService
+
+Orchestrates Agent 2 (Refinement Agent) for fixing validation issues.
+
+**Location:** `com.cramer.service.abts.RefinementService` (~479 lines)  
+**Type:** Concrete `@Service`
+
+**Dependencies:**
+- `OpenRouterConfig`
+- `OpenRouterClient`
+- `RefinementPromptBuilder`
+- `JsonPatcher`
+- `ObjectMapper`
+
+**Key Methods:**
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `refineWithStream(request, emitter, cancelled)` | `RefinementResponseDTO` | Refine with streaming |
+| `parseAndApplyPatches(response, original, issues)` | `String` | Apply AI patches to JSON |
+
+**Refinement Workflow:**
+1. Receive original JSON + selected issues from user
+2. Build refinement prompt using `RefinementPromptBuilder`
+3. Call AI with full context (via OpenRouter caching)
+4. Stream refinement output with patch extraction
+5. Apply patches using `JsonPatcher`
+6. Re-validate refined output
+
+---
+
+### 36. RefinementPromptBuilder
+
+Builds prompts for the refinement agent.
+
+**Location:** `com.cramer.service.abts.RefinementPromptBuilder` (~350 lines)  
+**Type:** Concrete `@Component`
+
+**Key Methods:**
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `buildRefinementPrompt(issues, originalJson, passageContext)` | `String` | Build full refinement prompt |
+| `formatIssuesForPrompt(issues)` | `String` | Format issues as prompt text |
+
+---
+
+### 37. JsonPatcher
+
+Comprehensive utility for applying JSON patches.
+
+**Location:** `com.cramer.service.abts.JsonPatcher` (~503 lines)  
+**Type:** Concrete `@Component`
+
+**Supported Operations:**
+- `REPLACE` - Change existing value
+- `INSERT` - Add element to array
+- `APPEND` - Add text to existing string field
+
+**Key Classes:**
+
+```java
+class Patch {
+    String issueId;
+    Integer questionNumber;
+    Operation operation;
+    String path;           // JSON path (e.g., "questions[0].correct_answer")
+    Integer index;         // For array operations
+    Object oldValue;
+    Object newValue;
+    String reason;
+}
+
+class PatchResult {
+    String patchedJson;
+    int successCount;
+    int failCount;
+    List<String> errors;
+}
+```
+
+**Key Methods:**
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `applyPatches(originalJson, patches)` | `PatchResult` | Apply multiple patches |
+| `navigateToNode(root, path)` | `JsonNode` | Navigate to JSON path |
+| `applyValueToNode(parent, segment, value)` | `void` | Apply value change |
 
 ---
 
 ## Vocabulary & Translation Services
 
-### 23. VocabularyService
+### 22. VocabularyService
 
 Vocabulary notebook operations.
 
@@ -714,7 +940,7 @@ Vocabulary notebook operations.
 
 ## Admin Services
 
-### 24. DashboardService
+### 23. DashboardService
 
 User dashboard data aggregation.
 
@@ -747,7 +973,7 @@ User dashboard data aggregation.
 
 ---
 
-### 25. CourseService
+### 24. CourseService
 
 Course listing and navigation.
 
@@ -766,7 +992,7 @@ Course listing and navigation.
 
 ---
 
-### 26. UserActivityService
+### 25. UserActivityService
 
 Activity timeline logging.
 
@@ -790,7 +1016,7 @@ Activity timeline logging.
 
 ---
 
-### 27. AdminUserService
+### 26. AdminUserService
 
 Admin user management operations.
 
@@ -810,7 +1036,7 @@ Admin user management operations.
 
 ---
 
-### 28. AdminContentService
+### 27. AdminContentService
 
 Admin content management operations.
 
@@ -835,7 +1061,7 @@ Admin content management operations.
 
 ---
 
-### 29. AdminAuditService
+### 28. AdminAuditService
 
 Admin action audit logging.
 
@@ -858,7 +1084,7 @@ Admin action audit logging.
 
 ## Utility Services
 
-### 30. SupabaseAdminService
+### 29. SupabaseAdminService
 
 Supabase Admin API client for direct Supabase operations.
 
@@ -884,7 +1110,7 @@ Supabase Admin API client for direct Supabase operations.
 
 ---
 
-### 31. SupabaseClient
+### 30. SupabaseClient
 
 General Supabase REST client (for non-admin operations).
 
@@ -970,10 +1196,21 @@ graph TB
         AdminAuditService --> AdminAuditLogRepository
     end
 
+    subgraph "ABTS Services"
+        ABTSService --> OpenRouterClient
+        ABTSService --> PromptBuilderService
+        ABTSService --> JsonValidatorService
+        ABTSService --> JdbcTemplate
+        RefinementService --> OpenRouterClient
+        RefinementService --> RefinementPromptBuilder
+        RefinementService --> JsonPatcher
+    end
+
     subgraph "External"
         SupabaseAdminService --> Supabase[Supabase API]
         LLMGradingService --> DeepSeek[DeepSeek API]
         PaymentService --> PayOS[PayOS API]
+        OpenRouterClient --> OpenRouter[OpenRouter API]
     end
 ```
 

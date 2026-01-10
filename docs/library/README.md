@@ -1,7 +1,7 @@
 # Cramer Documentation Library
 
-> **Last Updated:** January 6, 2026  
-> **Version:** 1.0.0
+> **Last Updated:** January 10, 2026  
+> **Version:** 1.1.0
 
 ---
 
@@ -26,7 +26,7 @@
 | **Backend** | Spring Boot 3.x, Java 21, Maven |
 | **Database** | PostgreSQL (Supabase) with RLS |
 | **Auth** | Supabase Auth with JWT |
-| **AI** | DeepSeek V3.2 (OpenAI-compatible API) |
+| **AI** | OpenRouter API (400+ models), DeepSeek V3.2 |
 | **Payments** | PayOS Gateway (Vietnam) |
 
 ---
@@ -40,7 +40,7 @@
 | [API_REFERENCE.md](backend/API_REFERENCE.md) | Complete REST API documentation with endpoints, request/response formats, and authentication details | 1054 |
 | [DATABASE_SCHEMA.md](backend/DATABASE_SCHEMA.md) | PostgreSQL schema with 26 tables, RLS policies, triggers, indexes, and ER diagrams | 944 |
 | [ENTITIES.md](backend/ENTITIES.md) | JPA entity reference covering all domain models with field definitions and relationships | 878 |
-| [SERVICES.md](backend/SERVICES.md) | Service layer documentation with interface/implementation patterns and dependency diagrams | 1031 |
+| [SERVICES.md](backend/SERVICES.md) | Service layer documentation with 38 services, ABTS system, and dependency diagrams | 1,279 |
 | [DATA_INGESTION_READING.md](backend/DATA_INGESTION_READING.md) | Guide for parsing and ingesting IELTS Reading test content via SQL | 518 |
 | [DATA_INGESTION_LISTENING.md](backend/DATA_INGESTION_LISTENING.md) | Guide for parsing and ingesting IELTS Listening test content with audio and question blocks | 376 |
 
@@ -50,7 +50,7 @@
 |----------|-------------|-------|
 | [PAGES.md](frontend/PAGES.md) | Route overview and page component catalog with user flow diagrams | 725 |
 | [COMPONENTS.md](frontend/COMPONENTS.md) | Reusable component library covering layout, navigation, forms, and test-taking UI | 1049 |
-| [STATE_MANAGEMENT.md](frontend/STATE_MANAGEMENT.md) | Zustand store architecture with patterns for auth, test sessions, and caching | 698 |
+| [STATE_MANAGEMENT.md](frontend/STATE_MANAGEMENT.md) | Zustand store architecture with 11 stores including ABTS generation state | 831 |
 | [API_CLIENT.md](frontend/API_CLIENT.md) | Axios-based API client with JWT injection, error handling, and domain-organized modules | 861 |
 | [UI_DESIGN_SYSTEM.md](frontend/UI_DESIGN_SYSTEM.md) | Comprehensive design system with colors, typography, glassmorphism, and responsive patterns | 868 |
 
@@ -60,9 +60,9 @@
 
 | Category | Files | Total Lines |
 |----------|-------|-------------|
-| Backend | 6 | 4,801 |
-| Frontend | 5 | 4,201 |
-| **Total** | **11** | **9,002** |
+| Backend | 6 | 5,044 |
+| Frontend | 5 | 4,330 |
+| **Total** | **11** | **9,374** |
 
 ---
 
