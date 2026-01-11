@@ -64,13 +64,14 @@ export default function AdminRouteGuard({ children }) {
     }
 
     // ======================================================================
-    // DEV MODE: Cho phép tất cả users đã đăng nhập truy cập admin
-    // Để test giao diện dễ dàng hơn
+    // DEV MODE: Only allow in development environment
+    // Uses VITE_DEV_ADMIN_BYPASS environment variable
     // ======================================================================
-    const isDev = true; // TODO: Đổi thành false khi deploy production
+    const isDevBypass = import.meta.env.VITE_DEV_ADMIN_BYPASS === 'true' && import.meta.env.DEV;
 
-    if (isDev) {
-        // Trong dev mode, cho phép tất cả users đã authed
+    if (isDevBypass) {
+        // In dev mode with bypass enabled, allow all authenticated users
+        console.warn('⚠️ Admin bypass enabled - DEV MODE ONLY');
         return children;
     }
 
@@ -103,9 +104,9 @@ export function useIsAdmin() {
 
     if (!user) return false;
 
-    // DEV MODE
-    const isDev = true;
-    if (isDev) return true;
+    // DEV MODE - only with explicit bypass and in dev environment
+    const isDevBypass = import.meta.env.VITE_DEV_ADMIN_BYPASS === 'true' && import.meta.env.DEV;
+    if (isDevBypass) return true;
 
     // PRODUCTION MODE
     const isAdminFromList = ADMIN_USER_IDS.includes(user.id);
