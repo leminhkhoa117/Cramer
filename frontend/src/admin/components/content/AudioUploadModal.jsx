@@ -25,39 +25,12 @@ export default function AudioUploadModal({
     const [isDragOver, setIsDragOver] = useState(false);
     const fileInputRef = useRef(null);
 
-    useEffect(() => {
-        if (isOpen) {
-            setAudioFile(null);
-            setAudioUrl(initialAudioUrl || '');
-            setError(null);
-            setUploadProgress(0);
-        }
-    }, [isOpen, initialAudioUrl]);
-
-    if (!isOpen) return null;
-
-    // Allowed file types
+    // Allowed file types - defined before hooks that use them
     const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/mp3', 'audio/x-wav'];
     const allowedExtensions = ['.mp3', '.wav'];
 
-    // Format file size
-    const formatSize = (bytes) => {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
-
-    // Format duration
-    const formatDuration = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
-
     // Validate file
-    const validateFile = (file) => {
+    const validateFile = useCallback((file) => {
         if (!file) return 'Không có file được chọn';
 
         const ext = '.' + file.name.split('.').pop().toLowerCase();
@@ -71,10 +44,10 @@ export default function AudioUploadModal({
         }
 
         return null;
-    };
+    }, [maxSizeMB]);
 
     // Handle file selection
-    const handleFileSelect = (file) => {
+    const handleFileSelect = useCallback((file) => {
         const validationError = validateFile(file);
         if (validationError) {
             setError(validationError);
@@ -87,25 +60,7 @@ export default function AudioUploadModal({
         // Create preview URL
         const previewUrl = URL.createObjectURL(file);
         setAudioUrl(previewUrl);
-    };
-
-    const handleUrlChange = (e) => {
-        const value = e.target.value.trim();
-        setError(null);
-        setAudioFile(null);
-        setAudioUrl(value);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
-
-    // Handle file input change
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            handleFileSelect(file);
-        }
-    };
+    }, [validateFile]);
 
     // Handle drag events
     const handleDragOver = useCallback((e) => {
@@ -126,7 +81,46 @@ export default function AudioUploadModal({
         if (file) {
             handleFileSelect(file);
         }
+    }, [handleFileSelect]);
+
+    const handleUrlChange = useCallback((e) => {
+        const value = e.target.value.trim();
+        setError(null);
+        setAudioFile(null);
+        setAudioUrl(value);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
     }, []);
+
+    // Handle file input change
+    const handleFileChange = useCallback((e) => {
+        const file = e.target.files[0];
+        if (file) {
+            handleFileSelect(file);
+        }
+    }, [handleFileSelect]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setAudioFile(null);
+            setAudioUrl(initialAudioUrl || '');
+            setError(null);
+            setUploadProgress(0);
+        }
+    }, [isOpen, initialAudioUrl]);
+
+    // Early return AFTER all hooks are called
+    if (!isOpen) return null;
+
+    // Format file size
+    const formatSize = (bytes) => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
 
     // Clear selected file
     const handleClear = () => {

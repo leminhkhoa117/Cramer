@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   FiMessageCircle,
   FiX,
-  FiMinus,
   FiSend,
   FiPhone,
   FiAlertCircle
@@ -15,13 +14,15 @@ import '../css/floating-assistant.css';
 
 /**
  * Floating Assistant Widget - "Trợ lý Cramer"
- * 
+ *
  * A persistent floating UI element that provides:
  * - User's Lúa balance and subscription tier display
  * - AI-powered chatbot for IELTS help
  * - Quick access to customer support
- * 
- * Fixed position at bottom-right corner (not draggable).
+ *
+ * Two states:
+ * - Collapsed: Compact pill showing tier emoji + "Cramer" + balance badge
+ * - Expanded: Full chat interface
  */
 const FloatingAssistant = () => {
   const navigate = useNavigate();
@@ -38,9 +39,8 @@ const FloatingAssistant = () => {
     getTierName,
   } = useUserStatsStore();
 
-  // Widget states
+  // Single state: expanded or collapsed (pill)
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
 
   // Chat states
   const [messages, setMessages] = useState([
@@ -163,25 +163,10 @@ const FloatingAssistant = () => {
     }
   };
 
-  // Toggle expand/collapse
-  const toggleExpand = () => {
-    if (isMinimized) {
-      setIsMinimized(false);
-    }
-    setIsExpanded((prev) => !prev);
-  };
-
-  // Minimize widget (collapse to smaller form, shows header only)
-  const handleMinimize = (e) => {
+  // Close widget (collapse to pill)
+  const handleClose = (e) => {
     e.stopPropagation();
     setIsExpanded(false);
-  };
-
-  // Minimize to floating icon button (X button behavior)
-  const handleMinimizeToIcon = (e) => {
-    e.stopPropagation();
-    setIsExpanded(false);
-    setIsMinimized(true);
   };
 
   // Navigate to credits page
@@ -199,30 +184,27 @@ const FloatingAssistant = () => {
   const tierEmoji = getTierEmoji();
   const tierName = getTierName();
 
-  // Minimized icon button (when X is clicked)
-  if (isMinimized) {
+  // Collapsed state: Compact pill
+  if (!isExpanded) {
     return (
       <button
-        className="fa-widget__minimized-btn"
-        onClick={() => {
-          setIsMinimized(false);
-          setIsExpanded(true);
-        }}
-        title="Mở Trợ lý Cramer"
+        className="fa-widget__pill"
+        onClick={() => setIsExpanded(true)}
+        title={`Trợ lý Cramer - ${tierName} - ${credits.balance} Lúa`}
       >
-        <FiMessageCircle className="fa-widget__minimized-icon" />
-        <span className="fa-widget__minimized-badge">{tierEmoji}</span>
+        <span className="fa-widget__pill-emoji">{tierEmoji}</span>
+        <span className="fa-widget__pill-label">Cramer</span>
+        <FiMessageCircle className="fa-widget__pill-icon" />
+        <span className="fa-widget__pill-badge">{credits.balance}</span>
       </button>
     );
   }
 
+  // Expanded state: Full chat interface
   return (
-    <div className={`fa-widget ${isExpanded ? 'fa-widget--expanded' : ''}`}>
-      {/* Header - Always visible */}
-      <div
-        className="fa-widget__header"
-        onClick={!isExpanded ? toggleExpand : undefined}
-      >
+    <div className="fa-widget fa-widget--expanded">
+      {/* Header */}
+      <div className="fa-widget__header">
         <div className="fa-widget__tier">
           <span className="fa-widget__tier-emoji">{tierEmoji}</span>
           <span className="fa-widget__tier-name">{tierName}</span>
@@ -238,118 +220,97 @@ const FloatingAssistant = () => {
           <span className="fa-widget__balance-label">Lúa</span>
         </button>
 
-        {isExpanded && (
-          <div className="fa-widget__controls">
-            <button
-              className="fa-widget__control-btn"
-              onClick={handleMinimize}
-              title="Thu nhỏ"
-            >
-              <FiMinus />
-            </button>
-            <button
-              className="fa-widget__control-btn"
-              onClick={handleMinimizeToIcon}
-              title="Thu gọn thành nút"
-            >
-              <FiX />
-            </button>
-          </div>
-        )}
-
-        {!isExpanded && (
-          <button className="fa-widget__expand-btn" onClick={toggleExpand}>
-            <FiMessageCircle />
+        <div className="fa-widget__controls">
+          <button
+            className="fa-widget__control-btn"
+            onClick={handleClose}
+            title="Đóng"
+          >
+            <FiX />
           </button>
+        </div>
+      </div>
+
+      {/* Chat area */}
+      <div className="fa-widget__chat-area" ref={chatContainerRef}>
+        {messages.map((msg) => (
+          <ChatBubble
+            key={msg.id}
+            message={msg.content}
+            isUser={msg.role === 'user'}
+            timestamp={msg.timestamp}
+          />
+        ))}
+
+        {isLoading && (
+          <ChatBubble isLoading={true} />
         )}
       </div>
 
-      {/* Expandable content */}
-      {isExpanded && (
-        <>
-          {/* Chat area */}
-          <div className="fa-widget__chat-area" ref={chatContainerRef}>
-            {messages.map((msg) => (
-              <ChatBubble
-                key={msg.id}
-                message={msg.content}
-                isUser={msg.role === 'user'}
-                timestamp={msg.timestamp}
-              />
-            ))}
-
-            {isLoading && (
-              <ChatBubble isLoading={true} />
-            )}
-          </div>
-
-          {/* Usage indicator */}
-          <div className="fa-widget__usage">
-            <span className="fa-widget__usage-text">
-              {(chatUsage.remainingThisMonth ?? chatUsage.remainingToday) < 0
-                ? 'Không giới hạn tin nhắn'
-                : `Còn ${chatUsage.remainingThisMonth ?? chatUsage.remainingToday}/${chatUsage.monthlyLimit ?? chatUsage.dailyLimit} câu hỏi tháng này`
-              }
-            </span>
-            {(chatUsage.remainingThisMonth ?? chatUsage.remainingToday) >= 0 && (
-              <div className="fa-widget__usage-bar">
-                <div
-                  className="fa-widget__usage-fill"
-                  style={{
-                    width: `${Math.min(100, ((chatUsage.remainingThisMonth ?? chatUsage.remainingToday) / (chatUsage.monthlyLimit ?? chatUsage.dailyLimit)) * 100)}%`
-                  }}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Error message */}
-          {error && (
-            <div className="fa-widget__error">
-              <FiAlertCircle />
-              <span>{error}</span>
-              <button onClick={() => setError(null)}>×</button>
-            </div>
-          )}
-
-          {/* Input area */}
-          <div className="fa-widget__input-area">
-            <input
-              ref={inputRef}
-              type="text"
-              className="fa-widget__input"
-              placeholder="Nhập câu hỏi..."
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isLoading || ((chatUsage.remainingThisMonth ?? chatUsage.remainingToday) <= 0 && (chatUsage.remainingThisMonth ?? chatUsage.remainingToday) !== -1)}
+      {/* Usage indicator */}
+      <div className="fa-widget__usage">
+        <span className="fa-widget__usage-text">
+          {(chatUsage.remainingThisMonth ?? chatUsage.remainingToday) < 0
+            ? 'Không giới hạn tin nhắn'
+            : `Còn ${chatUsage.remainingThisMonth ?? chatUsage.remainingToday}/${chatUsage.monthlyLimit ?? chatUsage.dailyLimit} câu hỏi tháng này`
+          }
+        </span>
+        {(chatUsage.remainingThisMonth ?? chatUsage.remainingToday) >= 0 && (
+          <div className="fa-widget__usage-bar">
+            <div
+              className="fa-widget__usage-fill"
+              style={{
+                width: `${Math.min(100, ((chatUsage.remainingThisMonth ?? chatUsage.remainingToday) / (chatUsage.monthlyLimit ?? chatUsage.dailyLimit)) * 100)}%`
+              }}
             />
-            <button
-              className="fa-widget__send-btn"
-              onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isLoading || ((chatUsage.remainingThisMonth ?? chatUsage.remainingToday) <= 0 && (chatUsage.remainingThisMonth ?? chatUsage.remainingToday) !== -1)}
-              title="Gửi"
-            >
-              <FiSend />
-            </button>
           </div>
+        )}
+      </div>
 
-          {/* Support link */}
-          <div className="fa-widget__support">
-            <a
-              href="mailto:support@cramer.edu.vn"
-              className="fa-widget__support-link"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <FiPhone />
-              <span>Liên hệ hỗ trợ</span>
-            </a>
-          </div>
-        </>
+      {/* Error message */}
+      {error && (
+        <div className="fa-widget__error">
+          <FiAlertCircle />
+          <span>{error}</span>
+          <button onClick={() => setError(null)}>×</button>
+        </div>
       )}
+
+      {/* Input area */}
+      <div className="fa-widget__input-area">
+        <input
+          ref={inputRef}
+          type="text"
+          className="fa-widget__input"
+          placeholder="Nhập câu hỏi..."
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={isLoading || ((chatUsage.remainingThisMonth ?? chatUsage.remainingToday) <= 0 && (chatUsage.remainingThisMonth ?? chatUsage.remainingToday) !== -1)}
+        />
+        <button
+          className="fa-widget__send-btn"
+          onClick={handleSendMessage}
+          disabled={!inputValue.trim() || isLoading || ((chatUsage.remainingThisMonth ?? chatUsage.remainingToday) <= 0 && (chatUsage.remainingThisMonth ?? chatUsage.remainingToday) !== -1)}
+          title="Gửi"
+        >
+          <FiSend />
+        </button>
+      </div>
+
+      {/* Support link */}
+      <div className="fa-widget__support">
+        <a
+          href="mailto:support@cramer.edu.vn"
+          className="fa-widget__support-link"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <FiPhone />
+          <span>Liên hệ hỗ trợ</span>
+        </a>
+      </div>
     </div>
   );
 };
 
 export default FloatingAssistant;
-

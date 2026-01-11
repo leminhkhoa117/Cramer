@@ -56,92 +56,61 @@
 
 
 
-/* === Collapsed Button (Minimized State) === */
-.fa-widget__collapsed-btn {
+/* === Compact Pill Button (Collapsed State) === */
+.fa-widget__pill {
   position: fixed;
   right: 24px;
   bottom: 24px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
+  padding: 10px 16px;
   background: var(--fa-gradient);
   border: none;
-  border-radius: 50px;
+  border-radius: 22px;
   color: white;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(124, 58, 237, 0.4);
-  transition: all var(--fa-transition);
+  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.35);
+  transition: all 0.2s ease;
   z-index: 1000;
 }
 
-.fa-widget__collapsed-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 15px 40px rgba(124, 58, 237, 0.5);
-}
-
-.fa-widget__collapsed-tier {
-  font-size: 1.25rem;
-}
-
-.fa-widget__collapsed-arrow {
-  transition: transform 0.2s ease;
-}
-
-.fa-widget__collapsed-btn:hover .fa-widget__collapsed-arrow {
+.fa-widget__pill:hover {
   transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(124, 58, 237, 0.45);
 }
 
-/* === Minimized Floating Icon Button (X button closes to this) === */
-.fa-widget__minimized-btn {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 60px;
-  height: 60px;
-  background: var(--fa-gradient);
-  border: none;
-  border-radius: 50%;
-  color: white;
-  cursor: pointer;
-  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4);
-  transition: all var(--fa-transition);
-  z-index: 1000;
+.fa-widget__pill:active {
+  transform: translateY(0) scale(0.98);
 }
 
-.fa-widget__minimized-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 12px 35px rgba(124, 58, 237, 0.5);
+.fa-widget__pill-emoji {
+  font-size: 1.1rem;
 }
 
-.fa-widget__minimized-btn:active {
-  transform: scale(0.95);
+.fa-widget__pill-label {
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
-
-
-.fa-widget__minimized-icon {
-  font-size: 1.75rem;
-}
-
-.fa-widget__minimized-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
+.fa-widget__pill-icon {
   font-size: 1rem;
-  background: white;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  opacity: 0.9;
+}
+
+.fa-widget__pill-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  min-width: 28px;
+  height: 24px;
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
 /* === Header === */
@@ -228,28 +197,6 @@
 
 .fa-widget__control-btn:hover {
   background: rgba(255, 255, 255, 0.25);
-}
-
-.fa-widget__expand-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  margin-left: auto;
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 1.25rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.fa-widget__expand-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
 }
 
 /* === Chat Area === */
@@ -592,26 +539,22 @@
     width: var(--fa-width-mobile);
   }
 
-  .fa-widget__collapsed-btn {
+  .fa-widget__pill {
     right: 12px;
     bottom: 12px;
-  }
-
-  .fa-widget__minimized-btn {
-    right: 12px;
-    bottom: 12px;
-    width: 52px;
-    height: 52px;
-  }
-
-  .fa-widget__minimized-icon {
-    font-size: 1.5rem;
-  }
-
-  .fa-widget__minimized-badge {
-    width: 20px;
-    height: 20px;
+    padding: 8px 12px;
     font-size: 0.85rem;
+  }
+
+  .fa-widget__pill-emoji {
+    font-size: 1rem;
+  }
+
+  .fa-widget__pill-badge {
+    min-width: 24px;
+    height: 20px;
+    padding: 0 6px;
+    font-size: 0.7rem;
   }
 
   .fa-widget__chat-area {
@@ -638,17 +581,7 @@
   }
 }
 
-/* === Animation for expand/collapse === */
-.fa-widget:not(.fa-widget--expanded) {
-  width: auto;
-  min-width: 200px;
-}
-
-.fa-widget:not(.fa-widget--expanded) .fa-widget__header {
-  border-radius: var(--fa-border-radius);
-}
-
-/* Smooth height transition */
+/* === Animation for expand === */
 .fa-widget--expanded {
   animation: fa-expand 0.3s ease-out;
 }
@@ -667,10 +600,8 @@
 
 /* === Focus States for Accessibility === */
 .fa-widget__control-btn:focus-visible,
-.fa-widget__expand-btn:focus-visible,
 .fa-widget__send-btn:focus-visible,
-.fa-widget__collapsed-btn:focus-visible,
-.fa-widget__minimized-btn:focus-visible {
+.fa-widget__pill:focus-visible {
   outline: 2px solid white;
   outline-offset: 2px;
 }

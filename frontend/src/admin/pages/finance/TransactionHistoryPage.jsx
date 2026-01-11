@@ -1,25 +1,24 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    FiSearch,
-    FiFilter,
     FiDownload,
     FiEye,
     FiExternalLink,
-    FiCalendar,
     FiX,
     FiRefreshCw
 } from 'react-icons/fi';
 import DataTable from '../../components/DataTable';
 import { TransactionStatusBadge } from '../../components/StatusBadge';
-import { formatCurrency, formatDateTime } from '../../utils/formatUtils';
+import { formatCurrency } from '../../utils/formatUtils';
 import { TRANSACTION_TYPES, TRANSACTION_STATUSES } from '../../utils/constants';
 import adminApi from '../../api/adminApi';
+import { useToast } from '../../components/Toast';
 import { exportToExcel } from '../../utils/exportUtils';
 import '../../css/pages/finance/TransactionHistoryPage.css';
 
 export default function TransactionHistoryPage() {
     const navigate = useNavigate();
+    const { showToast } = useToast();
 
     // State
     const [transactions, setTransactions] = useState([]);
@@ -35,6 +34,13 @@ export default function TransactionHistoryPage() {
     const [typeFilter, setTypeFilter] = useState('ALL');
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [isExporting, setIsExporting] = useState(false);
+
+    // Server-side stats from the overview endpoint (accurate totals across ALL transactions)
+    const [serverStats, setServerStats] = useState({
+        totalRevenue: 0,          // Total PAID amount (all transactions, not just current page)
+        pendingTransactions: 0,   // Count of PENDING transactions
+        isLoading: true
+    });
 
     // Fetch transactions from API
     const fetchTransactions = useCallback(async () => {
@@ -68,6 +74,29 @@ export default function TransactionHistoryPage() {
         fetchTransactions();
     }, [fetchTransactions]);
 
+    // Fetch server-side stats from the overview endpoint (once on mount)
+    // This provides accurate totals across ALL transactions, not just the current page
+    const fetchServerStats = useCallback(async () => {
+        try {
+            // Use 'all' or a very long period to get all-time stats
+            // The overview endpoint returns totalRevenue, pendingTransactions, etc.
+            const overview = await adminApi.finance.getOverview('year');
+            setServerStats({
+                totalRevenue: overview.totalRevenue || 0,
+                pendingTransactions: overview.pendingTransactions || 0,
+                isLoading: false
+            });
+        } catch (err) {
+            console.error('Error fetching server stats:', err);
+            setServerStats(prev => ({ ...prev, isLoading: false }));
+        }
+    }, []);
+
+    // Fetch server stats on mount (only once, as these are aggregate totals)
+    useEffect(() => {
+        fetchServerStats();
+    }, [fetchServerStats]);
+
     // Export to Excel
     const handleExportExcel = async () => {
         setIsExporting(true);
@@ -76,11 +105,11 @@ export default function TransactionHistoryPage() {
             if (exportData && exportData.length > 0) {
                 exportToExcel(exportData, 'Giao dịch', 'transactions');
             } else {
-                alert('Không có dữ liệu để xuất');
+                showToast('Không có dữ liệu để xuất', 'warning');
             }
         } catch (err) {
             console.error('Error exporting:', err);
-            alert('Lỗi khi xuất file Excel');
+            showToast('Lỗi khi xuất file Excel', 'error');
         } finally {
             setIsExporting(false);
         }
@@ -190,27 +219,29 @@ export default function TransactionHistoryPage() {
         },
     ];
 
-    // Calculate summary stats from current transactions
+    // Calculate summary stats - use server-side stats for accurate totals
+    // NOTE: The amounts (totalAmount, pendingAmount) come from the server-side overview endpoint
+    // which calculates across ALL transactions, not just the current page of 20 items.
+    // Only the "on this page" counts come from the paginated transactions array.
     const stats = useMemo(() => {
-        const totalAmount = transactions
-            .filter(t => t.status === 'PAID')
-            .reduce((sum, t) => sum + (t.amount || 0), 0);
-        const pendingAmount = transactions
-            .filter(t => t.status === 'PENDING')
-            .reduce((sum, t) => sum + (t.amount || 0), 0);
-        const refundedAmount = transactions
-            .filter(t => t.status === 'REFUNDED')
-            .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0);
+        // Count transactions on current page by status (for display purposes)
+        const paidOnPage = transactions.filter(t => t.status === 'PAID').length;
+        const pendingOnPage = transactions.filter(t => t.status === 'PENDING').length;
 
         return {
+            // Total count comes from pagination (server-side count)
             total: pagination.totalElements,
-            paid: transactions.filter(t => t.status === 'PAID').length,
-            pending: transactions.filter(t => t.status === 'PENDING').length,
-            totalAmount,
-            pendingAmount,
-            refundedAmount,
+            // Use server-side stats for accurate revenue totals (not limited to current page)
+            totalAmount: serverStats.totalRevenue,
+            // Pending count from server stats (accurate total)
+            pendingCount: serverStats.pendingTransactions,
+            // Stats loading state
+            statsLoading: serverStats.isLoading,
+            // Page-level counts (just for the label showing current page context)
+            paidOnPage,
+            pendingOnPage,
         };
-    }, [transactions, pagination.totalElements]);
+    }, [transactions, pagination.totalElements, serverStats]);
 
     // Filters component
     const FiltersComponent = (
@@ -269,23 +300,23 @@ export default function TransactionHistoryPage() {
                 </p>
             </div>
 
-            {/* Summary Stats */}
+            {/* Summary Stats - Using server-side aggregated data for accuracy */}
             <div className="transaction-stats">
                 <div className="transaction-stat">
                     <span className="transaction-stat__value">{stats.total}</span>
                     <span className="transaction-stat__label">Tổng giao dịch</span>
                 </div>
                 <div className="transaction-stat transaction-stat--success">
-                    <span className="transaction-stat__value">{formatCurrency(stats.totalAmount)}</span>
-                    <span className="transaction-stat__label">{stats.paid} đã thanh toán</span>
+                    <span className="transaction-stat__value">
+                        {stats.statsLoading ? '...' : formatCurrency(stats.totalAmount)}
+                    </span>
+                    <span className="transaction-stat__label">Tổng doanh thu (đã thanh toán)</span>
                 </div>
                 <div className="transaction-stat transaction-stat--warning">
-                    <span className="transaction-stat__value">{formatCurrency(stats.pendingAmount)}</span>
-                    <span className="transaction-stat__label">{stats.pending} đang chờ</span>
-                </div>
-                <div className="transaction-stat transaction-stat--danger">
-                    <span className="transaction-stat__value">{formatCurrency(stats.refundedAmount)}</span>
-                    <span className="transaction-stat__label">Đã hoàn tiền</span>
+                    <span className="transaction-stat__value">
+                        {stats.statsLoading ? '...' : stats.pendingCount}
+                    </span>
+                    <span className="transaction-stat__label">Giao dịch đang chờ</span>
                 </div>
             </div>
 

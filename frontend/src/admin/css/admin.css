@@ -29,7 +29,7 @@ body:has(.admin-root) {
    ========================================================================== */
 
 .admin-root {
-  min-height: 100vh;
+  height: 100vh;
   background: var(--admin-bg-primary);
   color: var(--admin-text-primary);
   display: flex;
@@ -55,7 +55,7 @@ body:has(.admin-root) {
   margin-top: var(--admin-header-height);
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - var(--admin-header-height));
+  height: calc(100vh - var(--admin-header-height));
   transition: margin-left var(--admin-transition-normal);
 }
 
