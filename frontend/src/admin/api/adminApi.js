@@ -879,15 +879,14 @@ export const testsApi = {
     /**
      * Update hashtags for a test
      * @param {number} id - Test ID
-     * @param {Array<number>} hashtagIds - List of hashtag IDs
-     * @param {number|null} primaryHashtagId - Primary hashtag ID (optional)
+     * @param {Array<string>} hashtagCodes - List of hashtag codes
      * @returns {Promise<Object>} Updated test
      */
-    updateHashtags: async (id, hashtagIds, primaryHashtagId = null) => {
+    updateHashtags: async (id, hashtagCodes) => {
         const headers = await getAuthHeaders();
         const response = await axios.put(
             `${API_BASE_URL}/api/admin/tests/${id}/hashtags`,
-            { hashtagIds, primaryHashtagId },
+            { hashtagCodes: hashtagCodes || [] },
             { headers }
         );
         return response.data;

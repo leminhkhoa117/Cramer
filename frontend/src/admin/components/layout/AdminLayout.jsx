@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import AdminSidebar from '../AdminSidebar';
 import AdminHeader from './AdminHeader';
@@ -11,10 +11,29 @@ import '../../css/admin.css';
  */
 export default function AdminLayout() {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar state
     const location = useLocation();
+
+    // Close mobile sidebar on route change
+    useEffect(() => {
+        setSidebarOpen(false);
+    }, [location.pathname]);
+
+    // Close mobile sidebar on escape key
+    useEffect(() => {
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') setSidebarOpen(false);
+        };
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, []);
 
     const toggleSidebar = () => {
         setSidebarCollapsed(!sidebarCollapsed);
+    };
+
+    const toggleMobileSidebar = () => {
+        setSidebarOpen(!sidebarOpen);
     };
 
     // Generate breadcrumb từ pathname
@@ -55,10 +74,20 @@ export default function AdminLayout() {
     return (
         <ToastProvider>
             <div className="admin-root">
+                {/* Mobile overlay */}
+                {sidebarOpen && (
+                    <div
+                        className="admin-sidebar-overlay"
+                        onClick={() => setSidebarOpen(false)}
+                        aria-hidden="true"
+                    />
+                )}
+
                 {/* Sidebar - below header */}
                 <AdminSidebar
                     collapsed={sidebarCollapsed}
                     onToggle={toggleSidebar}
+                    mobileOpen={sidebarOpen}
                 />
 
                 {/* Main content area */}
@@ -66,6 +95,7 @@ export default function AdminLayout() {
                     <AdminHeader
                         breadcrumbs={getBreadcrumbs()}
                         collapsed={sidebarCollapsed}
+                        onMenuClick={toggleMobileSidebar}
                     />
                     <div className={`admin-content ${isFullWidthPage ? 'admin-content--full' : ''}`}>
                         <Outlet />

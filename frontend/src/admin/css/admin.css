@@ -719,6 +719,40 @@ body:has(.admin-root) {
    RESPONSIVE
    ========================================================================== */
 
+/* Mobile menu button - hidden by default, shown on mobile */
+.admin-header__menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid var(--admin-border-primary);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  transition: all var(--admin-transition-fast);
+  flex-shrink: 0;
+}
+
+.admin-header__menu-btn:hover {
+  background: var(--admin-bg-card-hover);
+  color: var(--admin-text-primary);
+}
+
+/* Mobile sidebar overlay */
+.admin-sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: calc(var(--admin-z-fixed) - 1);
+}
+
 @media (max-width: 1024px) {
   .admin-sidebar {
     transform: translateX(-100%);
@@ -735,6 +769,22 @@ body:has(.admin-root) {
   .admin-main--collapsed {
     margin-left: 0;
   }
+
+  /* Show hamburger menu on tablet/mobile */
+  .admin-header__menu-btn {
+    display: flex;
+  }
+
+  /* Show overlay when sidebar is open */
+  .admin-sidebar-overlay {
+    display: block;
+  }
+
+  /* Hide breadcrumb separator border */
+  .admin-header__breadcrumb {
+    border-left: none;
+    padding-left: 0;
+  }
 }
 
 @media (max-width: 768px) {
@@ -748,6 +798,40 @@ body:has(.admin-root) {
 
   .admin-page__title {
     font-size: 1.5rem;
+  }
+
+  /* Hide breadcrumb on mobile, just show current page */
+  .admin-header__breadcrumb-item,
+  .admin-header__breadcrumb-separator {
+    display: none;
+  }
+
+  /* Simplify header on mobile */
+  .admin-header__back-link span {
+    display: none;
+  }
+
+  .admin-header__user-name {
+    display: none;
+  }
+
+  .admin-header {
+    padding: 0 var(--admin-spacing-md);
+  }
+
+  .admin-header__logo {
+    margin-right: var(--admin-spacing-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-header__logo {
+    display: none;
+  }
+
+  .admin-page__header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 
