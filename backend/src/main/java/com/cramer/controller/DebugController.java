@@ -34,7 +34,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/debug")
 @Hidden // Hide from Swagger in production
-public class DebugController {
+public class DebugController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(DebugController.class);
 
@@ -95,7 +95,7 @@ public class DebugController {
             return ResponseEntity.notFound().build();
         }
 
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         String tierCode = request.getOrDefault("tierCode", "cramerich");
 
         logger.warn("🔧 DEBUG: Activating subscription for user {} to tier {}", userId, tierCode);
@@ -166,13 +166,13 @@ public class DebugController {
     public ResponseEntity<Map<String, Object>> addLua(
             Authentication authentication,
             @RequestHeader(value = "X-Debug-Key", required = false) String debugKey,
-            @RequestBody Map<String, Integer> request) {
+            @RequestBody @jakarta.validation.Valid Map<String, @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(10000) Integer> request) {
 
         if (!isAuthorized(debugKey)) {
             return ResponseEntity.notFound().build();
         }
 
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         Integer amount = request.getOrDefault("amount", 100);
 
         if (amount <= 0 || amount > 10000) {

@@ -102,6 +102,25 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle MethodArgumentTypeMismatchException (e.g., invalid UUID format).
+     */
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Object> handleMethodArgumentTypeMismatchException(
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex, WebRequest request) {
+        
+        logger.error("Type mismatch: {}", ex.getMessage());
+        
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "Bad Request");
+        body.put("message", "Invalid parameter: " + ex.getName());
+        body.put("path", request.getDescription(false).replace("uri=", ""));
+        
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
      * Handle validation exceptions from @Valid annotations.
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -117,13 +136,51 @@ public class GlobalExceptionHandler {
         
         Map<String, String> fieldErrors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
+            String fieldName = error instanceof FieldError ? ((FieldError) error).getField() : error.getObjectName();
             String errorMessage = error.getDefaultMessage();
             fieldErrors.put(fieldName, errorMessage);
         });
         body.put("errors", fieldErrors);
         body.put("path", request.getDescription(false).replace("uri=", ""));
         
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Handle MissingServletRequestParameterException.
+     */
+    @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
+    public ResponseEntity<Object> handleMissingServletRequestParameterException(
+            org.springframework.web.bind.MissingServletRequestParameterException ex, WebRequest request) {
+
+        logger.error("Missing parameter: {}", ex.getParameterName());
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "Bad Request");
+        body.put("message", "Missing required parameter: " + ex.getParameterName());
+        body.put("path", request.getDescription(false).replace("uri=", ""));
+
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Handle HttpMessageNotReadableException (JSON parse error).
+     */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Object> handleHttpMessageNotReadableException(
+            org.springframework.http.converter.HttpMessageNotReadableException ex, WebRequest request) {
+
+        logger.error("Message not readable: {}", ex.getMessage());
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "Bad Request");
+        body.put("message", "Malformed JSON request");
+        body.put("path", request.getDescription(false).replace("uri=", ""));
+
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 

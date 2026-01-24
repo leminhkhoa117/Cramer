@@ -57,6 +57,8 @@ body:has(.admin-root) {
   flex-direction: column;
   height: calc(100vh - var(--admin-header-height));
   transition: margin-left var(--admin-transition-normal);
+  /* Prevent scrollbar flash during sidebar collapse/expand */
+  overflow: hidden;
 }
 
 .admin-main--collapsed {
@@ -67,6 +69,7 @@ body:has(.admin-root) {
   flex: 1;
   padding: var(--admin-content-padding);
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Full-width modifier for pages like AI Studio */
@@ -91,6 +94,8 @@ body:has(.admin-root) {
   flex-direction: column;
   z-index: var(--admin-z-fixed);
   transition: width var(--admin-transition-normal);
+  /* Prevent content overflow during width transition */
+  overflow: hidden;
 }
 
 .admin-sidebar--collapsed {
@@ -135,6 +140,9 @@ body:has(.admin-root) {
   flex: 1;
   padding: var(--admin-spacing-md);
   overflow-y: auto;
+  overflow-x: hidden;
+  /* Prevent scrollbar flash during collapse/expand transition */
+  scrollbar-gutter: stable;
 }
 
 .admin-sidebar__section {

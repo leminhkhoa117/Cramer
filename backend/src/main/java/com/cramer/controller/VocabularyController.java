@@ -35,7 +35,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/vocabulary")
 @Tag(name = "Vocabulary", description = "APIs for managing user vocabulary notebook")
-public class VocabularyController {
+public class VocabularyController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(VocabularyController.class);
 
@@ -45,13 +45,6 @@ public class VocabularyController {
         this.vocabularyService = vocabularyService;
     }
 
-    /**
-     * Get authenticated user's ID from security context.
-     */
-    private UUID getCurrentUserId(Authentication authentication) {
-        return UUID.fromString(authentication.getName());
-    }
-
     @Operation(summary = "List user vocabulary", description = "Get all vocabulary entries for the authenticated user with pagination")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved vocabulary list"),
@@ -59,22 +52,24 @@ public class VocabularyController {
     })
     @GetMapping
     public ResponseEntity<Page<VocabularyDTO>> listVocabulary(
-            @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "Sort by field") @RequestParam(defaultValue = "createdAt") String sortBy,
-            @Parameter(description = "Sort direction (asc/desc)") @RequestParam(defaultValue = "desc") String sortDir,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") @jakarta.validation.constraints.Min(0) int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(100) int size,
+            @Parameter(description = "Sort by field") @RequestParam(defaultValue = "createdAt") @jakarta.validation.constraints.Pattern(regexp = "^(createdAt|word|reviewCount)$") String sortBy,
+            @Parameter(description = "Sort direction (asc/desc)") @RequestParam(defaultValue = "desc") @jakarta.validation.constraints.Pattern(regexp = "^(asc|desc)$", flags = jakarta.validation.constraints.Pattern.Flag.CASE_INSENSITIVE) String sortDir,
             @Parameter(description = "Search term (optional)") @RequestParam(required = false) String search,
-            @Parameter(description = "Filter by mastered status: 'all', 'mastered', 'unmastered'") @RequestParam(defaultValue = "all") String filter,
+            @Parameter(description = "Filter by mastered status: 'all', 'mastered', 'unmastered'") @RequestParam(defaultValue = "all") @jakarta.validation.constraints.Pattern(regexp = "^(all|mastered|unmastered)$", flags = jakarta.validation.constraints.Pattern.Flag.CASE_INSENSITIVE) String filter,
             Authentication authentication) {
 
         UUID userId = getCurrentUserId(authentication);
         logger.info("📥 GET /api/vocabulary - User: {}, page: {}, size: {}, search: '{}', filter: {}",
                 userId, page, size, search, filter);
 
+        // Cap size for safety
+        int cappedSize = Math.min(size, 100);
         Sort sort = sortDir.equalsIgnoreCase("asc")
                 ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
-        Pageable pageable = PageRequest.of(page, size, sort);
+        Pageable pageable = PageRequest.of(page, cappedSize, sort);
 
         Page<VocabularyDTO> result;
         String searchTerm = (search != null) ? search.trim() : "";
@@ -112,7 +107,7 @@ public class VocabularyController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<VocabularyDTO> getVocabularyById(
-            @Parameter(description = "Vocabulary entry ID") @PathVariable Long id,
+            @Parameter(description = "Vocabulary entry ID") @PathVariable @jakarta.validation.constraints.Min(1) Long id,
             Authentication authentication) {
 
         UUID userId = getCurrentUserId(authentication);
@@ -153,8 +148,8 @@ public class VocabularyController {
     })
     @PutMapping("/{id}")
     public ResponseEntity<VocabularyDTO> updateVocabulary(
-            @Parameter(description = "Vocabulary entry ID") @PathVariable Long id,
-            @RequestBody VocabularyDTO updateDTO,
+            @Parameter(description = "Vocabulary entry ID") @PathVariable @jakarta.validation.constraints.Min(1) Long id,
+            @Valid @RequestBody VocabularyDTO updateDTO,
             Authentication authentication) {
 
         UUID userId = getCurrentUserId(authentication);
@@ -171,7 +166,7 @@ public class VocabularyController {
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteVocabulary(
-            @Parameter(description = "Vocabulary entry ID") @PathVariable Long id,
+            @Parameter(description = "Vocabulary entry ID") @PathVariable @jakarta.validation.constraints.Min(1) Long id,
             Authentication authentication) {
 
         UUID userId = getCurrentUserId(authentication);
@@ -218,7 +213,7 @@ public class VocabularyController {
     })
     @PutMapping("/{id}/toggle-mastered")
     public ResponseEntity<VocabularyDTO> toggleMastered(
-            @Parameter(description = "Vocabulary entry ID") @PathVariable Long id,
+            @Parameter(description = "Vocabulary entry ID") @PathVariable @jakarta.validation.constraints.Min(1) Long id,
             Authentication authentication) {
 
         UUID userId = getCurrentUserId(authentication);

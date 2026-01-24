@@ -27,7 +27,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/profiles")
 @Tag(name = "Profile Management", description = "APIs for managing user profiles")
-public class ProfileController {
+public class ProfileController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(ProfileController.class);
 
@@ -50,7 +50,7 @@ public class ProfileController {
         logger.info("📥 GET /api/profiles/{} - Fetching profile", id);
 
         // IDOR protection: validate user owns this profile
-        UUID currentUserId = UUID.fromString(authentication.getName());
+        UUID currentUserId = getCurrentUserId(authentication);
         if (!currentUserId.equals(id)) {
             logger.warn("🚨 IDOR attempt: User {} tried to access profile {}", currentUserId, id);
             throw new AccessDeniedException("You can only access your own profile");
@@ -68,7 +68,7 @@ public class ProfileController {
         logger.info("REST request to update profile: {}", id);
 
         // IDOR protection: validate user owns this profile
-        UUID currentUserId = UUID.fromString(authentication.getName());
+        UUID currentUserId = getCurrentUserId(authentication);
         if (!currentUserId.equals(id)) {
             logger.warn("🚨 IDOR attempt: User {} tried to update profile {}", currentUserId, id);
             throw new AccessDeniedException("You can only update your own profile");

@@ -8,8 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -20,7 +19,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/quotas")
-public class QuotaController {
+public class QuotaController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(QuotaController.class);
 
@@ -36,14 +35,14 @@ public class QuotaController {
     /**
      * Get current quota status for authenticated user.
      * Returns global and per-skill quota usage.
-     * 
+     *
      * GET /api/quotas
      */
     @GetMapping
-    public ResponseEntity<QuotaStatusDTO> getQuotaStatus(@AuthenticationPrincipal Jwt jwt) {
-        UUID userId = UUID.fromString(jwt.getSubject());
+    public ResponseEntity<QuotaStatusDTO> getQuotaStatus(Authentication authentication) {
+        UUID userId = getCurrentUserId(authentication);
         logger.info("📊 GET /api/quotas - userId: {}", userId);
-        
+
         QuotaStatusDTO status = quotaService.getQuotaStatus(userId);
         return ResponseEntity.ok(status);
     }
@@ -51,20 +50,20 @@ public class QuotaController {
     /**
      * Pre-check if an attempt would be allowed.
      * Does NOT charge or increment quotas.
-     * 
+     *
      * GET /api/quotas/can-attempt?skill=WRITING&ai=true
-     * 
+     *
      * @param skill the skill (READING, LISTENING, WRITING, SPEAKING)
      * @param ai whether this is an AI-graded attempt
      */
     @GetMapping("/can-attempt")
     public ResponseEntity<BillingResultDTO> canAttempt(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestParam String skill,
+            Authentication authentication,
+            @RequestParam @jakarta.validation.constraints.Pattern(regexp = "^(READING|LISTENING|WRITING|SPEAKING)$", flags = jakarta.validation.constraints.Pattern.Flag.CASE_INSENSITIVE) String skill,
             @RequestParam(defaultValue = "false") boolean ai) {
-        UUID userId = UUID.fromString(jwt.getSubject());
+        UUID userId = getCurrentUserId(authentication);
         logger.info("🔍 GET /api/quotas/can-attempt - userId: {}, skill: {}, ai: {}", userId, skill, ai);
-        
+
         BillingResultDTO result = quotaBillingService.preCheckAttempt(userId, skill, ai);
         return ResponseEntity.ok(result);
     }
@@ -75,9 +74,9 @@ public class QuotaController {
      */
     @GetMapping("/check")
     public ResponseEntity<BillingResultDTO> checkAttempt(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestParam String skill,
+            Authentication authentication,
+            @RequestParam @jakarta.validation.constraints.Pattern(regexp = "^(READING|LISTENING|WRITING|SPEAKING)$", flags = jakarta.validation.constraints.Pattern.Flag.CASE_INSENSITIVE) String skill,
             @RequestParam(defaultValue = "false") boolean isAI) {
-        return canAttempt(jwt, skill, isAI);
+        return canAttempt(authentication, skill, isAI);
     }
 }
