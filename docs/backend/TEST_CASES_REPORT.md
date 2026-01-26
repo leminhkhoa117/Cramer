@@ -1,438 +1,529 @@
-# 📋 Cramer - Test Cases Report
+# 📋 Cramer Backend - Test Cases Report
 
-> **Generated:** January 15, 2026  
-> **Total Tests:** 259 tests (116 backend + 143 frontend)  
+> **Last Updated:** January 26, 2026  
+> **Total Backend Tests:** ~420 tests (16 Controller + 16 Service test files)  
 > **Status:** ✅ All Passing
 
 ---
 
 ## 🔧 How to Run Tests
 
-### Backend Tests (Java/Spring Boot)
+### Run All Backend Tests
 ```powershell
 cd backend
+.\mvnw.cmd test
+```
+
+### Run Only Unit Tests (Service Layer)
+```powershell
 .\mvnw.cmd test -Dtest="com.cramer.service.unit.**"
 ```
 
-### Frontend Tests (React/Vitest)
+### Run Only Controller Tests
 ```powershell
-cd frontend
-npx vitest --run
+.\mvnw.cmd test -Dtest="com.cramer.controller.**"
 ```
 
-### Frontend Tests with Coverage
+### Run Specific Test Class
 ```powershell
-cd frontend
-npx vitest --run --coverage
+.\mvnw.cmd test -Dtest=CreditServiceImplTest
+```
+
+### Run with Coverage Report
+```powershell
+.\mvnw.cmd test jacoco:report
 ```
 
 ---
 
-## 📊 Backend Test Summary
+## 📊 Controller Test Summary (16 files)
 
-| Test Class | Tests | Passed | Failed | Status |
-|------------|-------|--------|--------|--------|
-| CreditServiceImplTest | 16 | 16 | 0 | ✅ |
-| LLMGradingServiceTest | 12 | 12 | 0 | ✅ |
-| JwtAuthFilterTest | 9 | 9 | 0 | ✅ |
-| SubscriptionServiceImplTest | 13 | 13 | 0 | ✅ |
-| PaymentServiceImplTest | 22 | 22 | 0 | ✅ |
-| ProfileServiceImplTest | 13 | 13 | 0 | ✅ |
-| TestAttemptServiceTest | 17 | 17 | 0 | ✅ |
-| TestServiceTest | 9 | 9 | 0 | ✅ |
-| WritingSubmissionServiceTest | 14 | 14 | 0 | ✅ |
-| **Backend Total** | **116** | **116** | **0** | **✅** |
-
-## 📊 Frontend Test Summary
-
-| Test File | Tests | Passed | Failed | Status |
-|-----------|-------|--------|--------|--------|
-| useAuthStore.test.js | 20 | 20 | 0 | ✅ |
-| useTestStore.test.js | 34 | 34 | 0 | ✅ |
-| useProfileStore.test.js | 15 | 15 | 0 | ✅ |
-| useTestSessionStore.test.js | 18 | 18 | 0 | ✅ |
-| useDashboardStore.test.js | 17 | 17 | 0 | ✅ |
-| useSubscriptionStore.test.js | 13 | 13 | 0 | ✅ |
-| useQuotaStore.test.js | 26 | 26 | 0 | ✅ |
-| **Frontend Total** | **143** | **143** | **0** | **✅** |
+| Test Class | Est. Tests | Status |
+|------------|------------|--------|
+| AuthControllerTest | ~8 | ✅ |
+| ChatControllerTest | ~18 | ✅ |
+| CourseControllerTest | ~16 | ✅ |
+| CreditControllerTest | ~20 | ✅ |
+| DashboardControllerTest | ~11 | ✅ |
+| PaymentControllerTest | ~22 | ✅ |
+| ProfileControllerTest | ~12 | ✅ |
+| QuestionControllerTest | ~14 | ✅ |
+| QuotaControllerTest | ~8 | ✅ |
+| SectionControllerTest | ~14 | ✅ |
+| SubscriptionControllerTest | ~17 | ✅ |
+| TestAttemptControllerTest | ~22 | ✅ |
+| TestControllerTest | ~10 | ✅ |
+| VocabularyControllerTest | ~18 | ✅ |
+| WritingControllerTest | ~22 | ✅ |
+| **Controller Total** | **~220** | **✅** |
 
 ---
 
-# Backend Test Cases
+## 📊 Service Test Summary (16 files)
+
+| Test Class | Tests | Status |
+|------------|-------|--------|
+| AsyncGradingServiceTest | ~18 | ✅ |
+| ChatServiceTest | 9 | ✅ |
+| CourseServiceTest | 7 | ✅ |
+| CreditServiceImplTest | 16 | ✅ |
+| DashboardServiceTest | 13 | ✅ |
+| LLMGradingServiceTest | 12 | ✅ |
+| PaymentServiceImplTest | 22 | ✅ |
+| ProfileServiceImplTest | 13 | ✅ |
+| QuestionServiceTest | ~18 | ✅ |
+| QuotaServiceTest | 17 | ✅ |
+| SectionServiceTest | ~18 | ✅ |
+| SubscriptionServiceImplTest | 13 | ✅ |
+| TestAttemptServiceTest | 17 | ✅ |
+| TestServiceTest | 9 | ✅ |
+| VocabularyServiceTest | 20 | ✅ |
+| WritingSubmissionServiceTest | 14 | ✅ |
+| **Service Total** | **~200** | **✅** |
 
 ---
 
+# 📝 Detailed Test Cases
+
 ---
 
-## 1. CreditServiceImplTest (16 tests)
+## Controller Tests
+
+### 1. AuthControllerTest (~8 tests)
+
+**File:** `backend/src/test/java/com/cramer/controller/AuthControllerTest.java`
+
+Tests authentication endpoints.
+
+| Test Group | Description |
+|------------|-------------|
+| Login | POST /api/auth/login - success, invalid credentials |
+| Register | POST /api/auth/register - validation |
+| Session | Session management tests |
+
+---
+
+### 2. ChatControllerTest (18 tests)
+
+**File:** `backend/src/test/java/com/cramer/controller/ChatControllerTest.java`
+
+Tests AI chat endpoints.
+
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| Send Message | 5 | POST /api/chat/send - success, rate limit, validation, auth |
+| Get History | 4 | GET /api/chat/history - with/without messages, limit |
+| Get Remaining | 3 | GET /api/chat/remaining - quota remaining |
+| Clear History | 4 | DELETE /api/chat/history - success, no auth |
+| Edge Cases | 2 | Empty message, very long message |
+
+---
+
+### 3. CourseControllerTest (16 tests)
+
+**File:** `backend/src/test/java/com/cramer/controller/CourseControllerTest.java`
+
+Tests course management endpoints.
+
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| Get Courses | 6 | GET /api/courses - pagination, search, empty |
+| Get Tests | 5 | GET /api/courses/{name}/tests - list, empty |
+| Auth Tests | 3 | Unauthorized access tests |
+| Validation | 2 | Invalid parameters |
+
+---
+
+### 4. CreditControllerTest (~20 tests)
+
+**File:** `backend/src/test/java/com/cramer/controller/CreditControllerTest.java`
+
+Tests Lúa (credit) system endpoints.
+
+| Test Group | Description |
+|------------|-------------|
+| Get Balance | GET /api/credits/balance |
+| Earn Credits | POST /api/credits/earn |
+| Spend Credits | POST /api/credits/spend |
+| Transaction History | GET /api/credits/history |
+
+---
+
+### 5. DashboardControllerTest (11 tests)
+
+**File:** `backend/src/test/java/com/cramer/controller/DashboardControllerTest.java`
+
+Tests user dashboard endpoints.
+
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| Get Summary | 4 | GET /api/dashboard/summary - success, empty, auth |
+| Update Target | 4 | PUT /api/dashboard/target - success, validation |
+| Get Stats | 3 | GET /api/dashboard/stats - various stats |
+
+---
+
+### 6. PaymentControllerTest (~22 tests)
+
+**File:** `backend/src/test/java/com/cramer/controller/PaymentControllerTest.java`
+
+Tests PayOS payment integration.
+
+| Test Group | Description |
+|------------|-------------|
+| Create Payment | POST /api/payments/create - subscription, Lúa packs |
+| Webhook | POST /api/payments/webhook - PayOS callbacks |
+| Get History | GET /api/payments/history |
+| Verify Signature | Webhook signature validation |
+
+---
+
+### 7. ProfileControllerTest (~12 tests)
+
+**File:** `backend/src/test/java/com/cramer/controller/ProfileControllerTest.java`
+
+Tests user profile CRUD.
+
+| Test Group | Description |
+|------------|-------------|
+| Get Profile | GET /api/profile - success, not found |
+| Update Profile | PUT /api/profile - update fields |
+| LLM Settings | API key, model, provider settings |
+
+---
+
+### 8. QuestionControllerTest (~14 tests)
+
+**File:** `backend/src/test/java/com/cramer/controller/QuestionControllerTest.java`
+
+Tests question management endpoints.
+
+| Test Group | Description |
+|------------|-------------|
+| Get Questions | GET /api/questions - by section |
+| Create Question | POST /api/questions |
+| Update Question | PUT /api/questions/{id} |
+| Delete Question | DELETE /api/questions/{id} |
+
+---
+
+### 9. QuotaControllerTest (~8 tests)
+
+**File:** `backend/src/test/java/com/cramer/controller/QuotaControllerTest.java`
+
+Tests quota management endpoints.
+
+| Test Group | Description |
+|------------|-------------|
+| Get Status | GET /api/quota/status |
+| Pre-check | POST /api/quota/precheck |
+| Cap Status | GET /api/quota/caps |
+
+---
+
+### 10. SectionControllerTest (~14 tests)
+
+**File:** `backend/src/test/java/com/cramer/controller/SectionControllerTest.java`
+
+Tests section management endpoints.
+
+| Test Group | Description |
+|------------|-------------|
+| Get Sections | GET /api/sections - by test |
+| Create Section | POST /api/sections |
+| Update Section | PUT /api/sections/{id} |
+| Delete Section | DELETE /api/sections/{id} |
+
+---
+
+### 11. SubscriptionControllerTest (~17 tests)
+
+**File:** `backend/src/test/java/com/cramer/controller/SubscriptionControllerTest.java`
+
+Tests subscription tier management.
+
+| Test Group | Description |
+|------------|-------------|
+| Get Tiers | GET /api/subscriptions/tiers |
+| Get User Sub | GET /api/subscriptions/current |
+| Upgrade | POST /api/subscriptions/upgrade |
+| AI Grading Quota | Quota checking endpoints |
+
+---
+
+### 12. TestAttemptControllerTest (~22 tests)
+
+**File:** `backend/src/test/java/com/cramer/controller/TestAttemptControllerTest.java`
+
+Tests test session lifecycle.
+
+| Test Group | Description |
+|------------|-------------|
+| Start/Resume | POST /api/attempts/start |
+| Save Progress | PUT /api/attempts/{id}/progress |
+| Submit | POST /api/attempts/{id}/submit |
+| Cancel | DELETE /api/attempts/{id} |
+| Get History | GET /api/attempts/history |
+
+---
+
+### 13. TestControllerTest (~10 tests)
+
+**File:** `backend/src/test/java/com/cramer/controller/TestControllerTest.java`
+
+Tests test data endpoints.
+
+| Test Group | Description |
+|------------|-------------|
+| Get Safe Test | GET /api/tests - without answers |
+| Get Full Test | GET /api/tests/full - with answers (admin) |
+
+---
+
+### 14. VocabularyControllerTest (~18 tests)
+
+**File:** `backend/src/test/java/com/cramer/controller/VocabularyControllerTest.java`
+
+Tests vocabulary management.
+
+| Test Group | Description |
+|------------|-------------|
+| Get List | GET /api/vocabulary - paginated |
+| Create | POST /api/vocabulary |
+| Update | PUT /api/vocabulary/{id} |
+| Delete | DELETE /api/vocabulary/{id} |
+| Toggle Mastered | PATCH /api/vocabulary/{id}/toggle |
+
+---
+
+### 15. WritingControllerTest (~22 tests)
+
+**File:** `backend/src/test/java/com/cramer/controller/WritingControllerTest.java`
+
+Tests writing submission and grading.
+
+| Test Group | Description |
+|------------|-------------|
+| Save Draft | POST /api/writing/draft |
+| Submit | POST /api/writing/submit |
+| Get Status | GET /api/writing/{id}/status |
+| Get Review | GET /api/writing/{id}/review |
+
+---
+
+## Service Tests
+
+### 1. CreditServiceImplTest (16 tests)
 
 **File:** `backend/src/test/java/com/cramer/service/unit/CreditServiceImplTest.java`
 
-Tests the Lúa (credit) system for earning, spending, and balance management.
+Tests Lúa (credit) system.
 
-### 1.1 GetBalanceTests (2 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldReturnBalance` | Get balance for existing user | Returns correct balance (150) |
-| `shouldReturnZeroWhenUserNotFound` | Get balance for non-existent user | Returns 0 |
-
-### 1.2 HasEnoughCreditsTests (2 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldReturnTrueWhenHasEnoughCredits` | Check if user has 150 credits for 100 purchase | Returns `true` |
-| `shouldReturnFalseWhenNotEnoughCredits` | Check if user has 150 credits for 200 purchase | Returns `false` |
-
-### 1.3 EarnCreditsTests (4 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldEarnCreditsForExistingUser` | Add 50 Lúa to user with 150 balance | Balance becomes 200, lifetimeEarned +50 |
-| `shouldCreateNewUserCreditWhenEarning` | Earn credits for new user | Creates UserCredit record |
-| `shouldThrowExceptionForNegativeAmount` | Try to earn negative amount | Throws `IllegalArgumentException` |
-| `shouldThrowExceptionForNullCategory` | Try to earn with null category | Throws `IllegalArgumentException` |
-
-### 1.4 SpendCreditsTests (4 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldSpendCreditsSuccessfully` | Spend 50 from 150 balance | Balance becomes 100, lifetimeSpent +50 |
-| `shouldCreateUserCreditWhenSpendingForNewUser` | Spend from new user | Creates record with 0 balance |
-| `shouldThrowExceptionWhenInsufficientCredits` | Spend 200 from 150 balance | Throws `InsufficientCreditsException` |
-| `shouldThrowExceptionForNegativeSpendAmount` | Spend negative amount | Throws `IllegalArgumentException` |
-
-### 1.5 InitializeCreditsTests (4 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldInitializeCreditsForNewUser` | Initialize 100 Lúa for new user | Creates record with balance=100 |
-| `shouldUpdateExistingUserCredits` | Initialize for existing user | Updates balance |
-| `shouldThrowExceptionForNegativeInitialCredits` | Initialize with -50 | Throws `IllegalArgumentException` |
-| `shouldHandleNullTierGracefully` | Initialize when tier is null | Uses default 50 Lúa |
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| GetBalanceTests | 2 | Get balance for existing/new user |
+| HasEnoughCreditsTests | 2 | Check if user has enough credits |
+| EarnCreditsTests | 4 | Add credits, handle errors |
+| SpendCreditsTests | 4 | Spend credits, handle insufficient |
+| InitializeCreditsTests | 4 | Initialize credits for new users |
 
 ---
 
-## 2. LLMGradingServiceTest (12 tests)
+### 2. LLMGradingServiceTest (12 tests)
 
 **File:** `backend/src/test/java/com/cramer/service/unit/LLMGradingServiceTest.java`
 
-Tests AI essay grading using DeepSeek LLM integration.
+Tests AI essay grading.
 
-### 2.1 GradeEssayTests (4 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldGradeEssaySuccessfully` | Grade valid essay with API response | Returns `WritingReviewDTO` with scores |
-| `shouldHandleApiFailure` | API returns error status | Throws `RuntimeException` |
-| `shouldHandleInvalidJsonResponse` | API returns malformed JSON | Throws exception or handles gracefully |
-| `shouldHandleEmptyApiResponse` | API returns empty body | Handles gracefully |
-
-### 2.2 HandleEmptyEssayTests (2 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldReturnNullForNullEssay` | Grade null essay | Returns `null` |
-| `shouldReturnNullForEmptyEssay` | Grade empty/blank essay | Returns `null` |
-
-### 2.3 BandScoreValidation (2 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldValidateBandScoresInRange` | Scores 0.0-9.0 | Accepted as valid |
-| `shouldRejectInvalidBandScores` | Scores outside range | Throws or returns error |
-
-### 2.4 ModelSelectionTests (4 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldUseDefaultModelWhenProfileModelIsNull` | Profile has no model set | Uses `deepseek-chat` |
-| `shouldUseCustomModelFromProfile` | Profile has `deepseek-reasoner` | Uses custom model |
-| `shouldUseDefaultProviderWhenNotSet` | No provider in profile | Uses `deepseek` |
-| `shouldHandleOpenRouterProvider` | Provider is `openrouter` | Uses OpenRouter API URL |
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| GradeEssayTests | 4 | Grade valid essay, handle errors |
+| HandleEmptyEssayTests | 2 | Null/empty essay handling |
+| BandScoreValidation | 2 | Validate score range 0-9 |
+| ModelSelectionTests | 4 | Default/custom model selection |
 
 ---
 
-## 3. JwtAuthFilterTest (9 tests)
-
-**File:** `backend/src/test/java/com/cramer/service/unit/JwtAuthFilterTest.java`
-
-Tests JWT authentication filter for Spring Security.
-
-### 3.1 Authentication Tests (9 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldAuthenticateValidToken` | Valid JWT in Authorization header | Sets `SecurityContext` with user |
-| `shouldRejectMissingToken` | No Authorization header | Returns 401 Unauthorized |
-| `shouldRejectInvalidToken` | Malformed JWT token | Returns 401 Unauthorized |
-| `shouldRejectExpiredToken` | Expired JWT token | Returns 401 Unauthorized |
-| `shouldRejectTokenWithInvalidSignature` | Token signed with wrong key | Returns 401 Unauthorized |
-| `shouldHandleMalformedHeader` | Header without "Bearer " prefix | Returns 401 Unauthorized |
-| `shouldBypassNonProtectedPath` | Request to `/api/public/**` | Allows without auth |
-| `shouldExtractUserIdFromToken` | Valid token with `sub` claim | Extracts UUID correctly |
-| `shouldSetRoleUserForValidToken` | Valid authenticated request | Grants `ROLE_USER` |
-
----
-
-## 4. SubscriptionServiceImplTest (13 tests)
+### 3. SubscriptionServiceImplTest (13 tests)
 
 **File:** `backend/src/test/java/com/cramer/service/unit/SubscriptionServiceImplTest.java`
 
-Tests subscription tier management and AI grading quota system.
+Tests subscription tier management.
 
-### 4.1 GetAllTiersTests (2 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldReturnAllTiers` | Fetch all active tiers | Returns list with Cramerie, Cramerich |
-| `shouldReturnEmptyListWhenNoTiers` | No tiers in database | Returns empty list |
-
-### 4.2 GetUserSubscriptionTests (2 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldReturnActiveSubscription` | User has active subscription | Returns `UserSubscriptionDTO` |
-| `shouldCreateFreeTierWhenNoSubscription` | New user, no subscription | Creates Cramerie subscription |
-
-### 4.3 CheckAIGradingAllowedTests (3 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldAllowGradingWhenHasRemainingQuota` | 2/5 AI gradings used | `allowed=true`, `remaining=3` |
-| `shouldDenyGradingWhenQuotaExhaustedButAllowWithLua` | 5/5 used, has 150 Lúa | `allowed=true`, `canUseExtraWithLua=true` |
-| `shouldDenyGradingForFreeTierUser` | Free tier, 3/3 exhausted | `allowed=true` if has Lúa |
-
-### 4.4 GetMonthlyGradingsRemainingTests (2 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldReturnRemainingCount` | 5 limit, 2 used | Returns 3 |
-| `shouldReturnZeroWhenNoSubscription` | No subscription found | Returns 0 |
-
-### 4.5 IncrementAIGradingUsageTests (1 test)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldIncrementUsage` | Increment from 2 to 3 | `attemptAisUsed` becomes 3 |
-
-### 4.6 InitializeNewUserTests (1 test)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldCreateFreeTierSubscription` | New user initialization | Creates Cramerie subscription, status=ACTIVE |
-
-### 4.7 GetTierByCodeTests (2 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldReturnTierWhenFound` | Get "cramerich" tier | Returns tier with price 69000 |
-| `shouldThrowExceptionWhenNotFound` | Get "invalid_tier" | Throws `ResourceNotFoundException` |
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| GetAllTiersTests | 2 | Fetch all tiers |
+| GetUserSubscriptionTests | 2 | Get/create user subscription |
+| CheckAIGradingAllowedTests | 3 | AI grading quota checks |
+| GetMonthlyGradingsRemainingTests | 2 | Remaining quota count |
+| IncrementAIGradingUsageTests | 1 | Increment usage |
+| InitializeNewUserTests | 1 | Create free tier subscription |
+| GetTierByCodeTests | 2 | Get tier by code |
 
 ---
 
-## 5. PaymentServiceImplTest (22 tests)
+### 4. PaymentServiceImplTest (22 tests)
 
 **File:** `backend/src/test/java/com/cramer/service/unit/PaymentServiceImplTest.java`
 
-Tests PayOS payment gateway integration for subscriptions and Lúa purchases.
+Tests PayOS payment integration.
 
-### 5.1 CreateSubscriptionPaymentTests (3 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldCreatePaymentLinkSuccessfully` | Create payment for tier upgrade | Returns PayOS checkout URL |
-| `shouldThrowExceptionWhenTierNotFound` | Invalid tier code | Throws `ResourceNotFoundException` |
-| `shouldThrowExceptionWhenUserNotFound` | Invalid user ID | Throws `ResourceNotFoundException` |
-
-### 5.2 CreateLuaPackPaymentTests (5 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldCreateLuaPackPayment` | Buy 100 Lúa pack | Returns payment link |
-| `shouldRejectInvalidPackSize` | Invalid pack amount | Throws `IllegalArgumentException` |
-| `shouldCalculatePriceCorrectly` | 500 Lúa pack | Price = 50000 VND |
-| `shouldHandlePayOSApiError` | PayOS returns error | Throws appropriate exception |
-| `shouldGenerateUniqueOrderCode` | Multiple requests | Each has unique order code |
-
-### 5.3 HandleWebhookTests (5 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldProcessSuccessfulPayment` | Webhook with PAID status | Grants subscription/credits |
-| `shouldIgnoreDuplicateWebhook` | Same orderCode twice | Processes only once |
-| `shouldHandleCancelledPayment` | User cancelled | Updates order status to CANCELLED |
-| `shouldRejectInvalidSignature` | Tampered webhook | Returns 400 Bad Request |
-| `shouldHandleExpiredPayment` | Payment timeout | Updates status to EXPIRED |
-
-### 5.4 VerifyWebhookSignatureTests (3 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldVerifyValidSignature` | Correct HMAC-SHA256 | Returns `true` |
-| `shouldRejectInvalidSignature` | Wrong signature | Returns `false` |
-| `shouldHandleEmptySignature` | No signature header | Returns `false` |
-
-### 5.5 GenerateSignatureTests (3 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldGenerateCorrectSignature` | Known payload | Matches expected hash |
-| `shouldBeConsistent` | Same input multiple times | Same output |
-| `shouldHandleSpecialCharacters` | Unicode in description | Generates valid signature |
-
-### 5.6 UtilityMethodsTests (3 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldGetPaymentHistory` | User with 3 payments | Returns list of 3 |
-| `shouldGetPaymentStatus` | Check order by code | Returns current status |
-| `shouldReturnAvailableLuaPacks` | Get Lúa pack options | Returns pack list with prices |
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| CreateSubscriptionPaymentTests | 3 | Create payment links |
+| CreateLuaPackPaymentTests | 5 | Buy Lúa packs |
+| HandleWebhookTests | 5 | Process webhooks |
+| VerifyWebhookSignatureTests | 3 | Signature verification |
+| GenerateSignatureTests | 3 | Signature generation |
+| UtilityMethodsTests | 3 | Payment history, status |
 
 ---
 
-## 6. ProfileServiceImplTest (13 tests)
+### 5. ProfileServiceImplTest (13 tests)
 
 **File:** `backend/src/test/java/com/cramer/service/unit/ProfileServiceImplTest.java`
 
-Tests user profile CRUD operations.
+Tests user profile CRUD.
 
-### 6.1 GetProfileByIdTests (5 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `getProfileById_exists_returnsProfile` | Get existing profile | Returns `ProfileDTO` with all fields |
-| `getProfileById_notFound_throwsException` | Unknown user ID | Throws `RuntimeException` |
-| `getProfileById_nullId_throwsException` | Null user ID | Throws `NullPointerException` |
-| `getProfileById_withApiKey_hidesKey` | Profile has LLM API key | `hasLlmApiKey=true`, key not exposed |
-| `getProfileById_noApiKey_indicatesNone` | No API key set | `hasLlmApiKey=false` |
-
-### 6.2 UpdateProfileTests (8 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `updateProfile_basicFields_updatesSuccessfully` | Update name, phone, address | All fields updated |
-| `updateProfile_avatarUrl_updatesSuccessfully` | Update avatar URL | New URL saved |
-| `updateProfile_setLlmApiKey_savesKey` | Set DeepSeek API key | Key saved to profile |
-| `updateProfile_clearLlmApiKey_clearsKey` | Clear API key with empty string | Key set to null |
-| `updateProfile_llmModel_updatesModel` | Set to `deepseek-reasoner` | Model updated |
-| `updateProfile_llmProvider_updatesProvider` | Set to `openrouter` | Provider updated |
-| `updateProfile_notFound_throwsException` | Unknown user ID | Throws `RuntimeException` |
-| `updateProfile_nullFields_preservesExisting` | Partial update | Unchanged fields preserved |
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| GetProfileByIdTests | 5 | Get profile, null handling |
+| UpdateProfileTests | 8 | Update fields, validation |
 
 ---
 
-## 7. TestAttemptServiceTest (17 tests)
+### 6. TestAttemptServiceTest (17 tests)
 
 **File:** `backend/src/test/java/com/cramer/service/unit/TestAttemptServiceTest.java`
 
-Tests test session lifecycle: start, resume, save progress, cancel.
+Tests test session lifecycle.
 
-### 7.1 StartOrGetAttemptTests (9 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `startOrGetAttempt_existingInProgress_resumesAttempt` | Existing IN_PROGRESS attempt | Returns existing attempt |
-| `startOrGetAttempt_noExisting_createsNew` | No prior attempt | Creates new IN_PROGRESS attempt |
-| `startOrGetAttempt_completedNoForce_returnsCompleted` | COMPLETED + forceNew=false | Returns COMPLETED attempt |
-| `startOrGetAttempt_completedWithForce_createsNew` | COMPLETED + forceNew=true | Creates new attempt |
-| `startOrGetAttempt_forceNewCancelsInProgress_createsNew` | IN_PROGRESS + forceNew=true | Cancels old, creates new |
-| `startOrGetAttempt_nullUserId_throwsException` | Null user ID | Throws `RuntimeException` |
-| `startOrGetAttempt_emptySource_throwsException` | Empty exam source | Throws `RuntimeException` |
-| `startOrGetAttempt_cancelledAttempt_createsNew` | Last was CANCELLED | Creates new attempt |
-| `startOrGetAttempt_multipleInProgress_cancelsOldOnes` | Multiple stale IN_PROGRESS | Keeps only latest |
-
-### 7.2 SaveProgressTests (4 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `saveProgress_validData_savesSuccessfully` | Save answers + timeLeft | Updates attempt, saves answers |
-| `saveProgress_attemptNotFound_throwsException` | Invalid attempt ID | Throws `ResourceNotFoundException` |
-| `saveProgress_unauthorized_throwsException` | Different user's attempt | Throws `AccessDeniedException` |
-| `saveProgress_emptyAnswers_doesNotSaveAnswers` | Empty answers map | Only updates time, no answer save |
-
-### 7.3 CancelAttemptTests (4 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `cancelAttempt_inProgress_cancelsSuccessfully` | Cancel IN_PROGRESS | Deletes attempt and answers |
-| `cancelAttempt_completed_returnsSilently` | Cancel COMPLETED (idempotent) | No error, no deletion |
-| `cancelAttempt_notFound_returnsSilently` | Cancel non-existent (idempotent) | No error |
-| `cancelAttempt_unauthorized_throwsException` | Wrong user | Throws `AccessDeniedException` |
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| StartOrGetAttemptTests | 9 | Start/resume attempts |
+| SaveProgressTests | 4 | Save answers, time |
+| CancelAttemptTests | 4 | Cancel attempts |
 
 ---
 
-## 8. TestServiceTest (9 tests)
+### 7. TestServiceTest (9 tests)
 
 **File:** `backend/src/test/java/com/cramer/service/unit/TestServiceTest.java`
 
-Tests fetching test data (sections, questions) for test taking.
+Tests test data fetching.
 
-### 8.1 GetSafeTestTests (6 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `getSafeTest_validParams_returnsSectionsWithoutAnswers` | Valid source/test/skill | Returns sections with questions (no answers) |
-| `getSafeTest_noSections_returnsEmpty` | Non-existent test | Returns empty list |
-| `getSafeTest_nullSource_throwsException` | Null source | Throws `IllegalArgumentException` |
-| `getSafeTest_emptySource_throwsException` | Empty source | Throws `IllegalArgumentException` |
-| `getSafeTest_invalidTestNum_throwsException` | TestNum <= 0 | Throws `IllegalArgumentException` |
-| `getSafeTest_nullSkill_throwsException` | Null skill | Throws `IllegalArgumentException` |
-
-### 8.2 GetFullTestTests (2 tests)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `getFullTest_validParams_returnsSectionsWithAnswers` | Admin access | Returns full sections with answers |
-| `getFullTest_sectionWithNoQuestions_returnsEmptyQuestions` | Writing section | Section with empty questions list |
-
-### 8.3 InputValidationTests (1 test)
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `getTest_differentSkills_callsRepositoryCorrectly` | reading/listening/writing | All valid skills work |
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| GetSafeTestTests | 6 | Get test without answers |
+| GetFullTestTests | 2 | Get test with answers |
+| InputValidationTests | 1 | Validate input params |
 
 ---
 
-## 9. WritingSubmissionServiceTest (14 tests)
+### 8. WritingSubmissionServiceTest (14 tests)
 
 **File:** `backend/src/test/java/com/cramer/service/unit/WritingSubmissionServiceTest.java`
 
-Tests essay submission, grading workflow, and status tracking.
+Tests essay submission and grading.
 
-### 9.1 SaveDraftTests (4 tests)
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| SaveDraftTests | 4 | Save essay drafts |
+| GetGradingStatusTests | 5 | Check grading status |
+| GetWritingReviewTests | 2 | Get completed review |
+| SubmitForGradingTests | 3 | Submit for AI grading |
 
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `saveDraft_newDraft_savedSuccessfully` | Save new essay draft | Creates submission with PENDING status |
-| `saveDraft_existingDraft_updatedSuccessfully` | Update existing draft | Updates essay text |
-| `saveDraft_attemptNotFound_throwsException` | Invalid attempt ID | Throws `IllegalArgumentException` |
-| `saveDraft_unauthorized_throwsException` | Wrong user's attempt | Throws `IllegalArgumentException` |
+---
 
-### 9.2 GetGradingStatusTests (5 tests)
+### 9. VocabularyServiceTest (20 tests)
 
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `getGradingStatus_allCompleted_returnsCompleted` | Both tasks graded | Status = COMPLETED |
-| `getGradingStatus_stillGrading_returnsGrading` | One task still grading | Status = GRADING |
-| `getGradingStatus_someFailed_returnsPartialFailure` | One task failed | Status = PARTIAL_FAILURE |
-| `getGradingStatus_pending_returnsPending` | No grading started | Status = PENDING |
-| `getGradingStatus_unauthorized_throwsException` | Wrong user | Throws `IllegalArgumentException` |
+**File:** `backend/src/test/java/com/cramer/service/unit/VocabularyServiceTest.java`
 
-### 9.3 GetWritingReviewTests (2 tests)
+Tests vocabulary management.
 
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `getWritingReview_completed_returnsFullReview` | Completed attempt | Returns tasks with scores |
-| `getWritingReview_withDuration_calculatesCorrectly` | 45 min test | Duration ≈ 2700 seconds |
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| Get User Vocabulary | 3 | Paginated vocabulary list |
+| Create Vocabulary | 3 | Add new words, duplicates |
+| Update Vocabulary | 4 | Update fields, not found |
+| Delete Vocabulary | 2 | Delete word, auth |
+| Toggle Mastered | 3 | Toggle mastered status |
+| Search/Export | 5 | Search by word, export |
 
-### 9.4 SubmitForGradingTests (3 tests)
+---
 
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `submitForGrading_quotaAllowed_startsGrading` | Has quota | Starts async grading |
-| `submitForGrading_quotaExceeded_marksAsFailed` | No quota, no Lúa | Marks as FAILED |
-| `submitForGrading_withStaleAttempts_cancelsStale` | Has stale IN_PROGRESS | Cancels stale attempts |
+### 10. QuotaServiceTest (17 tests)
+
+**File:** `backend/src/test/java/com/cramer/service/unit/QuotaServiceTest.java`
+
+Tests quota management.
+
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| Can Attempt | 5 | Check quota caps |
+| Is Global Cap Hit | 4 | Global cap checking |
+| Is Local Cap Hit | 4 | Per-skill cap checking |
+| Increment Attempt | 3 | Increment usage counters |
+| Get Quota Status | 1 | Return quota DTO |
+
+---
+
+### 11. Additional Service Tests
+
+| Test Class | Tests | Description |
+|------------|-------|-------------|
+| AsyncGradingServiceTest | ~18 | Async grading workflow |
+| ChatServiceTest | 9 | AI chat functionality |
+| CourseServiceTest | 7 | Course management |
+| DashboardServiceTest | 13 | Dashboard stats |
+| QuestionServiceTest | ~18 | Question CRUD |
+| SectionServiceTest | ~18 | Section CRUD |
+
+---
+
+## 📁 Test File Locations
+
+```
+backend/src/test/
+├── java/com/cramer/
+│   ├── CramerBackendApplicationTests.java
+│   ├── controller/                    # Controller tests
+│   │   ├── BaseControllerTest.java    # Base class with shared setup
+│   │   ├── AuthControllerTest.java
+│   │   ├── ChatControllerTest.java
+│   │   ├── CourseControllerTest.java
+│   │   ├── CreditControllerTest.java
+│   │   ├── DashboardControllerTest.java
+│   │   ├── PaymentControllerTest.java
+│   │   ├── ProfileControllerTest.java
+│   │   ├── QuestionControllerTest.java
+│   │   ├── QuotaControllerTest.java
+│   │   ├── SectionControllerTest.java
+│   │   ├── SubscriptionControllerTest.java
+│   │   ├── TestAttemptControllerTest.java
+│   │   ├── TestControllerTest.java
+│   │   ├── VocabularyControllerTest.java
+│   │   └── WritingControllerTest.java
+│   └── service/unit/                  # Service tests
+│       ├── AsyncGradingServiceTest.java
+│       ├── ChatServiceTest.java
+│       ├── CourseServiceTest.java
+│       ├── CreditServiceImplTest.java
+│       ├── DashboardServiceTest.java
+│       ├── LLMGradingServiceTest.java
+│       ├── PaymentServiceImplTest.java
+│       ├── ProfileServiceImplTest.java
+│       ├── QuestionServiceTest.java
+│       ├── QuotaServiceTest.java
+│       ├── SectionServiceTest.java
+│       ├── SubscriptionServiceImplTest.java
+│       ├── TestAttemptServiceTest.java
+│       ├── TestServiceTest.java
+│       ├── VocabularyServiceTest.java
+│       └── WritingSubmissionServiceTest.java
+└── resources/
+    └── application-test.properties
+```
 
 ---
 
@@ -458,282 +549,24 @@ deepseek.api.key=test-api-key
 
 ---
 
-## 🚀 Running Tests
-
-### Backend (Java/Spring Boot)
-```powershell
-# Run all unit tests
-cd backend && .\mvnw.cmd test -Dtest="com.cramer.service.unit.**"
-
-# Run specific test class
-.\mvnw.cmd test -Dtest=CreditServiceImplTest
-
-# Run with coverage
-.\mvnw.cmd test jacoco:report
-```
-
-### Frontend (React/Vitest)
-```powershell
-# Run all tests
-cd frontend && npx vitest --run
-
-# Run tests in watch mode
-npx vitest
-
-# Run with coverage
-npx vitest --run --coverage
-
-# Run specific test file
-npx vitest --run useAuthStore.test.js
-```
-
----
-
-## 📁 Test File Locations
-
-```
-backend/src/test/
-├── java/com/cramer/
-│   ├── CramerBackendApplicationTests.java
-│   └── service/unit/
-│       ├── CreditServiceImplTest.java
-│       ├── LLMGradingServiceTest.java
-│       ├── JwtAuthFilterTest.java
-│       ├── SubscriptionServiceImplTest.java
-│       ├── PaymentServiceImplTest.java
-│       ├── ProfileServiceImplTest.java
-│       ├── TestAttemptServiceTest.java
-│       ├── TestServiceTest.java
-│       └── WritingSubmissionServiceTest.java
-└── resources/
-    └── application-test.properties
-
-frontend/src/__tests__/
-├── setupTests.js
-├── mocks/
-│   ├── handlers.js
-│   └── server.js
-└── stores/
-    ├── useAuthStore.test.js
-    ├── useTestStore.test.js
-    ├── useProfileStore.test.js
-    ├── useTestSessionStore.test.js
-    ├── useDashboardStore.test.js
-    ├── useSubscriptionStore.test.js
-    └── useQuotaStore.test.js
-```
-
----
-
-# Frontend Test Cases
-
----
-
-## 10. useAuthStore.test.js (20 tests)
-
-**File:** `frontend/src/__tests__/stores/useAuthStore.test.js`
-
-Tests authentication state management including sign in, sign out, and session handling.
-
-### 10.1 SignIn Tests
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldSignInSuccessfully` | Valid email/password | Sets user and session |
-| `shouldSetErrorOnInvalidCredentials` | Wrong password | Sets error message |
-| `shouldClearErrorBeforeSignIn` | New sign in clears old error | Error is null |
-
-### 10.2 SignOut Tests
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldSignOutSuccessfully` | Sign out logged in user | Clears user/session |
-| `shouldClearAuthState` | clearAuth action | All auth state null |
-
-### 10.3 Session Tests
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldSetUserAndSession` | Set user/session actions | State updated |
-| `shouldHandleLoadingState` | Loading during auth | loading = true |
-
----
-
-## 11. useTestStore.test.js (34 tests)
-
-**File:** `frontend/src/__tests__/stores/useTestStore.test.js`
-
-Tests test-taking UI state: answers, timer, modals, navigation.
-
-### 11.1 Answer Management
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldSetSingleAnswer` | setAnswer(1, 'A') | answers[1] = 'A' |
-| `shouldSetMultipleAnswers` | setAnswers({1:'A', 2:'B'}) | Both answers set |
-| `shouldClearAnswers` | clearAnswers() | answers = {} |
-
-### 11.2 Timer Management
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldSetTimeLeft` | setTimeLeft(1800) | timeLeft = 1800 |
-| `shouldStartTimer` | startTimer() | timerRunning = true |
-| `shouldStopTimer` | stopTimer() | timerRunning = false |
-
-### 11.3 Essay Management
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldSetEssay` | setEssay(1, 'text') | essays[1] = 'text' |
-| `shouldClearEssays` | clearEssays() | essays = {1:'', 2:''} |
-
----
-
-## 12. useProfileStore.test.js (15 tests)
-
-**File:** `frontend/src/__tests__/stores/useProfileStore.test.js`
-
-Tests profile loading, caching, creation, and updates.
-
-### 12.1 loadProfile Tests
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldLoadProfileSuccessfully` | Load existing profile | Returns ProfileDTO |
-| `shouldSkipLoadingIfAlreadyLoaded` | Same user ID | Uses cached profile |
-| `shouldReloadWhenForceReloadIsTrue` | forceReload=true | API called again |
-| `shouldCreateProfileOn404` | Profile not found | Creates new profile |
-
-### 12.2 updateProfile Tests
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldUpdateProfileSuccessfully` | Update displayName | Profile updated |
-| `shouldThrowErrorIfNoProfileLoaded` | Update without load | Throws error |
-
----
-
-## 13. useTestSessionStore.test.js (18 tests)
-
-**File:** `frontend/src/__tests__/stores/useTestSessionStore.test.js`
-
-Tests test session API operations: start, load, save, submit, cancel.
-
-### 13.1 startOrResumeAttempt Tests
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldStartNewAttempt` | New test attempt | Returns attemptId |
-| `shouldResumeExistingAttempt` | IN_PROGRESS exists | Returns existing |
-| `shouldForceNewAttempt` | forceNew=true | Creates new |
-
-### 13.2 loadTestData Tests
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldLoadTestDataSuccessfully` | Load test sections | Returns test data |
-| `shouldUseCacheWithinTTL` | Multiple loads | Only 1 API call |
-
-### 13.3 saveProgress Tests
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldSaveProgressWithAnswers` | Save answers | Progress saved |
-| `shouldSaveEssaysForWriting` | Save essays | Drafts saved |
-
----
-
-## 14. useDashboardStore.test.js (17 tests)
-
-**File:** `frontend/src/__tests__/stores/useDashboardStore.test.js`
-
-Tests dashboard data fetching, caching, and pagination.
-
-### 14.1 fetchSummary Tests
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldFetchSummarySuccessfully` | Initial fetch | Returns summary |
-| `shouldUseCacheWhenFresh` | Cached data | No API call |
-| `shouldSkipCacheWithParams` | Pagination params | Fresh fetch |
-
-### 14.2 Pagination Tests
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `setPageShouldUpdateCurrentPage` | setPage(5) | currentPage = 5 |
-| `setPageSizeShouldResetToPage0` | setPageSize(10) | page = 0, size = 10 |
-| `setDebouncedSearchShouldReset` | setDebounced('test') | page = 0 |
-
----
-
-## 15. useSubscriptionStore.test.js (13 tests)
-
-**File:** `frontend/src/__tests__/stores/useSubscriptionStore.test.js`
-
-Tests subscription state management and feature access.
-
-### 15.1 fetchSubscriptionStatus Tests
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldFetchFreeTier` | Cramerie tier | isPremium = false |
-| `shouldFetchPremiumTier` | Cramerous tier | isPremium = true |
-| `shouldHandleFeaturesArray` | features[] format | featuresMap populated |
-| `shouldHandleFeaturesMap` | featuresMap format | Features accessible |
-
-### 15.2 hasFeature Tests
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldReturnTrueForExistingFeature` | feature exists | true |
-| `shouldReturnFalseForMissingFeature` | feature missing | false |
-
----
-
-## 16. useQuotaStore.test.js (26 tests)
-
-**File:** `frontend/src/__tests__/stores/useQuotaStore.test.js`
-
-Tests quota status, progress calculations, and pre-check functionality.
-
-### 16.1 fetchQuotaStatus Tests
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldFetchQuotaSuccessfully` | Get quota status | quotaStatus set |
-| `shouldSkipIfNoUser` | No authenticated user | No API call |
-| `shouldUseCacheWithin30s` | Quick re-fetch | Uses cache |
-| `shouldForceFetch` | force=true | Fresh fetch |
-
-### 16.2 Progress Calculation Tests
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `getGlobalProgressForPremium` | Premium user | Returns 0 |
-| `getGlobalProgressNormal` | 10/20 used | Returns 50 |
-| `getGlobalProgressAI` | AI quota | Correct percentage |
-| `getSkillProgress` | Skill-specific | Correct percentage |
-| `getProgressColor` | <50% / 50-79% / ≥80% | green/yellow/red |
-
-### 16.3 preCheckAttempt Tests
-
-| Test Name | Description | Expected Result |
-|-----------|-------------|-----------------|
-| `shouldPreCheckSuccessfully` | Quota available | allowed = true |
-| `shouldHandleBlockedAttempt` | Quota exceeded | allowed = false |
-
----
-
 ## 📝 Notes
 
-1. **Backend Mocking:** All tests use Mockito `@Mock` and `@InjectMocks` for isolation
-2. **Frontend Mocking:** Uses `vi.mock()` for API modules
-3. **No External Dependencies:** Backend runs with H2 in-memory DB, no Supabase/PayOS calls
-4. **Store Testing Pattern:** Frontend tests create isolated store instances per test
-5. **Strict Stubbing:** Mockito strict mode enabled to catch unused stubs
+1. **Mocking:** All tests use Mockito `@Mock` and `@InjectMocks` for isolation
+2. **No External Dependencies:** Tests run with H2 in-memory DB, no Supabase/PayOS calls
+3. **Strict Stubbing:** Mockito strict mode enabled to catch unused stubs
+4. **Controller Tests:** Use `@WebMvcTest` with MockMvc for HTTP request/response testing
+5. **Base Test Class:** `BaseControllerTest.java` provides shared setup for all controller tests
 
 ---
 
-*Last updated: January 15, 2026*
+## 🚧 TODO: Future Tests
+
+| Area | Priority | Description |
+|------|----------|-------------|
+| ABTSControllerTest | Low | ABTS (AI Test Generation) admin endpoints |
+| Integration Tests | Medium | Full flow tests (Start → Answer → Submit → Review) |
+| Performance Tests | Low | Load testing for concurrent users |
+
+---
+
+*Last updated: January 26, 2026*
