@@ -281,4 +281,55 @@
     flex-direction: column;
     align-items: center;
   }
+
+  /* Table cell improvements for mobile */
+  .data-table__th,
+  .data-table__td {
+    padding: 10px 12px;
+    font-size: 0.8125rem;
+  }
+
+  /* Enable text truncation on cells */
+  .data-table__td {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Priority columns - hide less important ones on mobile */
+  .data-table__th[data-priority="low"],
+  .data-table__td[data-priority="low"] {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .data-table__th,
+  .data-table__td {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+
+  .data-table__td {
+    max-width: 100px;
+  }
+
+  /* Hide medium priority columns on very small screens */
+  .data-table__th[data-priority="medium"],
+  .data-table__td[data-priority="medium"] {
+    display: none;
+  }
+
+  .data-table__pagination-btn {
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    font-size: 0.75rem;
+  }
+
+  .data-table__pagination-info {
+    font-size: 0.75rem;
+    text-align: center;
+  }
 }

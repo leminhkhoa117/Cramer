@@ -229,9 +229,9 @@ const useAdminContentStore = create((set, get) => ({
     /**
      * Update test hashtags
      */
-    updateTestHashtags: async (testId, hashtagIds, primaryHashtagId) => {
+    updateTestHashtags: async (testId, hashtagCodes) => {
         try {
-            const result = await adminApi.testsApi.updateHashtags(testId, hashtagIds, primaryHashtagId);
+            const result = await adminApi.testsApi.updateHashtags(testId, hashtagCodes);
             await get().fetchTopics(true);
             return result;
         } catch (error) {
