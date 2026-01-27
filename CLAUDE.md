@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Verification Protocol (Anti-Hallucination)
+1. **Verify Paths**: Never assume a file exists based on common patterns. detailed directory structures often vary. Use `ls` or `find` to confirm.
+2. **Read Before Explaining**: logical assumptions are often wrong. Read the code file before explaining 'how it works'.
+3. **Check Usage**: Before stating a library or feature is used, `grep` the codebase to prove it.
+4. **Admit Unknowns**: It is better to stop and ask or search than to invent a plausible-sounding answer.
+
 ## Project Overview
 
 Cramer is an IELTS practice platform with a Spring Boot backend and React frontend. It uses Supabase for PostgreSQL database, authentication, and storage. The platform includes an AI-Based Test Generation System (ABTS) for creating IELTS content.

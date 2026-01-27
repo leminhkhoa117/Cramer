@@ -1,16 +1,24 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./mvnw test:*)",
-      "Bash(mvn test:*)",
-      "Bash(find:*)",
-      "Bash(test:*)",
+      "mcp__supabase__list_tables",
+      "Bash",
+      "Read",
+      "Grep",
+      "Glob",
+      "Edit",
+      "WebSearch",
+      "WebFetch",
       "mcp__supabase__get_project_url",
-      "mcp__supabase__list_tables"
+      "mcp__supabase__get_publishable_keys",
+      "Skill(cramer-db-schema-truth)",
+      "Skill(cramer-db-schema-truth:*)",
+      "mcp__supabase__execute_sql"
     ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "supabase"
-  ]
+  ],
+  "outputStyle": "default"
 }
