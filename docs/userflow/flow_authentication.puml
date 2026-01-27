@@ -1,0 +1,163 @@
+@startuml Authentication_Decision_Flow
+!theme blueprint
+title Cramer CMS - Authentication Decision Flow
+
+skinparam {
+    BackgroundColor #1a1a2e
+    TitleFontColor #ffffff
+    TitleFontSize 18
+    DefaultFontColor #e8e8e8
+    ArrowColor #64b5f6
+    DiamondBackgroundColor #f39c12
+    DiamondBorderColor #e67e22
+    ActivityBackgroundColor #37474f
+    ActivityBorderColor #78909c
+    NoteBackgroundColor #424242
+    NoteFontColor #ffffff
+}
+
+start
+
+:User visits any page;
+
+if (Has valid session?) then (YES)
+    :Load user from session;
+    if (Session expired?) then (YES)
+        :Clear session;
+        :Redirect to /login;
+    else (NO)
+        :Continue to requested page;
+        stop
+    endif
+else (NO)
+    if (Protected route?) then (YES)
+        :Redirect to /login;
+    else (NO)
+        :Continue as guest;
+        stop
+    endif
+endif
+
+:Show Login Page;
+
+if (Returning user?) then (YES)
+    :Show Sign In form;
+    
+    if (Use OAuth?) then (YES)
+        if (Google?) then (YES)
+            :Redirect to Google OAuth;
+        else (NO - Facebook)
+            :Redirect to Facebook OAuth;
+        endif
+        
+        :OAuth callback received;
+        
+        if (OAuth success?) then (YES)
+            if (Account exists?) then (YES)
+                :Link OAuth to account;
+            else (NO)
+                :Create new account;
+                :Initialize free tier;
+                :Credit 50 Lua;
+            endif
+            :Create session;
+            :Redirect to Dashboard;
+            stop
+        else (NO)
+            :Show OAuth error;
+            :Return to Login;
+        endif
+    else (NO - Email)
+        :Enter email + password;
+        :Submit credentials;
+        
+        if (Credentials valid?) then (YES)
+            if (Email verified?) then (YES)
+                :Create session;
+                :Redirect to Dashboard;
+                stop
+            else (NO)
+                :Send OTP email;
+                :Show OTP input;
+                
+                repeat
+                    :User enters OTP code;
+                    if (OTP valid?) then (YES)
+                        :Mark email verified;
+                        :Create session;
+                        :Redirect to Dashboard;
+                        stop
+                    else (NO)
+                        :Show error;
+                        if (Resend OTP?) then (YES)
+                            :Send new OTP;
+                        else (NO)
+                        endif
+                    endif
+                repeat while (Retry?) is (YES)
+                
+                :Too many attempts;
+                :Return to Login;
+            endif
+        else (NO)
+            :Show "Invalid credentials";
+            if (Forgot password?) then (YES)
+                :Enter email;
+                :Send reset link;
+                :Show confirmation;
+            else (NO)
+            endif
+        endif
+    endif
+    
+else (NO - New user)
+    :Show Sign Up form;
+    :Enter email, password, username;
+    
+    if (Email exists?) then (YES)
+        :Show "Email already registered";
+        :Suggest Sign In instead;
+    else (NO)
+        if (Username taken?) then (YES)
+            :Show "Username unavailable";
+        else (NO)
+            :Create account (unverified);
+            :Initialize free tier;
+            :Credit 50 Lua;
+            :Send OTP email;
+            :Store pending info in session;
+            
+            :Show OTP verification;
+            
+            repeat
+                :User enters OTP code;
+                if (OTP valid?) then (YES)
+                    :Mark email verified;
+                    :Create profile;
+                    :Create session;
+                    :Redirect to Dashboard;
+                    stop
+                else (NO)
+                    :Show error;
+                endif
+            repeat while (Retry?) is (YES)
+            
+            :Verification failed;
+            :Delete unverified account;
+        endif
+    endif
+endif
+
+stop
+
+legend right
+  **Decision Points:**
+  |= Check |= Action if YES |= Action if NO |
+  | Has session? | Continue | Check protected |
+  | Protected route? | Redirect login | Allow guest |
+  | Use OAuth? | OAuth flow | Email flow |
+  | Email verified? | Create session | Send OTP |
+  | OTP valid? | Verify + login | Show error |
+endlegend
+
+@enduml

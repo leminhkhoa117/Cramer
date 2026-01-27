@@ -1,0 +1,166 @@
+@startuml Admin_Content_Management_Flow
+!theme blueprint
+title Cramer CMS - Admin Content Management Flow
+
+skinparam {
+    BackgroundColor #1a1a2e
+    TitleFontColor #ffffff
+    TitleFontSize 20
+    DefaultFontColor #e8e8e8
+    ArrowColor #64b5f6
+    ActorBackgroundColor #4caf50
+    RectangleBackgroundColor #37474f
+    RectangleBorderColor #78909c
+    NoteBackgroundColor #424242
+    NoteFontColor #ffffff
+}
+
+actor "Admin User" as Admin #coral
+
+rectangle "Admin Pages" {
+    rectangle "Admin Dashboard\n[/admin/dashboard]" as AdminDash {
+        (Total Users)
+        (Monthly Revenue)
+        (Published Tests)
+        (Activity Timeline)
+    }
+    
+    rectangle "Set List\n[/admin/content/sets]" as SetList {
+        (Test Set Grid)
+        (Create Set Modal)
+        (Publish/Unpublish Toggle)
+    }
+    
+    rectangle "Set Detail\n[/admin/content/sets/:id]" as SetDetail {
+        (Tests in Set)
+        (Create Test Modal)
+        (Reorder Tests)
+    }
+    
+    rectangle "Test Editor\n[/admin/content/editor/:id]" as TestEditor {
+        frame "Editor Features" {
+            (Section Management)
+            (Question Editing)
+            (Passage Input)
+            (Audio Upload)
+        }
+        frame "Preview Panel" {
+            (Admin Preview Mode)
+            (Answer Toggle)
+            (Transcript Toggle)
+        }
+        frame "Status" {
+            (Draft)
+            (Published)
+            (Archived)
+        }
+    }
+    
+    rectangle "Hashtag Management\n[/admin/content/hashtags]" as Hashtags {
+        (Hashtag CRUD)
+        (Categories)
+        (Usage Count)
+    }
+    
+    rectangle "AI Generation\n[/admin/content/generate]" as AIGen {
+        (AI Studio Wizard)
+    }
+}
+
+rectangle "Backend Controllers" {
+    [TestHierarchyController] as HierarchyCtrl
+    [AdminContentController] as ContentCtrl
+}
+
+rectangle "Backend Services" {
+    [TestSetService] as SetSvc
+    [TestService] as TestSvc
+    [SectionService] as SectionSvc
+    [QuestionService] as QuestionSvc
+    [HashtagService] as HashtagSvc
+}
+
+cloud "Storage" {
+    [Supabase Storage] as Storage
+}
+
+database "Database" {
+    [test_sets]
+    [tests]
+    [sections]
+    [questions]
+    [hashtags]
+}
+
+' Navigation Flow
+Admin --> AdminDash : Login
+AdminDash --> SetList : Manage Content
+SetList --> SetDetail : Select Set
+SetDetail --> TestEditor : Edit Test
+SetDetail --> AIGen : Generate AI Content
+
+' CRUD Operations
+SetList --> HierarchyCtrl : CRUD test_sets
+HierarchyCtrl --> SetSvc : Service operations
+SetSvc --> test_sets : Database
+
+SetDetail --> HierarchyCtrl : CRUD tests
+HierarchyCtrl --> TestSvc : Service operations
+TestSvc --> tests : Database
+
+TestEditor --> SectionSvc : CRUD sections
+SectionSvc --> sections : Database
+
+TestEditor --> QuestionSvc : CRUD questions
+QuestionSvc --> questions : Database
+
+TestEditor --> Storage : Upload audio/images
+
+Hashtags --> HashtagSvc : CRUD hashtags
+HashtagSvc --> hashtags : Database
+
+' Status Management
+TestEditor --> HierarchyCtrl : POST /{id}/publish
+TestEditor --> HierarchyCtrl : POST /{id}/unpublish
+
+note right of TestEditor
+  **Test Editor Features:**
+  - Rich text passage editor
+  - Question type selector
+  - Answer key management
+  - Image/chart upload
+  - Audio file upload (Listening)
+  - Layout configuration
+  
+  **Question Types:**
+  - TRUE_FALSE_NOT_GIVEN
+  - MULTIPLE_CHOICE
+  - MATCHING_HEADINGS
+  - FILL_IN_BLANK
+  - SUMMARY_COMPLETION
+  - TABLE_COMPLETION
+  - + 8 more...
+end note
+
+note bottom of HierarchyCtrl
+  **TestHierarchyController Endpoints:**
+  
+  Test Sets:
+  - GET/POST/PUT/DELETE /test-sets
+  - POST /test-sets/{id}/publish
+  - POST /test-sets/{id}/unpublish
+  - POST /test-sets/reorder
+  
+  Tests:
+  - GET/PUT/DELETE /tests/{id}
+  - POST /tests/{id}/publish
+  - POST /tests/{id}/duplicate
+  - PUT /tests/{id}/hashtags
+  
+  Hashtags:
+  - GET/POST/PUT/DELETE /hashtags
+  - GET /hashtags/search
+  - GET /hashtags/popular
+end note
+
+@enduml
