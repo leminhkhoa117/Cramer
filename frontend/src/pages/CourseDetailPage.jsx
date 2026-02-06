@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useCourseStore } from '../stores';
 import './../css/course-detail.css';
 import FullPageLoader from '../components/FullPageLoader';
+import SpeakingPartModal from '../components/SpeakingPartModal';
 import { FaBookOpen, FaHeadphones, FaPen, FaMicrophone, FaArrowLeft } from 'react-icons/fa';
 
 const formatCourseName = (source) => {
@@ -23,6 +24,10 @@ const skills = [
 export default function CourseDetailPage() {
     const { courseName } = useParams();
     const [displayName, setDisplayName] = useState(null);
+
+    // Speaking modal state
+    const [showSpeakingModal, setShowSpeakingModal] = useState(false);
+    const [selectedTestForSpeaking, setSelectedTestForSpeaking] = useState(null);
 
     // Zustand store for course tests caching
     const {
@@ -108,20 +113,45 @@ export default function CourseDetailPage() {
                                         <span className="test-card-badge">Full Test</span>
                                     </div>
                                     <div className="test-card-skills">
-                                        {skills.map(skill => (
-                                            <Link
-                                                key={skill.name}
-                                                to={`/test/${courseName}/${testNumber}/${skill.name.toLowerCase()}`}
-                                                className="test-card-skill-link"
-                                            >
-                                                <span className={`skill-icon ${skill.color}`}>{skill.icon}</span>
-                                                <div className="skill-info">
-                                                    <span className="skill-name">{skill.name}</span>
-                                                    <span className="skill-meta">{skill.time} • {skill.questions}</span>
-                                                </div>
-                                                <span className="skill-action">Làm bài</span>
-                                            </Link>
-                                        ))}
+                                        {skills.map(skill => {
+                                            // Speaking uses modal instead of direct navigation
+                                            if (skill.name === 'Speaking') {
+                                                return (
+                                                    <button
+                                                        key={skill.name}
+                                                        type="button"
+                                                        className="test-card-skill-link"
+                                                        onClick={() => {
+                                                            setSelectedTestForSpeaking(testNumber);
+                                                            setShowSpeakingModal(true);
+                                                        }}
+                                                    >
+                                                        <span className={`skill-icon ${skill.color}`}>{skill.icon}</span>
+                                                        <div className="skill-info">
+                                                            <span className="skill-name">{skill.name}</span>
+                                                            <span className="skill-meta">{skill.time} • {skill.questions}</span>
+                                                        </div>
+                                                        <span className="skill-action">Làm bài</span>
+                                                    </button>
+                                                );
+                                            }
+
+                                            // Other skills use Link navigation
+                                            return (
+                                                <Link
+                                                    key={skill.name}
+                                                    to={`/test/${courseName}/${testNumber}/${skill.name.toLowerCase()}`}
+                                                    className="test-card-skill-link"
+                                                >
+                                                    <span className={`skill-icon ${skill.color}`}>{skill.icon}</span>
+                                                    <div className="skill-info">
+                                                        <span className="skill-name">{skill.name}</span>
+                                                        <span className="skill-meta">{skill.time} • {skill.questions}</span>
+                                                    </div>
+                                                    <span className="skill-action">Làm bài</span>
+                                                </Link>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             ))}
@@ -134,6 +164,17 @@ export default function CourseDetailPage() {
                     )}
                 </div>
             </div>
+
+            {/* Speaking Part Selection Modal */}
+            <SpeakingPartModal
+                isOpen={showSpeakingModal}
+                onClose={() => {
+                    setShowSpeakingModal(false);
+                    setSelectedTestForSpeaking(null);
+                }}
+                courseName={courseName}
+                testNumber={selectedTestForSpeaking}
+            />
         </>
     );
 }

@@ -18,10 +18,10 @@ public class SpeakingAIConfig {
     
     @Value("${groq.api.key:}")
     private String groqApiKey;
-    
-    @Value("${elevenlabs.api.key:}")
+
+    @Value("${elevenlabs.api-key:}")
     private String elevenLabsApiKey;
-    
+
     @Value("${groq.timeout-ms:30000}")
     private int timeoutMs;
     

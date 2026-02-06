@@ -38,10 +38,10 @@ public class DebugController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(DebugController.class);
 
-    @Value("${debug.enabled:false}")
+    @Value("${app.debug.enabled:false}")
     private boolean debugEnabled;
 
-    @Value("${debug.secret-key:}")
+    @Value("${app.debug.secret-key:}")
     private String debugSecretKey;
 
     private final SubscriptionTierRepository tierRepository;

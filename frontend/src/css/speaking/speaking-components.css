@@ -1,0 +1,504 @@
+/* ===================================
+   PART 2 PREPARATION STYLES
+   Cue card and notes interface
+   =================================== */
+
+.speaking-part2-prep {
+  flex: 1;
+  background: var(--speaking-bg, #f8f5ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.speaking-part2-prep__container {
+  max-width: 800px;
+  width: 100%;
+}
+
+.speaking-part2-prep__header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.speaking-part2-prep__title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin: 0 0 0.75rem;
+}
+
+.speaking-part2-prep__subtitle {
+  font-size: 1.0625rem;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* === Cue Card === */
+.speaking-cuecard {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  border-radius: 20px;
+  padding: 2.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 30px rgba(245, 158, 11, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.speaking-cuecard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.1), transparent);
+  border-radius: 50%;
+  transform: translate(50%, -50%);
+}
+
+.speaking-cuecard__header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.25rem;
+}
+
+.speaking-cuecard__badge {
+  background: rgba(245, 158, 11, 0.2);
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.375rem 0.875rem;
+  border-radius: 20px;
+  letter-spacing: 0.08em;
+}
+
+.speaking-cuecard__prompt {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 1.5rem;
+  line-height: 1.5;
+}
+
+.speaking-cuecard__intro {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #92400e;
+  margin: 0 0 1rem;
+}
+
+.speaking-cuecard__bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.speaking-cuecard__bullets li {
+  padding-left: 1.5rem;
+  position: relative;
+  font-size: 1.0625rem;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.speaking-cuecard__bullets li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #f59e0b;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* === Notes Box === */
+.speaking-notes {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  border-radius: 20px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.06);
+}
+
+.speaking-notes__label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.875rem;
+  font-size: 1rem;
+}
+
+.speaking-notes__counter {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.speaking-notes__textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 0.9375rem;
+  color: #1f2937;
+  resize: vertical;
+  transition: all 0.3s ease;
+}
+
+.speaking-notes__textarea:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.speaking-notes__textarea::placeholder {
+  color: #9ca3af;
+}
+
+/* === Prep Timer === */
+.speaking-prep-timer {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.06);
+}
+
+.speaking-prep-timer.warning {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.speaking-prep-timer.critical {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.05);
+  animation: pulse-border 1s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: rgba(239, 68, 68, 0.3); }
+  50% { border-color: rgba(239, 68, 68, 0.6); }
+}
+
+.speaking-prep-timer__header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.speaking-prep-timer__icon {
+  font-size: 1.5rem;
+  color: #7c3aed;
+}
+
+.speaking-prep-timer.warning .speaking-prep-timer__icon {
+  color: #f59e0b;
+}
+
+.speaking-prep-timer.critical .speaking-prep-timer__icon {
+  color: #ef4444;
+}
+
+.speaking-prep-timer__time {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #7c3aed;
+}
+
+.speaking-prep-timer.warning .speaking-prep-timer__time {
+  color: #f59e0b;
+}
+
+.speaking-prep-timer.critical .speaking-prep-timer__time {
+  color: #ef4444;
+}
+
+.speaking-prep-timer__bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(124, 58, 237, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+
+.speaking-prep-timer__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed, #6366f1);
+  border-radius: 12px;
+  transition: width 0.3s ease-out;
+}
+
+.speaking-prep-timer.warning .speaking-prep-timer__fill {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.speaking-prep-timer.critical .speaking-prep-timer__fill {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.speaking-prep-timer__message {
+  text-align: center;
+  font-size: 1rem;
+  color: #6b7280;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* === Skip Preparation Button === */
+.speaking-prep-timer__skip-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 1.25rem;
+  padding: 0.875rem 1.5rem;
+  background: transparent;
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 12px;
+  color: #7c3aed;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.speaking-prep-timer__skip-btn:hover {
+  background: rgba(124, 58, 237, 0.05);
+  border-color: #7c3aed;
+}
+
+.speaking-prep-timer__skip-btn:active {
+  background: rgba(124, 58, 237, 0.1);
+}
+
+/* === Skip Confirmation Modal === */
+.speaking-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.speaking-modal {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.speaking-modal__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 1rem;
+  text-align: center;
+}
+
+.speaking-modal__message {
+  font-size: 1rem;
+  color: #6b7280;
+  line-height: 1.6;
+  text-align: center;
+  margin: 0 0 1.5rem;
+}
+
+.speaking-modal__message small {
+  display: block;
+  margin-top: 0.5rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+.speaking-modal__actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.speaking-modal__btn {
+  flex: 1;
+  padding: 0.875rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.speaking-modal__btn--cancel {
+  background: #f3f4f6;
+  border: none;
+  color: #6b7280;
+}
+
+.speaking-modal__btn--cancel:hover {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+.speaking-modal__btn--confirm {
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  border: none;
+  color: white;
+}
+
+.speaking-modal__btn--confirm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+/* ===================================
+   PROCESSING SCREEN STYLES
+   (Legacy - now using GradingLoader component)
+   =================================== */
+
+.speaking-processing {
+  flex: 1;
+  background: var(--speaking-bg, #f8f5ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.speaking-processing__container {
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+}
+
+.speaking-processing__icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 2rem;
+  color: #7c3aed;
+  font-size: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.speaking-processing__title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin: 0 0 2rem;
+}
+
+.speaking-processing__messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.speaking-processing__message {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  border-radius: 14px;
+  padding: 1rem 1.5rem;
+  text-align: left;
+  font-size: 0.9375rem;
+  color: #4b5563;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.06);
+}
+
+.speaking-processing__progress {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.08);
+}
+
+.speaking-processing__progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(124, 58, 237, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.speaking-processing__progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed, #6366f1);
+  border-radius: 8px;
+}
+
+.speaking-processing__progress-text {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+  .speaking-part2-prep__title {
+    font-size: 1.875rem;
+  }
+
+  .speaking-cuecard {
+    padding: 2rem;
+  }
+
+  .speaking-notes {
+    padding: 1.5rem;
+  }
+
+  .speaking-prep-timer {
+    padding: 1.5rem;
+  }
+
+  .speaking-processing__icon {
+    width: 60px;
+    height: 60px;
+    font-size: 3rem;
+  }
+
+  .speaking-processing__title {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .speaking-part2-prep,
+  .speaking-processing {
+    padding: 1rem;
+  }
+
+  .speaking-cuecard {
+    padding: 1.5rem;
+  }
+
+  .speaking-prep-timer__time {
+    font-size: 1.75rem;
+  }
+}
