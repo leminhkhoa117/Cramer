@@ -19,6 +19,7 @@ import {
     FiChevronRight
 } from 'react-icons/fi';
 import { AccountStatusBadge, SubscriptionBadge } from '../../components/StatusBadge';
+import { useToast } from '../../components/Toast';
 import useAdminUsersStore from '../../stores/useAdminUsersStore';
 import { exportUsersToExcel } from '../../utils/exportExcel';
 import '../../css/pages/users/UserListPage.css';
@@ -37,6 +38,7 @@ const accountStatusOptions = [
 
 export default function UserListPage() {
     const navigate = useNavigate();
+    const { showToast } = useToast();
 
     // Zustand store
     const {
@@ -242,7 +244,7 @@ export default function UserListPage() {
             exportUsersToExcel(allUsers);
         } catch (error) {
             console.error('Export failed:', error);
-            alert('Xuất file thất bại. Vui lòng thử lại.');
+            showToast('Xuất file thất bại. Vui lòng thử lại.', 'error');
         }
     };
 
@@ -480,14 +482,20 @@ export default function UserListPage() {
                                                     <div className="action-menu">
                                                         <button
                                                             className="action-menu__item"
-                                                            onClick={() => navigate(`/admin/users/${user.id}`)}
+                                                            onClick={() => {
+                                                                setActionMenuOpen(null);
+                                                                navigate(`/admin/users/${user.id}`);
+                                                            }}
                                                         >
                                                             <FiEye size={14} />
                                                             <span>Xem chi tiết</span>
                                                         </button>
                                                         <button
                                                             className="action-menu__item"
-                                                            onClick={() => navigate(`/admin/users/${user.id}`)}
+                                                            onClick={() => {
+                                                                setActionMenuOpen(null);
+                                                                navigate(`/admin/users/${user.id}?action=edit-credits`);
+                                                            }}
                                                         >
                                                             <FiDollarSign size={14} />
                                                             <span>Chỉnh sửa Lúa</span>
@@ -495,7 +503,10 @@ export default function UserListPage() {
                                                         <div className="action-menu__divider" />
                                                         <button
                                                             className="action-menu__item action-menu__item--danger"
-                                                            onClick={() => navigate(`/admin/users/${user.id}`)}
+                                                            onClick={() => {
+                                                                setActionMenuOpen(null);
+                                                                navigate(`/admin/users/${user.id}?action=ban`);
+                                                            }}
                                                         >
                                                             <FiSlash size={14} />
                                                             <span>{user.accountStatus === 'BANNED' ? 'Unban user' : 'Ban user'}</span>

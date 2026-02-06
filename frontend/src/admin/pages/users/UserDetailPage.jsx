@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import ActivityTimeline from '../../components/ActivityTimeline';
 import adminApi from '../../api/adminApi';
 import {
@@ -21,6 +21,7 @@ import {
     FiAlertTriangle
 } from 'react-icons/fi';
 import useAdminUsersStore from '../../stores/useAdminUsersStore';
+import { useToast } from '../../components/Toast';
 import { AccountStatusBadge, SubscriptionBadge } from '../../components/StatusBadge';
 import BaseModal from '../../../components/common/BaseModal';
 import '../../css/pages/users/UserDetailPage.css';
@@ -28,6 +29,8 @@ import '../../css/pages/users/UserDetailPage.css';
 export default function UserDetailPage() {
     const { userId } = useParams();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState('profile');
 
     // Modal states
@@ -110,6 +113,29 @@ export default function UserDetailPage() {
         }
     }, [userId, user]);
 
+    // Handle action query parameter from UserListPage navigation
+    useEffect(() => {
+        if (!user) return;
+
+        const action = searchParams.get('action');
+        if (!action) return;
+
+        // Clear the action param from URL to prevent re-triggering on refresh
+        setSearchParams({}, { replace: true });
+
+        switch (action) {
+            case 'edit-credits':
+                setActiveTab('credits');
+                setCreditsModalOpen(true);
+                break;
+            case 'ban':
+                setBanModalOpen(true);
+                break;
+            default:
+                break;
+        }
+    }, [user, searchParams, setSearchParams]);
+
     // Loading state
     if (isLoadingUser) {
         return (
@@ -162,7 +188,7 @@ export default function UserDetailPage() {
             await fetchUserById(userId);
         } catch (error) {
             console.error('Error updating status:', error);
-            alert('Có lỗi xảy ra. Vui lòng thử lại.');
+            showToast('Có lỗi xảy ra. Vui lòng thử lại.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -172,7 +198,7 @@ export default function UserDetailPage() {
     const handleCreditsConfirm = async () => {
         const amount = parseInt(creditAmount);
         if (isNaN(amount) || amount <= 0) {
-            alert('Vui lòng nhập số Lúa hợp lệ');
+            showToast('Vui lòng nhập số Lúa hợp lệ', 'warning');
             return;
         }
 
@@ -187,7 +213,7 @@ export default function UserDetailPage() {
             await fetchUserById(userId);
         } catch (error) {
             console.error('Error updating credits:', error);
-            alert('Có lỗi xảy ra. Vui lòng thử lại.');
+            showToast('Có lỗi xảy ra. Vui lòng thử lại.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -218,7 +244,7 @@ export default function UserDetailPage() {
             setSuccessModalOpen(true);
         } catch (error) {
             console.error('Error updating subscription:', error);
-            alert('Có lỗi xảy ra khi cập nhật gói. Vui lòng thử lại.');
+            showToast('Có lỗi xảy ra khi cập nhật gói. Vui lòng thử lại.', 'error');
         } finally {
             setIsSubmitting(false);
         }

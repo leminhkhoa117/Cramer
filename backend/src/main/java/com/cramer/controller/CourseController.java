@@ -29,10 +29,12 @@ public class CourseController {
 
     @GetMapping
     public ResponseEntity<com.cramer.dto.PageDTO<String>> getAllCourses(
-            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
-            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "6") int size,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") @jakarta.validation.constraints.Min(0) int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "6") @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(100) int size,
             @org.springframework.web.bind.annotation.RequestParam(required = false) String search) {
-        return ResponseEntity.ok(courseService.getCourses(page, size, search));
+        // Cap size to prevent abuse
+        int cappedSize = Math.min(size, 100);
+        return ResponseEntity.ok(courseService.getCourses(page, cappedSize, search));
     }
 
     /**

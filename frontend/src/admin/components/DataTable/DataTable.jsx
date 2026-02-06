@@ -4,8 +4,9 @@ import './DataTable.css';
 
 /**
  * DataTable - Reusable data table component với sorting, filtering, pagination
- * 
- * @param {Array} columns - Mảng cấu hình columns [{key, label, sortable, render}]
+ *
+ * @param {Array} columns - Mảng cấu hình columns [{key, label, sortable, render, priority}]
+ *                          priority: 'high' (always visible), 'medium' (hidden on small mobile), 'low' (hidden on tablet/mobile)
  * @param {Array} data - Mảng dữ liệu
  * @param {string} searchPlaceholder - Placeholder cho search input
  * @param {Array} searchKeys - Các keys để search (vd: ['username', 'email'])
@@ -180,6 +181,7 @@ export default function DataTable({
                                     className={`data-table__th ${column.sortable ? 'data-table__th--sortable' : ''}`}
                                     onClick={() => column.sortable && handleSort(column.key)}
                                     style={{ width: column.width }}
+                                    data-priority={column.priority || 'high'}
                                 >
                                     <div className="data-table__th-content">
                                         <span>{column.label}</span>
@@ -223,7 +225,11 @@ export default function DataTable({
                                     onClick={() => onRowClick && onRowClick(row)}
                                 >
                                     {columns.map((column) => (
-                                        <td key={column.key} className="data-table__td">
+                                        <td
+                                            key={column.key}
+                                            className="data-table__td"
+                                            data-priority={column.priority || 'high'}
+                                        >
                                             {column.render ? column.render(row[column.key], row) : row[column.key]}
                                         </td>
                                     ))}

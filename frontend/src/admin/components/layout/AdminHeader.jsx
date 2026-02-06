@@ -1,13 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FiChevronRight, FiExternalLink } from 'react-icons/fi';
+import { FiChevronRight, FiExternalLink, FiMenu } from 'react-icons/fi';
 import { useProfileStore } from '../../../stores';
 
 /**
  * AdminHeader - Header bar cho admin panel
  * Hiển thị breadcrumb và user info
  */
-export default function AdminHeader({ breadcrumbs = [], collapsed }) {
+export default function AdminHeader({ breadcrumbs = [], collapsed, onMenuClick }) {
     const profile = useProfileStore(state => state.profile);
 
     // Get display name
@@ -25,8 +25,17 @@ export default function AdminHeader({ breadcrumbs = [], collapsed }) {
 
     return (
         <header className="admin-header">
-            {/* Left section: Logo + Breadcrumb */}
+            {/* Left section: Menu button + Logo + Breadcrumb */}
             <div className="admin-header__left">
+                {/* Mobile menu button */}
+                <button
+                    className="admin-header__menu-btn"
+                    onClick={onMenuClick}
+                    aria-label="Toggle menu"
+                >
+                    <FiMenu size={20} />
+                </button>
+
                 {/* Logo */}
                 <div className="admin-header__logo">
                     <img

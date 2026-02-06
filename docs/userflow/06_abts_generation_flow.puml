@@ -1,0 +1,163 @@
+@startuml ABTS_Generation_Flow
+!theme blueprint
+title Cramer CMS - ABTS AI Content Generation Flow
+
+skinparam {
+    BackgroundColor #1a1a2e
+    TitleFontColor #ffffff
+    TitleFontSize 20
+    DefaultFontColor #e8e8e8
+    ArrowColor #64b5f6
+    ActorBackgroundColor #4caf50
+    RectangleBackgroundColor #37474f
+    RectangleBorderColor #78909c
+    NoteBackgroundColor #424242
+    NoteFontColor #ffffff
+}
+
+actor "Admin User" as Admin #coral
+
+rectangle "Frontend - AI Studio" {
+    rectangle "Step 1: Config" as Step1 {
+        (Skill Selection)
+        (Model Selection)
+        (Temperature)
+        (Reasoning Toggle)
+    }
+    
+    rectangle "Step 2: Parts" as Step2 {
+        (Part Selection)
+        (Question Types per Part)
+        (Topic per Part)
+        (Randomize Option)
+    }
+    
+    rectangle "Step 3: Generate" as Step3 {
+        (SSE Streaming Display)
+        (Progress Bar)
+        (Reasoning Tokens View)
+        (Cancel Button)
+    }
+    
+    rectangle "Step 4: Preview" as Step4 {
+        (Content Preview)
+        (Validation Issues List)
+        (Issue Selection)
+    }
+    
+    rectangle "Step 5: Refine" as Step5 {
+        (Agent 2 Refinement)
+        (Patch Stream)
+        (Re-validation)
+    }
+    
+    rectangle "Step 6: Save" as Step6 {
+        (Set Selection)
+        (Test Selection)
+        (Save to Database)
+    }
+    
+    [useABTSStore] as ABTSStore
+}
+
+rectangle "Backend - ABTS Services" {
+    [ABTSController] as ABTSCtrl
+    [ABTSService] as ABTSSvc
+    [PromptBuilderService] as PromptSvc
+    [OpenRouterClient] as ORClient
+    [JsonValidatorService] as ValidatorSvc
+    [RefinementService] as RefineSvc
+    [JsonPatcher] as Patcher
+}
+
+cloud "AI Provider" {
+    [OpenRouter API\n(400+ models)] as OpenRouter
+}
+
+database "Database" {
+    [sections]
+    [questions]
+}
+
+' Wizard Flow
+Admin --> Step1 : Open AI Studio
+Step1 --> Step2 : Next
+Step2 --> Step3 : Generate
+Step3 --> Step4 : View Results
+Step4 --> Step5 : Fix Issues
+Step5 --> Step4 : Re-validate
+Step4 --> Step6 : Save
+Step6 --> sections : Persist
+
+' Generation Flow (Two-Pass)
+Step3 --> ABTSCtrl : POST /generate/{skill}/stream
+ABTSCtrl --> ABTSSvc : generateWithStream(request, emitter, cancelled)
+ABTSSvc --> PromptSvc : Build Phase 1 prompt (passage/transcript)
+PromptSvc --> ABTSSvc : Return prompt
+ABTSSvc --> ORClient : streamingCall(prompt, schema)
+ORClient --> OpenRouter : SSE Request
+OpenRouter --> ORClient : Stream tokens
+ORClient --> ABTSSvc : onContentChunk, onReasoningChunk
+ABTSSvc --> Step3 : SSE events (AI_CHUNK, AI_THINKING)
+
+ABTSSvc --> PromptSvc : Build Phase 2 prompt (questions)
+PromptSvc --> ABTSSvc : Return prompt with Phase 1 content
+ABTSSvc --> ORClient : streamingCall(prompt, schema)
+ORClient --> OpenRouter : SSE Request
+
+' Validation
+ABTSSvc --> ValidatorSvc : validate(content)
+ValidatorSvc --> ABTSStore : Return issues list
+
+' Refinement Flow
+Step5 --> ABTSCtrl : POST /refine/stream
+ABTSCtrl --> RefineSvc : refineContent(content, issues)
+RefineSvc --> ORClient : Generate patches via Agent 2
+ORClient --> OpenRouter : AI Request
+OpenRouter --> RefineSvc : Patch instructions
+RefineSvc --> Patcher : Apply patches (REPLACE/INSERT/APPEND)
+Patcher --> RefineSvc : Updated content
+RefineSvc --> ValidatorSvc : Re-validate
+ValidatorSvc --> ABTSStore : Updated issues
+
+' Save Flow
+Step6 --> ABTSCtrl : POST /save
+ABTSCtrl --> ABTSSvc : saveContent(request)
+ABTSSvc --> sections : INSERT section
+ABTSSvc --> questions : INSERT questions
+
+note right of ABTSSvc
+  **Two-Pass Strategy:**
+  
+  **Phase 1:** Generate passage/transcript
+  - Topic-focused content
+  - Paragraph labeling (A, B, C...)
+  - Speaker labels (Listening)
+  
+  **Phase 2:** Generate questions
+  - Based on Phase 1 content
+  - Question numbering (1-40)
+  - Answer extraction
+end note
+
+note bottom of ValidatorSvc
+  **Validation Layers:**
+  1. Schema (JSON structure)
+  2. Content (word limits, counts)
+  3. Business Rules (Q numbering)
+  
+  **Issue Categories:**
+  - question_numbering
+  - answer_format
+  - missing_field
+  - content_length
+end note
+
+note left of Patcher
+  **Patch Operations:**
+  - REPLACE: Replace value at path
+  - INSERT: Insert into array
+  - APPEND: Append to string/array
+end note
+
+@enduml

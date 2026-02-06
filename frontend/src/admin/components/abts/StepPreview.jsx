@@ -169,6 +169,26 @@ export default function StepPreview({ onBack }) {
     }
   }, [allTranscripts]);
 
+  // Check if skill is Listening (MUST be before early returns)
+  const isListening = formData.skill === 'LISTENING';
+
+  // Check if current part needs image - PLAN_MAP_DIAGRAM_LABELING (MUST be before early returns)
+  const currentPartNeedsImage = useMemo(() => {
+    const currentSection = previewSections[activePartIndex];
+    if (!currentSection?.sectionLayout?.blocks) return false;
+    return currentSection.sectionLayout.blocks.some(
+      block => block.block_type === 'PLAN_MAP_DIAGRAM_LABELING'
+    );
+  }, [previewSections, activePartIndex]);
+
+  // Get current part number for image URL state (MUST be before early returns)
+  const currentPartNumber = previewSections[activePartIndex]?.partNumber || 1;
+
+  // Handle image URL change (MUST be before early returns)
+  const handleImageUrlChange = useCallback((url) => {
+    setImageUrls(prev => ({ ...prev, [currentPartNumber]: url }));
+  }, [currentPartNumber]);
+
   // Format correct answer for display
   function formatCorrectAnswer(answer) {
     if (!answer) return '';
@@ -389,27 +409,6 @@ export default function StepPreview({ onBack }) {
       </div>
     );
   };
-
-  // Check if skill is Listening
-  const isListening = formData.skill === 'LISTENING';
-
-  // Listening Tools Panel (Audio URLs + Transcript Copy)
-  // Check if current part needs image (PLAN_MAP_DIAGRAM_LABELING)
-  const currentPartNeedsImage = useMemo(() => {
-    const currentSection = previewSections[activePartIndex];
-    if (!currentSection?.sectionLayout?.blocks) return false;
-    return currentSection.sectionLayout.blocks.some(
-      block => block.block_type === 'PLAN_MAP_DIAGRAM_LABELING'
-    );
-  }, [previewSections, activePartIndex]);
-
-  // Get current part number for image URL state
-  const currentPartNumber = previewSections[activePartIndex]?.partNumber || 1;
-
-  // Handle image URL change
-  const handleImageUrlChange = useCallback((url) => {
-    setImageUrls(prev => ({ ...prev, [currentPartNumber]: url }));
-  }, [currentPartNumber]);
 
   // Listening Tools Panel (Audio URLs + Transcript Copy + Image URL)
   const ListeningToolsPanel = () => {

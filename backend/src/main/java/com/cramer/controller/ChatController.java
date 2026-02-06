@@ -35,7 +35,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/chat")
 @Tag(name = "Chat", description = "AI Chatbot APIs for IELTS learning assistant")
-public class ChatController {
+public class ChatController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatController.class);
 
@@ -43,13 +43,6 @@ public class ChatController {
 
     public ChatController(ChatService chatService) {
         this.chatService = chatService;
-    }
-
-    /**
-     * Get authenticated user's ID from security context.
-     */
-    private UUID getCurrentUserId(Authentication authentication) {
-        return UUID.fromString(authentication.getName());
     }
 
     @Operation(

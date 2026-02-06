@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/payments")
 @Tag(name = "Payment", description = "APIs for payment processing via PayOS")
-public class PaymentController {
+public class PaymentController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
 
@@ -53,10 +54,11 @@ public class PaymentController {
     @PostMapping("/subscription")
     public ResponseEntity<PaymentResponseDTO> createSubscriptionPayment(
             Authentication authentication,
-            @RequestBody PaymentCreateDTO request) {
-        
-        UUID userId = UUID.fromString(authentication.getName());
+            @Valid @RequestBody PaymentCreateDTO request) {
+
+        UUID userId = getCurrentUserId(authentication);
         logger.info("💳 POST /api/payments/subscription - User: {}", userId);
+        System.err.println("DEBUG PAYMENT SUB: userId=" + userId + " request=" + request);
         
         if (request.getType() != PaymentOrder.Type.SUBSCRIPTION) {
             return ResponseEntity.badRequest().build();
@@ -86,9 +88,9 @@ public class PaymentController {
     @PostMapping("/lua")
     public ResponseEntity<PaymentResponseDTO> createLuaPackPayment(
             Authentication authentication,
-            @RequestBody PaymentCreateDTO request) {
+            @Valid @RequestBody PaymentCreateDTO request) {
         
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         logger.info("💳 POST /api/payments/lua - User: {}, Amount: {}", userId, request.getLuaAmount());
         
         if (request.getType() != PaymentOrder.Type.LUA_PACK) {
@@ -159,13 +161,21 @@ public class PaymentController {
             Authentication authentication,
             @PathVariable Long orderCode) {
         
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         logger.info("🔍 GET /api/payments/status/{} - User: {}", orderCode, userId);
         
         PaymentOrderDTO order = paymentService.getOrderByCode(orderCode);
-        
+
+        // Check if order exists before accessing properties (NPE prevention)
+        if (order == null) {
+            logger.warn("Payment order not found: {}", orderCode);
+            return ResponseEntity.notFound().build();
+        }
+
         // Security check: only allow users to view their own orders
         if (!order.getUserId().equals(userId)) {
+            logger.warn("🚨 IDOR attempt: User {} tried to access order {} owned by {}",
+                       userId, orderCode, order.getUserId());
             return ResponseEntity.status(403).build();
         }
         
@@ -183,10 +193,10 @@ public class PaymentController {
     @GetMapping("/history")
     public ResponseEntity<Page<PaymentOrderDTO>> getPaymentHistory(
             Authentication authentication,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "0") @jakarta.validation.constraints.Min(0) int page,
+            @RequestParam(defaultValue = "20") @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(50) int size) {
         
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         logger.info("📜 GET /api/payments/history - User: {}, Page: {}", userId, page);
         
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));

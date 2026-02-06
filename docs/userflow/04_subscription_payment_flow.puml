@@ -1,0 +1,130 @@
+@startuml Subscription_Payment_Flow
+!theme blueprint
+title Cramer CMS - Subscription & Payment Flow
+
+skinparam {
+    BackgroundColor #1a1a2e
+    TitleFontColor #ffffff
+    TitleFontSize 20
+    DefaultFontColor #e8e8e8
+    ArrowColor #64b5f6
+    ActorBackgroundColor #4caf50
+    RectangleBackgroundColor #37474f
+    RectangleBorderColor #78909c
+    NoteBackgroundColor #424242
+    NoteFontColor #ffffff
+}
+
+actor "User" as User #lightgreen
+
+rectangle "Frontend Pages" {
+    rectangle "Pricing\n[/pricing]" as Pricing {
+        (Tier Comparison)
+        (Lua Pack Options)
+    }
+    
+    rectangle "Subscription\n[/subscription]" as SubPage {
+        frame "Tab 1: Limits" {
+            (Usage Progress Bars)
+            (Quota Display)
+            (Lua Balance)
+        }
+        frame "Tab 2: Upgrade" {
+            (TierCard components)
+            (LuaPackCard components)
+        }
+        frame "Tab 3: History" {
+            (Payment Records)
+            (Credit Transactions)
+        }
+    }
+    
+    rectangle "Payment Success\n[/payment/success]" as Success {
+        (Order Details)
+        (Redirect Timer)
+    }
+    
+    rectangle "Payment Cancel\n[/payment/cancel]" as Cancel {
+        (Retry Button)
+        (Return Link)
+    }
+}
+
+rectangle "Backend Services" {
+    [PaymentController] as PayCtrl
+    [PaymentService] as PaySvc
+    [SubscriptionService] as SubSvc
+    [CreditService] as CreditSvc
+}
+
+cloud "Payment Gateway" {
+    [PayOS\n(Vietnam)] as PayOS
+}
+
+database "Database" {
+    [payment_orders]
+    [user_subscriptions]
+    [user_credits]
+    [credit_transactions]
+}
+
+' Subscription Purchase Flow
+User --> Pricing : View Plans
+Pricing --> PayCtrl : createSubscriptionPayment(tierCode)
+PayCtrl --> PaySvc : Create payment order
+PaySvc --> PayOS : Create checkout link
+PayOS --> PaySvc : Return paymentUrl
+PaySvc --> payment_orders : Save order (PENDING)
+PaySvc --> User : Redirect to PayOS
+
+' Lua Purchase Flow
+User --> SubPage : Buy Lua Pack
+SubPage --> PayCtrl : createLuaPackPayment(amount, price)
+PayCtrl --> PaySvc : Create Lua payment
+PaySvc --> PayOS : Create checkout link
+PayOS --> User : Redirect to PayOS
+
+' Payment Success (Webhook)
+PayOS --> PayCtrl : POST /webhook (signed)
+PayCtrl --> PaySvc : handleWebhook()
+PaySvc --> PaySvc : verifyWebhookSignature()
+PaySvc --> payment_orders : Update status (PAID)
+PaySvc --> SubSvc : Activate subscription
+PaySvc --> CreditSvc : Credit Lua to user
+CreditSvc --> user_credits : Update balance
+CreditSvc --> credit_transactions : Log transaction
+
+' Frontend Success
+PayOS --> Success : Redirect on success
+Success --> SubPage : Auto redirect (3s)
+
+' Frontend Cancel
+PayOS --> Cancel : Redirect on cancel
+Cancel --> Pricing : Try again
+
+note right of PaySvc
+  **PaymentService Methods:**
+  - createSubscriptionPayment(userId, tierId)
+  - createSubscriptionPaymentByCode(userId, tierCode)
+  - createLuaPackPayment(userId, amount, price)
+  - handleWebhook(webhook)
+  - generateSignature(data) [HMAC-SHA256]
+  - verifyWebhookSignature(webhook)
+  - getOrderByCode(orderCode)
+  - getPaymentHistory(userId, pageable)
+  - isPayOSConfigured()
+end note
+
+note bottom of PayOS
+  **Subscription Tiers:**
+  - cramerie: Free (0 VND)
+  - cramerich: 79,000 VND/mo
+  - cramerous: 149,000 VND/mo
+  
+  **Lua Packs:**
+  - lua_100: 10,000 VND
+  - lua_500: 45,000 VND (+10% bonus)
+  - lua_2000: 150,000 VND (+25% bonus)
+end note
+
+@enduml

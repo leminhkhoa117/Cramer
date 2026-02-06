@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * DTO for creating a payment request.
@@ -19,18 +21,22 @@ import lombok.NoArgsConstructor;
 public class PaymentCreateDTO {
 
     @Schema(description = "Payment type", example = "SUBSCRIPTION", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull
     private PaymentOrder.Type type;
 
     @Schema(description = "Subscription tier ID (required for SUBSCRIPTION type)", example = "2")
+    @Min(1)
     private Integer tierId;
 
     @Schema(description = "Subscription tier code (alternative to tierId)", example = "cramerich")
     private String tierCode;
 
     @Schema(description = "Lúa amount to purchase (required for LUA_PACK type)", example = "100")
+    @Min(1)
     private Integer luaAmount;
 
     @Schema(description = "Price in VND (required for LUA_PACK type)", example = "20000")
+    @Min(1)
     private Integer priceVnd;
 
     /**

@@ -20,7 +20,7 @@ import {
  * AdminSidebar - Sidebar navigation cho admin panel
  * Hiển thị menu với icons và hỗ trợ collapsed state
  */
-export default function AdminSidebar({ collapsed, onToggle }) {
+export default function AdminSidebar({ collapsed, onToggle, mobileOpen }) {
     const menuSections = [
         {
             title: 'Tổng quan',
@@ -88,7 +88,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
     ];
 
     return (
-        <aside className={`admin-sidebar ${collapsed ? 'admin-sidebar--collapsed' : ''}`}>
+        <aside className={`admin-sidebar ${collapsed ? 'admin-sidebar--collapsed' : ''} ${mobileOpen ? 'admin-sidebar--open' : ''}`}>
             {/* Logo */}
             <div className="admin-sidebar__logo">
                 <img

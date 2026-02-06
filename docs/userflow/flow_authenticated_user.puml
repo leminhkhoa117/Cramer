@@ -1,0 +1,311 @@
+@startuml Authenticated_User_Flow
+!theme blueprint
+title Cramer CMS - Authenticated User Decision Flow
+
+skinparam {
+    BackgroundColor #1a1a2e
+    TitleFontColor #ffffff
+    TitleFontSize 18
+    DefaultFontColor #e8e8e8
+    ArrowColor #64b5f6
+    DiamondBackgroundColor #f39c12
+    DiamondBorderColor #e67e22
+    ActivityBackgroundColor #37474f
+    ActivityBorderColor #78909c
+    NoteBackgroundColor #424242
+    NoteFontColor #ffffff
+}
+
+start
+
+:User signed in;
+:Load Dashboard;
+:Show test history, progress, stats;
+
+:User selects action;
+
+switch (Action?)
+
+case (Practice)
+    :Navigate to Courses;
+    :Select Test Set;
+    :Select Test Number;
+    
+    if (Skill?) then (Reading/Listening)
+        :Check quota;
+        
+        if (Within quota?) then (YES)
+            :Allowed (free);
+        else (NO)
+            if (Premium user?) then (YES)
+                :Allowed (unlimited);
+            else (NO)
+                if (Has 10 Lua?) then (YES)
+                    :Deduct 10 Lua;
+                    :Allowed;
+                else (NO)
+                    :Show Quota Exceeded Modal;
+                    if (Buy Lua?) then (YES)
+                        :Redirect to Payment;
+                        stop
+                    else (NO)
+                        :Cancel;
+                        stop
+                    endif
+                endif
+            endif
+        endif
+        
+        if (Existing IN_PROGRESS?) then (YES)
+            :Show Resume Modal;
+            if (Resume?) then (YES)
+                :Load saved progress;
+            else (NO)
+                :Cancel old attempt;
+                :Create new attempt;
+            endif
+        else (NO)
+            :Create new attempt;
+        endif
+        
+        :Load test content;
+        :Start 60-min timer;
+        
+        repeat
+            :Display passage/audio + questions;
+            :User answers questions;
+            
+            if (Auto-save interval?) then (YES)
+                :Save progress to server;
+            else (NO)
+            endif
+            
+            if (Exit early?) then (YES)
+                :Save progress;
+                :Return to courses;
+                stop
+            else (NO)
+            endif
+            
+            if (Time up?) then (YES)
+                :Force submit;
+            else (NO)
+            endif
+            
+        repeat while (All answered AND Submit?) is (NO)
+        
+        :Submit answers;
+        :Grade answers against key;
+        :Calculate band score;
+        :Save results to database;
+        :Redirect to Review Page;
+        :Show correct/wrong answers;
+        
+        if (Retake?) then (YES)
+            :Start new attempt;
+        else (NO)
+            :Return to Dashboard;
+        endif
+        
+    else (Writing)
+        :Check AI grading quota;
+        
+        if (Monthly gradings remaining?) then (YES)
+            :AI grading included;
+        else (NO)
+            if (Has 20 Lua?) then (YES)
+                :Will charge 20 Lua on submit;
+            else (NO)
+                :Show warning: No AI grading;
+                if (Continue anyway?) then (YES)
+                    :Proceed without AI feedback;
+                else (NO)
+                    if (Buy Lua?) then (YES)
+                        :Redirect to Payment;
+                        stop
+                    else (NO)
+                        :Cancel;
+                        stop
+                    endif
+                endif
+            endif
+        endif
+        
+        :Create writing attempt;
+        :Load Task 1 + Task 2 prompts;
+        
+        repeat
+            :User writes essay;
+            :Show live word count;
+            
+            if (Switch task?) then (YES)
+                :Auto-save current draft;
+                :Load other task;
+            else (NO)
+            endif
+            
+        repeat while (Submit?) is (NO)
+        
+        :Submit both essays;
+        
+        if (AI grading enabled?) then (YES)
+            :Show loading spinner;
+            :Send essays to DeepSeek API;
+            
+            repeat
+                :Poll grading status;
+            repeat while (Grading complete?) is (NO)
+            
+            :Display AI feedback;
+            :Show band scores (4 criteria);
+            :Show error highlights;
+            :Show sample essay;
+        else (NO)
+            :Show submission confirmed;
+            :No AI feedback available;
+        endif
+        
+        :Show Writing Review Page;
+        
+        if (Retake?) then (YES)
+            :Start new writing attempt;
+        else (NO)
+            :Return to Dashboard;
+        endif
+    endif
+
+case (Review)
+    :View past attempts list;
+    
+    if (Select attempt?) then (YES)
+        if (Writing attempt?) then (YES)
+            :Show Writing Review;
+            :Display AI feedback;
+        else (NO)
+            :Show Test Review;
+            :Display correct/wrong answers;
+        endif
+        
+        if (Retake?) then (YES)
+            :Start new attempt (forceNew=true);
+        else (NO)
+            :Return to Dashboard;
+        endif
+    else (NO)
+        :Stay on Dashboard;
+    endif
+
+case (Vocabulary)
+    :Navigate to Vocabulary page;
+    :View saved words list;
+    
+    if (Add new word?) then (YES)
+        if (Use AI translation?) then (YES)
+            if (Has Lua?) then (YES)
+                :Call translation API;
+                :Deduct 1 Lua;
+                :Save word with definition;
+            else (NO)
+                :Show Insufficient Lua;
+            endif
+        else (NO)
+            :Enter definition manually;
+            :Save word;
+        endif
+    else (NO)
+        if (Mark as mastered?) then (YES)
+            :Update word status;
+        else (NO)
+            if (Delete word?) then (YES)
+                :Remove from vocabulary;
+            else (NO)
+            endif
+        endif
+    endif
+    
+    :Return to Vocabulary or Dashboard;
+
+case (Profile)
+    :Navigate to Profile page;
+    
+    switch (Edit section?)
+    case (Personal Info)
+        :Update name;
+        :Upload avatar/cover;
+        :Save changes;
+    case (AI Settings)
+        :Enter LLM API key;
+        :Select preferred model;
+        :Save settings;
+    case (Security)
+        :Change password;
+        :View active sessions;
+    case (None)
+        :View profile only;
+    endswitch
+    
+    :Return to Dashboard;
+
+case (Subscription)
+    :Navigate to Subscription page;
+    :View current tier;
+    :View usage stats;
+    :View Lua balance;
+    
+    if (Upgrade tier?) then (YES)
+        :Select Cramerich or Cramerous;
+        :Create PayOS order;
+        :Redirect to PayOS checkout;
+        
+        if (Payment success?) then (YES)
+            :Activate new subscription;
+            :Credit bonus Lua;
+            :Show Success Page;
+        else (NO)
+            :Show Cancel Page;
+            if (Retry?) then (YES)
+                :Return to checkout;
+            else (NO)
+                :Return to Subscription;
+            endif
+        endif
+    else (NO)
+        if (Buy Lua pack?) then (YES)
+            :Select pack (100/500/2000);
+            :Create PayOS order;
+            :Redirect to PayOS checkout;
+            
+            if (Payment success?) then (YES)
+                :Credit Lua to balance;
+                :Show Success Page;
+            else (NO)
+                :Show Cancel Page;
+            endif
+        else (NO)
+            :Return to Dashboard;
+        endif
+    endif
+
+case (Sign Out)
+    :Clear session;
+    :Clear local storage;
+    :Redirect to Home page;
+    stop
+
+endswitch
+
+:Return to Dashboard;
+stop
+
+legend right
+  **Key Decision Points:**
+  |= Check |= YES |= NO |
+  | Within quota? | Free attempt | Check tier |
+  | Premium user? | Unlimited | Check Lua |
+  | Has Lua? | Deduct + allow | Block |
+  | AI gradings left? | Included | Pay 20 Lua |
+  | Resume attempt? | Load saved | New attempt |
+  | Payment success? | Activate | Retry/cancel |
+endlegend
+
+@enduml

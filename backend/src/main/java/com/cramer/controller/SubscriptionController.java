@@ -27,7 +27,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/subscriptions")
 @Tag(name = "Subscription Management", description = "APIs for managing user subscriptions and AI grading limits")
-public class SubscriptionController {
+public class SubscriptionController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(SubscriptionController.class);
 
@@ -55,7 +55,8 @@ public class SubscriptionController {
             @ApiResponse(responseCode = "404", description = "Tier not found")
     })
     @GetMapping("/tiers/{code}")
-    public ResponseEntity<SubscriptionTierDTO> getTierByCode(@PathVariable String code) {
+    public ResponseEntity<SubscriptionTierDTO> getTierByCode(
+            @PathVariable @jakarta.validation.constraints.Pattern(regexp = "^[a-z0-9-]+$") String code) {
         logger.info("🔍 GET /api/subscriptions/tiers/{} - Fetching tier", code);
         SubscriptionTierDTO tier = subscriptionService.getTierByCode(code);
         return ResponseEntity.ok(tier);
@@ -68,7 +69,7 @@ public class SubscriptionController {
     })
     @GetMapping("/current")
     public ResponseEntity<UserSubscriptionDTO> getCurrentSubscription(Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         logger.info("👤 GET /api/subscriptions/current - User: {}", userId);
 
         UserSubscriptionDTO subscription = subscriptionService.getUserSubscription(userId);
@@ -82,7 +83,7 @@ public class SubscriptionController {
     })
     @GetMapping("/grading-status")
     public ResponseEntity<GradingStatusDTO> getGradingStatus(Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         logger.info("🔍 GET /api/subscriptions/grading-status - User: {}", userId);
 
         GradingStatusDTO status = subscriptionService.checkAIGradingAllowed(userId);
@@ -96,7 +97,7 @@ public class SubscriptionController {
     })
     @GetMapping("/gradings-remaining")
     public ResponseEntity<Integer> getGradingsRemaining(Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         logger.info("🔢 GET /api/subscriptions/gradings-remaining - User: {}", userId);
 
         int remaining = subscriptionService.getMonthlyGradingsRemaining(userId);
@@ -110,7 +111,7 @@ public class SubscriptionController {
     })
     @GetMapping("/chat-limit")
     public ResponseEntity<Integer> getChatLimit(Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         logger.info("💬 GET /api/subscriptions/chat-limit - User: {}", userId);
 
         int limit = subscriptionService.getMonthlyChatLimit(userId);
@@ -124,7 +125,7 @@ public class SubscriptionController {
     })
     @GetMapping("/my-status")
     public ResponseEntity<SubscriptionStatusDTO> getMyStatus(Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         logger.info("📊 GET /api/subscriptions/my-status - User: {}", userId);
 
         SubscriptionStatusDTO status = subscriptionService.getSubscriptionStatus(userId);
@@ -141,7 +142,7 @@ public class SubscriptionController {
     public ResponseEntity<?> toggleAiGrading(
             Authentication authentication,
             @RequestBody java.util.Map<String, Boolean> request) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         Boolean enabled = request.get("enabled");
 
         logger.info("🔄 PUT /api/subscriptions/ai-grading - User: {}, Enabled: {}", userId, enabled);

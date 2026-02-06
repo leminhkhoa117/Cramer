@@ -1,0 +1,139 @@
+@startuml Writing_Grading_Flow
+!theme blueprint
+title Cramer CMS - Writing Test & AI Grading Flow
+
+skinparam {
+    BackgroundColor #1a1a2e
+    TitleFontColor #ffffff
+    TitleFontSize 20
+    DefaultFontColor #e8e8e8
+    ArrowColor #64b5f6
+    ActorBackgroundColor #4caf50
+    RectangleBackgroundColor #37474f
+    RectangleBorderColor #78909c
+    NoteBackgroundColor #424242
+    NoteFontColor #ffffff
+}
+
+actor "Authenticated User" as User #lightgreen
+
+rectangle "Frontend Pages" {
+    rectangle "Writing Test\n[/test/writing/:source/:testNum]" as WritingPage {
+        frame "Layout" {
+            (Task Prompt Panel)
+            (Essay Editor Panel)
+            (Resizable Divider)
+        }
+        frame "Task Switcher" {
+            (Task 1: 150+ words)
+            (Task 2: 250+ words)
+        }
+    }
+    
+    rectangle "Writing Review\n[/test/writing/review/:attemptId]" as WritingReview {
+        frame "AI Feedback" {
+            (Overall Band Score)
+            (4 Criteria Scores)
+        }
+        frame "Analysis" {
+            (Error Highlights)
+            (Paragraph Analysis)
+            (Sample Essays)
+        }
+    }
+    
+    [GradingQuotaInfo] as QuotaInfo
+    [GradingLoader] as Loader
+}
+
+rectangle "Frontend State" {
+    [useTestStore] as TestStore
+    [useQuotaStore] as QuotaStore
+}
+
+rectangle "Backend Services" {
+    [WritingController] as WritingCtrl
+    [WritingSubmissionService] as WritingSvc
+    [AsyncGradingService] as AsyncSvc
+    [LLMGradingService] as LLMSvc
+    [SubscriptionService] as SubSvc
+}
+
+cloud "External AI" {
+    [DeepSeek API\n(V3.2)] as DeepSeek
+}
+
+database "Database" {
+    [writing_submissions]
+    [user_subscriptions]
+}
+
+' Writing Flow
+User --> WritingPage : Start Writing Test
+WritingPage --> TestStore : Essay State (essays{1,2})
+WritingPage --> WritingCtrl : saveDraft(attemptId, taskNumber, text)
+
+' Pre-Submit Quota Check
+WritingPage --> QuotaInfo : Display remaining gradings
+QuotaInfo --> SubSvc : checkAIGradingAllowed(userId)
+
+' Submit for Grading
+WritingPage --> WritingCtrl : submitForGrading(attemptId, essays[])
+WritingCtrl --> WritingSvc : Submit Essays
+
+' Rate Limit Check
+WritingSvc --> WritingSvc : Rate limit check (5 req/min)
+
+' Async Grading
+WritingSvc --> AsyncSvc : Trigger background grading
+AsyncSvc --> LLMSvc : gradeSubmission() per task
+LLMSvc --> DeepSeek : API Request (system + user prompt)
+DeepSeek --> LLMSvc : JSON Response
+LLMSvc --> writing_submissions : Update with scores
+
+' Polling
+WritingPage --> Loader : Show loading animation
+Loader --> WritingCtrl : getGradingStatus(attemptId) [3s interval]
+WritingCtrl --> WritingSvc : Check status
+WritingSvc --> WritingReview : Redirect when GRADED
+
+' Review
+WritingReview --> WritingCtrl : getWritingReview(attemptId)
+WritingCtrl --> WritingSvc : Get full review + feedback
+
+note right of LLMSvc
+  **LLMGradingService:**
+  - resolveApiKey(): User key > Server key
+  - buildSystemPrompt(): IELTS band descriptors
+  - buildUserPrompt(): Task + essay + image desc
+  - callLLMApi(): OpenAI-compatible format
+  - parseAndApplyGradingResults()
+  - roundToNearestHalf(): 0.5 band rounding
+end note
+
+note bottom of DeepSeek
+  **DeepSeek V3.2 Models:**
+  - deepseek-chat (default)
+  - deepseek-reasoner
+  
+  **Response JSON:**
+  - overall_band
+  - task_achievement
+  - coherence_cohesion
+  - lexical_resource
+  - grammatical_accuracy
+  - feedback (detailed)
+  - sample_essay
+end note
+
+note left of WritingReview
+  **Error Highlight Colors:**
+  - Grammar: red
+  - Spelling: yellow
+  - Vocabulary: purple
+  - Punctuation: blue
+  - Coherence: green
+  - Style: yellow
+end note
+
+@enduml

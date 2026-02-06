@@ -1,8 +1,8 @@
 import React, { useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { 
-  Float, 
-  MeshDistortMaterial, 
+import {
+  Float,
+  MeshDistortMaterial,
   MeshWobbleMaterial,
   Sphere,
   Box,
@@ -16,17 +16,17 @@ import {
 import * as THREE from 'three';
 
 // Performance-optimized floating shape component
-const FloatingShape = ({ 
-  position, 
-  shape = 'sphere', 
-  color = '#7c3aed', 
+const FloatingShape = ({
+  position,
+  shape = 'sphere',
+  color = '#7c3aed',
   scale = 1,
   speed = 1,
   distort = 0.3,
   floatIntensity = 1
 }) => {
   const meshRef = useRef();
-  
+
   // Slowly rotate based on time
   useFrame((state) => {
     if (meshRef.current) {
@@ -58,9 +58,9 @@ const FloatingShape = ({
   }, [shape]);
 
   return (
-    <Float 
-      speed={speed} 
-      rotationIntensity={0.5} 
+    <Float
+      speed={speed}
+      rotationIntensity={0.5}
       floatIntensity={floatIntensity}
       floatingRange={[-0.2, 0.2]}
     >
@@ -84,7 +84,7 @@ const FloatingShape = ({
 const ParticleField = ({ count = 100 }) => {
   const meshRef = useRef();
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  
+
   // Generate random positions once
   const particles = useMemo(() => {
     const temp = [];
@@ -101,7 +101,7 @@ const ParticleField = ({ count = 100 }) => {
 
   useFrame((state) => {
     if (!meshRef.current) return;
-    
+
     particles.forEach((particle, i) => {
       const t = state.clock.elapsedTime * particle.speed;
       dummy.position.set(
@@ -120,9 +120,9 @@ const ParticleField = ({ count = 100 }) => {
   return (
     <instancedMesh ref={meshRef} args={[null, null, count]}>
       <icosahedronGeometry args={[0.15, 0]} />
-      <meshStandardMaterial 
-        color="#a78bfa" 
-        transparent 
+      <meshStandardMaterial
+        color="#a78bfa"
+        transparent
         opacity={0.6}
         metalness={0.5}
         roughness={0.5}
@@ -134,7 +134,7 @@ const ParticleField = ({ count = 100 }) => {
 // Gradient background plane
 const GradientBackground = () => {
   const meshRef = useRef();
-  
+
   const gradientMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
       uniforms: {
@@ -181,7 +181,7 @@ const GradientBackground = () => {
 // Connection lines between shapes
 const ConnectionLines = ({ points }) => {
   const lineRef = useRef();
-  
+
   const lineGeometry = useMemo(() => {
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(points.length * 3);
@@ -204,19 +204,19 @@ const ConnectionLines = ({ points }) => {
 // Adaptive performance component
 const AdaptivePerformance = () => {
   const { gl } = useThree();
-  
+
   React.useEffect(() => {
     // Reduce pixel ratio on lower-end devices
     const pixelRatio = Math.min(window.devicePixelRatio, 2);
     gl.setPixelRatio(pixelRatio);
   }, [gl]);
-  
+
   return null;
 };
 
 // Main 3D Scene Component
-const Scene3DAbout = ({ 
-  className = '', 
+const Scene3DAbout = ({
+  className = '',
   style = {},
   reducedMotion = false,
   isActive = true  // New prop to control render loop
@@ -240,7 +240,7 @@ const Scene3DAbout = ({
   if (prefersReducedMotion) {
     // Return a static gradient for reduced motion preference
     return (
-      <div 
+      <div
         className={className}
         style={{
           ...style,
@@ -257,7 +257,7 @@ const Scene3DAbout = ({
         dpr={[1, 2]}
         performance={{ min: 0.5 }}
         frameloop={isActive ? 'always' : 'demand'}
-        gl={{ 
+        gl={{
           antialias: true,
           alpha: true,
           powerPreference: 'high-performance'
@@ -267,28 +267,28 @@ const Scene3DAbout = ({
         <Suspense fallback={null}>
           <AdaptivePerformance />
           <GradientBackground />
-          
+
           {/* Ambient and directional lighting */}
           <ambientLight intensity={0.4} />
           <directionalLight position={[10, 10, 5]} intensity={1} color="#ffffff" />
           <pointLight position={[-10, -10, -5]} intensity={0.5} color="#7c3aed" />
-          
+
           {/* Floating geometric shapes */}
           {shapes.map((shape, index) => (
             <FloatingShape key={index} {...shape} />
           ))}
-          
+
           {/* Particle field */}
           <ParticleField count={80} />
-          
+
           {/* Stars in background */}
-          <Stars 
-            radius={50} 
-            depth={50} 
-            count={1000} 
-            factor={4} 
-            saturation={0} 
-            fade 
+          <Stars
+            radius={50}
+            depth={50}
+            count={1000}
+            factor={4}
+            saturation={0}
+            fade
             speed={0.5}
           />
         </Suspense>

@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/dashboard")
-public class DashboardController {
+public class DashboardController extends BaseController {
 
     private final DashboardService dashboardService;
 
@@ -23,14 +23,16 @@ public class DashboardController {
 
     @GetMapping("/summary")
     public ResponseEntity<DashboardSummaryDTO> getSummary(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "3") int size,
+            @RequestParam(defaultValue = "0") @jakarta.validation.constraints.Min(0) int page,
+            @RequestParam(defaultValue = "3") @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(50) int size,
             @RequestParam(required = false) String search,
             Authentication authentication
     ) {
         // Extract userId from authenticated user - no IDOR possible
-        UUID userId = UUID.fromString(authentication.getName());
-        return ResponseEntity.ok(dashboardService.buildDashboardSummary(userId, page, size, search));
+        UUID userId = getCurrentUserId(authentication);
+        // Cap size to prevent abuse
+        int cappedSize = Math.min(size, 50);
+        return ResponseEntity.ok(dashboardService.buildDashboardSummary(userId, page, cappedSize, search));
     }
 
     @PostMapping("/target")
@@ -38,10 +40,8 @@ public class DashboardController {
             @Valid @RequestBody TargetDTO targetDTO,
             Authentication authentication
     ) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        UUID userId = UUID.fromString(authentication.getName());
+        // Redundant check removed - Spring Security handles authentication
+        UUID userId = getCurrentUserId(authentication);
         TargetDTO savedTarget = dashboardService.saveTarget(userId, targetDTO);
         return ResponseEntity.ok(savedTarget);
     }

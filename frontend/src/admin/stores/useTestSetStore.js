@@ -279,13 +279,12 @@ const useTestSetStore = create((set, get) => ({
     /**
      * Update hashtags for a test.
      * @param {number} id - Test ID
-     * @param {Array<number>} hashtagIds - List of hashtag IDs
-     * @param {number|null} primaryHashtagId - Primary hashtag ID
+     * @param {Array<string>} hashtagCodes - List of hashtag codes
      * @returns {Promise<Object>} Updated test
      */
-    updateTestHashtags: async (id, hashtagIds, primaryHashtagId = null) => {
+    updateTestHashtags: async (id, hashtagCodes) => {
         try {
-            const updated = await testsApi.updateHashtags(id, hashtagIds, primaryHashtagId);
+            const updated = await testsApi.updateHashtags(id, hashtagCodes);
             set(state => ({
                 selectedSetTests: state.selectedSetTests.map(t => t.id === id ? updated : t)
             }));

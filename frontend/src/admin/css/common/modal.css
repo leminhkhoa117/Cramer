@@ -360,3 +360,78 @@
     font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.6);
 }
+
+/* ==========================================================================
+   RESPONSIVE - Mobile Modal Adjustments
+   ========================================================================== */
+
+@media (max-width: 640px) {
+    .admin-modal-overlay {
+        padding: 12px;
+        align-items: flex-end;
+    }
+
+    .admin-modal {
+        max-width: 100%;
+        max-height: 90vh;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .admin-modal--large,
+    .admin-modal--medium {
+        max-width: 100%;
+    }
+
+    .admin-modal__header {
+        padding: 16px 20px;
+    }
+
+    .admin-modal__header h3 {
+        font-size: 1.1rem;
+    }
+
+    .admin-modal__content {
+        padding: 16px 20px;
+        max-height: calc(80vh - 130px);
+    }
+
+    .admin-modal__footer {
+        padding: 12px 20px;
+        flex-wrap: wrap;
+    }
+
+    .admin-modal__footer .admin-btn {
+        flex: 1;
+        min-width: 120px;
+    }
+
+    /* Passage input adjustments */
+    .passage-input-textarea {
+        min-height: 200px;
+    }
+
+    .passage-input-stats {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+
+    /* Audio upload adjustments */
+    .audio-upload-dropzone {
+        padding: 24px;
+    }
+
+    .audio-upload-dropzone .icon {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-modal__footer {
+        flex-direction: column;
+    }
+
+    .admin-modal__footer .admin-btn {
+        width: 100%;
+    }
+}

@@ -128,9 +128,10 @@ export default function SetDetailPage() {
                 difficulty: data.difficulty
             });
 
-            // Update hashtags if changed (simple approach: always update)
-            if (data.hashtagIds) {
-                await updateTestHashtags(testId, data.hashtagIds);
+            // Update hashtags - always update with the current selection (could be empty array)
+            // data.hashtagCodes contains the list of hashtag codes from the form
+            if (data.hashtagCodes !== undefined) {
+                await updateTestHashtags(testId, data.hashtagCodes);
             }
 
             setShowEditTestModal(false);
@@ -791,7 +792,8 @@ function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubm
         testNumber: editingTest?.testNumber ?? Math.max(...existingTestNumbers, 0) + 1,
         name: editingTest?.name ?? '',
         difficulty: editingTest?.difficulty ?? 'INTERMEDIATE',
-        hashtagIds: editingTest?.hashtagIds ?? []
+        // For editing: extract codes from existing hashtags; for creating: start empty
+        hashtagCodes: editingTest?.hashtags?.map(h => h.code) ?? []
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
@@ -808,13 +810,13 @@ function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubm
         }
     };
 
-    // Handle hashtag toggle
-    const handleHashtagToggle = (hashtagId) => {
+    // Handle hashtag toggle - now uses codes instead of IDs
+    const handleHashtagToggle = (hashtagCode) => {
         setFormData(prev => ({
             ...prev,
-            hashtagIds: prev.hashtagIds.includes(hashtagId)
-                ? prev.hashtagIds.filter(id => id !== hashtagId)
-                : [...prev.hashtagIds, hashtagId]
+            hashtagCodes: prev.hashtagCodes.includes(hashtagCode)
+                ? prev.hashtagCodes.filter(code => code !== hashtagCode)
+                : [...prev.hashtagCodes, hashtagCode]
         }));
     };
 
@@ -931,18 +933,18 @@ function CreateTestModal({ setId, existingTestNumbers, hashtags, onClose, onSubm
                                 <div className="hashtag-selector">
                                     {topicHashtags.map(tag => (
                                         <button
-                                            key={tag.id}
+                                            key={tag.code}
                                             type="button"
-                                            className={`hashtag-option ${formData.hashtagIds.includes(tag.id) ? 'hashtag-option--selected' : ''}`}
-                                            onClick={() => handleHashtagToggle(tag.id)}
+                                            className={`hashtag-option ${formData.hashtagCodes.includes(tag.code) ? 'hashtag-option--selected' : ''}`}
+                                            onClick={() => handleHashtagToggle(tag.code)}
                                             style={{
                                                 borderColor: tag.color || '#8B5CF6',
-                                                backgroundColor: formData.hashtagIds.includes(tag.id)
+                                                backgroundColor: formData.hashtagCodes.includes(tag.code)
                                                     ? (tag.color || '#8B5CF6') + '20'
                                                     : 'transparent'
                                             }}
                                         >
-                                            {tag.icon} {tag.name || tag.name}
+                                            {tag.icon} {tag.name}
                                         </button>
                                     ))}
                                 </div>
