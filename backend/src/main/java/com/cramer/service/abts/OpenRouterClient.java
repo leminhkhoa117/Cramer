@@ -952,6 +952,137 @@ public class OpenRouterClient {
         }
     }
 
+    // ==================== MULTIMODAL AUDIO SUPPORT ====================
+
+    /**
+     * Record for audio input data.
+     */
+    public record AudioInput(String base64Data, String format) {}
+
+    /**
+     * Sealed interface for content parts (text or audio).
+     */
+    public sealed interface ContentPart permits TextPart, AudioPart {}
+
+    /**
+     * Text content part.
+     */
+    public record TextPart(String text) implements ContentPart {}
+
+    /**
+     * Audio content part with base64 encoded data.
+     */
+    public record AudioPart(AudioInput audio) implements ContentPart {}
+
+    /**
+     * Call OpenRouter with multimodal content (text + audio).
+     * Used for IELTS Speaking grading with Gemini models.
+     *
+     * @param systemPrompt  System message for the AI
+     * @param contentParts  List of text and audio content parts
+     * @param model         Model to use (e.g., "google/gemini-2.5-flash")
+     * @param jsonSchema    JSON Schema for structured output validation
+     * @param schemaName    Name for the JSON schema
+     * @return OpenRouterResponse with parsed content
+     */
+    public OpenRouterResponse callWithAudio(
+            String systemPrompt,
+            List<ContentPart> contentParts,
+            String model,
+            Map<String, Object> jsonSchema,
+            String schemaName) {
+
+        if (!config.hasApiKey()) {
+            throw new OpenRouterException("OPENROUTER_API_KEY not configured", "AUTH_FAILED", false);
+        }
+
+        String url = config.getBaseUrl() + CHAT_ENDPOINT;
+
+        // Build content array from parts
+        List<Map<String, Object>> content = new ArrayList<>();
+        for (ContentPart part : contentParts) {
+            if (part instanceof TextPart textPart) {
+                content.add(Map.of(
+                    "type", "text",
+                    "text", textPart.text()
+                ));
+            } else if (part instanceof AudioPart audioPart) {
+                content.add(Map.of(
+                    "type", "input_audio",
+                    "input_audio", Map.of(
+                        "data", audioPart.audio().base64Data(),
+                        "format", audioPart.audio().format()
+                    )
+                ));
+            }
+        }
+
+        // Build messages array
+        List<Map<String, Object>> messages = new ArrayList<>();
+        messages.add(Map.of("role", "system", "content", systemPrompt));
+        messages.add(Map.of("role", "user", "content", content));
+
+        // Build request body
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("model", model != null ? model : config.getGenerationModel());
+        requestBody.put("messages", messages);
+        requestBody.put("temperature", 0.7);
+        requestBody.put("max_tokens", 4096);
+        requestBody.put("stream", false);
+
+        // Add JSON schema if provided
+        if (jsonSchema != null && !jsonSchema.isEmpty()) {
+            requestBody.put("response_format", Map.of(
+                "type", "json_schema",
+                "json_schema", Map.of(
+                    "name", schemaName != null ? schemaName : "response",
+                    "strict", true,
+                    "schema", jsonSchema
+                )
+            ));
+        }
+
+        // Provider settings
+        requestBody.put("provider", Map.of(
+            "allow_fallbacks", true,
+            "data_collection", "allow"
+        ));
+
+        HttpHeaders headers = buildHeaders();
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+        try {
+            long startTime = System.currentTimeMillis();
+
+            logger.info("Calling OpenRouter with {} content parts (model: {})",
+                contentParts.size(), model);
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                url, HttpMethod.POST, entity, String.class);
+
+            long duration = System.currentTimeMillis() - startTime;
+            logger.info("OpenRouter multimodal call completed in {}ms", duration);
+
+            if (response.getStatusCode() != HttpStatus.OK) {
+                throw new OpenRouterException(
+                    "OpenRouter API returned status: " + response.getStatusCode(),
+                    "API_ERROR",
+                    true);
+            }
+
+            return parseResponse(response.getBody(), duration);
+
+        } catch (HttpClientErrorException e) {
+            return handleHttpError(e);
+        } catch (Exception e) {
+            logger.error("OpenRouter multimodal call failed: {}", e.getMessage(), e);
+            throw new OpenRouterException(
+                "Failed to call OpenRouter API: " + e.getMessage(),
+                "UNKNOWN_ERROR",
+                false);
+        }
+    }
+
     // ==================== RESPONSE DTO ====================
 
     /**

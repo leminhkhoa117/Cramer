@@ -4,11 +4,12 @@ import '../../css/common/grading-loader.css';
 
 /**
  * GradingLoader - A reusable AI grading loading screen component
- * 
+ *
  * @param {Object} props
  * @param {'PENDING'|'GRADING'|'COMPLETED'|'FAILED'} props.status - Current grading status
  * @param {Array<{key: string, label: string}>} props.stages - Array of stage objects
  * @param {Object} props.carousels - Carousel content { action: string[], tips: {icon, text}[], stats: {icon, text}[] }
+ * @param {Array<{abbr: string, label: string}>} props.segments - Progress bar segments
  * @param {Function} props.onBackClick - Callback when back button is clicked
  * @param {string} props.backButtonText - Text for back button (default: "Quay về Dashboard")
  * @param {string} props.title - Main title (default: "Cramer đang phân tích")
@@ -22,6 +23,12 @@ const GradingLoader = ({
         { key: 'task1', label: 'Task 1' },
         { key: 'task2', label: 'Task 2' },
         { key: 'generate', label: 'Hoàn tất' },
+    ],
+    segments = [
+        { abbr: 'TA', label: 'Task' },
+        { abbr: 'CC', label: 'Coherence' },
+        { abbr: 'LR', label: 'Lexical' },
+        { abbr: 'GR', label: 'Grammar' },
     ],
     carousels = {
         action: [
@@ -248,26 +255,25 @@ const GradingLoader = ({
                         </div>
                         <div className="segmented-progress-bar">
                             <div className="progress-segments">
-                                {['TA', 'CC', 'LR', 'GR'].map((segment, idx) => (
-                                    <div key={segment} className={`segment segment-${idx + 1} ${progressPercent > (idx + 1) * 25 ? 'filled' :
-                                        progressPercent > idx * 25 ? 'filling' : 'empty'
+                                {segments.map((segment, idx) => (
+                                    <div key={segment.abbr} className={`segment segment-${idx + 1} ${progressPercent > (idx + 1) * (100 / segments.length) ? 'filled' :
+                                        progressPercent > idx * (100 / segments.length) ? 'filling' : 'empty'
                                         }`}>
                                         <div className="segment-fill" style={{
-                                            width: progressPercent > (idx + 1) * 25 ? '100%' :
-                                                progressPercent > idx * 25 ? `${((progressPercent - idx * 25) / 25) * 100}%` : '0%'
+                                            width: progressPercent > (idx + 1) * (100 / segments.length) ? '100%' :
+                                                progressPercent > idx * (100 / segments.length) ? `${((progressPercent - idx * (100 / segments.length)) / (100 / segments.length)) * 100}%` : '0%'
                                         }}>
                                             <div className="segment-wave" />
                                         </div>
-                                        <span className="segment-label">{segment}</span>
+                                        <span className="segment-label">{segment.abbr}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
                         <div className="segment-legend">
-                            <span><strong>TA</strong> Task</span>
-                            <span><strong>CC</strong> Coherence</span>
-                            <span><strong>LR</strong> Lexical</span>
-                            <span><strong>GR</strong> Grammar</span>
+                            {segments.map((segment) => (
+                                <span key={segment.abbr}><strong>{segment.abbr}</strong> {segment.label}</span>
+                            ))}
                         </div>
                     </div>
 

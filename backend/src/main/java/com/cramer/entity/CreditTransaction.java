@@ -51,6 +51,7 @@ public class CreditTransaction {
         PREMIUM_CONTENT,        // Unlock premium test pack
         ESSAY_FEEDBACK,         // Custom essay feedback
         CHAT_EXTENSION,         // Extra AI chat messages
+        SPEAKING_SESSION,       // Speaking practice session
         OTHER
     }
 

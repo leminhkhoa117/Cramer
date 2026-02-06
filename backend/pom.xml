@@ -153,6 +153,42 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- ==================== WEBSOCKET DEPENDENCIES ==================== -->
+        <!-- Spring WebSocket for real-time communication -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
+        <!-- Java-WebSocket client for connecting to Gemini Live API -->
+        <dependency>
+            <groupId>org.java-websocket</groupId>
+            <artifactId>Java-WebSocket</artifactId>
+            <version>1.5.6</version>
+        </dependency>
+
+        <!-- ==================== GEMINI LIVE DEPENDENCIES ==================== -->
+        <!-- Google Cloud Speech for real-time transcription -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-speech</artifactId>
+            <version>4.14.0</version>
+        </dependency>
+
+        <!-- gRPC Netty for Gemini Live API communication -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty-shaded</artifactId>
+            <version>1.60.0</version>
+        </dependency>
+
+        <!-- Google AI Generative for Gemini API calls -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-vertexai</artifactId>
+            <version>1.1.0</version>
+        </dependency>
     </dependencies>
 
     <build>

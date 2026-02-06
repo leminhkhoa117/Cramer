@@ -13,7 +13,8 @@ import {
     FiEdit3,
     FiArrowLeft,
     FiTag,
-    FiFolder
+    FiFolder,
+    FiMic
 } from 'react-icons/fi';
 
 /**
