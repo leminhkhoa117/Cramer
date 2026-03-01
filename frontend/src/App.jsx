@@ -26,10 +26,6 @@ import SubscriptionPage from './pages/SubscriptionPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
 
-// Speaking imports (SpeakingLandingPage removed - users enter via Course cards)
-import SpeakingSessionPage from './pages/speaking/SpeakingSessionPage';
-import SpeakingResultsPage from './pages/speaking/SpeakingResultsPage';
-
 // Admin imports
 import { AdminLayout } from './admin/components/layout';
 import AdminRouteGuard from './admin/components/AdminRouteGuard';
@@ -116,14 +112,11 @@ function AppContent() {
     /^\/test\/writing\/(?!review)\w+\/\d+$/.test(location.pathname);
   // Review pages have their own internal header, so hide the main header
   const isReviewPage = /^\/test\/writing\/review\/\d+$/.test(location.pathname) ||
-    /^\/test\/review\/\d+$/.test(location.pathname) ||
-    /^\/speaking\/results\//.test(location.pathname);
+    /^\/test\/review\/\d+$/.test(location.pathname);
   // Admin pages have their own layout with AdminHeader/AdminSidebar
   const isAdminPage = location.pathname.startsWith('/admin');
-  // Speaking session page should hide header for full immersion
-  const isSpeakingSessionPage = /^\/speaking\/session\//.test(location.pathname);
 
-  const showHeader = !isTestPage && !isReviewPage && !isAdminPage && !isSpeakingSessionPage;
+  const showHeader = !isTestPage && !isReviewPage && !isAdminPage;
 
   return (
     <>
@@ -237,28 +230,9 @@ function AppContent() {
               element={<PaymentCancelPage />}
             />
 
-            {/* Speaking Routes - Entry is via CourseDetailPage modal */}
-            <Route
-              path="/speaking/session/:mode"
-              element={
-                <ProtectedRoute>
-                  <SpeakingSessionPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/speaking/results/:sessionId"
-              element={
-                <ProtectedRoute>
-                  <SpeakingResultsPage />
-                </ProtectedRoute>
-              }
-            />
-            {/* Redirect old /speaking route to courses */}
-            <Route
-              path="/speaking"
-              element={<Navigate to="/courses" replace />}
-            />
+            {/* Legacy speaking routes redirect to courses */}
+            <Route path="/speaking/*" element={<Navigate to="/courses" replace />} />
+            <Route path="/test/speaking/*" element={<Navigate to="/courses" replace />} />
 
             {/* Admin Routes - separate layout, no Header/Footer */}
             <Route
@@ -292,9 +266,9 @@ function AppContent() {
           </Routes>
         </AnimatePresence>
       </main>
-      {!isTestPage && !isReviewPage && !isAdminPage && !isSpeakingSessionPage && <Footer />}
-      {/* Floating Assistant Widget - visible on protected pages except test-taking, admin, and speaking session */}
-      {!isTestPage && !isAdminPage && !isSpeakingSessionPage && <FloatingAssistant />}
+      {!isTestPage && !isReviewPage && !isAdminPage && <Footer />}
+      {/* Floating Assistant Widget - visible on protected pages except test-taking and admin */}
+      {!isTestPage && !isAdminPage && <FloatingAssistant />}
     </>
   );
 }
