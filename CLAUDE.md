@@ -124,3 +124,321 @@ Frontend `.env`:
 - `docs/CRAMER_ABTS_SPECS.md` - ABTS specification
 - `docs/CRAMER_CMS_ADMIN_SPECS.md` - Admin panel specs
 - `backend/BUILD_INSTRUCTIONS.md` - Detailed build troubleshooting
+
+## Google Workspace Sync Protocol
+
+When handling any non-trivial task, include a **Workspace Copy Pack** so Jacob and Khoa can paste updates quickly into Google Workspace.
+
+### Scope and timing
+
+- Provide update drafts at relevant checkpoints: **START**, **PROGRESS**, **DONE**.
+- Keep this lightweight: only include tabs affected by the task.
+- Never invent Issue/PR links, IDs, dates, or metrics. Use `TBD` if unknown.
+
+### Output format requirements
+
+- Use fenced code blocks for copy-ready snippets.
+- For Google Sheets tabs, output **TSV rows** (tab-separated) for easy paste.
+- Prefer Vietnamese wording for row text unless user asks for another language.
+- Use date format `dd/mm/yyyy`.
+
+### `0 - Worksheet` schemas and allowed dropdown values
+
+1) **A. Now-Next-Later**
+
+- Columns: `Item | Bucket | Owner | Status | Main Link | Updated | Note`
+- Bucket: `Now`, `Next`, `Later`
+- Owner: `Jacob`, `Khoa`, `Both`
+- Status: `Scoped`, `Doing`, `Review`, `Blocked`, `Done`
+
+2) **B. Feature Pipeline**
+
+- Columns: `Feature | Stage | Lead | Success Signal | Main Link | Next Step`
+- Stage: `Discovery`, `Spec`, `Build`, `Validate`, `Shipped`
+- Lead: `Jacob`, `Khoa`, `Both`
+
+3) **C. Risks-Dependencies**
+
+- Columns: `Type | Topic | Severity | Owner | Action Needed | State | Link`
+- Type: `Risk`, `Dependency`
+- Severity: `High`, `Medium`, `Low`
+- Owner: `Jacob`, `Khoa`, `Both`
+- State: `Open`, `Watching`, `Resolved`
+
+4) **D. Release Log**
+
+- Columns: `Date | What Shipped | Proof Links | Impact | Follow-up`
+- Impact: `User-facing`, `Internal`, `Mixed`
+- Follow-up: `None`, `Minor`, `Important`
+
+### Companion drafts for Google Docs (when relevant)
+
+- **`2 - Decision Log`**: include ADR-lite draft if decision is long-lived or expensive to reverse (architecture, auth/security, schema, AI behavior, billing/quota).
+- **`3 - Weekly Notes`**: include concise bullets split into `Done`, `In progress`, `Blocked`, `Next`.
+- **`4 - Prompt Templates`**: if a useful prompt pattern emerges, include reusable template fields: `Name`, `When to use`, `Inputs`, `Prompt`, `Expected output`.
+
+### Response skeleton
+
+Use these headings when returning workspace snippets:
+
+- `Workspace Copy Pack - START`
+- `Workspace Copy Pack - PROGRESS`
+- `Workspace Copy Pack - DONE`
+
+Only include affected tabs; omit unchanged tabs.
+
+### Quick prompts (copy-paste)
+
+Use these ultra-short prompts in any AI tool (OpenCode, Antigravity, Copilot Chat, Claude Code). AI should infer context from the current session and return copy-ready output.
+
+**Ultra-short aliases (recommended)**
+
+- `ws s` or `ws start` -> Generate only `Workspace Copy Pack - START`
+- `ws p` or `ws progress` -> Generate only `Workspace Copy Pack - PROGRESS`
+- `ws d` or `ws done` -> Generate only `Workspace Copy Pack - DONE`
+- `ws all` -> Generate relevant checkpoints among START/PROGRESS/DONE
+- Optional scope: `ws d A,D` (only include tabs A and D)
+
+**Alias interpretation rules**
+
+- Infer task summary, progress, and evidence from the current session.
+- Use `TBD` for missing links/IDs/metrics instead of guessing.
+- Keep only affected tabs; omit unchanged tabs.
+- Return copy-ready blocks only.
+
+If you need stricter control, use the extended prompts below.
+
+1) **START prompt**
+
+```text
+Task: <short task summary>
+Generate only "Workspace Copy Pack - START".
+Requirements:
+- Include only affected tabs from "0 - Worksheet".
+- Use TSV rows for Sheets output.
+- Use Vietnamese wording for row content.
+- Date format: dd/mm/yyyy.
+- Do not invent issue/PR IDs, links, dates, or metrics; use TBD if unknown.
+- Return copy-ready blocks only.
+```
+
+2) **PROGRESS prompt**
+
+```text
+Task: <short task summary>
+Current progress: <what is completed / what remains>
+Generate only "Workspace Copy Pack - PROGRESS".
+Requirements:
+- Include only tabs affected right now.
+- Use TSV rows for Sheets output.
+- Keep each row concise and factual.
+- Date format: dd/mm/yyyy.
+- Use TBD for unknown values.
+- Return copy-ready blocks only.
+```
+
+3) **DONE prompt**
+
+```text
+Task completed: <short task summary>
+Evidence: <files changed, test command results, PR/issue links if available>
+Generate only "Workspace Copy Pack - DONE".
+Requirements:
+- Include only tabs affected by this completed task.
+- Use TSV rows for Sheets output.
+- Use Vietnamese wording for row content.
+- Date format: dd/mm/yyyy.
+- Use TBD where information is missing.
+- Return copy-ready blocks only.
+```
+
+4) **Full-cycle prompt (START + PROGRESS + DONE)**
+
+```text
+Task: <short task summary>
+Context: <optional branch/issue/doc links>
+Progress status: <start|in-progress|done>
+Generate Workspace copy packs for all relevant checkpoints among START, PROGRESS, DONE.
+Requirements:
+- Follow "0 - Worksheet" schemas exactly.
+- Use TSV rows for Sheets output.
+- Keep outputs concise and copy-ready.
+- Date format: dd/mm/yyyy.
+- Use TBD for unknown values.
+- Omit unchanged tabs.
+```
+
+---
+
+## Codex CLI as Agentic Tool
+
+**IMPORTANT**: Use OpenAI Codex CLI (`codex exec`) instead of the built-in `Task` tool for spawning sub-agents. Codex is more cost-effective and provides dedicated agent instances.
+
+### Overview
+
+Each `codex exec` invocation creates an isolated agent with:
+- Its own context window (no shared memory with Claude Code)
+- Full file system access (based on sandbox mode)
+- Ability to execute shell commands
+- Web search capability (with `--search` flag)
+
+### Default Configuration
+
+```bash
+# Standard agent invocation
+codex exec -m gpt-5.3-codex -c reasoning_effort=xhigh "<prompt>"
+
+# With auto-approval for file edits
+codex exec -m gpt-5.3-codex -c reasoning_effort=xhigh --full-auto "<prompt>"
+```
+
+### Agent Types & Patterns
+
+#### 1. Explorer Agent (Read-Only)
+Use for codebase exploration, searching, and analysis without modifications.
+
+```bash
+codex exec -m gpt-5.3-codex -c reasoning_effort=xhigh \
+  --sandbox read-only \
+  -C "<working_dir>" \
+  "<exploration prompt>"
+```
+
+#### 2. Editor Agent (Write Access)
+Use for making code changes, refactoring, or implementing features.
+
+```bash
+codex exec -m gpt-5.3-codex -c reasoning_effort=xhigh \
+  --full-auto \
+  -C "<working_dir>" \
+  "<implementation prompt>"
+```
+
+#### 3. Reviewer Agent (Code Review)
+Use the built-in review subcommand for code reviews.
+
+```bash
+codex exec review "<review instructions>"
+# Or review specific changes:
+codex exec review --diff "HEAD~3..HEAD" "<review focus>"
+```
+
+#### 4. Research Agent (Web Search)
+Use for gathering external information.
+
+```bash
+codex exec -m gpt-5.3-codex -c reasoning_effort=xhigh \
+  --sandbox read-only \
+  --search \
+  "<research prompt>"
+```
+
+### Execution Patterns
+
+#### Synchronous Execution (Wait for Result)
+```bash
+codex exec -m gpt-5.3-codex -c reasoning_effort=xhigh "<prompt>" 2>&1
+```
+
+#### Background Execution (Non-Blocking)
+```bash
+codex exec -m gpt-5.3-codex -c reasoning_effort=xhigh \
+  -o "/tmp/codex_output_$(date +%s).txt" \
+  "<prompt>" &
+```
+
+#### Parallel Agents
+Run multiple Codex agents simultaneously by launching them as background processes:
+```bash
+# Agent 1: Search backend
+codex exec -m gpt-5.3-codex --sandbox read-only \
+  -o /tmp/agent1.txt "Search backend for auth logic" &
+
+# Agent 2: Search frontend
+codex exec -m gpt-5.3-codex --sandbox read-only \
+  -o /tmp/agent2.txt "Search frontend for auth components" &
+
+# Wait for both
+wait
+```
+
+### Output Handling
+
+1. **Direct capture**: Pipe output or use `2>&1` to capture stdout/stderr
+2. **File output**: Use `-o <file>` to save the final agent response
+3. **JSON streaming**: Use `--json` for JSONL event stream (programmatic parsing)
+
+```bash
+# Save final response to file
+codex exec -m gpt-5.3-codex -o result.txt "<prompt>"
+
+# Then read with Claude's Read tool
+```
+
+### Key Flags Reference
+
+| Flag | Purpose | Example |
+|------|---------|---------|
+| `-m <model>` | Model selection | `-m gpt-5.3-codex` |
+| `-c <key=value>` | Config override | `-c reasoning_effort=xhigh` |
+| `--full-auto` | Auto-approve + workspace-write | For editing tasks |
+| `--sandbox <mode>` | Sandbox level | `read-only`, `workspace-write`, `danger-full-access` |
+| `-C <dir>` | Working directory | `-C ./backend` |
+| `-o <file>` | Output file | `-o /tmp/result.txt` |
+| `--search` | Enable web search | For research tasks |
+| `--json` | JSONL output | For programmatic parsing |
+
+### Best Practices
+
+1. **Self-contained prompts**: Codex agents have no context from Claude Code. Include all necessary information in the prompt.
+
+2. **Specify output format**: Tell the agent exactly what format you need:
+   ```
+   "List all API endpoints. Output as a markdown table with columns: Method, Path, Description"
+   ```
+
+3. **Scope with working directory**: Use `-C` to limit agent scope:
+   ```bash
+   codex exec -C "./backend" "Find all Spring controllers"
+   ```
+
+4. **Use read-only for exploration**: Default to `--sandbox read-only` unless edits are needed.
+
+5. **Capture output for long tasks**: Always use `-o` for tasks that may produce large output.
+
+6. **Set appropriate timeouts**: For Bash tool, set timeout for long-running Codex tasks:
+   ```
+   timeout: 300000  # 5 minutes for complex tasks
+   ```
+
+### When to Use Codex vs Direct Tools
+
+| Task | Use Codex | Use Direct Tools |
+|------|-----------|------------------|
+| Multi-file exploration | ✅ | ❌ |
+| Complex code search | ✅ | ❌ |
+| Single file read | ❌ | ✅ (Read tool) |
+| Specific grep pattern | ❌ | ✅ (Grep tool) |
+| Implementation planning | ✅ | ❌ |
+| Simple file edit | ❌ | ✅ (Edit tool) |
+| Research with web search | ✅ | ❌ |
+
+### Example: Complete Agent Workflow
+
+```bash
+# Step 1: Explore (read-only agent)
+codex exec -m gpt-5.3-codex -c reasoning_effort=xhigh \
+  --sandbox read-only \
+  -C "e:\IT and Computer Knowledges\Cramer" \
+  -o /tmp/explore.txt \
+  "Find all files related to user authentication. List file paths and summarize each file's role."
+
+# Step 2: Read output
+# Use Claude's Read tool on /tmp/explore.txt
+
+# Step 3: Implement (editor agent)
+codex exec -m gpt-5.3-codex -c reasoning_effort=xhigh \
+  --full-auto \
+  -C "e:\IT and Computer Knowledges\Cramer" \
+  "Add rate limiting to the auth endpoints. Files to modify: [list from step 1]"
+```
