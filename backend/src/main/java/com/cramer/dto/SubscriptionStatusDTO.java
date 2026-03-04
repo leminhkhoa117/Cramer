@@ -58,8 +58,8 @@ public class SubscriptionStatusDTO {
     @Builder
     public static class TierInfo {
         private String code;
-        private String nameVi;
-        private String nameEn;
+        private String name;
+        // removed duplicate nameEn
         private String emoji;
         private Integer priceVnd;
         private Integer displayOrder;

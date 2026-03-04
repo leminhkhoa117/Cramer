@@ -1,8 +1,10 @@
 package com.cramer.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
+import lombok.*;
 import org.hibernate.annotations.Type;
 
 /**
@@ -11,6 +13,10 @@ import org.hibernate.annotations.Type;
  */
 @Entity
 @Table(name = "sections", schema = "public")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Section {
 
     @Id
@@ -18,11 +24,17 @@ public class Section {
     @Column(name = "id", nullable = false)
     private Long id;
 
+    // New: Link to IeltsTest entity (test_id column)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "test_id")
+    @JsonIgnore
+    private IeltsTest ieltsTest;
+
     @Column(name = "exam_source")
-    private String examSource; // e.g., "cam17", "cam18"
+    private String examSource; // e.g., "cam17", "cam18" (kept for backward compatibility)
 
     @Column(name = "test_number")
-    private Integer testNumber; // e.g., 1, 2, 3, 4
+    private Integer testNumber; // e.g., 1, 2, 3, 4 (kept for backward compatibility)
 
     @Column(name = "skill")
     private String skill; // e.g., "reading", "listening"
@@ -44,18 +56,12 @@ public class Section {
     private String audioUrl; // URL for listening audio files
 
     @Column(name = "image_description", columnDefinition = "TEXT")
-    private String imageDescription; // Detailed text description for Task 1 charts/maps when AI doesn't support images
+    private String imageDescription; // Detailed text description for Task 1 charts/maps when AI doesn't support
+                                     // images
 
-    // Constructors
-    public Section() {
-    }
-
-    public Section(String examSource, Integer testNumber, String skill, Integer partNumber) {
-        this.examSource = examSource;
-        this.testNumber = testNumber;
-        this.skill = skill;
-        this.partNumber = partNumber;
-    }
+    @Builder.Default
+    @Column(name = "status", length = 20)
+    private String status = "PUBLISHED"; // 'PUBLISHED', 'DRAFT', 'ARCHIVED'
 
     // Getters and Setters
     public Long getId() {
@@ -136,6 +142,29 @@ public class Section {
 
     public void setImageDescription(String imageDescription) {
         this.imageDescription = imageDescription;
+    }
+
+    public IeltsTest getIeltsTest() {
+        return ieltsTest;
+    }
+
+    public void setIeltsTest(IeltsTest ieltsTest) {
+        this.ieltsTest = ieltsTest;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    /**
+     * Get the test ID if linked to an IeltsTest.
+     */
+    public Long getTestId() {
+        return ieltsTest != null ? ieltsTest.getId() : null;
     }
 
     @Override

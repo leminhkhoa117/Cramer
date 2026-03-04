@@ -2,10 +2,7 @@ package com.cramer.util;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -17,37 +14,19 @@ import java.util.function.Function;
 
 public class JwtUtil {
 
-
-
-    private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
-
-
-
     @Value("${supabase.jwt.secret}")
 
     private String secret;
 
+    private SecretKey getSigningKey() {
 
+        // The secret key is a plain string, not Base64 encoded.
 
-        private SecretKey getSigningKey() {
+        // We need to convert it to bytes using UTF-8.
 
+        return Keys.hmacShaKeyFor(secret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
-
-            // The secret key is a plain string, not Base64 encoded.
-
-
-
-            // We need to convert it to bytes using UTF-8.
-
-
-
-            return Keys.hmacShaKeyFor(secret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-
-
-
-        }
-
-
+    }
 
     public String extractUserId(String token) {
 
@@ -55,15 +34,11 @@ public class JwtUtil {
 
     }
 
-
-
     public Date extractExpiration(String token) {
 
         return extractClaim(token, Claims::getExpiration);
 
     }
-
-
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
 
@@ -72,8 +47,6 @@ public class JwtUtil {
         return claimsResolver.apply(claims);
 
     }
-
-
 
     private Claims extractAllClaims(String token) {
 
@@ -91,19 +64,11 @@ public class JwtUtil {
 
     }
 
-
-
     private Boolean isTokenExpired(String token) {
 
         return extractExpiration(token).before(new Date());
 
     }
-
-
-
-
-
-    
 
     public Boolean validateToken(String token) {
         try {

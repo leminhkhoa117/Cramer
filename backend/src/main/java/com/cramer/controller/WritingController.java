@@ -26,7 +26,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/writing")
 @Tag(name = "Writing API", description = "API for IELTS Writing test submissions and AI grading")
-public class WritingController {
+public class WritingController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(WritingController.class);
 
@@ -46,14 +46,14 @@ public class WritingController {
     @PostMapping("/draft/{attemptId}")
     @Operation(summary = "Save essay draft", description = "Save an essay draft during the test")
     public ResponseEntity<WritingSubmissionDTO> saveDraft(
-            @PathVariable Long attemptId,
-            @RequestParam Integer taskNumber,
+            @PathVariable @jakarta.validation.constraints.Min(1) Long attemptId,
+            @RequestParam @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(2) Integer taskNumber,
             @RequestBody String essayText,
             Authentication authentication) {
         
         logger.info("📥 POST /api/writing/draft/{} - taskNumber={}", attemptId, taskNumber);
-        
-        UUID userId = UUID.fromString(authentication.getName());
+
+        UUID userId = getCurrentUserId(authentication);
         WritingSubmissionDTO saved = writingSubmissionService.saveDraft(attemptId, taskNumber, essayText, userId);
         
         logger.info("✅ Draft saved for attempt {} task {}", attemptId, taskNumber);
@@ -66,14 +66,14 @@ public class WritingController {
     @PostMapping("/submit/{attemptId}")
     @Operation(summary = "Submit essays for grading", description = "Submit essays and start background AI grading")
     public ResponseEntity<Map<String, Object>> submitForGrading(
-            @PathVariable Long attemptId,
+            @PathVariable @jakarta.validation.constraints.Min(1) Long attemptId,
             @Valid @RequestBody WritingSubmitDTO submitDTO,
             Authentication authentication) {
         
-        logger.info("📥 POST /api/writing/submit/{} - essays count: {}", 
+        logger.info("📥 POST /api/writing/submit/{} - essays count: {}",
                    attemptId, submitDTO.getEssays() != null ? submitDTO.getEssays().size() : 0);
-        
-        UUID userId = UUID.fromString(authentication.getName());
+
+        UUID userId = getCurrentUserId(authentication);
         
         // Rate limit check for grading
         if (!rateLimitConfig.tryConsume(userId.toString(), "grading")) {
@@ -93,12 +93,12 @@ public class WritingController {
     @GetMapping("/status/{attemptId}")
     @Operation(summary = "Get grading status", description = "Check the grading status of submitted essays")
     public ResponseEntity<Map<String, Object>> getGradingStatus(
-            @PathVariable Long attemptId,
+            @PathVariable @jakarta.validation.constraints.Min(1) Long attemptId,
             Authentication authentication) {
         
         logger.info("📥 GET /api/writing/status/{}", attemptId);
-        
-        UUID userId = UUID.fromString(authentication.getName());
+
+        UUID userId = getCurrentUserId(authentication);
         Map<String, Object> status = writingSubmissionService.getGradingStatus(attemptId, userId);
         
         return ResponseEntity.ok(status);
@@ -110,12 +110,12 @@ public class WritingController {
     @GetMapping("/review/{attemptId}")
     @Operation(summary = "Get writing review", description = "Get full review with AI grading results and feedback")
     public ResponseEntity<WritingReviewDTO> getWritingReview(
-            @PathVariable Long attemptId,
+            @PathVariable @jakarta.validation.constraints.Min(1) Long attemptId,
             Authentication authentication) {
         
         logger.info("📥 GET /api/writing/review/{}", attemptId);
-        
-        UUID userId = UUID.fromString(authentication.getName());
+
+        UUID userId = getCurrentUserId(authentication);
         WritingReviewDTO review = writingSubmissionService.getWritingReview(attemptId, userId);
         
         logger.info("✅ Writing review fetched for attempt {}", attemptId);
@@ -128,12 +128,12 @@ public class WritingController {
     @GetMapping("/submissions/{attemptId}")
     @Operation(summary = "Get submissions", description = "Get all writing submissions for an attempt")
     public ResponseEntity<List<WritingSubmissionDTO>> getSubmissions(
-            @PathVariable Long attemptId,
+            @PathVariable @jakarta.validation.constraints.Min(1) Long attemptId,
             Authentication authentication) {
         
         logger.info("📥 GET /api/writing/submissions/{}", attemptId);
-        
-        UUID userId = UUID.fromString(authentication.getName());
+
+        UUID userId = getCurrentUserId(authentication);
         List<WritingSubmissionDTO> submissions = writingSubmissionService.getSubmissions(attemptId, userId);
         
         return ResponseEntity.ok(submissions);
@@ -167,12 +167,12 @@ public class WritingController {
     @PostMapping("/regrade/{attemptId}")
     @Operation(summary = "Re-grade attempt", description = "Re-grade a completed writing attempt with AI")
     public ResponseEntity<Map<String, Object>> regradeAttempt(
-            @PathVariable Long attemptId,
+            @PathVariable @jakarta.validation.constraints.Min(1) Long attemptId,
             Authentication authentication) {
         
         logger.info("📥 POST /api/writing/regrade/{}", attemptId);
-        
-        UUID userId = UUID.fromString(authentication.getName());
+
+        UUID userId = getCurrentUserId(authentication);
         
         // Rate limit check for grading
         if (!rateLimitConfig.tryConsume(userId.toString(), "grading")) {

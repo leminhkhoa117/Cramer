@@ -16,7 +16,8 @@
 
 :root {
   /* Page Layout */
-  --header-clearance: 90px; /* Single source of truth for header spacing */
+  --header-clearance: 90px;
+  /* Single source of truth for header spacing */
 
   /* Colors */
   --primary-accent: #7c3aed;
@@ -43,7 +44,8 @@
   --primary-rgb: 124, 58, 237;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   width: 100%;

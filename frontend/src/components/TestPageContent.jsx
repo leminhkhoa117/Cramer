@@ -36,7 +36,9 @@ const groupQuestionsFromLayout = (part) => {
     // New logic for Listening tests with sectionLayout
     if (part.sectionLayout && part.sectionLayout.blocks) {
         return part.sectionLayout.blocks.map((block, blockIndex) => {
-            const blockQuestions = block.question_numbers
+            // Safely get question_numbers array, fallback to empty array
+            const questionNumbers = block.question_numbers || [];
+            const blockQuestions = questionNumbers
                 .map(num => questionsMap.get(num))
                 .filter(Boolean); // Filter out any undefined questions
 
@@ -320,7 +322,7 @@ const TestPageContent = ({
                 <p>Bạn có chắc chắn muốn nộp bài không?</p>
                 <div className="submit-info">
                     <p className="submit-info__billing">
-                        💡 <strong>Lưu ý:</strong> Bạn chỉ bị trừ lượt chấm khi hệ thống 
+                        💡 <strong>Lưu ý:</strong> Bạn chỉ bị trừ lượt chấm khi hệ thống
                         trả về kết quả thành công. Nếu có lỗi xảy ra, lượt chấm sẽ được hoàn lại.
                     </p>
                 </div>

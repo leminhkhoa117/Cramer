@@ -1,0 +1,210 @@
+/**
+ * TagInput Component Styles
+ * 
+ * @since 2025-12-21 - Cat B Feature
+ * Updated to use AIStudio CSS variables for consistency
+ */
+
+.tag-input-wrapper {
+    position: relative;
+}
+
+.tag-input-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--studio-text-secondary, rgba(255, 255, 255, 0.8));
+    margin-bottom: 6px;
+}
+
+.tag-input-label svg {
+    color: var(--studio-accent, #8B5CF6);
+}
+
+/* Match .form-input styling from AdminModal.css */
+.tag-input-container {
+    background: rgba(15, 17, 26, 0.8);
+    /* Darker input bg */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    /* Slightly more rounded */
+    padding: 10px 14px;
+    min-height: auto;
+    height: auto;
+    cursor: text;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.tag-input-container:hover {
+    border-color: var(--admin-primary, #6366f1);
+}
+
+.tag-input-container.focused {
+    outline: none;
+    border-color: var(--admin-primary, #6366f1);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    background: rgba(15, 17, 26, 0.9);
+}
+
+.tag-input-container.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+}
+
+/* Individual tag */
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(99, 102, 241, 0.2) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 0.85rem;
+    color: #A78BFA;
+    animation: tagAppear 0.2s ease;
+}
+
+@keyframes tagAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.tag-hash {
+    color: rgba(139, 92, 246, 0.6);
+    font-weight: 500;
+}
+
+.tag-text {
+    font-weight: 500;
+}
+
+.tag-remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 2px;
+    margin-left: 4px;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.tag-remove:hover {
+    color: #EF4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Input field */
+.tag-input {
+    flex: 1;
+    min-width: 120px;
+    background: none;
+    border: none;
+    outline: none;
+    color: white;
+    font-size: 0.9375rem;
+    padding: 0;
+}
+
+.tag-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Suggestions dropdown */
+.tag-suggestions {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, rgba(30, 32, 44, 0.98) 0%, rgba(20, 22, 30, 1) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    z-index: 100;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    animation: suggestionsAppear 0.15s ease;
+}
+
+@keyframes suggestionsAppear {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.suggestion-item:hover,
+.suggestion-item.selected {
+    background: rgba(139, 92, 246, 0.15);
+    color: white;
+}
+
+.suggestion-item svg {
+    color: #8B5CF6;
+}
+
+/* Footer with helper text and count */
+.tag-input-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    padding: 0 4px;
+}
+
+.helper-text {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.tag-count {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 500;
+}
+
+.tag-count.max-reached {
+    color: #F59E0B;
+}

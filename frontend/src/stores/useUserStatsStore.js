@@ -50,9 +50,9 @@ const useUserStatsStore = create(
       getTierEmoji: () => {
         const { subscription } = get();
         if (!subscription?.tier) return '🌾';
-        // Backend returns nameVi (e.g., "Cramerich") or code (e.g., "cramerich")
+        // Backend returns name (e.g., "Cramerich") or code (e.g., "cramerich")
         const tierCode = subscription.tier.code?.toLowerCase() || '';
-        const tierName = subscription.tier.nameVi?.toLowerCase() || subscription.tier.nameEn?.toLowerCase() || '';
+        const tierName = subscription.tier.name?.toLowerCase() || subscription.tier.name?.toLowerCase() || '';
         if (tierCode.includes('cramerous') || tierName.includes('cramerous')) return '🌟';
         if (tierCode.includes('cramerich') || tierName.includes('cramerich')) return '🌻';
         return '🌾';
@@ -60,8 +60,8 @@ const useUserStatsStore = create(
 
       getTierName: () => {
         const { subscription } = get();
-        // Backend returns nameVi for Vietnamese name, fallback to nameEn then code
-        return subscription?.tier?.nameVi || subscription?.tier?.nameEn || subscription?.tier?.code || 'Cramerie';
+        // Backend returns name for Vietnamese name, fallback to nameEn then code
+        return subscription?.tier?.name || subscription?.tier?.name || subscription?.tier?.code || 'Cramerie';
       },
 
       // ===== ACTIONS =====

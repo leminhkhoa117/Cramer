@@ -1,0 +1,123 @@
+@startuml Test_Taking_Flow
+!theme blueprint
+title Cramer CMS - Test-Taking Flow (Reading/Listening)
+
+skinparam {
+    BackgroundColor #1a1a2e
+    TitleFontColor #ffffff
+    TitleFontSize 20
+    DefaultFontColor #e8e8e8
+    ArrowColor #64b5f6
+    ActorBackgroundColor #4caf50
+    RectangleBackgroundColor #37474f
+    RectangleBorderColor #78909c
+    NoteBackgroundColor #424242
+    NoteFontColor #ffffff
+}
+
+actor "Authenticated User" as User #lightgreen
+
+rectangle "Frontend Pages" {
+    rectangle "Courses\n[/courses]" as Courses {
+        (Test Set Grid)
+        (Search/Filter)
+    }
+    
+    rectangle "Course Detail\n[/courses/:name]" as CourseDetail {
+        (Test List)
+        (Start/Resume Buttons)
+    }
+    
+    rectangle "Test Page\n[/test/:source/:testNum/:skill]" as TestPage {
+        frame "Layout" {
+            (TestHeader + Timer)
+            (Left: Passage/Audio)
+            (Right: Questions)
+            (TestFooter + Nav)
+        }
+    }
+    
+    rectangle "Test Review\n[/test/review/:attemptId]" as Review {
+        (Band Score Display)
+        (Answer Comparison)
+        (Retake Button)
+    }
+}
+
+rectangle "Frontend Stores" {
+    [useTestStore] as TestStore
+    [useTestSessionStore] as SessionStore
+}
+
+rectangle "Backend" {
+    [TestAttemptController] as AttemptCtrl
+    [TestAttemptService] as AttemptSvc
+    database "test_attempts\nuser_answers" as DB
+}
+
+rectangle "Modals" {
+    (ResumeConfirmationModal)
+    (SubmitConfirmationModal)
+    (ExitTestModal)
+}
+
+' User Flow
+User --> Courses : Browse
+Courses --> CourseDetail : Select Course
+CourseDetail --> TestPage : Start Test
+
+' Test Taking
+TestPage --> TestStore : Load UI State
+TestPage --> SessionStore : Manage Attempt
+TestPage --> AttemptCtrl : startAttempt(source, test, skill, forceNew)
+
+AttemptCtrl --> AttemptSvc : startOrGetAttempt()
+AttemptSvc --> DB : Create/Resume Attempt
+AttemptSvc --> AttemptCtrl : Return TestAttempt
+
+' Progress Saving
+TestPage --> AttemptCtrl : saveProgress() [every 5 min]
+AttemptCtrl --> DB : Persist answers, timeLeft, currentPart
+
+' Submit
+TestPage --> AttemptCtrl : submitAttempt(answers)
+AttemptCtrl --> AttemptSvc : Grade answers
+AttemptSvc --> DB : Save UserAnswers + Score
+AttemptSvc --> Review : Redirect
+
+' Review
+Review --> AttemptCtrl : getTestReview(attemptId)
+Review --> CourseDetail : Retake (forceNew=true)
+
+note right of TestPage
+  **Test Features:**
+  - 60-minute countdown timer
+  - Auto-save every 5 minutes
+  - Part navigation (3 parts)
+  - Text highlighting
+  - Audio autoplay toggle (Listening)
+  
+  **Timer Warning Colors:**
+  - Normal: white
+  - < 5 min: yellow
+  - < 1 min: red
+end note
+
+note bottom of AttemptSvc
+  **startOrGetAttempt Logic:**
+  1. Check for existing IN_PROGRESS
+  2. If exists + forceNew=false:
+     Show Resume modal
+  3. If exists + forceNew=true:
+     Cancel old, create new
+  4. Check quota billing
+  5. Return attempt
+end note
+
+note left of Modals
+  **Resume Modal Options:**
+  - IN_PROGRESS: "Tiep tuc" or "Lam lai"
+  - COMPLETED: "Xem ket qua" or "Lam lai"
+end note
+
+@enduml

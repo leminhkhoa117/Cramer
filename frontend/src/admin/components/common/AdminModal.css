@@ -1,0 +1,464 @@
+/* ==========================================================================
+   ADMIN UNIFIED MODAL STYLES
+   One file to rule them all.
+   ========================================================================== */
+
+/* --- Overlay --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    padding: var(--admin-spacing-md);
+    animation: fadeIn 0.2s ease forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* --- Modal Content Base --- */
+.modal-content {
+    background: linear-gradient(135deg, rgba(30, 32, 44, 0.95) 0%, rgba(20, 22, 30, 0.98) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border-radius: var(--admin-radius-xl) !important;
+    width: 100%;
+    max-width: 520px;
+    /* Default size */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Sizes */
+.modal-content.modal-sm {
+    max-width: 400px;
+}
+
+.modal-content.modal-lg {
+    max-width: 800px;
+}
+
+.modal-content.modal-xl {
+    max-width: 1100px;
+}
+
+/* Confirmation Variant (Center text, simpler) */
+.modal-content.modal-confirm {
+    text-align: center;
+    max-width: 420px;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* --- Header --- */
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    /* More subtle border */
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.modal-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--admin-text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.title-icon {
+    color: var(--admin-primary);
+    font-size: 1.25rem;
+}
+
+.modal-close {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--admin-radius-md);
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: var(--admin-danger);
+    transform: rotate(90deg);
+}
+
+/* --- Body --- */
+.modal-body {
+    padding: 32px !important;
+    overflow-y: auto;
+    flex: 1;
+    /* Take remaining height */
+}
+
+/* Confirmation Body Layout */
+.modal-content.modal-confirm .modal-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* --- Footer --- */
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 20px 24px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Confirmation Footer Center */
+.modal-content.modal-confirm .modal-footer {
+    justify-content: center;
+}
+
+/* --- Form Styles (Unified) --- */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group {
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--admin-text-secondary);
+}
+
+.form-group label svg {
+    color: var(--admin-primary);
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(15, 17, 26, 0.8);
+    /* Darker input bg */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    /* Slightly more rounded */
+    color: var(--admin-text-primary);
+    font-size: 0.9375rem;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    appearance: none;
+    /* Remove default arrow */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 10px;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--admin-primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.form-select option {
+    background: #1e202c;
+    color: var(--admin-text-primary);
+}
+
+.form-input:disabled,
+.form-select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* --- Buttons (Use inside modal footer) --- */
+.modal-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 100px;
+}
+
+.modal-btn-secondary {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--admin-text-secondary);
+}
+
+.modal-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: var(--admin-text-primary);
+}
+
+.modal-btn-primary {
+    background: var(--admin-primary);
+    border: none;
+    color: white;
+}
+
+.modal-btn-primary:hover {
+    background: var(--admin-primary-hover);
+    transform: translateY(-1px);
+}
+
+.modal-btn-danger {
+    background: var(--admin-danger);
+    border: none;
+    color: white;
+}
+
+.modal-btn-danger:hover {
+    background: #DC2626;
+    /* Darker red */
+}
+
+/* --- Confirmation Specifics --- */
+.confirm-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 32px;
+}
+
+.confirm-icon.danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--admin-danger);
+}
+
+.confirm-icon.warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--admin-warning);
+}
+
+.confirm-icon.info {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--admin-primary);
+}
+
+.confirm-message {
+    font-size: 0.9375rem;
+    color: var(--admin-text-secondary);
+    line-height: 1.6;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+/* --- Steps (Multi-step Modals) --- */
+.modal-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.15);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.modal-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+}
+
+.modal-step.active {
+    opacity: 1;
+}
+
+.modal-step-number {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--admin-text-secondary);
+}
+
+.modal-step.active .modal-step-number {
+    background: var(--admin-primary);
+    color: white;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+}
+
+.modal-step-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--admin-text-secondary);
+}
+
+.modal-step.active .modal-step-label {
+    color: var(--admin-text-primary);
+}
+
+.modal-step-connector {
+    width: 40px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 16px;
+}
+
+/* --- Info Box --- */
+.modal-info-box {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(99, 102, 241, 0.1);
+    /* Primary tint */
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 8px;
+    color: var(--admin-text-primary);
+    /* Better readability */
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-top: 20px;
+}
+
+.modal-info-box svg {
+    color: var(--admin-primary);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.modal-info-box p {
+    margin: 0;
+}
+
+.modal-toggle-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 4px;
+    border-radius: 10px;
+}
+
+.modal-toggle-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--admin-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.modal-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.modal-toggle-btn.active {
+    background: var(--admin-primary);
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* --- Spinner --- */
+.modal-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* --- Selected Topic (Create Test Modal) --- */
+.selected-topic {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid var(--admin-primary);
+    border-radius: 8px;
+    color: var(--admin-primary);
+    margin-bottom: 24px;
+    font-weight: 500;
+}

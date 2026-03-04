@@ -1,0 +1,671 @@
+/* ==========================================================================
+   QUESTION EDIT MODAL - Visual Editor Styles
+   ========================================================================== */
+
+/* --- Modal Customization --- */
+.qem-modal {
+    max-height: 95vh;
+}
+
+.qem-uid {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--admin-text-muted, rgba(255,255,255,0.5));
+    margin-left: 8px;
+}
+
+.qem-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.qem-preview-toggle {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.qem-preview-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.qem-preview-toggle.active {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.4);
+    color: var(--admin-primary, #6366f1);
+}
+
+/* --- Body Layout --- */
+.qem-body {
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+.qem-layout {
+    display: flex;
+    height: calc(95vh - 140px);
+    max-height: 700px;
+}
+
+.qem-layout--with-preview .qem-form {
+    width: 60%;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.qem-layout--with-preview .qem-preview-panel {
+    width: 40%;
+}
+
+.qem-form {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.qem-preview-panel {
+    background: rgba(0, 0, 0, 0.2);
+    overflow-y: auto;
+}
+
+/* --- Editor Sections --- */
+.qem-editor-section {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.qem-editor-section--collapsible {
+    padding: 0;
+}
+
+.qem-editor-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--admin-text-primary, #fff);
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.qem-editor-header svg {
+    color: var(--admin-primary, #6366f1);
+}
+
+.qem-editor-header--clickable {
+    width: 100%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 16px;
+    margin-bottom: 0;
+    border-bottom: none;
+    transition: background 0.2s ease;
+    justify-content: space-between;
+}
+
+.qem-editor-header--clickable:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.qem-editor-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.qem-explanation-fields {
+    padding: 0 16px 16px;
+}
+
+/* --- Hints and Tips --- */
+.qem-hint {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--admin-text-muted, rgba(255,255,255,0.5));
+    margin-left: 8px;
+}
+
+.qem-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    color: var(--admin-text-secondary, rgba(255,255,255,0.7));
+    margin-top: 12px;
+}
+
+.qem-tip svg {
+    color: var(--admin-primary, #6366f1);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.qem-tip code {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.75rem;
+}
+
+.qem-tip--warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.qem-tip--warning svg {
+    color: var(--admin-warning, #f59e0b);
+}
+
+/* --- Options List (Multiple Choice) --- */
+.qem-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.qem-option-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.qem-option-letter {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--admin-primary, #6366f1);
+    flex-shrink: 0;
+}
+
+.qem-option-input {
+    flex: 1;
+}
+
+.qem-option-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.qem-icon-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: var(--admin-text-secondary, rgba(255,255,255,0.7));
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.qem-icon-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--admin-text-primary, #fff);
+}
+
+.qem-icon-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.qem-icon-btn--danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: var(--admin-danger, #ef4444);
+}
+
+/* --- Add Button --- */
+.qem-add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px dashed rgba(99, 102, 241, 0.4);
+    border-radius: 8px;
+    color: var(--admin-primary, #6366f1);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.qem-add-btn:hover:not(:disabled) {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.6);
+}
+
+.qem-add-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.qem-add-btn--small {
+    width: auto;
+    padding: 6px 12px;
+    font-size: 0.8125rem;
+}
+
+/* --- Alternative Answers --- */
+.qem-alt-answer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.qem-alt-answer .form-input {
+    flex: 1;
+}
+
+/* --- Radio Groups (Boolean answers) --- */
+.qem-radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.qem-radio-group--options {
+    flex-direction: column;
+    gap: 8px;
+}
+
+.qem-radio-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.qem-radio-option:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.qem-radio-option input[type="radio"] {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.qem-radio-option input[type="radio"]:checked {
+    border-color: var(--admin-primary, #6366f1);
+    background: var(--admin-primary, #6366f1);
+}
+
+.qem-radio-option input[type="radio"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    background: white;
+    border-radius: 50%;
+}
+
+.qem-radio-option--full {
+    width: 100%;
+}
+
+.qem-radio-label {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 4px;
+}
+
+.qem-radio-label--true {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+}
+
+.qem-radio-label--false {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.qem-radio-label--not-given {
+    background: rgba(156, 163, 175, 0.15);
+    color: #9ca3af;
+}
+
+.qem-radio-label--yes {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+}
+
+.qem-radio-label--no {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+/* --- Checkbox Groups (Multi-select) --- */
+.qem-checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.qem-checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.qem-checkbox-option:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.qem-checkbox-option input[type="checkbox"] {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.qem-checkbox-option input[type="checkbox"]:checked {
+    border-color: var(--admin-primary, #6366f1);
+    background: var(--admin-primary, #6366f1);
+}
+
+.qem-checkbox-option input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    color: white;
+    font-weight: bold;
+}
+
+.qem-option-text {
+    flex: 1;
+    color: var(--admin-text-secondary, rgba(255,255,255,0.8));
+}
+
+.qem-selected-summary {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: #22c55e;
+}
+
+/* --- Empty State --- */
+.qem-empty-state {
+    padding: 24px;
+    text-align: center;
+    color: var(--admin-text-muted, rgba(255,255,255,0.5));
+    font-size: 0.9375rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+/* --- Optional Fields --- */
+.qem-optional-fields {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.qem-half {
+    flex: 1;
+}
+
+/* --- Global Error --- */
+.qem-global-error {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    margin: 16px 24px 0;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    color: var(--admin-danger, #ef4444);
+    font-size: 0.875rem;
+}
+
+/* --- Error Text --- */
+.error-text {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--admin-danger, #ef4444);
+    font-size: 0.8125rem;
+    margin-top: 6px;
+}
+
+/* ==========================================================================
+   PREVIEW PANEL
+   ========================================================================== */
+
+.qem-preview {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.qem-preview-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--admin-text-secondary, rgba(255,255,255,0.7));
+}
+
+.qem-preview-header svg {
+    color: var(--admin-primary, #6366f1);
+}
+
+.qem-preview-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.qem-preview-question {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.qem-preview-qnum {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--admin-primary, #6366f1);
+    margin-right: 8px;
+}
+
+.qem-preview-section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--admin-text-muted, rgba(255,255,255,0.5));
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.qem-preview-text {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--admin-text-primary, #fff);
+}
+
+.qem-preview-blank {
+    display: inline-block;
+    min-width: 80px;
+    padding: 2px 8px;
+    background: rgba(99, 102, 241, 0.15);
+    border-bottom: 2px solid var(--admin-primary, #6366f1);
+    color: var(--admin-primary, #6366f1);
+    font-weight: 500;
+    margin: 0 2px;
+}
+
+.qem-preview-number {
+    color: var(--admin-primary, #6366f1);
+    font-weight: 700;
+}
+
+.qem-preview-options {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.qem-preview-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: var(--admin-text-secondary, rgba(255,255,255,0.8));
+}
+
+.qem-preview-radio {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.qem-preview-radio--selected {
+    color: var(--admin-primary, #6366f1);
+}
+
+.qem-preview-matching {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.qem-preview-answer-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: rgba(99, 102, 241, 0.2);
+    border: 2px solid var(--admin-primary, #6366f1);
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--admin-primary, #6366f1);
+}
+
+.qem-preview-text-answer {
+    margin-top: 16px;
+    padding: 10px 14px;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: #22c55e;
+}
+
+.qem-preview-type-badge {
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--admin-text-muted, rgba(255,255,255,0.5));
+    text-align: center;
+}
+
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+
+@media (max-width: 900px) {
+    .qem-layout {
+        flex-direction: column;
+        height: auto;
+        max-height: none;
+    }
+    
+    .qem-layout--with-preview .qem-form {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .qem-layout--with-preview .qem-preview-panel {
+        width: 100%;
+        max-height: 300px;
+    }
+    
+    .qem-optional-fields {
+        flex-direction: column;
+        gap: 0;
+    }
+}

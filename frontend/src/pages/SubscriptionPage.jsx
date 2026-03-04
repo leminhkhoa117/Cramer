@@ -593,7 +593,7 @@ export default function SubscriptionPage() {
 
           {/* Sidebar Header */}
           <div className="sl-sidebar__header sl-sidebar__header--centered">
-            <h1 className="sl-sidebar__title">{status?.tier?.nameVi || 'Cramerie'}</h1>
+            <h1 className="sl-sidebar__title">{status?.tier?.name || 'Cramerie'}</h1>
             <p className="sl-sidebar__subtitle">{tierConfig.description}</p>
             <StatusBadge status={status?.subscription?.status} />
           </div>
@@ -670,7 +670,7 @@ export default function SubscriptionPage() {
                         Chi tiết gói đăng ký
                       </h2>
                       <p className="sl-card__description">
-                        Thông tin về gói {status?.tier?.nameVi} của bạn
+                        Thông tin về gói {status?.tier?.name} của bạn
                       </p>
                     </div>
                     {canUpgrade && (

@@ -26,8 +26,12 @@ import SubscriptionPage from './pages/SubscriptionPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
 
+// Speaking imports (SpeakingLandingPage removed - users enter via Course cards)
+import SpeakingSessionPage from './pages/speaking/SpeakingSessionPage';
+import SpeakingResultsPage from './pages/speaking/SpeakingResultsPage';
+
 // Admin imports
-import AdminLayout from './admin/components/AdminLayout';
+import { AdminLayout } from './admin/components/layout';
 import AdminRouteGuard from './admin/components/AdminRouteGuard';
 import AdminDashboard from './admin/pages/AdminDashboard';
 import UserListPage from './admin/pages/users/UserListPage';
@@ -38,6 +42,10 @@ import ReportsPage from './admin/pages/finance/ReportsPage';
 import ContentListPage from './admin/pages/content/ContentListPage';
 import TestEditorSelectPage from './admin/pages/content/TestEditorSelectPage';
 import TestEditorPage from './admin/pages/content/TestEditorPage';
+import AIGenerationPage from './admin/pages/content/AIGenerationPage';
+import HashtagManagementPage from './admin/pages/content/HashtagManagementPage';
+import SetListPage from './admin/pages/content/SetListPage';
+import SetDetailPage from './admin/pages/content/SetDetailPage';
 
 // This component waits for the initial auth loading to complete
 function AuthInitializer({ children }) {
@@ -108,11 +116,14 @@ function AppContent() {
     /^\/test\/writing\/(?!review)\w+\/\d+$/.test(location.pathname);
   // Review pages have their own internal header, so hide the main header
   const isReviewPage = /^\/test\/writing\/review\/\d+$/.test(location.pathname) ||
-    /^\/test\/review\/\d+$/.test(location.pathname);
+    /^\/test\/review\/\d+$/.test(location.pathname) ||
+    /^\/speaking\/results\//.test(location.pathname);
   // Admin pages have their own layout with AdminHeader/AdminSidebar
   const isAdminPage = location.pathname.startsWith('/admin');
+  // Speaking session page should hide header for full immersion
+  const isSpeakingSessionPage = /^\/speaking\/session\//.test(location.pathname);
 
-  const showHeader = !isTestPage && !isReviewPage && !isAdminPage;
+  const showHeader = !isTestPage && !isReviewPage && !isAdminPage && !isSpeakingSessionPage;
 
   return (
     <>
@@ -226,6 +237,29 @@ function AppContent() {
               element={<PaymentCancelPage />}
             />
 
+            {/* Speaking Routes - Entry is via CourseDetailPage modal */}
+            <Route
+              path="/speaking/session/:mode"
+              element={
+                <ProtectedRoute>
+                  <SpeakingSessionPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/speaking/results/:sessionId"
+              element={
+                <ProtectedRoute>
+                  <SpeakingResultsPage />
+                </ProtectedRoute>
+              }
+            />
+            {/* Redirect old /speaking route to courses */}
+            <Route
+              path="/speaking"
+              element={<Navigate to="/courses" replace />}
+            />
+
             {/* Admin Routes - separate layout, no Header/Footer */}
             <Route
               path="/admin"
@@ -243,15 +277,24 @@ function AppContent() {
               <Route path="finance/transactions" element={<TransactionHistoryPage />} />
               <Route path="finance/reports" element={<ReportsPage />} />
               <Route path="content" element={<ContentListPage />} />
-              <Route path="content/editor" element={<TestEditorSelectPage />} />
+              <Route path="content/hub" element={<Navigate to="/admin/content/sets" replace />} />
+              <Route path="content/hashtags" element={<HashtagManagementPage />} />
+              <Route path="content/generate" element={<AIGenerationPage />} />
+              {/* Editor Routes */}
+              <Route path="content/editor" element={<Navigate to="/admin/content/sets" replace />} />
+              <Route path="content/sets" element={<SetListPage />} />
+              <Route path="content/sets/:setId" element={<SetDetailPage />} />
+              <Route path="content/editor/:testId" element={<TestEditorPage />} />
+              <Route path="content/tests/:testId" element={<TestEditorPage />} />
+              {/* Legacy Editor Route Support */}
               <Route path="content/editor/:examSource/:testNumber" element={<TestEditorPage />} />
             </Route>
           </Routes>
         </AnimatePresence>
       </main>
-      {!isTestPage && !isReviewPage && !isAdminPage && <Footer />}
-      {/* Floating Assistant Widget - visible on protected pages except test-taking and admin */}
-      {!isTestPage && !isAdminPage && <FloatingAssistant />}
+      {!isTestPage && !isReviewPage && !isAdminPage && !isSpeakingSessionPage && <Footer />}
+      {/* Floating Assistant Widget - visible on protected pages except test-taking, admin, and speaking session */}
+      {!isTestPage && !isAdminPage && !isSpeakingSessionPage && <FloatingAssistant />}
     </>
   );
 }

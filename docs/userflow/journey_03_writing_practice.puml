@@ -1,0 +1,177 @@
+@startuml User_Journey_Writing_Practice
+!theme blueprint
+title Cramer CMS - Writing Practice Journey\n(Complete Writing Test Cycle)
+
+skinparam {
+    BackgroundColor #1a1a2e
+    TitleFontColor #ffffff
+    TitleFontSize 18
+    DefaultFontColor #e8e8e8
+    ArrowColor #64b5f6
+    NoteBackgroundColor #424242
+    NoteFontColor #ffffff
+    ActivityBackgroundColor #37474f
+    ActivityBorderColor #78909c
+}
+
+|#2c3e50|Goal Setting|
+start
+:User wants to improve IELTS Writing;
+note right
+  **User Context:**
+  - Current level: ~Band 5.5
+  - Target: Band 7.0
+  - Exam in 2 months
+  - Struggles with Task 2
+end note
+
+:Has Cramerich subscription;
+:3 AI gradings remaining this month;
+
+|#34495e|Test Selection|
+:Navigates to Courses;
+:Selects "Cambridge 17";
+:Clicks "Writing";
+:Sees Task 1 (chart) and Task 2 (essay);
+
+:Clicks "Bat dau bai thi";
+:Sees grading quota info:
+"Con 3 luot cham diem AI";
+
+|#9b59b6|Task 1: Report Writing|
+:Timer starts (60 minutes total);
+:Reads Task 1 prompt;
+note right
+  **Task 1 Prompt:**
+  "The chart shows the percentage
+  of households with internet
+  access from 2000-2020..."
+end note
+
+:Studies the chart/graph;
+:Plans response structure:
+- Introduction
+- Overview
+- Body paragraph 1
+- Body paragraph 2;
+
+:Writes 180 words (target: 150+);
+:Sees live word count;
+:Proofreads quickly;
+
+|#3498db|Task 2: Essay Writing|
+:Clicks "Task 2" tab;
+:Reads essay prompt;
+note right
+  **Task 2 Prompt:**
+  "Some people think that
+  all university students should
+  study whatever they like..."
+end note
+
+:Spends 40 minutes on Task 2;
+:Writes 290 words (target: 250+);
+:Structures essay:
+- Introduction + thesis
+- Body 1 (agree points)
+- Body 2 (disagree points)
+- Conclusion;
+
+|#f39c12|Submission|
+:Reviews both tasks;
+:Clicks "Nop bai";
+:Sees confirmation:
+"Ban co chac muon nop bai?
+AI se cham diem bai viet cua ban.";
+:Confirms submission;
+
+|#e74c3c|AI Grading (Behind Scenes)|
+:Shows loading animation;
+note right
+  **Processing:**
+  - Essay sent to DeepSeek API
+  - ~15-30 seconds per task
+  - Detailed analysis generated
+end note
+
+:Polling every 3 seconds;
+:Task 1 graded...;
+:Task 2 graded...;
+:Both complete!;
+
+|#27ae60|Results - Task 1|
+:Redirects to Writing Review page;
+:Sees Task 1 scores:
+- Overall: **6.5**
+- Task Achievement: 7.0
+- Coherence: 6.5
+- Lexical Resource: 6.0
+- Grammar: 6.5;
+
+:Expands feedback section;
+note right
+  **AI Feedback Highlights:**
+  "Good overview but lacks
+  specific data points.
+  Consider including more
+  numbers from the chart."
+end note
+
+:Sees error highlights:
+- 2 grammar errors (red)
+- 3 vocabulary suggestions (purple)
+- 1 coherence issue (green);
+
+|#1abc9c|Results - Task 2|
+:Switches to Task 2 tab;
+:Sees Task 2 scores:
+- Overall: **6.0**
+- Task Response: 6.0
+- Coherence: 6.5
+- Lexical Resource: 5.5
+- Grammar: 6.0;
+
+:Reads detailed feedback;
+note right
+  **Key Improvement Areas:**
+  1. "Thesis could be clearer"
+  2. "Vocabulary is repetitive"
+  3. "Need stronger conclusion"
+end note
+
+:Views sample Band 7 essay;
+:Compares with own writing;
+
+|#9b59b6|Learning & Improvement|
+:Identifies weak areas:
+- Vocabulary variety
+- Data inclusion (Task 1);
+
+:Saves vocabulary from feedback;
+:Notes common mistakes;
+
+:Decides to practice again;
+:2 AI gradings remaining;
+
+if (Practice again?) then (yes)
+  :Selects different test;
+  :Focuses on weak areas;
+else (no)
+  :Reviews progress on Dashboard;
+  :Plans next practice session;
+endif
+
+stop
+
+legend right
+  **Writing Journey Metrics:**
+  |= Phase |= Time |
+  | Test Selection | 1-2 min |
+  | Task 1 Writing | 15-20 min |
+  | Task 2 Writing | 35-40 min |
+  | AI Grading | 30-60 sec |
+  | Review & Learn | 10-15 min |
+  | **Total** | **~70 min** |
+endlegend
+
+@enduml

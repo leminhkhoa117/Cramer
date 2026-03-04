@@ -22,7 +22,9 @@ const ReviewAnswerColumn = ({ section, onQuestionClick, selectedQuestionId, skil
         // For Listening tests with sectionLayout
         if (section.sectionLayout?.blocks) {
             return section.sectionLayout.blocks.map(block => {
-                const blockQuestions = block.question_numbers
+                // Safely get question_numbers array, fallback to empty array
+                const questionNumbers = block.question_numbers || [];
+                const blockQuestions = questionNumbers
                     .map(num => questionsMap.get(num))
                     .filter(Boolean);
 

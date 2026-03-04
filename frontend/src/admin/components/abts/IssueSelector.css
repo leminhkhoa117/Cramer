@@ -1,0 +1,164 @@
+/**
+ * IssueSelector.css - Styles for issue selection component
+ */
+
+.issue-selector {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--admin-border-divider, rgba(255, 255, 255, 0.08));
+}
+
+.issue-selector__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    gap: 12px;
+}
+
+.issue-selector__select-all {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--admin-text-secondary, #a0a0b0);
+    cursor: pointer;
+}
+
+.issue-selector__select-all input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--admin-accent-primary, #6366f1);
+}
+
+.issue-selector__fix-btn {
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.issue-selector__fix-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.issue-selector__fix-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.issue-selector__list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.issue-selector__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.issue-selector__item:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+.issue-selector__item.selected {
+    background-color: rgba(99, 102, 241, 0.1);
+}
+
+.issue-selector__item input[type="checkbox"] {
+    margin-top: 2px;
+    width: 12px;
+    height: 12px;
+    accent-color: var(--admin-accent-primary, #6366f1);
+}
+
+.issue-selector__message {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--admin-text-primary, #e0e0e0);
+    /* Prevent long text from extending horizontally */
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Small spinner for loading state */
+.spinner-small {
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Model selector for refinement - Cost optimization v8.0 */
+.issue-selector__model {
+    margin: 12px 0;
+    padding: 10px;
+    background: rgba(99, 102, 241, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.issue-selector__model-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--admin-text-secondary, #a0a0b0);
+    margin-bottom: 6px;
+}
+
+.issue-selector__model-hint {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--admin-text-muted, #888);
+    margin-top: 6px;
+}
+
+/* Reasoning toggle checkbox */
+.issue-selector__toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 8px;
+    background: rgba(139, 92, 246, 0.08);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--admin-text-secondary, #a0a0b0);
+    transition: background 0.2s;
+}
+
+.issue-selector__toggle:hover {
+    background: rgba(139, 92, 246, 0.15);
+}
+
+.issue-selector__toggle input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #8b5cf6;
+}

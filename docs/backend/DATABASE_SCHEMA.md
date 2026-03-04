@@ -4,7 +4,7 @@
 >
 > **Project ID:** `jpocdgkrvohmjkejclpl`
 >
-> **Last Updated:** 2025-12-15
+> **Last Updated:** 2026-01-03
 
 ---
 
@@ -35,7 +35,7 @@ The Cramer database is hosted on **Supabase** (PostgreSQL) and serves as the bac
 
 | Domain | Description | Key Tables |
 |--------|-------------|------------|
-| **User Management** | User profiles, authentication, and preferences | `profiles`, `user_two_factor_auth`, `user_streaks` |
+| **User Management** | User profiles and authentication | `profiles` |
 | **IELTS Content** | Test sections and questions for Reading, Listening, Writing | `sections`, `questions` |
 | **Test Attempts** | User test progress and answers | `test_attempts`, `user_answers`, `writing_submissions` |
 | **Subscription & Billing** | Subscription tiers, payments, and virtual currency | `subscription_tiers`, `user_subscriptions`, `payment_orders`, `user_credits`, `credit_transactions`, `lua_packs` |
@@ -47,11 +47,11 @@ The Cramer database is hosted on **Supabase** (PostgreSQL) and serves as the bac
 
 | Metric | Value |
 |--------|-------|
-| Total Tables | 21 |
-| Tables with RLS | 16 |
-| Database Functions | 5 |
-| Active Triggers | 4 |
-| Applied Migrations | 14 |
+| Total Tables | 26 |
+| Tables with RLS | 20 |
+| Database Functions | 3 |
+| Active Triggers | 3 |
+| Applied Migrations | 16 |
 
 ---
 
@@ -120,46 +120,112 @@ spring:
 
 ---
 
-#### `user_two_factor_auth`
-
-> **Description:** Stores two-factor authentication configuration for users.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | `bigint` | NO | Identity | **Primary Key.** Auto-incrementing. |
-| `user_id` | `uuid` | NO | - | Reference to user. |
-| `secret_key` | `varchar(255)` | NO | - | TOTP secret key. |
-| `enabled` | `boolean` | NO | `false` | Whether 2FA is enabled. |
-| `recovery_codes` | `varchar(255)` | YES | - | Backup recovery codes. |
-| `updated_at` | `timestamptz` | YES | - | Last modification timestamp. |
-
-**Constraints:**
-- Primary Key: `user_two_factor_auth_pkey` on `id`
-- Unique: `uk69q0fttc88t2e2li4vtk3074i` on `user_id`
-
----
-
-#### `user_streaks`
-
-> **Description:** Tracks daily login streaks for gamification.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | `bigint` | NO | Identity | **Primary Key.** Auto-incrementing. |
-| `user_id` | `uuid` | NO | - | Reference to user. |
-| `current_streak` | `integer` | NO | - | Current consecutive login days. |
-| `longest_streak` | `integer` | NO | - | All-time longest streak. |
-| `last_login_date` | `date` | YES | - | Date of last streak update. |
-| `last_streak_bonus_at` | `timestamptz` | YES | - | When streak bonus was last awarded. |
-| `updated_at` | `timestamptz` | YES | - | Last modification timestamp. |
-
-**Constraints:**
-- Primary Key: `user_streaks_pkey` on `id`
-- Unique: `ukohm7b8slvdgmrmgisi5sg2uye` on `user_id`
-
----
-
 ### 3.2 IELTS Content
+
+#### `test_sets`
+
+> **Description:** Top-level collections of tests (e.g., "Cambridge IELTS 17", "Road to IELTS").
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | `bigint` | NO | Identity | **Primary Key.** Auto-incrementing. |
+| `code` | `varchar(50)` | NO | - | Unique code (e.g., `cam17`). |
+| `name_vi` | `varchar(255)` | NO | - | Vietnamese name. |
+| `name_en` | `varchar(255)` | NO | - | English name. |
+| `description` | `text` | YES | - | Set description. |
+| `cover_image_url` | `varchar(255)` | YES | - | URL to cover image. |
+| `source_type` | `varchar(50)` | NO | `'CAMBRIDGE'` | Type: `CAMBRIDGE`, `IELTS_TRAINER`, `ROAD_TO_IELTS`, `ACTUAL_TEST`, `AI_GENERATED`. |
+| `is_published` | `boolean` | NO | `false` | Whether set is visible to users. |
+| `is_system` | `boolean` | NO | `false` | System sets cannot be deleted. |
+| `display_order` | `integer` | YES | `0` | Sort order. |
+| `created_by` | `uuid` | YES | - | Reference to creator. |
+| `created_at` | `timestamptz` | YES | `now()` | Creation timestamp. |
+| `updated_at` | `timestamptz` | YES | `now()` | Last modification. |
+
+**Constraints:**
+- Primary Key: `test_sets_pkey` on `id`
+- Unique: `test_sets_code_key` on `code`
+
+**Indexes:**
+- `idx_test_sets_source_type` on (`source_type`)
+- `idx_test_sets_is_published` on (`is_published`)
+
+---
+
+#### `tests`
+
+> **Description:** Individual tests within a set (e.g., "Test 1" inside "Cambridge 17").
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | `bigint` | NO | Identity | **Primary Key.** Auto-incrementing. |
+| `set_id` | `bigint` | NO | - | **Foreign Key** to `test_sets.id`. |
+| `test_number` | `integer` | NO | - | Test number within set (1, 2, 3...). |
+| `name_vi` | `varchar(255)` | YES | - | Custom Vietnamese name (optional). |
+| `name_en` | `varchar(255)` | YES | - | Custom English name (optional). |
+| `description` | `text` | YES | - | Test description. |
+| `difficulty` | `varchar(20)` | YES | `'MEDIUM'` | Difficulty: `EASY`, `MEDIUM`, `HARD`, `EXPERT`. |
+| `estimated_time_minutes` | `integer` | YES | - | Estimated duration. |
+| `is_published` | `boolean` | NO | `false` | Whether test is visible. |
+| `is_ai_generated` | `boolean` | NO | `false` | Whether created by AI. |
+| `generation_metadata` | `jsonb` | YES | - | Metadata if AI generated (prompt, model, etc.). |
+| `created_by` | `uuid` | YES | - | Reference to creator. |
+| `created_at` | `timestamptz` | YES | `now()` | Creation timestamp. |
+| `updated_at` | `timestamptz` | YES | `now()` | Last modification. |
+
+**Constraints:**
+- Primary Key: `tests_pkey` on `id`
+- Foreign Key: `tests_set_id_fkey` references `test_sets(id)`
+- Unique: `tests_set_id_test_number_key` on (`set_id`, `test_number`)
+
+**Indexes:**
+- `idx_tests_set_id` on (`set_id`)
+
+---
+
+#### `hashtags`
+
+> **Description:** Categorization tags for tests (topics, themes, difficulty).
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | `bigint` | NO | Identity | **Primary Key.** Auto-incrementing. |
+| `code` | `varchar(50)` | NO | - | Unique tag code (e.g., `topic_science`). |
+| `name_vi` | `varchar(100)` | NO | - | Vietnamese display name. |
+| `name_en` | `varchar(100)` | NO | - | English display name. |
+| `category` | `varchar(50)` | NO | - | Category: `TOPIC`, `THEME`, `DIFFICULTY`, `SOURCE`. |
+| `icon` | `varchar(10)` | YES | - | Emoji or icon code. |
+| `color` | `varchar(20)` | YES | - | Display color hex or name. |
+| `use_count` | `integer` | NO | `0` | Number of tests using this tag. |
+| `is_active` | `boolean` | NO | `true` | Whether tag is available. |
+| `created_at` | `timestamptz` | YES | `now()` | Creation timestamp. |
+
+**Constraints:**
+- Primary Key: `hashtags_pkey` on `id`
+- Unique: `hashtags_code_key` on `code`
+
+**Indexes:**
+- `idx_hashtags_category` on (`category`)
+
+---
+
+#### `test_hashtags`
+
+> **Description:** Junction table linking tests to hashtags (Many-to-Many).
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `test_id` | `bigint` | NO | - | **Foreign Key** to `tests.id`. |
+| `hashtag_id` | `bigint` | NO | - | **Foreign Key** to `hashtags.id`. |
+| `is_primary` | `boolean` | NO | `false` | Whether this is a primary tag. |
+| `created_at` | `timestamptz` | YES | `now()` | Creation timestamp. |
+
+**Constraints:**
+- Primary Key: `test_hashtags_pkey` on (`test_id`, `hashtag_id`)
+- Foreign Key: `test_hashtags_test_id_fkey` references `tests(id)`
+- Foreign Key: `test_hashtags_hashtag_id_fkey` references `hashtags(id)`
+
+---
 
 #### `sections`
 
@@ -184,14 +250,18 @@ spring:
 | `minimum_word_count` | `integer` | YES | - | Minimum word count requirement. |
 | `image_url` | `varchar` | YES | - | Image for Writing Task 1 (charts, graphs). |
 | `image_description` | `text` | YES | - | Accessibility description of the image. |
+| `test_id` | `bigint` | YES | - | **Foreign Key** to `tests.id`. |
+| `status` | `varchar(20)` | YES | `'PUBLISHED'` | Status: `DRAFT`, `PUBLISHED`, `ARCHIVED`. |
 
 **Constraints:**
 - Primary Key: `sections_pkey` on `id`
-- Unique: `sections_exam_source_test_number_skill_part_number_key` on (`exam_source`, `test_number`, `skill`, `part_number`)
+- Foreign Key: `sections_test_id_fkey` references `tests(id)`
+- Unique: `sections_exam_source_test_number_skill_part_number_key` on (`exam_source`, `test_number`, `skill`, `part_number`) (Legacy)
 
 **Indexes:**
 - `idx_sections_skill` on (`skill`)
 - `idx_sections_exam` on (`exam_source`, `test_number`)
+- `idx_sections_test_id` on (`test_id`)
 
 ---
 
@@ -836,22 +906,6 @@ $function$;
 
 ---
 
-### `update_login_streak(p_user_id)`
-
-> **Purpose:** Updates user login streak and returns streak info with any bonus earned.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `p_user_id` | `uuid` | User ID to update streak for |
-
-**Returns:** `TABLE(new_streak integer, bonus_lua integer)`
-
-**Bonus Rules:**
-- 7-day streak: 15 Lúa bonus
-- 30-day streak: 50 Lúa bonus
-
----
-
 ### `update_skill_quotas_updated_at()`
 
 > **Purpose:** Trigger function to update `updated_at` on skill_quotas.
@@ -893,6 +947,7 @@ $function$;
 | 20251214051541 | `add_attempt_tracking_columns` | Add quota tracking columns |
 | 20251214065713 | `fix_cramerie_attempt_limits` | Fix free tier limits |
 | 20251214072921 | `add_ai_grading_enabled` | Add AI grading toggle |
+| 20251226000001 | `test_storage_overhaul` | Add test_sets, tests, hashtags tables and update sections |
 
 ---
 

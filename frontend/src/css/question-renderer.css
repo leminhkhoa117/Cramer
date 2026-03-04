@@ -118,3 +118,49 @@
 .matching-question-container .matching-select {
     min-width: 100px;
 }
+
+/* Table Completion Inline Inputs */
+.table-completion-container {
+    line-height: 1.9;
+    color: #374151;
+}
+
+.table-completion-container table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.5rem 0;
+}
+
+.table-completion-container th,
+.table-completion-container td {
+    border: 1px solid #e5e7eb;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    vertical-align: top;
+}
+
+.table-completion-container th {
+    background: #f9fafb;
+    font-weight: 600;
+}
+
+.table-inline-input {
+    width: 120px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Diagram Label Completion fallback */
+.diagram-label-container {
+    padding: 0.5rem;
+}
+
+.diagram-description {
+    background: #f3f4f6;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+    color: #6b7280;
+    font-size: 0.9rem;
+    border-left: 3px solid #7c3aed;
+}

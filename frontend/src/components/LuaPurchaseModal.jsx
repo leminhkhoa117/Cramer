@@ -1,10 +1,11 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiX, FiLoader, FiCreditCard } from 'react-icons/fi';
+import { FiLoader, FiCreditCard } from 'react-icons/fi';
+import '../css/common/modal.css';
 
 /**
  * Modal for confirming Lúa package purchase.
- * Shows package details, bonus, and total with payment button.
+ * Uses shared modal styles (cm-* classes) from common/modal.css
  */
 export default function LuaPurchaseModal({
     package: pkg,
@@ -22,82 +23,84 @@ export default function LuaPurchaseModal({
     return (
         <AnimatePresence>
             <motion.div
-                className="lua-modal-overlay"
+                className="cm-backdrop"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={onCancel}
             >
                 <motion.div
-                    className="lua-modal"
+                    className="cm-content cm-content--sm"
                     initial={{ scale: 0.9, opacity: 0, y: 20 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0, y: 20 }}
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
-                    <div className="lua-modal__header">
-                        <span className="lua-modal__icon">🌾</span>
-                        <h2 className="lua-modal__title">Xác nhận mua {pkg.name}</h2>
+                    <div className="cm-header cm-header--no-border">
+                        <h2 className="cm-title">
+                            <span style={{ marginRight: '0.5rem' }}>🌾</span>
+                            Xác nhận mua {pkg.name}
+                        </h2>
                     </div>
 
                     {/* Body - Package Details */}
-                    <div className="lua-modal__body">
-                        <div className="lua-modal__row">
-                            <span className="lua-modal__label">Gói Lúa</span>
-                            <span className="lua-modal__value">{pkg.name}</span>
-                        </div>
-
-                        <div className="lua-modal__row">
-                            <span className="lua-modal__label">Lúa cơ bản</span>
-                            <span className="lua-modal__value lua-modal__value--highlight">
-                                {pkg.luaAmount.toLocaleString()} 🌾
-                            </span>
-                        </div>
-
-                        {pkg.bonusPercent > 0 && (
-                            <div className="lua-modal__row">
-                                <span className="lua-modal__label">Bonus (+{pkg.bonusPercent}%)</span>
-                                <span className="lua-modal__value" style={{ color: '#10b981' }}>
-                                    +{bonusAmount.toLocaleString()} 🌾
+                    <div className="cm-body">
+                        <ul className="cm-info-list">
+                            <li>
+                                <strong>Gói Lúa:</strong> {pkg.name}
+                            </li>
+                            <li>
+                                <strong>Lúa cơ bản:</strong>{' '}
+                                <span style={{ color: '#fbbf24' }}>
+                                    {pkg.luaAmount.toLocaleString()} 🌾
                                 </span>
-                            </div>
-                        )}
+                            </li>
+                            {pkg.bonusPercent > 0 && (
+                                <li>
+                                    <strong>Bonus (+{pkg.bonusPercent}%):</strong>{' '}
+                                    <span style={{ color: '#34d399' }}>
+                                        +{bonusAmount.toLocaleString()} 🌾
+                                    </span>
+                                </li>
+                            )}
+                            <li>
+                                <strong>Tổng Lúa nhận được:</strong>{' '}
+                                <span style={{ color: '#f59e0b', fontWeight: 700 }}>
+                                    {totalLua.toLocaleString()} 🌾
+                                </span>
+                            </li>
+                        </ul>
 
-                        <div className="lua-modal__row">
-                            <span className="lua-modal__label">Tổng Lúa nhận được</span>
-                            <span className="lua-modal__value lua-modal__value--total">
-                                {totalLua.toLocaleString()} 🌾
-                            </span>
-                        </div>
-
-                        <div className="lua-modal__row" style={{ paddingTop: '1rem', borderTop: '2px solid #e5e7eb', marginTop: '0.5rem' }}>
-                            <span className="lua-modal__label" style={{ fontWeight: 600, color: '#1f2937' }}>Thanh toán</span>
-                            <span className="lua-modal__value" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1f2937' }}>
-                                {formatPrice(pkg.priceVnd)}
-                            </span>
-                        </div>
+                        <p style={{
+                            textAlign: 'center',
+                            fontSize: '1.1rem',
+                            fontWeight: 600,
+                            padding: '1rem',
+                            background: 'rgba(255,255,255,0.1)',
+                            borderRadius: '12px',
+                            margin: 0
+                        }}>
+                            Thanh toán: {formatPrice(pkg.priceVnd)}
+                        </p>
                     </div>
 
                     {/* Footer - Actions */}
-                    <div className="lua-modal__footer">
+                    <div className="cm-footer">
                         <button
-                            className="lua-modal__btn lua-modal__btn--cancel"
+                            className="cm-btn cm-btn--secondary"
                             onClick={onCancel}
                             disabled={isProcessing}
                         >
                             Hủy
                         </button>
                         <button
-                            className="lua-modal__btn lua-modal__btn--confirm"
+                            className="cm-btn cm-btn--primary"
                             onClick={onConfirm}
                             disabled={isProcessing}
                         >
                             {isProcessing ? (
-                                <>
-                                    <FiLoader className="lua-package-card__spinner" />
-                                    Đang xử lý...
-                                </>
+                                <span className="cm-loading">Đang xử lý...</span>
                             ) : (
                                 <>
                                     <FiCreditCard />

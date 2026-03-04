@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { FiCheck, FiX, FiAlertTriangle, FiInfo } from 'react-icons/fi';
+import { registerToastHandler, unregisterToastHandler } from '../../../utils/toast';
 import './Toast.css';
 
 // Toast Context
@@ -72,6 +73,12 @@ export function ToastProvider({ children }) {
     const info = useCallback((message, title) => {
         return addToast({ type: 'info', message, title });
     }, [addToast]);
+
+    // Register this provider as the global toast handler
+    useEffect(() => {
+        registerToastHandler({ success, error, warning, info });
+        return () => unregisterToastHandler();
+    }, [success, error, warning, info]);
 
     return (
         <ToastContext.Provider value={{ success, error, warning, info, addToast, removeToast }}>

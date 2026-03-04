@@ -1,0 +1,294 @@
+/**
+ * FlowchartRenderer.css - Styles for flowchart diagram component
+ */
+
+.flowchart-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    overflow-x: auto;
+}
+
+.flowchart-container--vertical {
+    flex-direction: column;
+}
+
+.flowchart-container--horizontal {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Nodes */
+.flowchart-node {
+    background: #ffffff;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    min-width: 120px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.flowchart-node--step {
+    border-color: #6366f1;
+    background: #eef2ff;
+}
+
+.flowchart-node--blank {
+    border-color: #7c3aed;
+    border-style: dashed;
+    background: #faf5ff;
+}
+
+.flowchart-node--start,
+.flowchart-node--end {
+    border-radius: 20px;
+    border-color: #10b981;
+    background: #ecfdf5;
+}
+
+.flowchart-node.correct {
+    border-color: #10b981;
+    background: #dcfce7;
+}
+
+.flowchart-node.incorrect {
+    border-color: #ef4444;
+    background: #fee2e2;
+}
+
+/* Node content */
+.flowchart-node__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.flowchart-node__qnum {
+    font-weight: 700;
+    color: #7c3aed;
+    font-size: 0.85rem;
+}
+
+.flowchart-node__input {
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.9rem;
+    width: 100px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.flowchart-node__input:focus {
+    outline: none;
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+}
+
+.flowchart-node__answer {
+    font-weight: 500;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.flowchart-node__answer.correct {
+    color: #166534;
+}
+
+.flowchart-node__answer.incorrect {
+    color: #991b1b;
+    text-decoration: line-through;
+}
+
+.flowchart-node__correct {
+    font-size: 0.8rem;
+    color: #166534;
+    font-weight: 500;
+}
+
+/* Hybrid label + input nodes (IELTS-style) */
+.flowchart-node__hybrid {
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.flowchart-node__label-with-blank {
+    display: inline;
+    line-height: 1.8;
+    font-size: 0.9rem;
+}
+
+.flowchart-node__inline-input {
+    display: inline-block;
+    border: 1px solid #7c3aed;
+    border-radius: 4px;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.85rem;
+    width: 100px;
+    text-align: center;
+    background: #faf5ff;
+    color: #1f2937;
+    vertical-align: middle;
+    margin: 0 0.25rem;
+}
+
+.flowchart-node__inline-input:focus {
+    outline: none;
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+}
+
+.flowchart-node__inline-answer {
+    display: inline-block;
+    border: 1px dashed #7c3aed;
+    border-radius: 4px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    background: #f3e8ff;
+    color: #6b21a8;
+    vertical-align: middle;
+    margin: 0 0.25rem;
+    min-width: 60px;
+    text-align: center;
+}
+
+.flowchart-node__inline-answer.correct {
+    background: #dcfce7;
+    border-color: #22c55e;
+    color: #166534;
+}
+
+.flowchart-node__inline-answer.incorrect {
+    background: #fee2e2;
+    border-color: #ef4444;
+    color: #991b1b;
+    text-decoration: line-through;
+}
+
+/* Arrows */
+.flowchart-arrow {
+    font-size: 1.5rem;
+    color: #9ca3af;
+    line-height: 1;
+}
+
+.flowchart-arrow--vertical {
+    padding: 0.25rem 0;
+}
+
+.flowchart-arrow--horizontal {
+    padding: 0 0.5rem;
+}
+
+/* Error state */
+.flowchart-error {
+    padding: 1rem;
+    color: #6b7280;
+    font-style: italic;
+    background: #f3f4f6;
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* Dark theme override for admin */
+.admin-preview-container .flowchart-container,
+.admin-preview-wrapper .flowchart-container,
+.studio-preview .flowchart-container {
+    background: #1f2937;
+    border-color: #374151;
+}
+
+.admin-preview-container .flowchart-node,
+.admin-preview-wrapper .flowchart-node,
+.studio-preview .flowchart-node {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+}
+
+.admin-preview-container .flowchart-node--step,
+.admin-preview-wrapper .flowchart-node--step,
+.studio-preview .flowchart-node--step {
+    background: #312e81;
+    border-color: #4f46e5;
+}
+
+.admin-preview-container .flowchart-node--blank,
+.admin-preview-wrapper .flowchart-node--blank,
+.studio-preview .flowchart-node--blank {
+    background: #581c87;
+    border-color: #7c3aed;
+}
+
+.admin-preview-container .flowchart-node--start,
+.admin-preview-wrapper .flowchart-node--start,
+.admin-preview-container .flowchart-node--end,
+.admin-preview-wrapper .flowchart-node--end,
+.studio-preview .flowchart-node--start,
+.studio-preview .flowchart-node--end {
+    background: #064e3b;
+    border-color: #10b981;
+}
+
+.admin-preview-container .flowchart-node__input,
+.admin-preview-wrapper .flowchart-node__input,
+.studio-preview .flowchart-node__input {
+    background: #1f2937;
+    border-color: #4b5563;
+    color: #f9fafb;
+}
+
+.admin-preview-container .flowchart-arrow,
+.admin-preview-wrapper .flowchart-arrow,
+.studio-preview .flowchart-arrow {
+    color: #9ca3af;
+}
+
+/* Dark theme for answer/qnum elements */
+.admin-preview-container .flowchart-node__answer,
+.admin-preview-wrapper .flowchart-node__answer,
+.studio-preview .flowchart-node__answer {
+    background: rgba(124, 58, 237, 0.2);
+    color: #f9fafb;
+    border: 1px dashed #7c3aed;
+    min-width: 80px;
+    text-align: center;
+}
+
+.admin-preview-container .flowchart-node__qnum,
+.admin-preview-wrapper .flowchart-node__qnum,
+.studio-preview .flowchart-node__qnum {
+    color: #a78bfa;
+}
+
+/* Dark theme for inline input/answer (hybrid nodes) */
+.admin-preview-container .flowchart-node__inline-input,
+.admin-preview-wrapper .flowchart-node__inline-input,
+.studio-preview .flowchart-node__inline-input {
+    background: #1f2937;
+    border-color: #7c3aed;
+    color: #f9fafb;
+}
+
+.admin-preview-container .flowchart-node__inline-answer,
+.admin-preview-wrapper .flowchart-node__inline-answer,
+.studio-preview .flowchart-node__inline-answer {
+    background: rgba(124, 58, 237, 0.2);
+    border-color: #a78bfa;
+    color: #e9d5ff;
+}
+
+.admin-preview-container .flowchart-node__label-with-blank,
+.admin-preview-wrapper .flowchart-node__label-with-blank,
+.studio-preview .flowchart-node__label-with-blank {
+    color: #e5e7eb;
+}

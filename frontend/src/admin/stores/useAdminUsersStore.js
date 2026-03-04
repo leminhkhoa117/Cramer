@@ -39,6 +39,7 @@ const useAdminUsersStore = create((set, get) => ({
     isLoadingStats: false,
     isLoadingUser: false,
     isExporting: false,
+    subscriptionUpdating: false, 
     
     // Error
     error: null,
@@ -205,6 +206,29 @@ const useAdminUsersStore = create((set, get) => ({
             return updatedUser;
         } catch (error) {
             console.error('Error updating credits:', error);
+            throw error;
+        }
+    },
+    updateUserSubscription: async (userId, tierCode, durationMonths, reason) => {
+        set({ subscriptionUpdating: true });
+        
+        try {
+            const updatedUser = await adminApi.users.updateSubscription(userId, tierCode, durationMonths, reason);
+            
+            // Update user in list
+            set(state => ({
+                users: state.users.map(u => u.id === userId ? updatedUser : u),
+                selectedUser: state.selectedUser?.id === userId ? updatedUser : state.selectedUser,
+                subscriptionUpdating: false
+            }));
+            
+            // Refresh stats to update premium users count
+            get().fetchStats();
+            
+            return updatedUser;
+        } catch (error) {
+            console.error('Error updating subscription:', error);
+            set({ subscriptionUpdating: false });
             throw error;
         }
     },

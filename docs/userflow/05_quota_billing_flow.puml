@@ -1,0 +1,117 @@
+@startuml Quota_Billing_Flow
+!theme blueprint
+title Cramer CMS - Quota & Billing Flow
+
+skinparam {
+    BackgroundColor #1a1a2e
+    TitleFontColor #ffffff
+    TitleFontSize 20
+    DefaultFontColor #e8e8e8
+    ArrowColor #64b5f6
+    ActorBackgroundColor #4caf50
+    RectangleBackgroundColor #37474f
+    RectangleBorderColor #78909c
+    NoteBackgroundColor #424242
+    NoteFontColor #ffffff
+    StateBackgroundColor #2d2d44
+}
+
+actor "User" as User #lightgreen
+
+rectangle "Frontend" {
+    [useQuotaStore] as QuotaStore
+    [QuotaDisplay] as QuotaUI
+    [QuotaExceededModal] as QuotaModal
+}
+
+rectangle "Backend Services" {
+    [QuotaController] as QuotaCtrl
+    [QuotaBillingService] as BillingSvc
+    [QuotaService] as QuotaSvc
+    [CreditService] as CreditSvc
+    [SubscriptionService] as SubSvc
+}
+
+database "Database" {
+    [user_quotas]
+    [skill_quotas]
+    [user_credits]
+    [user_subscriptions]
+}
+
+state "Billing Decision Flow" as Decision {
+    state "Check Tier" as CheckTier
+    state "Premium?" as IsPremium
+    state "Within Cap?" as WithinCap
+    state "Has Lua?" as HasLua
+    state "Allowed (Free)" as AllowedFree
+    state "Allowed (Charged)" as AllowedCharged
+    state "Blocked" as Blocked
+}
+
+' Pre-check before starting test
+User --> QuotaCtrl : GET /can-attempt?skill=READING&ai=false
+QuotaCtrl --> BillingSvc : preCheckAttempt(userId, skill, isAI)
+
+' Decision Flow
+BillingSvc --> CheckTier
+CheckTier --> IsPremium
+
+IsPremium --> AllowedFree : Yes (cramerich/cramerous)
+IsPremium --> WithinCap : No (cramerie)
+
+WithinCap --> AllowedFree : Yes (under 20/skill/mo)
+WithinCap --> HasLua : No (cap exceeded)
+
+HasLua --> AllowedCharged : Yes (deduct Lua)
+HasLua --> Blocked : No (insufficient)
+
+' Response back
+AllowedFree --> QuotaCtrl : {allowed: true, charge: 0}
+AllowedCharged --> QuotaCtrl : {allowed: true, charge: 10/20}
+Blocked --> QuotaCtrl : {allowed: false, reason: "..."}
+
+QuotaCtrl --> QuotaStore : Update frontend state
+QuotaStore --> QuotaUI : Display remaining
+QuotaStore --> QuotaModal : Show if blocked
+
+' Actual billing on attempt start
+User --> BillingSvc : processAttemptBilling(userId, skill, isAI)
+BillingSvc --> CreditSvc : deductCredits(userId, amount)
+CreditSvc --> user_credits : Update balance
+BillingSvc --> QuotaSvc : incrementQuota(userId, skill)
+QuotaSvc --> skill_quotas : Increment count
+
+note right of BillingSvc
+  **QuotaBillingService Constants:**
+  
+  ATTEMPT_OVERAGE_COST = 10 Lua
+  ATTEMPT_AI_OVERAGE_COST = 20 Lua
+  
+  **processAttemptBilling() Flow:**
+  1. Premium users -> always allowed
+  2. Check global + skill caps
+  3. Cap hit -> charge Lua or block
+  4. Within cap -> allowed, no charge
+  5. Increment quota counts
+end note
+
+note left of Decision
+  **Quota Caps (Cramerie):**
+  - Global: 60 attempts/month
+  - Per-Skill: 20 attempts/month
+  - AI Gradings: 0/month (pay per use)
+  
+  **Premium Bypass:**
+  - Cramerich: unlimited attempts
+  - Cramerous: unlimited attempts
+end note
+
+note bottom of QuotaModal
+  **QuotaExceededModal Actions:**
+  - Buy Lua Pack
+  - Upgrade Subscription
+  - Use existing Lua balance
+end note
+
+@enduml

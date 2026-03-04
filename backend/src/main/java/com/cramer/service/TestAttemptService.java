@@ -1,6 +1,5 @@
 package com.cramer.service;
 
-import com.cramer.dto.AnswerSubmissionDTO;
 import com.cramer.dto.BillingResultDTO;
 import com.cramer.dto.SaveProgressDTO;
 import com.cramer.dto.TestResultDTO;
@@ -36,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -137,7 +137,7 @@ public class TestAttemptService {
             // one
             if (inProgressAttempts.size() > 1) {
                 logger.info("   -> Found multiple IN_PROGRESS attempts. Keeping only the most recent.");
-                TestAttempt mostRecentInProgress = inProgressAttempts.get(0); // Already sorted by startedAt DESC
+                // Keep the most recent one (already at index 0)
                 for (int i = 1; i < inProgressAttempts.size(); i++) {
                     TestAttempt oldAttempt = inProgressAttempts.get(i);
                     logger.info("   -> Cancelling stale IN_PROGRESS attempt ID: {}", oldAttempt.getId());
@@ -305,17 +305,12 @@ public class TestAttemptService {
         }
     }
 
-    private TestAttempt createNewAttempt(UUID userId, String source, String testNum, String skill) {
-        final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
-        return createNewAttempt(userId, source, testNum, skill, logger);
-    }
-
     @Transactional
     public void saveProgress(Long attemptId, SaveProgressDTO saveProgressDTO, UUID userId) {
         final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
         logger.info("🔄 Saving progress for attempt: attemptId={}, userId={}", attemptId, userId);
 
-        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+        TestAttempt attempt = testAttemptRepository.findById(Objects.requireNonNull(attemptId))
                 .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found"));
 
         if (!attempt.getUserId().equals(userId)) {
@@ -348,7 +343,7 @@ public class TestAttemptService {
                     continue; // Skip empty answers
                 }
 
-                Question question = questionRepository.findById(questionId)
+                Question question = questionRepository.findById(Objects.requireNonNull(questionId))
                         .orElseThrow(() -> new ResourceNotFoundException("Question not found with id: " + questionId));
 
                 // Adapt the String answer to a JsonNode to maintain compatibility with
@@ -381,7 +376,7 @@ public class TestAttemptService {
         logger.info("📝 Submitting test attempt: attemptId={}, userId={}, answersCount={}",
                 testAttemptId, userId, answers != null ? answers.size() : 0);
 
-        TestAttempt testAttempt = testAttemptRepository.findById(testAttemptId)
+        TestAttempt testAttempt = testAttemptRepository.findById(Objects.requireNonNull(testAttemptId))
                 .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + testAttemptId));
 
         // Verify ownership
@@ -409,7 +404,7 @@ public class TestAttemptService {
                     continue; // Skip unanswered questions
                 }
 
-                Question question = questionRepository.findById(questionId)
+                Question question = questionRepository.findById(Objects.requireNonNull(questionId))
                         .orElseThrow(() -> new ResourceNotFoundException("Question not found with id: " + questionId));
 
                 // Adapt the String answer to a JsonNode to maintain compatibility with
@@ -502,7 +497,7 @@ public class TestAttemptService {
     @Transactional(readOnly = true)
     public TestReviewDTO getTestReview(Long attemptId, UUID userId) {
         // 1. Fetch attempt and verify ownership
-        TestAttempt testAttempt = testAttemptRepository.findById(attemptId)
+        TestAttempt testAttempt = testAttemptRepository.findById(Objects.requireNonNull(attemptId))
                 .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + attemptId));
 
         if (!testAttempt.getUserId().equals(userId)) {
@@ -617,7 +612,7 @@ public class TestAttemptService {
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
         logger.info("🗑️ Cancelling and deleting test attempt: attemptId={}, userId={}", attemptId, userId);
 
-        Optional<TestAttempt> optionalAttempt = testAttemptRepository.findById(attemptId);
+        Optional<TestAttempt> optionalAttempt = testAttemptRepository.findById(Objects.requireNonNull(attemptId));
 
         // Idempotent: If attempt doesn't exist, consider it already cancelled (success)
         if (optionalAttempt.isEmpty()) {
@@ -661,7 +656,7 @@ public class TestAttemptService {
         logger.info("   -> Deleted all writing submissions for attemptId={}", attemptId);
 
         // Then delete the attempt itself using explicit JPQL query
-        testAttemptRepository.deleteAttemptById(attemptId);
+        testAttemptRepository.deleteAttemptById(Objects.requireNonNull(attemptId));
         entityManager.flush(); // Ensure the delete is executed immediately
         logger.info("✅ Successfully cancelled and deleted test attempt: attemptId={}", attemptId);
     }
@@ -671,7 +666,7 @@ public class TestAttemptService {
         final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
         logger.info("🔄 Resuming test attempt: attemptId={}, userId={}", attemptId, userId);
 
-        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+        TestAttempt attempt = testAttemptRepository.findById(Objects.requireNonNull(attemptId))
                 .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + attemptId));
 
         if (!attempt.getUserId().equals(userId)) {
@@ -694,7 +689,7 @@ public class TestAttemptService {
         final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
         logger.info("🔍 Fetching answers for attempt: attemptId={}, userId={}", attemptId, userId);
 
-        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+        TestAttempt attempt = testAttemptRepository.findById(Objects.requireNonNull(attemptId))
                 .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + attemptId));
 
         if (!attempt.getUserId().equals(userId)) {
@@ -714,7 +709,7 @@ public class TestAttemptService {
         final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
         logger.info("🗑️ Deleting test attempt: attemptId={}, userId={}", attemptId, userId);
 
-        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+        TestAttempt attempt = testAttemptRepository.findById(Objects.requireNonNull(attemptId))
                 .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + attemptId));
 
         if (!attempt.getUserId().equals(userId)) {
@@ -727,7 +722,7 @@ public class TestAttemptService {
         logger.info("   -> Deleted all user answers for attemptId={}", attemptId);
 
         // Then, delete the TestAttempt itself
-        testAttemptRepository.deleteById(attemptId);
+        testAttemptRepository.deleteById(Objects.requireNonNull(attemptId));
         logger.info("✅ Successfully deleted test attempt: attemptId={}", attemptId);
     }
 
@@ -741,7 +736,7 @@ public class TestAttemptService {
         final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TestAttemptService.class);
         logger.info("🔄 Re-grading test attempt: attemptId={}, userId={}", attemptId, userId);
 
-        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+        TestAttempt attempt = testAttemptRepository.findById(Objects.requireNonNull(attemptId))
                 .orElseThrow(() -> new ResourceNotFoundException("TestAttempt not found with id: " + attemptId));
 
         if (!attempt.getUserId().equals(userId)) {

@@ -77,6 +77,34 @@ Keep changes small, well-scoped and documented. If you modify DB schema, update 
 ## Recent Changes (2025-12-05)
 When adding new features, especially those that touch both the backend and frontend, please document the changes in the repo docs and update `GEMINI.md`/`AGENTS.md` accordingly.
 
+- **ABTS Multi-Part Mode Simplification (2026-01-04) ✅ COMPLETED:**
+  - Removed "Từng phần (1 part mỗi lần)" option from AI test generation UI
+  - Only "Chọn nhiều (Chọn parts cần tạo)" mode remains (always MULTI_PART)
+  - **StudioConfigView.jsx changes:**
+    - Removed toggle between SINGLE_PART and MULTI_PART scopes
+    - Removed SINGLE_PART-only elements (Part dropdown, global passage length, total questions slider)
+    - Enhanced per-part configuration panel with:
+      - Topic input per part
+      - Passage length dropdown per part (Reading only)
+      - Facts input per part (when generationMode === 'CUSTOM_FACTS')
+      - Question types chips (already existed)
+  - **useABTSStore.js changes:**
+    - Default scope changed to 'MULTI_PART' (was SINGLE_PART)
+    - `togglePartSelection` always maintains MULTI_PART scope
+    - `clearPartSelections` stays in MULTI_PART mode
+    - Per-part actions already existed: `setPartTopic`, `addPartFact`, `removePartFact`, `setPartPassageLength`
+    - Added `updateGeneratedQuestion` action for preview editing
+  - **StepPreview.jsx changes:**
+    - Already integrated with `QuestionEditModal` for editing questions in preview
+    - Connected `onQuestionEdit` handler to open modal
+  - **SaveAIContentModal.jsx changes:**
+    - Now accepts `selectedParts` prop (array of selected part numbers)
+    - Displays "Part 1, Part 2, Part 3" instead of hardcoded "Part 2"
+    - Also receives `questionCount` from generation result
+  - **AIGenerationPage.jsx changes:**
+    - Passes `selectedParts` and `questionCount` to SaveAIContentModal
+  - **Status:** Fully implemented, ready for testing
+
 - **DeepSeek V3.2 Migration (2025-12-12) ✅ COMPLETED:**
   - Migrated from Google Gemini to DeepSeek V3.2 for AI writing grading
   - Created `LLMGradingService.java` (new) - uses OpenAI-compatible API format
@@ -285,121 +313,3 @@ To utilize specific expert personas, you (the Main Model) are authorized to auto
 1. Mock external dependencies (Supabase/DeepSeek).
 2. Write "Happy Path" AND "Failure Path" tests.
 3. Output full test files ready for `src/test/`.
-
----
-
-## Current Implementation Roadmap (v3.0 - December 2025)
-
-> **Full Plan:** See `docs/FEATURE_ROADMAP.md` for complete details.
-
-### 🎯 Phase 1: Foundation (CURRENT PRIORITY)
-
-#### 1.1 DeepSeek V3.2 Migration
-- **Rename:** `GeminiGradingService.java` → `LLMGradingService.java`
-- **Endpoint:** Change to `https://api.deepseek.com/chat/completions`
-- **Model:** `deepseek-chat` (OpenAI-compatible format)
-- **Task 1 Image Handling:** Add `image_description` column to `sections` table
-  - Store detailed text descriptions of charts/graphs/maps
-  - AI grades using text description (no multimodal API needed)
-- **DB Migration:**
-  ```sql
-  ALTER TABLE profiles RENAME COLUMN gemini_api_key TO llm_api_key;
-  ALTER TABLE profiles RENAME COLUMN gemini_model TO llm_model;
-  ALTER TABLE sections ADD COLUMN IF NOT EXISTS image_description TEXT;
-  ```
-- **Files to modify:** `GeminiGradingService.java`, `Profile.java`, `Section.java`, `ProfileDTO.java`, `Profile.jsx`
-- **Files modified:** `Profile.java`, `ProfileDTO.java`, `ProfileServiceImpl.java`, `WritingSubmissionService.java`, `AsyncGradingService.java`, `Profile.jsx`
-- **Breaking change:** Old `geminiApiKey` field renamed to `llmApiKey`. Users need to re-enter API keys.
-
-#### 1.2 Dashboard Completion
-- **`ProgressChart.jsx`** — Implement real charts with Recharts
-- **`SkillAnalysis.jsx`** — Implement radar chart for skill breakdown
-- Connect to existing `DashboardService.java` API
-
-#### 1.3 Sổ tay Từ vựng (Vocabulary Notebook)
-- **New Entity:** `Vocabulary.java`
-- **New Controller:** `VocabularyController.java`
-- **New Service:** `VocabularyService.java` (uses DeepSeek for translation)
-- **Frontend:** Modify `HighlightableHtmlContent.jsx`, create `VocabularyPage.jsx`
-
-#### 1.4 Floating Assistant Widget (Trợ lý Cramer)
-- **New Component:** `FloatingAssistant.jsx`
-- Displays: Lúa balance, user tier, AI chatbot
-- Daily chat limits: Free=20, Cramerich=100, Cramerous=Unlimited
-- Visible on: Dashboard, Courses, Test, Profile pages
-
-### 📊 Grading System Understanding
-
-| Skill | Normal Grading | AI Analysis (Paid) |
-|-------|----------------|---------------------|
-| Reading | ✅ Unlimited, Free | ✅ Synthesis & insights |
-| Listening | ✅ Unlimited, Free | ✅ Synthesis & insights |
-| Writing | ❌ N/A | ✅ Primary grading |
-| Speaking | ❌ N/A | ✅ Future |
-
-### 💰 Subscription Tiers (Revamped 2025-12-14)
-
-| Tier | Name | Price | ATTEMPTs/mo | ATTEMPT_AIs/mo | Chatbot/mo | Translation/day | Vocab limit |
-|------|------|-------|-------------|----------------|------------|-----------------|-------------|
-| 🌾 | Cramerie | Free | 0 | 0 | 50 | 10 | 250 |
-| 🌻 | Cramerich | 69,000đ | 60 (20/skill) | 30 (3/skill) | 500 | 50 | 1000 |
-
-**ATTEMPT System:**
-- **ATTEMPT:** A regular test attempt (auto-graded Reading/Listening)
-- **ATTEMPT_AI:** An AI-graded attempt (Writing with DeepSeek grading)
-- **Per-skill limits:** Reading 20, Listening 20, Writing 20 (ATTEMPTs); Reading 3, Listening 3, Writing 3 (ATTEMPT_AIs per skill)
-- **Overage costs:** 10 Lúa/ATTEMPT, 20 Lúa/ATTEMPT_AI beyond monthly limit
-
-### 🌾 Lúa Credit System (Revamped 2025-12-14)
-- **Initial:** 50 Lúa (Cramerie), 100 Lúa (Cramerich)
-- **Spending:** Extra ATTEMPT = 10 Lúa, Extra ATTEMPT_AI = 20 Lúa
-- **Packs (stored in `lua_packs` table):**
-  - Túi Lúa Nhỏ: 100 Lúa @ 10,000đ
-  - Túi Lúa Vừa: 500 Lúa @ 45,000đ (10% off)
-  - Bao Lúa Lớn: 2,000 Lúa @ 150,000đ (25% off)
-
-### 🗄️ New Database Tables (2025-12-14)
-
-```sql
--- Lúa packs (new table)
-CREATE TABLE lua_packs (
-    id SERIAL PRIMARY KEY,
-    code VARCHAR(50) UNIQUE NOT NULL,
-    name_vi VARCHAR(100) NOT NULL,
-    name_en VARCHAR(100) NOT NULL,
-    emoji VARCHAR(10) DEFAULT '🌾',
-    lua_amount INTEGER NOT NULL,
-    price_vnd INTEGER NOT NULL,
-    discount_percent INTEGER DEFAULT 0,
-    bonus_lua INTEGER DEFAULT 0,
-    description_vi TEXT,
-    description_en TEXT,
-    is_active BOOLEAN DEFAULT true,
-    display_order INTEGER DEFAULT 0
-);
-
--- Subscription tiers now include ATTEMPT columns:
--- monthly_attempt_limit, monthly_attempt_ai_limit, per_skill_attempt_limit, per_skill_attempt_ai_limit
--- attempt_overage_cost, attempt_ai_overage_cost, daily_translation_limit, max_vocabulary_entries
-
--- User subscriptions now track usage:
--- attempts_used, attempt_ais_used, chatbot_used
-```
-
-### Agent Workflow for Implementation
-
-When implementing Phase 1 features, use this chain:
-1. `implementAgent` — Plan the feature, define API contracts
-2. `dbAgent` — Create migrations, update schema
-3. `executionAgent` — Write Java backend code
-4. `uiAgent` — Write React frontend code
-5. `testAgent` — Write unit tests
-
-### Priority Order
-
-1. ✅ DeepSeek Migration (`LLMGradingService`) - COMPLETED 2025-12-12
-2. ✅ Subscription Revamp (2-tier, ATTEMPT system) - COMPLETED 2025-12-14
-3. ⬜ Dashboard Completion (Charts)
-4. ⬜ Sổ tay Từ vựng (Vocabulary)
-5. ⬜ Floating Assistant Widget
-6. ⬜ Badge/Achievement System

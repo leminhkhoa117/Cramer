@@ -50,9 +50,7 @@ public class UserSubscription {
     @Builder.Default
     private Status status = Status.ACTIVE;
 
-    @Column(name = "ai_gradings_used", nullable = false)
-    @Builder.Default
-    private Integer aiGradingsUsed = 0;
+    // Note: ai_gradings_used column was dropped - replaced by attempt_ais_used
 
     // ATTEMPT system: Regular test attempts used this month
     @Column(name = "attempts_used", nullable = false)
@@ -100,13 +98,7 @@ public class UserSubscription {
         return OffsetDateTime.now().isBefore(expiresAt);
     }
 
-    /**
-     * Get remaining AI gradings for this billing period.
-     */
-    public int getRemainingAiGradings() {
-        if (tier == null) return 0;
-        return Math.max(0, tier.getIncludedAiGradings() - aiGradingsUsed);
-    }
+    // Note: getRemainingAiGradings() removed - use getRemainingAttemptAis() instead
 
     /**
      * Get remaining ATTEMPTs for this billing period.

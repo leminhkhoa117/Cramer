@@ -1,12 +1,32 @@
 import React from 'react';
 import HighlightableHtmlContent from './HighlightableHtmlContent'; // Import the new component
+import FlowchartRenderer from './FlowchartRenderer';
 import '../css/question-renderer.css';
 
-const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, groupOptions, partId }) => {
+const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, groupOptions, partId, groupedQuestions = [], groupAnswers = {} }) => {
     const { id, questionType, questionContent, questionNumber } = question;
-    
+
     // Create a unique content ID prefix that includes partId to prevent cross-part collisions
     const contentIdPrefix = partId ? `p${partId}-q${id}` : `q${id}`;
+
+    // Helper to extract text from various backend field names
+    const getQuestionText = () => {
+        if (!questionContent) return '';
+        if (typeof questionContent === 'string') return questionContent;
+
+        return questionContent.text ||
+            questionContent.statement ||
+            questionContent.question ||
+            questionContent.sentence ||
+            questionContent.incomplete_sentence ||
+            questionContent.prompt ||
+            questionContent.item ||
+            questionContent.paragraph ||
+            questionContent.heading ||
+            '';
+    };
+
+    const questionText = getQuestionText();
 
     const handleSingleValueChange = (e) => {
         onAnswerChange(id, e.target.value);
@@ -22,39 +42,188 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
         }
     };
 
-    const renderTextWithInput = (text) => {
-        const parts = text.split(/____/g);
-        return (
-            <p className="question-text-interactive">
-                <HighlightableHtmlContent htmlString={parts[0].replace(/(\b\d+\b)/g, '<strong>$1</strong>')} contentId={`${contentIdPrefix}-part0`} />
-                {parts.length > 1 && (
+    /**
+     * Render HTML table/structure with inline input fields replacing ____ placeholders.
+     * Used for TABLE_COMPLETION, FLOW_CHART_COMPLETION, NOTE_COMPLETION.
+     * 
+     * Strategy: Replace ____ with actual <input> HTML, then render as a single HTML block.
+     * Uses onBlur instead of onInput to prevent re-render losing input values.
+     */
+    const renderTableWithInputs = (htmlContent) => {
+        if (!htmlContent) {
+            // Subsequent question in group - just render input
+            return (
+                <p className="question-text-interactive">
+                    <span className="question-number"><strong>{questionNumber}</strong></span>
                     <input
                         type="text"
                         className="fill-in-blank-input"
                         value={userAnswer || ''}
                         onChange={handleSingleValueChange}
                     />
-                )}
-                {parts.length > 1 && parts[1] && <HighlightableHtmlContent htmlString={parts[1]} contentId={`${contentIdPrefix}-part1`} />}
-            </p>
+                </p>
+            );
+        }
+
+        // Replace <strong>N</strong> ____ patterns with input elements
+        // Default values are set but NOT controlled - we update on blur only
+        let processedHtml = htmlContent.replace(
+            /<strong>(\d+)<\/strong>\s*____/g,
+            (match, qNum) => {
+                const blankQNum = parseInt(qNum, 10);
+                let targetQId = id;
+                let currentValue = '';
+
+                if (blankQNum !== questionNumber) {
+                    const subQ = groupedQuestions.find(q => q.questionNumber === blankQNum);
+                    if (subQ) {
+                        targetQId = subQ.id !== undefined ? subQ.id : `temp-${blankQNum}`;
+                        currentValue = groupAnswers[targetQId] || '';
+                    }
+                } else {
+                    currentValue = userAnswer || '';
+                }
+
+                // Input with question number as placeholder only
+                // The bold number is NOT rendered in text - only shown inside input box as placeholder
+                return `<input type="text" class="fill-in-blank-input table-inline-input" data-qid="${targetQId}" data-qnum="${qNum}" value="${currentValue.replace(/"/g, '&quot;')}" placeholder="${qNum}" />`;
+            }
+        );
+
+        // Handle blur events to save answer when user finishes typing
+        const handleBlur = (e) => {
+            if (e.target.classList.contains('table-inline-input')) {
+                const qId = e.target.dataset.qid;
+                onAnswerChange(qId, e.target.value);
+            }
+        };
+
+        return (
+            <div
+                className="table-completion-container"
+                dangerouslySetInnerHTML={{ __html: processedHtml }}
+                onBlur={handleBlur}
+            />
+        );
+    };
+
+    const renderTextWithInput = (text) => {
+        if (!text) return null;
+        const parts = text.split(/____/g);
+
+        return (
+            <div className="question-text-interactive">
+                {parts.map((part, index) => {
+                    const isLast = index === parts.length - 1;
+                    let targetQId = null;
+                    let currentValue = '';
+                    let showInput = !isLast;
+                    let placeholderNum = '';
+
+                    if (!isLast) {
+                        if (index === 0) {
+                            targetQId = id;
+                            currentValue = typeof userAnswer !== 'undefined' ? userAnswer : '';
+                            placeholderNum = questionNumber || '';
+                        } else {
+                            const subQ = groupedQuestions && groupedQuestions[index - 1];
+                            if (subQ) {
+                                targetQId = subQ.id !== undefined ? subQ.id : `temp-sub-${index}`;
+                                currentValue = groupAnswers && groupAnswers[targetQId] !== undefined ? groupAnswers[targetQId] : '';
+                                placeholderNum = subQ.questionNumber || '';
+                            } else {
+                                showInput = false;
+                            }
+                        }
+                    }
+
+                    // Strip trailing <strong>N</strong> pattern from part (the number before blank)
+                    // This number will be shown ONLY in the input placeholder
+                    const cleanPart = part.replace(/<strong>\d+<\/strong>\s*$/, '').replace(/\s*\d+\s*$/, '');
+
+                    return (
+                        <React.Fragment key={index}>
+                            <HighlightableHtmlContent
+                                htmlString={cleanPart}
+                                contentId={`${contentIdPrefix}-part${index}`}
+                            />
+                            {showInput && (
+                                <input
+                                    type="text"
+                                    className="fill-in-blank-input"
+                                    value={currentValue}
+                                    onChange={(e) => onAnswerChange(targetQId, e.target.value)}
+                                    placeholder={placeholderNum ? `${placeholderNum}` : '...'}
+                                />
+                            )}
+                        </React.Fragment>
+                    );
+                })}
+            </div>
         );
     };
 
     const renderTextWithSelect = (text, options) => {
-        const parts = text.split('____');
+        if (!text) return null;
+        // Safety check: if options is not an array, use empty array or show text input instead
+        const safeOptions = Array.isArray(options) ? options : [];
+        const parts = text.split(/____/g);
+
         return (
-            <p className="question-text-interactive">
-                <HighlightableHtmlContent htmlString={parts[0].replace(/(\b\d+\b)/g, '<strong>$1</strong>')} contentId={`${contentIdPrefix}-part0`} />
-                {parts.length > 1 && (
-                    <select value={userAnswer || ''} onChange={handleSingleValueChange} className="fill-in-blank-select">
-                        <option value="">Select...</option>
-                        {options.map((opt) => (
-                            <option key={opt.letter} value={opt.letter}>{opt.letter}. {opt.text}</option>
-                        ))}
-                    </select>
-                )}
-                {parts.length > 1 && parts[1] && <HighlightableHtmlContent htmlString={parts[1]} contentId={`${contentIdPrefix}-part1`} />}
-            </p>
+            <div className="question-text-interactive">
+                {parts.map((part, index) => {
+                    const isLast = index === parts.length - 1;
+
+                    let targetQId = null;
+                    let currentValue = '';
+                    let showInput = !isLast;
+
+                    if (!isLast) {
+                        if (index === 0) {
+                            targetQId = id;
+                            currentValue = userAnswer || '';
+                        } else {
+                            const subQ = groupedQuestions && groupedQuestions[index - 1];
+                            if (subQ) {
+                                targetQId = subQ.id !== undefined ? subQ.id : `temp-sub-${index}`;
+                                currentValue = groupAnswers && groupAnswers[targetQId] !== undefined ? groupAnswers[targetQId] : '';
+                            } else {
+                                showInput = false;
+                            }
+                        }
+                    }
+
+                    return (
+                        <React.Fragment key={index}>
+                            <HighlightableHtmlContent
+                                htmlString={part.replace(/(\b\d+\b)/g, '<strong>$1</strong>')}
+                                contentId={`${contentIdPrefix}-part${index}`}
+                            />
+                            {showInput && safeOptions.length > 0 && (
+                                <select
+                                    value={currentValue}
+                                    onChange={(e) => onAnswerChange(targetQId, e.target.value)}
+                                    className="fill-in-blank-select"
+                                >
+                                    <option value="">Select...</option>
+                                    {safeOptions.map((opt) => (
+                                        <option key={opt.letter} value={opt.letter}>{opt.letter}. {opt.text.replace(/^[A-Z]\.?\s*/, '')}</option>
+                                    ))}
+                                </select>
+                            )}
+                            {showInput && safeOptions.length === 0 && (
+                                <input
+                                    type="text"
+                                    className="fill-in-blank-input"
+                                    value={currentValue}
+                                    onChange={(e) => onAnswerChange(targetQId, e.target.value)}
+                                    placeholder="Type answer..."
+                                />
+                            )}
+                        </React.Fragment>
+                    );
+                })}
+            </div>
         );
     };
 
@@ -73,17 +242,25 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                 );
 
             case 'FILL_IN_BLANK':
-                return renderTextWithInput(questionContent.text);
+                return renderTextWithInput(questionText);
 
             case 'MATCHING':
                 return (
                     <div className="matching-question-container">
-                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
+                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionText} contentId={`${contentIdPrefix}-text`} /></p>
                         <select value={userAnswer || ''} onChange={handleSingleValueChange} className="matching-select">
                             <option value="">Select...</option>
-                            {groupOptions && groupOptions.map(opt => (
-                                <option key={opt.letter} value={opt.letter}>{opt.letter}. {opt.text}</option>
-                            ))}
+                            {Array.isArray(groupOptions) && groupOptions.map((opt, index) => {
+                                const isObject = typeof opt === 'object' && opt !== null;
+                                const letter = isObject ? opt.letter : String(opt).charAt(0);
+                                const text = isObject ? opt.text : String(opt);
+                                const value = letter || text || String(index);
+                                return (
+                                    <option key={value} value={value}>
+                                        {letter ? `${letter}. ` : ''}{text}
+                                    </option>
+                                );
+                            })}
                         </select>
                     </div>
                 );
@@ -91,41 +268,49 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
             case 'MULTIPLE_CHOICE':
                 return (
                     <div>
-                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
+                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionText} contentId={`${contentIdPrefix}-text`} /></p>
                         <div className="mcq-options">
-                            {questionContent.options.map((opt, index) => (
-                                <label key={index}>
-                                    <input type="radio" name={`q_${id}`} value={opt.charAt(0)} checked={userAnswer === opt.charAt(0)} onChange={handleSingleValueChange} />
-                                    <strong>{opt.charAt(0)}.</strong> {opt.substring(1).trim()}
-                                </label>
-                            ))}
+                            {questionContent.options && questionContent.options.map((opt, index) => {
+                                const letter = String.fromCharCode(65 + index);
+                                const text = opt.replace(/^[A-Z]\.?\s*/, '');
+                                return (
+                                    <label key={index}>
+                                        <input type="radio" name={`q_${id}`} value={letter} checked={userAnswer === letter} onChange={handleSingleValueChange} />
+                                        <strong>{letter}.</strong> {text}
+                                    </label>
+                                );
+                            })}
                         </div>
                     </div>
                 );
-            
+
             case 'MULTIPLE_CHOICE_MULTIPLE_ANSWERS':
                 const currentAnswers = userAnswer || [];
                 return (
                     <div>
-                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
+                        <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionText} contentId={`${contentIdPrefix}-text`} /></p>
                         <div className="mcq-options">
-                            {questionContent.options.map((opt, index) => (
-                                <label key={index}>
-                                    <input type="checkbox" name={`q_${id}`} value={opt.charAt(0)} checked={currentAnswers.includes(opt.charAt(0))} onChange={handleMultiValueChange} />
-                                    <strong>{opt.charAt(0)}.</strong> {opt.substring(1).trim()}
-                                </label>
-                            ))}
+                            {questionContent.options && questionContent.options.map((opt, index) => {
+                                const letter = String.fromCharCode(65 + index);
+                                const text = opt.replace(/^[A-Z]\.?\s*/, '');
+                                return (
+                                    <label key={index}>
+                                        <input type="checkbox" name={`q_${id}`} value={letter} checked={currentAnswers.includes(letter)} onChange={handleMultiValueChange} />
+                                        <strong>{letter}.</strong> {text}
+                                    </label>
+                                );
+                            })}
                         </div>
                     </div>
                 );
 
             default:
                 // Fallback for old Reading types
-                switch(questionType) {
+                switch (questionType) {
                     case 'TRUE_FALSE_NOT_GIVEN':
                         return (
                             <div>
-                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
+                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionText} contentId={`${contentIdPrefix}-text`} /></p>
                                 <div className="tfn-options">
                                     <label><input type="radio" name={`q_${id}`} value="TRUE" checked={userAnswer === 'TRUE'} onChange={handleSingleValueChange} /> True</label>
                                     <label><input type="radio" name={`q_${id}`} value="FALSE" checked={userAnswer === 'FALSE'} onChange={handleSingleValueChange} /> False</label>
@@ -134,9 +319,9 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                             </div>
                         );
                     case 'YES_NO_NOT_GIVEN':
-                         return (
+                        return (
                             <div>
-                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
+                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionText} contentId={`${contentIdPrefix}-text`} /></p>
                                 <div className="tfn-options">
                                     <label><input type="radio" name={`q_${id}`} value="YES" checked={userAnswer === 'YES'} onChange={handleSingleValueChange} /> Yes</label>
                                     <label><input type="radio" name={`q_${id}`} value="NO" checked={userAnswer === 'NO'} onChange={handleSingleValueChange} /> No</label>
@@ -145,14 +330,15 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                             </div>
                         );
                     case 'SUMMARY_COMPLETION':
-                        return renderTextWithInput(questionContent.text);
+                        return renderTextWithInput(questionText);
                     case 'MATCHING_INFORMATION':
                     case 'MATCHING_FEATURES':
                     case 'MATCHING_HEADINGS':
+                    case 'MATCHING_SENTENCE_ENDINGS':
                         const options = questionContent.options || [];
                         return (
                             <div>
-                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionContent.text} contentId={`${contentIdPrefix}-text`} /></p>
+                                <p><span className="question-number">{questionNumber}.</span> <HighlightableHtmlContent htmlString={questionText} contentId={`${contentIdPrefix}-text`} /></p>
                                 <select value={userAnswer || ''} onChange={handleSingleValueChange} className="matching-select">
                                     <option value="">Select...</option>
                                     {options.map((opt, index) => {
@@ -165,8 +351,70 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                             </div>
                         );
                     case 'SUMMARY_COMPLETION_OPTIONS':
-                        return renderTextWithSelect(questionContent.text, questionContent.options);
+                        return renderTextWithSelect(questionText, questionContent.options);
                     case 'TABLE_COMPLETION':
+                    case 'FLOW_CHART_COMPLETION':
+                    case 'NOTE_COMPLETION':
+                        return renderTableWithInputs(questionText);
+                    case 'DIAGRAM_LABEL_COMPLETION': {
+                        // Check if diagram JSON exists
+                        const diagramData = questionContent?.diagram;
+                        const diagramDescription = questionContent?.diagram_description;
+
+                        if (diagramData && diagramData.nodes) {
+                            // Render using FlowchartRenderer
+                            const diagramAnswers = {};
+                            groupedQuestions.forEach(q => {
+                                if (groupAnswers[q.id]) {
+                                    diagramAnswers[q.questionNumber] = groupAnswers[q.id];
+                                }
+                            });
+                            if (userAnswer) {
+                                diagramAnswers[questionNumber] = userAnswer;
+                            }
+
+                            return (
+                                <FlowchartRenderer
+                                    diagram={diagramData}
+                                    answers={diagramAnswers}
+                                    onAnswerChange={(qNum, value) => {
+                                        const q = groupedQuestions.find(gq => gq.questionNumber === qNum);
+                                        if (q) {
+                                            onAnswerChange(q.id, value);
+                                        } else if (qNum === questionNumber) {
+                                            onAnswerChange(id, value);
+                                        }
+                                    }}
+                                />
+                            );
+                        }
+
+                        // Fallback: show description text if available
+                        if (diagramDescription) {
+                            return (
+                                <div className="diagram-label-container">
+                                    <div className="diagram-description">
+                                        <em>{diagramDescription}</em>
+                                    </div>
+                                    <p className="question-text-interactive">
+                                        <span className="question-number"><strong>{questionNumber}</strong></span>
+                                        <input
+                                            type="text"
+                                            className="fill-in-blank-input"
+                                            value={userAnswer || ''}
+                                            onChange={handleSingleValueChange}
+                                        />
+                                    </p>
+                                </div>
+                            );
+                        }
+
+                        // No diagram data - render as fill-in-blank if text exists
+                        if (questionText) {
+                            return renderTextWithInput(questionText);
+                        }
+
+                        // Ultimate fallback: simple input with question number
                         return (
                             <p className="question-text-interactive">
                                 <span className="question-number"><strong>{questionNumber}</strong></span>
@@ -178,8 +426,9 @@ const QuestionRenderer = ({ question, onAnswerChange, userAnswer, typeOverride, 
                                 />
                             </p>
                         );
+                    }
                     default:
-                         return <p>Unsupported question type: {questionType}</p>;
+                        return <p>Unsupported question type: {questionType}</p>;
                 }
         }
     };

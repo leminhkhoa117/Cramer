@@ -1,0 +1,830 @@
+/* ==========================================================================
+   ADMIN PREVIEW CONTENT - Dark Mode Override
+   Overrides user CSS with admin dark theme for preview
+   ========================================================================== */
+
+/* Wrapper - apply admin dark theme, fill container */
+.admin-preview-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    flex: 1;
+    background: #0f0f14;
+    color: #e4e4e7;
+    overflow: hidden;
+    overscroll-behavior: none;
+    /* Prevent infinite scroll / bounce */
+    /* CSS Variable for dynamic sidebar width adjustment */
+    --sidebar-width: var(--admin-sidebar-width, 56px);
+}
+
+/* Custom Dark Scrollbar */
+.admin-preview-wrapper ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.admin-preview-wrapper ::-webkit-scrollbar-track {
+    background: #0f0f14;
+}
+
+.admin-preview-wrapper ::-webkit-scrollbar-thumb {
+    background: #2d2d44;
+    border-radius: 4px;
+}
+
+.admin-preview-wrapper ::-webkit-scrollbar-thumb:hover {
+    background: #3f3f5a;
+}
+
+/* Preview Header */
+.admin-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--admin-spacing-md) var(--admin-spacing-lg);
+    background: var(--admin-glass-bg);
+    border-bottom: 1px solid var(--admin-border-primary);
+    flex-shrink: 0;
+}
+
+.admin-preview-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--admin-text-primary);
+    margin: 0;
+}
+
+.admin-preview-info {
+    font-size: 0.8125rem;
+    color: var(--admin-text-muted);
+    background: var(--admin-bg-card);
+    padding: 4px 12px;
+    border-radius: var(--admin-radius-full);
+}
+
+/* Audio player for listening */
+.admin-preview-audio {
+    padding: var(--admin-spacing-md) var(--admin-spacing-lg);
+    background: var(--admin-bg-secondary);
+    border-bottom: 1px solid var(--admin-border-primary);
+}
+
+.admin-preview-audio audio {
+    width: 100%;
+}
+
+.admin-preview-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--admin-spacing-sm);
+    padding: 6px var(--admin-spacing-md);
+    background: var(--admin-bg-secondary);
+    border-bottom: 1px solid var(--admin-border-primary);
+}
+
+.admin-toolbar__left {
+    display: flex;
+    align-items: center;
+    gap: var(--admin-spacing-sm);
+}
+
+.admin-toolbar__right {
+    display: flex;
+    align-items: center;
+    gap: var(--admin-spacing-sm);
+}
+
+.admin-toolbar__section-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--admin-text-primary);
+    margin-right: var(--admin-spacing-sm);
+}
+
+.admin-toolbar__btn {
+    border: 1px solid var(--admin-border-primary);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--admin-text-secondary);
+    padding: 4px 10px;
+    border-radius: var(--admin-radius-sm);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all var(--admin-transition-fast);
+}
+
+.admin-toolbar__btn:hover {
+    color: var(--admin-text-primary);
+    border-color: var(--admin-primary);
+    background: rgba(139, 92, 246, 0.1);
+}
+
+.admin-preview-toggle {
+    border: 1px solid var(--admin-border-primary);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--admin-text-secondary);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all var(--admin-transition-fast);
+}
+
+.admin-preview-toggle:hover {
+    color: var(--admin-text-primary);
+    border-color: var(--admin-primary);
+}
+
+.admin-preview-toggle.active {
+    background: rgba(139, 92, 246, 0.2);
+    color: var(--admin-text-primary);
+    border-color: rgba(139, 92, 246, 0.6);
+}
+
+/* Empty states */
+.admin-preview-empty,
+.no-passage,
+.no-questions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--admin-spacing-xl);
+    color: var(--admin-text-muted);
+    text-align: center;
+}
+
+/* Override user CSS for dark mode */
+.admin-preview-wrapper .test-page-container {
+    background: var(--admin-bg-primary);
+    flex: 1;
+    overflow: hidden;
+    overscroll-behavior: none;
+    /* Prevent infinite scroll / bounce */
+}
+
+.admin-preview-wrapper .passage-container {
+    background: #0f0f14 !important;
+    color: #c8c8d0 !important;
+    padding: 24px;
+    padding-bottom: 100px;
+    /* Footer clearance */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* Prevent over-scrolling */
+    border: none !important;
+}
+
+.admin-preview-wrapper .passage-title {
+    color: #f4f4f5 !important;
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.admin-preview-wrapper .passage-instructions {
+    color: #8b8b9e !important;
+    font-size: 0.875rem;
+    margin-bottom: 16px;
+    font-style: italic;
+}
+
+/* Passage text content */
+.admin-preview-wrapper .passage-content,
+.admin-preview-wrapper .highlightable-text,
+.admin-preview-wrapper .highlightable-content {
+    color: #c8c8d0 !important;
+    line-height: 1.9;
+    font-size: 0.9375rem;
+}
+
+.admin-preview-wrapper .writing-task-image {
+    margin-top: 16px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+}
+
+.admin-preview-wrapper .writing-task-image img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.admin-preview-wrapper .writing-task-description {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: #c8c8d0;
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+.admin-preview-wrapper .writing-editor-panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    background: var(--admin-bg-primary);
+}
+
+.admin-preview-wrapper .writing-editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--admin-border-primary);
+}
+
+.admin-preview-wrapper .writing-editor-header h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--admin-text-primary);
+    margin: 0;
+}
+
+.admin-preview-wrapper .writing-word-counter {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    background: rgba(139, 92, 246, 0.15);
+    color: var(--admin-text-primary);
+}
+
+.admin-preview-wrapper .writing-textarea {
+    flex: 1;
+    width: 100%;
+    min-height: 360px;
+    resize: vertical;
+    padding: 14px 16px;
+    background: #1c1c2a;
+    border: 1px solid #2f2f46;
+    color: #e4e4e7;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.admin-preview-wrapper .writing-textarea:focus {
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+/* Questions column */
+.admin-preview-wrapper .questions-column {
+    background: var(--admin-bg-primary);
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* Prevent over-scrolling */
+    padding: var(--admin-spacing-lg);
+    padding-bottom: 100px;
+    /* Footer clearance */
+}
+
+.admin-preview-wrapper .questions-container {
+    max-width: 100%;
+}
+
+/* Question group styling */
+.admin-preview-wrapper .question-group {
+    background: var(--admin-glass-bg);
+    border: 1px solid var(--admin-border-primary);
+    border-radius: var(--admin-radius-md);
+    padding: var(--admin-spacing-lg);
+    margin-bottom: var(--admin-spacing-md);
+}
+
+.admin-preview-wrapper .group-instructions {
+    color: var(--admin-text-secondary);
+    margin-bottom: var(--admin-spacing-md);
+    padding-bottom: var(--admin-spacing-md);
+    border-bottom: 1px solid var(--admin-border-secondary);
+}
+
+.admin-preview-wrapper .group-instructions strong {
+    color: var(--admin-text-primary);
+}
+
+/* Question renderer */
+.admin-preview-wrapper .question-block {
+    background: transparent;
+    border: none;
+    padding: var(--admin-spacing-sm) 0;
+    color: var(--admin-text-primary);
+}
+
+.admin-preview-wrapper .question-number {
+    color: var(--admin-primary);
+    font-weight: 700;
+}
+
+/* Input fields - FORCE dark mode with !important */
+.admin-preview-wrapper input[type="text"],
+.admin-preview-wrapper input,
+.admin-preview-wrapper textarea,
+.admin-preview-wrapper select {
+    background: #1e1e2e !important;
+    border: 1px solid #3d3d5c !important;
+    border-radius: 6px !important;
+    color: #e4e4e7 !important;
+    padding: 8px 12px !important;
+}
+
+.admin-preview-wrapper input::placeholder,
+.admin-preview-wrapper textarea::placeholder {
+    color: #6b6b8a !important;
+}
+
+.admin-preview-wrapper input:focus,
+.admin-preview-wrapper textarea:focus,
+.admin-preview-wrapper select:focus {
+    outline: none !important;
+    border-color: #8B5CF6 !important;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2) !important;
+}
+
+/* Inline blank inputs (fill-in-blank questions) */
+.admin-preview-wrapper .inline-blank-input,
+.admin-preview-wrapper .fill-blank-input,
+.admin-preview-wrapper [class*="blank"] input {
+    background: #252538 !important;
+    border: 1px dashed #8B5CF6 !important;
+    color: #e4e4e7 !important;
+    min-width: 100px;
+    text-align: center;
+}
+
+/* Radio buttons and checkboxes */
+.admin-preview-wrapper .option-item {
+    background: var(--admin-bg-card);
+    border: 1px solid var(--admin-border-secondary);
+    border-radius: var(--admin-radius-sm);
+    padding: var(--admin-spacing-sm) var(--admin-spacing-md);
+    margin-bottom: 4px;
+    color: var(--admin-text-primary);
+    cursor: pointer;
+    transition: all var(--admin-transition-fast);
+}
+
+.admin-preview-wrapper .option-item:hover {
+    background: var(--admin-bg-card-hover);
+    border-color: var(--admin-primary);
+}
+
+/* Fix for label visibility (True/False, MCQ) */
+.admin-preview-wrapper label,
+.admin-preview-wrapper .mcq-options label,
+.admin-preview-wrapper .tfn-options label,
+.admin-preview-wrapper .ynn-options label {
+    color: #e4e4e7 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    margin-bottom: 6px !important;
+}
+
+.admin-preview-wrapper label strong {
+    color: #fff !important;
+}
+
+/* Options list box */
+.admin-preview-wrapper .matching-options-box {
+    background: var(--admin-bg-secondary);
+    border: 1px solid var(--admin-border-primary);
+    border-radius: var(--admin-radius-md);
+    padding: var(--admin-spacing-md);
+    margin: var(--admin-spacing-md) 0;
+}
+
+.admin-preview-wrapper .matching-options-box h4 {
+    color: var(--admin-text-primary);
+    margin: 0 0 var(--admin-spacing-sm) 0;
+}
+
+.admin-preview-wrapper .matching-options-box p {
+    color: var(--admin-text-secondary);
+    margin: 4px 0;
+}
+
+/* Resize handle - divider between panels */
+.admin-preview-wrapper .resize-handle {
+    background-color: #0f0f14 !important;
+    background-image: none !important;
+    border: none !important;
+    border-left: 1px solid #2d2d44 !important;
+    border-right: 1px solid #2d2d44 !important;
+    width: 15px !important;
+    /* Exact match with standard UI */
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.admin-preview-wrapper .resize-handle:hover {
+    background: #1e1e2e !important;
+}
+
+.admin-preview-wrapper .resize-handle-icon-container {
+    background: #27273a !important;
+    border: 1px solid #3f3f5a !important;
+    width: 28px !important;
+    /* Exact match with standard UI */
+    height: 28px !important;
+    /* Exact match with standard UI */
+    border-radius: 6px !important;
+    /* Exact match with standard UI */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+.admin-preview-wrapper .resize-handle-icon {
+    color: #a1a1aa !important;
+    font-size: 14px !important;
+    margin-top: -2px;
+    /* Slight alignment fix */
+}
+
+.admin-preview-wrapper .resize-handle:hover .resize-handle-icon-container {
+    background: #8B5CF6 !important;
+    border-color: #7c3aed !important;
+}
+
+.admin-preview-wrapper .resize-handle:hover .resize-handle-icon {
+    color: white !important;
+}
+
+/* ====== TestFooter Dark Mode Overrides ====== */
+.admin-preview-wrapper .test-page-footer {
+    position: fixed;
+    bottom: 0;
+    /* Use sidebar width variable with correct default for expanded state */
+    left: var(--admin-sidebar-width, 260px);
+    right: 0;
+    background: #0f0f14 !important;
+    border-top: 1px solid #2d2d44 !important;
+    z-index: 100;
+    padding: 0 !important;
+    transition: left 0.25s ease;
+    /* Match sidebar transition */
+}
+
+/* When sidebar is collapsed, use the collapsed width */
+.admin-main--collapsed .admin-preview-wrapper .test-page-footer {
+    left: var(--admin-sidebar-collapsed-width, 80px);
+}
+
+.admin-preview-wrapper .footer-part-section {
+    border-right-color: #2d2d44 !important;
+    background: transparent !important;
+    border-top-color: transparent !important;
+    padding: 8px 12px !important;
+    margin: 0 !important;
+}
+
+.admin-preview-wrapper .footer-part-section:hover {
+    background: rgba(139, 92, 246, 0.08) !important;
+}
+
+.admin-preview-wrapper .footer-part-section.active {
+    background: rgba(139, 92, 246, 0.12) !important;
+    border-top-color: #8B5CF6 !important;
+}
+
+.admin-preview-wrapper .footer-part-title {
+    color: #a0a0b8 !important;
+}
+
+.admin-preview-wrapper .footer-part-section.active .footer-part-title {
+    color: #8B5CF6 !important;
+}
+
+.admin-preview-wrapper .question-nav-btn {
+    background: #1e1e2e !important;
+    border-color: #3d3d5c !important;
+    color: #a0a0b8 !important;
+}
+
+.admin-preview-wrapper .question-nav-btn:hover {
+    background: #8B5CF6 !important;
+    border-color: #8B5CF6 !important;
+    color: white !important;
+}
+
+.admin-preview-wrapper .question-nav-btn.answered {
+    background: #8B5CF6 !important;
+    border-color: #8B5CF6 !important;
+    color: white !important;
+}
+
+/* Note completion styles */
+.admin-preview-wrapper .note-completion-wrapper {
+    background: #1a1a2e !important;
+    border-color: var(--admin-border-primary) !important;
+}
+
+.admin-preview-wrapper .note-completion-wrapper h3 {
+    color: var(--admin-text-primary);
+}
+
+.admin-preview-wrapper .note-section-title {
+    color: var(--admin-primary);
+    font-size: 0.9375rem;
+}
+
+/* Highlightable text */
+.admin-preview-wrapper .highlightable-text {
+    color: var(--admin-text-secondary);
+    line-height: 1.8;
+}
+
+/* Question block hover fix - prevent white background */
+.admin-preview-wrapper .question-block:hover,
+.admin-preview-wrapper .question-group:hover {
+    background: rgba(139, 92, 246, 0.08) !important;
+}
+
+/* Force dark background on all question-related containers */
+.admin-preview-wrapper .question-group {
+    background: #1a1a2e !important;
+    border-color: var(--admin-border-primary) !important;
+}
+
+.admin-preview-wrapper .group-instructions {
+    color: var(--admin-text-secondary) !important;
+    border-bottom-color: var(--admin-border-primary) !important;
+}
+
+.admin-preview-wrapper .group-instructions p,
+.admin-preview-wrapper .group-instructions strong {
+    color: var(--admin-text-primary) !important;
+}
+
+/* Matching options box dark theme */
+.admin-preview-wrapper .matching-options-box {
+    background: rgba(139, 92, 246, 0.08) !important;
+    border-color: var(--admin-border-primary) !important;
+}
+
+.admin-preview-wrapper .matching-options-box h4 {
+    color: var(--admin-primary) !important;
+}
+
+.admin-preview-wrapper .matching-options-box p {
+    color: var(--admin-text-secondary) !important;
+}
+
+.admin-preview-wrapper .matching-options-box p strong {
+    color: var(--admin-primary) !important;
+}
+
+/* Table completion dark theme */
+.admin-preview-wrapper .table-completion-container table {
+    border-color: var(--admin-border-primary) !important;
+}
+
+.admin-preview-wrapper .table-completion-container th,
+.admin-preview-wrapper .table-completion-container td {
+    border-color: var(--admin-border-primary) !important;
+    color: var(--admin-text-secondary) !important;
+}
+
+.admin-preview-wrapper .table-completion-container th {
+    background: rgba(139, 92, 246, 0.1) !important;
+    color: var(--admin-text-primary) !important;
+}
+
+/* IELTS Instruction List dark theme */
+.admin-preview-wrapper .ielts-instruction-list {
+    background: rgba(139, 92, 246, 0.08) !important;
+    border-left-color: var(--admin-primary) !important;
+}
+
+.admin-preview-wrapper .ielts-instruction-item strong {
+    color: var(--admin-primary) !important;
+}
+
+.admin-preview-wrapper .ielts-instruction-item span {
+    color: var(--admin-text-secondary) !important;
+}
+
+.admin-preview-wrapper .ielts-instruction-note {
+    color: var(--admin-text-muted) !important;
+}
+
+.admin-preview-wrapper .ielts-instruction-note strong {
+    color: var(--admin-primary) !important;
+}
+
+/* ==========================================================================
+   ADMIN PREVIEW - ANSWER KEY TOGGLE & CLICK-TO-EDIT
+   ========================================================================== */
+
+/* Answer Key Toggle Button */
+.admin-preview-toggle.answer-key-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.admin-preview-toggle.answer-key-toggle.active {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.6);
+    color: #22c55e;
+}
+
+.admin-preview-toggle.answer-key-toggle:hover {
+    border-color: rgba(34, 197, 94, 0.6);
+}
+
+/* Question Group Wrapper */
+.admin-question-group-wrapper {
+    position: relative;
+}
+
+/* Answers Overlay - Shown when Answer Key is toggled ON */
+.admin-answers-overlay {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+    margin-top: 12px;
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    border-radius: 8px;
+}
+
+.admin-answer-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 12px;
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-width: 180px;
+}
+
+.admin-answer-item:hover {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.5);
+    transform: translateY(-1px);
+}
+
+.admin-answer-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.admin-answer-qnum {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #22c55e;
+    min-width: 24px;
+}
+
+.admin-answer-item .admin-answer-value {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--admin-text-primary);
+}
+
+.admin-answer-explanation {
+    font-size: 0.75rem;
+    color: var(--admin-text-secondary);
+    line-height: 1.6;
+    border-top: 1px dashed rgba(34, 197, 94, 0.3);
+    padding-top: 8px;
+    margin-top: 4px;
+}
+
+.admin-answer-explanation .explanation-quote,
+.admin-answer-explanation .explanation-detail,
+.admin-answer-explanation .explanation-strategy,
+.admin-answer-explanation .explanation-contributor {
+    margin-bottom: 6px;
+}
+
+.admin-answer-explanation .explanation-quote {
+    font-style: italic;
+    color: #a1a1aa;
+}
+
+.admin-answer-explanation .explanation-detail {
+    color: var(--admin-text-secondary);
+}
+
+.admin-answer-explanation .explanation-strategy {
+    color: #22c55e;
+}
+
+.admin-answer-explanation .explanation-contributor {
+    color: #8b8b9e;
+    font-size: 0.7rem;
+}
+
+.admin-answer-explanation strong {
+    color: var(--admin-text-primary);
+    font-weight: 600;
+    margin-right: 4px;
+}
+
+.admin-answer-edit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--admin-text-muted);
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.15s ease;
+}
+
+.admin-answer-item:hover .admin-answer-edit-btn {
+    opacity: 1;
+    color: var(--admin-primary);
+}
+
+.admin-answer-edit-btn:hover {
+    background: rgba(139, 92, 246, 0.2);
+    color: var(--admin-primary);
+}
+
+/* Question Wrapper with Edit Hint */
+.admin-question-wrapper {
+    position: relative;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+}
+
+.admin-question-wrapper:hover {
+    background: rgba(139, 92, 246, 0.05);
+}
+
+.admin-question-wrapper:hover .admin-question-edit-hint {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.admin-question-edit-hint {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: rgba(139, 92, 246, 0.9);
+    color: white;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    border-radius: 4px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: all 0.15s ease;
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* Inline Answer Key Display */
+.admin-answer-key {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 6px 12px;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    border-radius: 6px;
+}
+
+.admin-answer-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #16a34a;
+}
+
+.admin-answer-key .admin-answer-value {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #22c55e;
+}

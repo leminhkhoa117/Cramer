@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useCourseStore } from '../stores';
 import './../css/course-detail.css';
 import FullPageLoader from '../components/FullPageLoader';
+import SpeakingPartModal from '../components/SpeakingPartModal';
 import { FaBookOpen, FaHeadphones, FaPen, FaMicrophone, FaArrowLeft } from 'react-icons/fa';
 
 const formatCourseName = (source) => {
@@ -22,12 +23,19 @@ const skills = [
 
 export default function CourseDetailPage() {
     const { courseName } = useParams();
+    const [displayName, setDisplayName] = useState(null);
+
+    // Speaking modal state
+    const [showSpeakingModal, setShowSpeakingModal] = useState(false);
+    const [selectedTestForSpeaking, setSelectedTestForSpeaking] = useState(null);
 
     // Zustand store for course tests caching
     const {
         courseTests,
         fetchCourseTests,
         getCachedTests,
+        fetchCourseDetails,
+        getCachedDetails,
         loading,
         error
     } = useCourseStore();
@@ -36,10 +44,21 @@ export default function CourseDetailPage() {
     const tests = courseTests[courseName] || [];
 
     useEffect(() => {
-        const loadTests = async () => {
-            // Check if already cached
-            const cached = getCachedTests(courseName);
-            if (!cached) {
+        const loadData = async () => {
+            // Fetch course details (name)
+            const cachedDetails = getCachedDetails(courseName);
+            if (cachedDetails) {
+                setDisplayName(cachedDetails.name);
+            } else {
+                const details = await fetchCourseDetails(courseName);
+                if (details?.name) {
+                    setDisplayName(details.name);
+                }
+            }
+
+            // Fetch tests
+            const cachedTests = getCachedTests(courseName);
+            if (!cachedTests) {
                 try {
                     await fetchCourseTests(courseName);
                 } catch (err) {
@@ -47,10 +66,13 @@ export default function CourseDetailPage() {
                 }
             }
         };
-        loadTests();
-    }, [courseName, getCachedTests, fetchCourseTests]);
+        loadData();
+    }, [courseName, getCachedTests, fetchCourseTests, getCachedDetails, fetchCourseDetails]);
 
     const showLoader = loading && !error && tests.length === 0;
+
+    // Use displayName if available, otherwise fallback to formatted courseName
+    const title = displayName || formatCourseName(courseName);
 
     return (
         <>
@@ -58,7 +80,7 @@ export default function CourseDetailPage() {
                 {showLoader && (
                     <FullPageLoader
                         key="loader"
-                        message={`Đang tải các bài test của ${formatCourseName(courseName)}...`}
+                        message={`Đang tải các bài test của ${title}...`}
                         subMessage="Vui lòng chờ trong giây lát, chúng tôi đang lấy danh sách bài test cho bạn."
                     />
                 )}
@@ -71,7 +93,7 @@ export default function CourseDetailPage() {
                         <Link to="/courses" className="back-link">
                             <FaArrowLeft /> Quay lại danh sách
                         </Link>
-                        <h1 className="course-detail-title">{formatCourseName(courseName)}</h1>
+                        <h1 className="course-detail-title">{title}</h1>
                         <p className="course-detail-subtitle">
                             Bộ đề thi chính thức với đầy đủ 4 kỹ năng. Hãy chọn một bài test để bắt đầu luyện tập.
                         </p>
@@ -91,20 +113,45 @@ export default function CourseDetailPage() {
                                         <span className="test-card-badge">Full Test</span>
                                     </div>
                                     <div className="test-card-skills">
-                                        {skills.map(skill => (
-                                            <Link
-                                                key={skill.name}
-                                                to={`/test/${courseName}/${testNumber}/${skill.name.toLowerCase()}`}
-                                                className="test-card-skill-link"
-                                            >
-                                                <span className={`skill-icon ${skill.color}`}>{skill.icon}</span>
-                                                <div className="skill-info">
-                                                    <span className="skill-name">{skill.name}</span>
-                                                    <span className="skill-meta">{skill.time} • {skill.questions}</span>
-                                                </div>
-                                                <span className="skill-action">Làm bài</span>
-                                            </Link>
-                                        ))}
+                                        {skills.map(skill => {
+                                            // Speaking uses modal instead of direct navigation
+                                            if (skill.name === 'Speaking') {
+                                                return (
+                                                    <button
+                                                        key={skill.name}
+                                                        type="button"
+                                                        className="test-card-skill-link"
+                                                        onClick={() => {
+                                                            setSelectedTestForSpeaking(testNumber);
+                                                            setShowSpeakingModal(true);
+                                                        }}
+                                                    >
+                                                        <span className={`skill-icon ${skill.color}`}>{skill.icon}</span>
+                                                        <div className="skill-info">
+                                                            <span className="skill-name">{skill.name}</span>
+                                                            <span className="skill-meta">{skill.time} • {skill.questions}</span>
+                                                        </div>
+                                                        <span className="skill-action">Làm bài</span>
+                                                    </button>
+                                                );
+                                            }
+
+                                            // Other skills use Link navigation
+                                            return (
+                                                <Link
+                                                    key={skill.name}
+                                                    to={`/test/${courseName}/${testNumber}/${skill.name.toLowerCase()}`}
+                                                    className="test-card-skill-link"
+                                                >
+                                                    <span className={`skill-icon ${skill.color}`}>{skill.icon}</span>
+                                                    <div className="skill-info">
+                                                        <span className="skill-name">{skill.name}</span>
+                                                        <span className="skill-meta">{skill.time} • {skill.questions}</span>
+                                                    </div>
+                                                    <span className="skill-action">Làm bài</span>
+                                                </Link>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             ))}
@@ -117,6 +164,17 @@ export default function CourseDetailPage() {
                     )}
                 </div>
             </div>
+
+            {/* Speaking Part Selection Modal */}
+            <SpeakingPartModal
+                isOpen={showSpeakingModal}
+                onClose={() => {
+                    setShowSpeakingModal(false);
+                    setSelectedTestForSpeaking(null);
+                }}
+                courseName={courseName}
+                testNumber={selectedTestForSpeaking}
+            />
         </>
     );
 }

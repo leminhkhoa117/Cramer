@@ -105,8 +105,8 @@ public class FeatureGatingService {
 
             return FeatureAccessDTO.builder()
                     .tierCode(tier.getCode())
-                    .tierNameVi(tier.getNameVi())
-                    .tierNameEn(tier.getNameEn())
+                    .tierNameVi(tier.getName())
+                    .tierNameEn(tier.getName())
                     .features(featureMap)
                     .isPremium(tier.getPriceVnd() != null && tier.getPriceVnd() > 0)
                     .build();
@@ -182,8 +182,8 @@ public class FeatureGatingService {
     private SubscriptionTier createDefaultTier() {
         return SubscriptionTier.builder()
                 .code("cramerie")
-                .nameVi("Cramerie")
-                .nameEn("Cramerie")
+                .name("Cramerie")
+                .name("Cramerie")
                 .priceVnd(0)
                 .features("[\"limited_tests\", \"normal_grading\", \"vocabulary\", \"basic_progress\"]")
                 .build();

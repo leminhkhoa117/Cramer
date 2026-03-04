@@ -35,4 +35,16 @@ public interface AdminUserService {
      * Cập nhật số dư Lúa của user
      */
     AdminUserDTO updateUserCredits(String userId, int amount, String action, String reason, String adminId);
+    
+    /**
+     * Cập nhật gói đăng ký của user (Admin thay đổi subscription tier)
+     * 
+     * @param userId ID của user cần thay đổi gói
+     * @param newTierCode Mã gói mới (cramerie, cramerich)
+     * @param durationMonths Thời hạn gói (1, 3, 6 tháng). Chỉ áp dụng cho gói trả phí.
+     * @param reason Lý do thay đổi
+     * @param adminId ID của admin thực hiện thay đổi
+     * @return AdminUserDTO với thông tin cập nhật
+     */
+    AdminUserDTO updateUserSubscription(String userId, String newTierCode, int durationMonths, String reason, String adminId);
 }

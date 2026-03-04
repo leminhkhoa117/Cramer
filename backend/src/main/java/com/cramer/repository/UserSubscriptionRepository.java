@@ -73,19 +73,14 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
         return findExpiredActiveSubscriptions(UserSubscription.Status.ACTIVE);
     }
 
-    /**
-     * Increment AI grading usage count.
-     */
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE UserSubscription s SET s.aiGradingsUsed = s.aiGradingsUsed + 1 WHERE s.id = :id")
-    void incrementAiGradingsUsed(@Param("id") Long id);
+    // Note: incrementAiGradingsUsed and resetAiGradingsUsed removed - use attemptAisUsed instead
 
     /**
-     * Reset AI grading usage (for monthly reset).
+     * Increment ATTEMPT_AI usage count.
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE UserSubscription s SET s.aiGradingsUsed = 0 WHERE s.userId = :userId")
-    void resetAiGradingsUsed(@Param("userId") UUID userId);
+    @Query("UPDATE UserSubscription s SET s.attemptAisUsed = s.attemptAisUsed + 1 WHERE s.id = :id")
+    void incrementAttemptAisUsed(@Param("id") Long id);
 
     /**
      * Check if user has any subscription (active or expired).

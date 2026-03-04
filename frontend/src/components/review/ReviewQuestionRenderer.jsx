@@ -16,14 +16,14 @@ import '../../css/review-question-renderer.css';
  * @param {boolean} props.isSelected - Whether this question is currently selected
  */
 const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
-    const { 
-        questionNumber, 
-        questionUid, 
-        questionType, 
-        questionContent, 
-        userAnswerContent, 
-        correctAnswer, 
-        isCorrect 
+    const {
+        questionNumber,
+        questionUid,
+        questionType,
+        questionContent,
+        userAnswerContent,
+        correctAnswer,
+        isCorrect
     } = question;
 
     // Normalize user answer to string for display
@@ -71,9 +71,12 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
         switch (questionType) {
             case 'FILL_IN_BLANK':
             case 'SUMMARY_COMPLETION':
+                return renderFillInBlank(text);
+
             case 'TABLE_COMPLETION':
             case 'NOTE_COMPLETION':
-                return renderFillInBlank(text);
+            case 'FLOW_CHART_COMPLETION':
+                return renderTableCompletion(text);
 
             case 'MULTIPLE_CHOICE':
                 return renderMultipleChoice(text, options);
@@ -93,6 +96,28 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
             case 'MATCHING_HEADINGS':
                 return renderMatching(text, options);
 
+            case 'DIAGRAM_LABEL_COMPLETION': {
+                const diagramDescription = content.diagram_description;
+                return (
+                    <div className="review-question-content">
+                        {diagramDescription && (
+                            <div className="diagram-description">
+                                <em>{diagramDescription}</em>
+                            </div>
+                        )}
+                        <span className="question-number">{questionNumber}.</span>
+                        <span className={`review-answer-input ${statusClass}`}>
+                            {userAnswer || <em className="no-answer">—</em>}
+                        </span>
+                        {isCorrect === false && (
+                            <span className="correct-answer-inline">
+                                (Đáp án: <strong>{correctAnswerStr}</strong>)
+                            </span>
+                        )}
+                    </div>
+                );
+            }
+
             default:
                 return renderFillInBlank(text);
         }
@@ -102,7 +127,7 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
     const renderFillInBlank = (text) => {
         // Replace ____ with the user's answer (highlighted)
         const parts = text ? text.split(/____/g) : [''];
-        
+
         return (
             <div className="review-question-content">
                 <span className="question-number">{questionNumber}.</span>
@@ -113,6 +138,47 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
                     </span>
                     {parts[1] && <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(parts[1]) }} />}
                 </span>
+                {isCorrect === false && (
+                    <span className="correct-answer-inline">
+                        (Đáp án: <strong>{correctAnswerStr}</strong>)
+                    </span>
+                )}
+            </div>
+        );
+    };
+
+    // Table completion with inline highlighted answers
+    const renderTableCompletion = (text) => {
+        if (!text) {
+            // Subsequent question in group - simple display
+            return (
+                <div className="review-question-content">
+                    <span className="question-number">{questionNumber}.</span>
+                    <span className={`review-answer-input ${statusClass}`}>
+                        {userAnswer || <em className="no-answer">—</em>}
+                    </span>
+                    {isCorrect === false && (
+                        <span className="correct-answer-inline">
+                            (Đáp án: <strong>{correctAnswerStr}</strong>)
+                        </span>
+                    )}
+                </div>
+            );
+        }
+
+        // Replace <strong>N</strong> ____ patterns with highlighted answer spans
+        const processedHtml = text.replace(
+            /<strong>(\d+)<\/strong>\s*____/g,
+            (match, qNum) => {
+                const answerDisplay = userAnswer || '—';
+                const answerClass = `review-answer-input ${statusClass}`;
+                return `<strong>${qNum}</strong> <span class="${answerClass}">${sanitizeHtml(answerDisplay)}</span>`;
+            }
+        );
+
+        return (
+            <div className="review-question-content table-completion-review">
+                <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(processedHtml) }} />
                 {isCorrect === false && (
                     <span className="correct-answer-inline">
                         (Đáp án: <strong>{correctAnswerStr}</strong>)
@@ -136,19 +202,19 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
                         const optText = typeof opt === 'string' ? opt.substring(1).trim() : opt.text || opt;
                         const isUserAnswer = userAnswer === optLetter;
                         const isCorrectAnswer = correctAnswerStr.includes(optLetter);
-                        
+
                         let optionClass = '';
                         if (isUserAnswer && isCorrect === true) optionClass = 'correct';
                         else if (isUserAnswer && isCorrect === false) optionClass = 'incorrect';
                         else if (isCorrectAnswer && isCorrect === false) optionClass = 'show-correct';
-                        
+
                         return (
                             <label key={index} className={`review-option ${optionClass}`}>
-                                <input 
-                                    type="radio" 
-                                    checked={isUserAnswer} 
-                                    disabled 
-                                    readOnly 
+                                <input
+                                    type="radio"
+                                    checked={isUserAnswer}
+                                    disabled
+                                    readOnly
                                 />
                                 <strong>{optLetter}.</strong> {optText}
                             </label>
@@ -176,19 +242,19 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
                         const optText = typeof opt === 'string' ? opt.substring(1).trim() : opt.text || opt;
                         const isUserAnswer = userAnswers.includes(optLetter);
                         const isCorrectAnswer = correctAnswers.includes(optLetter);
-                        
+
                         let optionClass = '';
                         if (isUserAnswer && isCorrectAnswer) optionClass = 'correct';
                         else if (isUserAnswer && !isCorrectAnswer) optionClass = 'incorrect';
                         else if (isCorrectAnswer && !isUserAnswer) optionClass = 'show-correct';
-                        
+
                         return (
                             <label key={index} className={`review-option ${optionClass}`}>
-                                <input 
-                                    type="checkbox" 
-                                    checked={isUserAnswer} 
-                                    disabled 
-                                    readOnly 
+                                <input
+                                    type="checkbox"
+                                    checked={isUserAnswer}
+                                    disabled
+                                    readOnly
                                 />
                                 <strong>{optLetter}.</strong> {optText}
                             </label>
@@ -202,7 +268,7 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
     // True/False/Not Given
     const renderTrueFalseNotGiven = (text) => {
         const tfnOptions = ['TRUE', 'FALSE', 'NOT_GIVEN'];
-        
+
         return (
             <div className="review-question-content">
                 <p className="question-stem">
@@ -213,12 +279,12 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
                     {tfnOptions.map(opt => {
                         const isUserAnswer = userAnswer === opt;
                         const isCorrectAnswer = correctAnswerStr === opt;
-                        
+
                         let optionClass = '';
                         if (isUserAnswer && isCorrect === true) optionClass = 'correct';
                         else if (isUserAnswer && isCorrect === false) optionClass = 'incorrect';
                         else if (isCorrectAnswer && isCorrect === false) optionClass = 'show-correct';
-                        
+
                         return (
                             <label key={opt} className={`review-option ${optionClass}`}>
                                 <input type="radio" checked={isUserAnswer} disabled readOnly />
@@ -234,7 +300,7 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
     // Yes/No/Not Given
     const renderYesNoNotGiven = (text) => {
         const ynnOptions = ['YES', 'NO', 'NOT_GIVEN'];
-        
+
         return (
             <div className="review-question-content">
                 <p className="question-stem">
@@ -245,12 +311,12 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
                     {ynnOptions.map(opt => {
                         const isUserAnswer = userAnswer === opt;
                         const isCorrectAnswer = correctAnswerStr === opt;
-                        
+
                         let optionClass = '';
                         if (isUserAnswer && isCorrect === true) optionClass = 'correct';
                         else if (isUserAnswer && isCorrect === false) optionClass = 'incorrect';
                         else if (isCorrectAnswer && isCorrect === false) optionClass = 'show-correct';
-                        
+
                         return (
                             <label key={opt} className={`review-option ${optionClass}`}>
                                 <input type="radio" checked={isUserAnswer} disabled readOnly />
@@ -282,7 +348,7 @@ const ReviewQuestionRenderer = ({ question, onQuestionClick, isSelected }) => {
     };
 
     return (
-        <div 
+        <div
             className={`review-question-block ${statusClass} ${isSelected ? 'selected' : ''}`}
             onClick={handleClick}
             role="button"

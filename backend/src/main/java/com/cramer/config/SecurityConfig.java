@@ -1,5 +1,6 @@
 package com.cramer.config;
 
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -32,8 +33,12 @@ public class SecurityConfig {
 
             // 3. Set up authorization rules
             .authorizeHttpRequests(authorize -> authorize
+                // Allow async/error dispatches for SSE to avoid re-auth on committed responses
+                .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                 // Allow public access to auth and API docs
-                .requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                .requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                // Allow framework error endpoint (avoids AccessDenied after SSE response commit)
+                .requestMatchers("/error").permitAll()
                 // Allow public access to PayOS webhook (must be accessible without auth)
                 .requestMatchers("/api/payments/webhook").permitAll()
                 // Allow public access to Lúa pack options
@@ -42,8 +47,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/payments/config-status").permitAll()
                 // All other API requests must be authenticated
                 .requestMatchers("/api/**").authenticated()
-                // Any other request that doesn't start with /api can be permitted
-                .anyRequest().permitAll()
+                // Fail closed: deny any other request by default
+                .anyRequest().authenticated()
             )
             
             // 4. Add our custom JWT filter

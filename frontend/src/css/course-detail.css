@@ -90,7 +90,7 @@
 }
 
 /* Grid Layout */
-.tests-grid {
+.course-detail-page .tests-grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: 2rem;
@@ -99,7 +99,7 @@
 }
 
 @media (min-width: 768px) {
-    .tests-grid {
+    .course-detail-page .tests-grid {
         grid-template-columns: repeat(2, 1fr);
         /* 2 columns as requested */
     }
@@ -281,7 +281,7 @@
         padding: 4rem 0 5rem;
     }
 
-    .tests-grid {
+    .course-detail-page .tests-grid {
         grid-template-columns: 1fr;
     }
 }

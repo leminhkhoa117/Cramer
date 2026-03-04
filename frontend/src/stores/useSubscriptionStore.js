@@ -61,8 +61,8 @@ const useSubscriptionStore = create(
                     set(
                         {
                             tier: tierCode,
-                            tierNameVi: tierInfo.nameVi || 'Cramerie',
-                            tierNameEn: tierInfo.nameEn || 'Cramerie',
+                            tierNameVi: tierInfo.name || 'Cramerie',
+                            tierNameEn: tierInfo.name || 'Cramerie',
                             features: featuresMap,
                             isPremium: (tierInfo.priceVnd || 0) > 0,
                             loading: false,

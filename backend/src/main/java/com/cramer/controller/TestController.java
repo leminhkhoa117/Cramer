@@ -1,6 +1,6 @@
 package com.cramer.controller;
 
-import com.cramer.dto.FullSectionDTO;
+import com.cramer.dto.TestSectionDTO;
 import com.cramer.service.TestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,8 +26,8 @@ public class TestController {
     }
 
     @GetMapping("/data")
-    @Operation(summary = "Get full data for a test section (passages and questions)")
-    public ResponseEntity<List<FullSectionDTO>> getFullTest(
+    @Operation(summary = "Get SAFE data for a test section (passages and questions WITHOUT answers)")
+    public ResponseEntity<List<TestSectionDTO>> getFullTest(
             @RequestParam String source,
             @RequestParam Integer test,
             @RequestParam String skill) {
@@ -36,15 +36,16 @@ public class TestController {
         logger.info("📥 GET /api/tests/data - source={}, test={}, skill={}", source, test, skill);
         
         try {
-            List<FullSectionDTO> fullTest = testService.getFullTest(source, test, skill);
+            // Use getSafeTest to return DTOs without answers
+            List<TestSectionDTO> safeTest = testService.getSafeTest(source, test, skill);
             
-            if (fullTest == null || fullTest.isEmpty()) {
+            if (safeTest == null || safeTest.isEmpty()) {
                 logger.warn("⚠️ No test data found for source={}, test={}, skill={}", source, test, skill);
                 return ResponseEntity.notFound().build();
             }
             
-            logger.info("✅ Returning {} sections", fullTest.size());
-            return ResponseEntity.ok(fullTest);
+            logger.info("✅ Returning {} sections (SAFE MODE)", safeTest.size());
+            return ResponseEntity.ok(safeTest);
         } catch (IllegalArgumentException e) {
             logger.error("❌ Invalid parameters: {}", e.getMessage());
             throw e;

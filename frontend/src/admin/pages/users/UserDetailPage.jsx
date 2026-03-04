@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import ActivityTimeline from '../../components/ActivityTimeline';
+import adminApi from '../../api/adminApi';
 import {
     FiArrowLeft,
     FiUser,
@@ -19,25 +21,36 @@ import {
     FiAlertTriangle
 } from 'react-icons/fi';
 import useAdminUsersStore from '../../stores/useAdminUsersStore';
+import { useToast } from '../../components/Toast';
 import { AccountStatusBadge, SubscriptionBadge } from '../../components/StatusBadge';
 import BaseModal from '../../../components/common/BaseModal';
-import './UserDetailPage.css';
+import '../../css/pages/users/UserDetailPage.css';
 
 export default function UserDetailPage() {
     const { userId } = useParams();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState('profile');
 
     // Modal states
     const [banModalOpen, setBanModalOpen] = useState(false);
     const [banReason, setBanReason] = useState('');
     const [subscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
+    const [successModalOpen, setSuccessModalOpen] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
     const [newSubscription, setNewSubscription] = useState('');
+    const [subscriptionDuration, setSubscriptionDuration] = useState(1); // 1, 3, or 6 months
     const [creditsModalOpen, setCreditsModalOpen] = useState(false);
     const [creditAmount, setCreditAmount] = useState('');
     const [creditAction, setCreditAction] = useState('ADD');
     const [creditReason, setCreditReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [activities, setActivities] = useState([]);
+    const [auditLogs, setAuditLogs] = useState([]);
+    const [loadingActivities, setLoadingActivities] = useState(false);
+    const [subscriptionReason, setSubscriptionReason] = useState('');
 
     // Zustand store
     const {
@@ -47,8 +60,38 @@ export default function UserDetailPage() {
         fetchUserById,
         clearSelectedUser,
         updateUserStatus,
-        updateUserCredits
+        updateUserCredits,
+        updateUserSubscription,
+        subscriptionUpdating  
     } = useAdminUsersStore();
+
+    // Define fetch functions first (before useEffect)
+    const fetchActivities = async () => {
+        try {
+            setLoadingActivities(true);
+            const response = await adminApi.activity.getUserActivities(userId, {
+                page: 0,
+                size: 20
+            });
+            setActivities(response.content || []);
+        } catch (err) {
+            console.error('Lỗi khi tải hoạt động:', err);
+        } finally {
+            setLoadingActivities(false);
+        }
+    };
+
+    const fetchAuditLogs = async () => {
+        try {
+            const response = await adminApi.activity.getAuditLogs(userId, {
+                page: 0,
+                size: 20
+            });
+            setAuditLogs(response.content || []);
+        } catch (err) {
+            console.error('Lỗi khi tải audit logs:', err);
+        }
+    };
 
     // Fetch user on mount
     useEffect(() => {
@@ -61,6 +104,37 @@ export default function UserDetailPage() {
             clearSelectedUser();
         };
     }, [userId, fetchUserById, clearSelectedUser]);
+
+    // Fetch activities and audit logs when user is loaded
+    useEffect(() => {
+        if (userId && user) {
+            fetchActivities();
+            fetchAuditLogs();
+        }
+    }, [userId, user]);
+
+    // Handle action query parameter from UserListPage navigation
+    useEffect(() => {
+        if (!user) return;
+
+        const action = searchParams.get('action');
+        if (!action) return;
+
+        // Clear the action param from URL to prevent re-triggering on refresh
+        setSearchParams({}, { replace: true });
+
+        switch (action) {
+            case 'edit-credits':
+                setActiveTab('credits');
+                setCreditsModalOpen(true);
+                break;
+            case 'ban':
+                setBanModalOpen(true);
+                break;
+            default:
+                break;
+        }
+    }, [user, searchParams, setSearchParams]);
 
     // Loading state
     if (isLoadingUser) {
@@ -114,7 +188,7 @@ export default function UserDetailPage() {
             await fetchUserById(userId);
         } catch (error) {
             console.error('Error updating status:', error);
-            alert('Có lỗi xảy ra. Vui lòng thử lại.');
+            showToast('Có lỗi xảy ra. Vui lòng thử lại.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -124,7 +198,7 @@ export default function UserDetailPage() {
     const handleCreditsConfirm = async () => {
         const amount = parseInt(creditAmount);
         if (isNaN(amount) || amount <= 0) {
-            alert('Vui lòng nhập số Lúa hợp lệ');
+            showToast('Vui lòng nhập số Lúa hợp lệ', 'warning');
             return;
         }
 
@@ -139,7 +213,7 @@ export default function UserDetailPage() {
             await fetchUserById(userId);
         } catch (error) {
             console.error('Error updating credits:', error);
-            alert('Có lỗi xảy ra. Vui lòng thử lại.');
+            showToast('Có lỗi xảy ra. Vui lòng thử lại.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -149,9 +223,28 @@ export default function UserDetailPage() {
     const handleSubscriptionConfirm = async () => {
         setIsSubmitting(true);
         try {
-            // TODO: Implement subscription update API
-            alert('Chức năng đang phát triển');
+            // Map frontend tier value to backend tier code
+            const tierCode = newSubscription === 'FREE' ? 'cramerie' : 'cramerich';
+            
+            // For free tier, duration doesn't matter; for paid tier, use selected duration
+            const duration = newSubscription === 'FREE' ? 1 : subscriptionDuration;
+            
+            await updateUserSubscription(userId, tierCode, duration, subscriptionReason);
+            
             setSubscriptionModalOpen(false);
+            setNewSubscription('');
+            setSubscriptionReason('');
+            setSubscriptionDuration(1);
+            
+            // Refresh user data to get updated subscription info
+            await fetchUserById(userId);
+            
+            // Show success notification
+            setSuccessMessage('Đã cập nhật gói đăng ký thành công!');
+            setSuccessModalOpen(true);
+        } catch (error) {
+            console.error('Error updating subscription:', error);
+            showToast('Có lỗi xảy ra khi cập nhật gói. Vui lòng thử lại.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -377,10 +470,40 @@ export default function UserDetailPage() {
 
                     {/* Activity Tab */}
                     {activeTab === 'activity' && (
-                        <div className="tab-content">
-                            <h3 className="section-title">Hoạt động gần đây</h3>
-                            <p className="empty-message">Chưa có hoạt động nào được ghi nhận</p>
-                        </div>
+                        <section className="user-detail__section">
+                            <h3 style={{
+                                color: '#ffffff',
+                                fontSize: '1.25rem',
+                                fontWeight: 600,
+                                marginBottom: '20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}>
+                                📋 Timeline Hoạt động
+                            </h3>
+                            <ActivityTimeline
+                                activities={activities}
+                                loading={loadingActivities}
+                            />
+
+                            <h3 style={{
+                                color: '#ffffff',
+                                fontSize: '1.25rem',
+                                fontWeight: 600,
+                                marginTop: '48px',
+                                marginBottom: '20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}>
+                                🔒 Nhật ký Admin
+                            </h3>
+                            <ActivityTimeline
+                                activities={auditLogs}
+                                loading={loadingActivities}
+                            />
+                        </section>
                     )}
                 </div>
             </div>
@@ -524,70 +647,197 @@ export default function UserDetailPage() {
             </BaseModal>
 
             {/* Subscription Modal */}
-            <BaseModal
-                isOpen={subscriptionModalOpen}
-                onClose={() => setSubscriptionModalOpen(false)}
-                title="Thay đổi gói đăng ký"
-                size="sm"
-                className="admin-modal"
-                footer={
-                    <>
-                        <button
-                            className="admin-btn admin-btn--secondary"
-                            onClick={() => setSubscriptionModalOpen(false)}
-                            disabled={isSubmitting}
-                        >
-                            Hủy
-                        </button>
-                        <button
-                            className="admin-btn admin-btn--primary"
-                            onClick={handleSubscriptionConfirm}
-                            disabled={isSubmitting}
-                        >
-                            {isSubmitting ? 'Đang xử lý...' : 'Xác nhận'}
-                        </button>
-                    </>
-                }
+<BaseModal
+    isOpen={subscriptionModalOpen}
+    onClose={() => {
+        setSubscriptionModalOpen(false);
+        setSubscriptionReason('');
+        setSubscriptionDuration(1);
+    }}
+    title="Thay đổi gói đăng ký"
+    size="md"
+    className="admin-modal"
+    footer={
+        <>
+            <button
+                className="admin-btn admin-btn--secondary"
+                onClick={() => {
+                    setSubscriptionModalOpen(false);
+                    setSubscriptionReason('');
+                    setSubscriptionDuration(1);
+                }}
+                disabled={isSubmitting}
             >
-                <div className="subscription-modal-content">
-                    <div className="current-subscription">
-                        <span>Gói hiện tại:</span>
-                        <SubscriptionBadge subscription={user.subscription} />
-                    </div>
+                Hủy
+            </button>
+            <button
+                className="admin-btn admin-btn--primary"
+                onClick={handleSubscriptionConfirm}
+                disabled={isSubmitting || newSubscription === user.subscription}
+            >
+                {isSubmitting ? 'Đang xử lý...' : 'Xác nhận thay đổi'}
+            </button>
+        </>
+    }
+>
+    <div className="subscription-modal-content">
+        {/* Current subscription info */}
+        <div className="current-subscription">
+            <span>Gói hiện tại:</span>
+            <SubscriptionBadge subscription={user.subscription} />
+            {user.subscriptionEnd && user.subscription !== 'FREE' && (
+                <span className="subscription-expiry">
+                    (Hết hạn: {formatDate(user.subscriptionEnd)})
+                </span>
+            )}
+        </div>
 
-                    <div className="form-group">
-                        <label className="form-label">Chọn gói mới</label>
-                        <div className="subscription-options">
-                            <label className={`subscription-option ${newSubscription === 'FREE' ? 'subscription-option--selected' : ''}`}>
-                                <input
-                                    type="radio"
-                                    name="subscription"
-                                    value="FREE"
-                                    checked={newSubscription === 'FREE'}
-                                    onChange={(e) => setNewSubscription(e.target.value)}
-                                />
-                                <div className="subscription-option__content">
-                                    <strong>Cramerie (Free)</strong>
-                                    <span>Gói miễn phí với các tính năng cơ bản</span>
-                                </div>
-                            </label>
-                            <label className={`subscription-option ${newSubscription === 'CRAMERICH' ? 'subscription-option--selected' : ''}`}>
-                                <input
-                                    type="radio"
-                                    name="subscription"
-                                    value="CRAMERICH"
-                                    checked={newSubscription === 'CRAMERICH'}
-                                    onChange={(e) => setNewSubscription(e.target.value)}
-                                />
-                                <div className="subscription-option__content">
-                                    <strong>Cramerich</strong>
-                                    <span>Gói premium với đầy đủ tính năng</span>
-                                </div>
-                            </label>
+        {/* Tier selection */}
+        <div className="form-group">
+            <label className="form-label">Chọn gói mới</label>
+            <div className="subscription-options">
+                <label className={`subscription-option ${newSubscription === 'FREE' ? 'subscription-option--selected' : ''}`}>
+                    <input
+                        type="radio"
+                        name="subscription"
+                        value="FREE"
+                        checked={newSubscription === 'FREE'}
+                        onChange={(e) => setNewSubscription(e.target.value)}
+                    />
+                    <div className="subscription-option__content">
+                        <div className="subscription-option__header">
+                            <span className="subscription-option__emoji">🌾</span>
+                            <strong>Cramerie (Free)</strong>
                         </div>
+                        <span className="subscription-option__desc">
+                            Gói miễn phí với các tính năng cơ bản
+                        </span>
+                        <ul className="subscription-option__features">
+                            <li>0 ATTEMPT/tháng</li>
+                            <li>0 ATTEMPT_AI/tháng</li>
+                            <li>50 tin nhắn chatbot/tháng</li>
+                        </ul>
                     </div>
+                </label>
+
+                <label className={`subscription-option ${newSubscription === 'CRAMERICH' ? 'subscription-option--selected' : ''}`}>
+                    <input
+                        type="radio"
+                        name="subscription"
+                        value="CRAMERICH"
+                        checked={newSubscription === 'CRAMERICH'}
+                        onChange={(e) => setNewSubscription(e.target.value)}
+                    />
+                    <div className="subscription-option__content">
+                        <div className="subscription-option__header">
+                            <span className="subscription-option__emoji">🌻</span>
+                            <strong>Cramerich</strong>
+                            <span className="subscription-option__price">69,000đ/tháng</span>
+                        </div>
+                        <span className="subscription-option__desc">
+                            Gói premium với đầy đủ tính năng
+                        </span>
+                        <ul className="subscription-option__features">
+                            <li>60 ATTEMPT/tháng (20/skill)</li>
+                            <li>30 ATTEMPT_AI/tháng</li>
+                            <li>500 tin nhắn chatbot/tháng</li>
+                        </ul>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        {/* Duration selection for Cramerich */}
+        {newSubscription === 'CRAMERICH' && (
+            <div className="form-group">
+                <label className="form-label">Thời hạn gói</label>
+                <div className="duration-options">
+                    <label className={`duration-option ${subscriptionDuration === 1 ? 'duration-option--selected' : ''}`}>
+                        <input
+                            type="radio"
+                            name="duration"
+                            value={1}
+                            checked={subscriptionDuration === 1}
+                            onChange={() => setSubscriptionDuration(1)}
+                        />
+                        <span className="duration-option__label">1 tháng</span>
+                    </label>
+                    <label className={`duration-option ${subscriptionDuration === 3 ? 'duration-option--selected' : ''}`}>
+                        <input
+                            type="radio"
+                            name="duration"
+                            value={3}
+                            checked={subscriptionDuration === 3}
+                            onChange={() => setSubscriptionDuration(3)}
+                        />
+                        <span className="duration-option__label">3 tháng</span>
+                    </label>
+                    <label className={`duration-option ${subscriptionDuration === 6 ? 'duration-option--selected' : ''}`}>
+                        <input
+                            type="radio"
+                            name="duration"
+                            value={6}
+                            checked={subscriptionDuration === 6}
+                            onChange={() => setSubscriptionDuration(6)}
+                        />
+                        <span className="duration-option__label">6 tháng</span>
+                    </label>
                 </div>
-            </BaseModal>
+            </div>
+        )}
+
+        {/* Duration notice for Cramerich */}
+        {newSubscription === 'CRAMERICH' && (
+            <div className="subscription-notice subscription-notice--info">
+                <FiAlertTriangle size={16} />
+                <span>Gói Cramerich sẽ có hiệu lực trong <strong>{subscriptionDuration} tháng</strong> kể từ bây giờ. 
+                Sau khi hết hạn, tài khoản sẽ tự động chuyển về gói Free.</span>
+            </div>
+        )}
+
+        {/* Reason input */}
+        <div className="form-group">
+            <label className="form-label">Lý do thay đổi (tùy chọn)</label>
+            <textarea
+                className="form-textarea"
+                placeholder="VD: Tặng gói premium cho người dùng tích cực..."
+                value={subscriptionReason}
+                onChange={(e) => setSubscriptionReason(e.target.value)}
+                rows={2}
+            />
+        </div>
+
+        {/* Warning if downgrading from paid to free */}
+        {user.subscription === 'CRAMERICH' && newSubscription === 'FREE' && (
+            <div className="subscription-notice subscription-notice--warning">
+                <FiAlertTriangle size={16} />
+                <span>Khi chuyển về gói Free, người dùng sẽ mất các quyền lợi của gói Cramerich 
+                và tất cả usage counters sẽ được reset.</span>
+            </div>
+        )}
+    </div>
+</BaseModal>
+
+{/* Success Modal */}
+<BaseModal
+    isOpen={successModalOpen}
+    onClose={() => setSuccessModalOpen(false)}
+    title="Thành công"
+    size="small"
+>
+    <div className="success-modal-content">
+        <div className="success-modal-icon">
+            <FiCheckCircle size={48} />
+        </div>
+        <p className="success-modal-message">{successMessage}</p>
+        <button 
+            className="admin-btn admin-btn--primary success-modal-btn"
+            onClick={() => setSuccessModalOpen(false)}
+        >
+            Xác nhận
+        </button>
+    </div>
+</BaseModal>
         </div>
     );
 }

@@ -13,6 +13,7 @@ import com.cramer.repository.SubscriptionTierRepository;
 import com.cramer.repository.TranslationUsageRepository;
 import com.cramer.repository.UserCreditRepository;
 import com.cramer.repository.UserSubscriptionRepository;
+import com.cramer.repository.VocabularyRepository;
 import com.cramer.service.CreditService;
 import com.cramer.service.SubscriptionService;
 import org.slf4j.Logger;
@@ -28,6 +29,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -48,6 +50,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         private final UserSubscriptionRepository subscriptionRepository;
         private final UserCreditRepository creditRepository;
         private final TranslationUsageRepository translationUsageRepository;
+        private final VocabularyRepository vocabularyRepository;
         private final PaymentOrderRepository paymentOrderRepository;
         private final CreditService creditService;
 
@@ -63,12 +66,14 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                         UserSubscriptionRepository subscriptionRepository,
                         UserCreditRepository creditRepository,
                         TranslationUsageRepository translationUsageRepository,
+                        VocabularyRepository vocabularyRepository,
                         PaymentOrderRepository paymentOrderRepository,
                         @Lazy CreditService creditService) {
                 this.tierRepository = tierRepository;
                 this.subscriptionRepository = subscriptionRepository;
                 this.creditRepository = creditRepository;
                 this.translationUsageRepository = translationUsageRepository;
+                this.vocabularyRepository = vocabularyRepository;
                 this.paymentOrderRepository = paymentOrderRepository;
                 this.creditService = creditService;
         }
@@ -175,11 +180,12 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         @Transactional(readOnly = true)
         public int getMonthlyGradingsRemaining(UUID userId) {
                 return subscriptionRepository.findActiveByUserId(userId)
-                                .map(UserSubscription::getRemainingAiGradings)
+                                .map(UserSubscription::getRemainingAttemptAis)
                                 .orElse(0);
         }
 
         @Override
+        @SuppressWarnings("null")
         public UserSubscriptionDTO initializeNewUser(UUID userId) {
                 logger.info("🆕 Initializing new user subscription: {}", userId);
 
@@ -201,11 +207,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                                 .userId(userId)
                                 .tier(freeTier)
                                 .status(UserSubscription.Status.ACTIVE)
-                                .aiGradingsUsed(0)
+                                .attemptAisUsed(0)
                                 .autoRenew(false)
                                 .build();
 
-                subscription = subscriptionRepository.save(subscription);
+                subscription = Objects.requireNonNull(subscriptionRepository.save(subscription));
                 logger.info("✅ Created free tier subscription for user {}", userId);
 
                 // Initialize credits with initial Lúa bonus
@@ -285,8 +291,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 // Build tier info
                 SubscriptionStatusDTO.TierInfo tierInfo = SubscriptionStatusDTO.TierInfo.builder()
                                 .code(tier.getCode())
-                                .nameVi(tier.getNameVi())
-                                .nameEn(tier.getNameEn())
+                                .name(tier.getName())
+                                .name(tier.getName())
                                 .emoji(TIER_EMOJIS.getOrDefault(tier.getCode(), "📦"))
                                 .priceVnd(tier.getPriceVnd())
                                 .displayOrder(tier.getDisplayOrder())
@@ -395,8 +401,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 // Build vocabulary usage info (lifetime limit)
                 int vocabularyLimit = tier.getMaxVocabularyEntries() != null ? tier.getMaxVocabularyEntries() : 0;
                 boolean vocabularyUnlimited = (vocabularyLimit < 0);
-                // TODO: Get vocabulary count from vocabulary table when implemented
-                int vocabularyUsed = 0;
+                int vocabularyUsed = (int) vocabularyRepository.countByUserId(userId);
 
                 SubscriptionStatusDTO.UsageInfo vocabularyUsage = SubscriptionStatusDTO.UsageInfo.builder()
                                 .used(vocabularyUsed)
@@ -484,7 +489,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 UserSubscription subscription = subscriptionRepository.findActiveByUserId(userId)
                                 .orElseThrow(() -> new ResourceNotFoundException("UserSubscription", "userId", userId));
 
-                String tierCode = subscription.getTier().getCode();
+                // String tierCode = subscription.getTier().getCode();
 
                 // All users can enable/disable AI grading
                 // Cramerie users will use Lúa when grading (they have 0 free AI gradings)

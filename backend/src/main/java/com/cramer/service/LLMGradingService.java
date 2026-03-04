@@ -745,7 +745,7 @@ public class LLMGradingService {
 
                 try {
                         ResponseEntity<String> response = restTemplate.exchange(
-                                        url, HttpMethod.POST, entity, String.class);
+                                        url, Objects.requireNonNull(HttpMethod.POST), entity, String.class);
 
                         if (response.getStatusCode() != HttpStatus.OK) {
                                 throw new RuntimeException("DeepSeek API returned status: " + response.getStatusCode());
@@ -762,6 +762,7 @@ public class LLMGradingService {
          * Parse DeepSeek API response (OpenAI format) and apply grading results to
          * submission.
          */
+        @SuppressWarnings("unchecked")
         private void parseAndApplyGradingResults(WritingSubmission submission, String apiResponse)
                         throws JsonProcessingException {
 
@@ -933,7 +934,7 @@ public class LLMGradingService {
                         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
                         ResponseEntity<String> response = restTemplate.exchange(
-                                        url, HttpMethod.POST, entity, String.class);
+                                        url, Objects.requireNonNull(HttpMethod.POST), entity, String.class);
 
                         return response.getStatusCode() == HttpStatus.OK;
                 } catch (Exception e) {

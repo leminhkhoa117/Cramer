@@ -45,8 +45,17 @@ public class Question {
     @JoinColumn(name = "section_id", insertable = false, updatable = false)
     private Section section;
 
-    @Column(name = "explanation")
-    private String explanation;
+    /**
+     * Structured explanation JSONB format:
+     * {
+     *   "detail": "Detailed explanation in Vietnamese",
+     *   "quote": "Direct quote from passage/transcript (in English)",
+     *   "strategy": "Strategy tip for this question type (in Vietnamese)"
+     * }
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "explanation", columnDefinition = "jsonb")
+    private JsonNode explanation;
 
     @Column(name = "word_limit")
     private String wordLimit;
@@ -58,8 +67,8 @@ public class Question {
     public Question() {
     }
 
-    public Question(Long sectionId, Integer questionNumber, String questionUid, 
-                   String questionType, JsonNode questionContent, JsonNode correctAnswer) {
+    public Question(Long sectionId, Integer questionNumber, String questionUid,
+            String questionType, JsonNode questionContent, JsonNode correctAnswer) {
         this.sectionId = sectionId;
         this.questionNumber = questionNumber;
         this.questionUid = questionUid;
@@ -133,11 +142,11 @@ public class Question {
         this.section = section;
     }
 
-    public String getExplanation() {
+    public JsonNode getExplanation() {
         return explanation;
     }
 
-    public void setExplanation(String explanation) {
+    public void setExplanation(JsonNode explanation) {
         this.explanation = explanation;
     }
 

@@ -8,6 +8,7 @@ const useCourseStore = create(
       // STATE
       courses: [],
       courseTests: {}, // { [courseName]: array }
+      courseDetails: {}, // { [courseCode]: { name, code, description, ... } }
       loading: false,
       error: null,
       lastFetchedAt: null,
@@ -31,7 +32,7 @@ const useCourseStore = create(
         try {
           const response = await courseApi.getAll(page, size, search);
           const data = response.data; // Unwrap axios response
-          
+
           set({
             courses: data.content || [],
             currentPage: data.number ?? page,
@@ -53,6 +54,32 @@ const useCourseStore = create(
       },
 
       /**
+       * Fetch courses V2 - returns full TestSetDTO objects with name, description
+       */
+      fetchCoursesV2: async () => {
+        set({ loading: true, error: null }, false, 'fetchCoursesV2/pending');
+
+        try {
+          const response = await courseApi.getAllV2();
+          const data = response.data; // Array of TestSetDTO
+
+          set({
+            courses: data || [],
+            loading: false,
+            lastFetchedAt: new Date(),
+          }, false, 'fetchCoursesV2/fulfilled');
+
+          return data;
+        } catch (error) {
+          set({
+            loading: false,
+            error: error.message || 'Failed to fetch courses',
+          }, false, 'fetchCoursesV2/rejected');
+          throw error;
+        }
+      },
+
+      /**
        * Fetch tests for a specific course (with caching)
        */
       fetchCourseTests: async (courseName) => {
@@ -68,7 +95,7 @@ const useCourseStore = create(
         try {
           const response = await courseApi.getTestsByCourse(courseName);
           const tests = response.data; // Unwrap axios response
-          
+
           set((state) => ({
             courseTests: {
               ...state.courseTests,
@@ -85,6 +112,43 @@ const useCourseStore = create(
           }, false, 'fetchCourseTests/rejected');
           throw error;
         }
+      },
+
+      /**
+       * Fetch course details (name, description, etc.) by code
+       */
+      fetchCourseDetails: async (courseCode) => {
+        const { courseDetails } = get();
+
+        // Return cached data if available
+        if (courseDetails[courseCode]) {
+          return courseDetails[courseCode];
+        }
+
+        try {
+          const response = await courseApi.getDetails(courseCode);
+          const details = response.data;
+
+          set((state) => ({
+            courseDetails: {
+              ...state.courseDetails,
+              [courseCode]: details,
+            },
+          }), false, 'fetchCourseDetails/fulfilled');
+
+          return details;
+        } catch (error) {
+          console.error(`Failed to fetch details for ${courseCode}:`, error);
+          return null;
+        }
+      },
+
+      /**
+       * Get cached course details
+       */
+      getCachedDetails: (courseCode) => {
+        const { courseDetails } = get();
+        return courseDetails[courseCode] || null;
       },
 
       /**

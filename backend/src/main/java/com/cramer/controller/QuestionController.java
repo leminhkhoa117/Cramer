@@ -5,8 +5,8 @@ import com.cramer.entity.Question;
 import com.cramer.exception.ResourceNotFoundException;
 import com.cramer.service.QuestionService;
 import com.cramer.util.EntityMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +20,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/questions")
-public class QuestionController {
-
-    private static final Logger logger = LoggerFactory.getLogger(QuestionController.class);
+public class QuestionController extends BaseController {
 
     private final QuestionService questionService;
 
@@ -33,44 +31,44 @@ public class QuestionController {
 
     @GetMapping
     public ResponseEntity<List<QuestionDTO>> getAllQuestions() {
-        List<QuestionDTO> questions = questionService.getAllQuestions()
-                .stream().map(EntityMapper::toDTO).collect(Collectors.toList());
+        List<QuestionDTO> questions = questionService.getAllQuestions().stream().map(EntityMapper::toDTO)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(questions);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<QuestionDTO> getQuestionById(@PathVariable Long id) {
+    public ResponseEntity<QuestionDTO> getQuestionById(@PathVariable @jakarta.validation.constraints.Min(1) Long id) {
         Question question = questionService.getQuestionById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Question", "id", id));
         return ResponseEntity.ok(EntityMapper.toDTO(question));
     }
 
     @GetMapping("/section/{sectionId}")
-    public ResponseEntity<List<QuestionDTO>> getQuestionsBySectionId(@PathVariable Long sectionId) {
-        List<QuestionDTO> questions = questionService.getQuestionsBySectionId(sectionId)
-                .stream().map(EntityMapper::toDTO).collect(Collectors.toList());
+    public ResponseEntity<List<QuestionDTO>> getQuestionsBySectionId(@PathVariable @jakarta.validation.constraints.Min(1) Long sectionId) {
+        List<QuestionDTO> questions = questionService.getQuestionsBySectionId(sectionId).stream()
+                .map(EntityMapper::toDTO).collect(Collectors.toList());
         return ResponseEntity.ok(questions);
     }
 
     @GetMapping("/uid/{questionUid}")
-    public ResponseEntity<QuestionDTO> getQuestionByUid(@PathVariable String questionUid) {
+    public ResponseEntity<QuestionDTO> getQuestionByUid(@PathVariable @jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Pattern(regexp = "^[A-Za-z0-9_-]+$") String questionUid) {
         Question question = questionService.getQuestionByUid(questionUid)
                 .orElseThrow(() -> new ResourceNotFoundException("Question", "questionUid", questionUid));
         return ResponseEntity.ok(EntityMapper.toDTO(question));
     }
 
     @GetMapping("/type/{questionType}")
-    public ResponseEntity<List<QuestionDTO>> getQuestionsByType(@PathVariable String questionType) {
-        List<QuestionDTO> questions = questionService.getQuestionsByType(questionType)
-                .stream().map(EntityMapper::toDTO).collect(Collectors.toList());
+    public ResponseEntity<List<QuestionDTO>> getQuestionsByType(@PathVariable @jakarta.validation.constraints.NotBlank String questionType) {
+        List<QuestionDTO> questions = questionService.getQuestionsByType(questionType).stream().map(EntityMapper::toDTO)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(questions);
     }
 
     @GetMapping("/section/{sectionId}/type/{questionType}")
-    public ResponseEntity<List<QuestionDTO>> getQuestionsBySectionAndType(
-            @PathVariable Long sectionId, @PathVariable String questionType) {
-        List<QuestionDTO> questions = questionService.getQuestionsBySectionAndType(sectionId, questionType)
-                .stream().map(EntityMapper::toDTO).collect(Collectors.toList());
+    public ResponseEntity<List<QuestionDTO>> getQuestionsBySectionAndType(@PathVariable @jakarta.validation.constraints.Min(1) Long sectionId,
+            @PathVariable @jakarta.validation.constraints.NotBlank String questionType) {
+        List<QuestionDTO> questions = questionService.getQuestionsBySectionAndType(sectionId, questionType).stream()
+                .map(EntityMapper::toDTO).collect(Collectors.toList());
         return ResponseEntity.ok(questions);
     }
 
@@ -80,27 +78,27 @@ public class QuestionController {
     }
 
     @PostMapping
-    public ResponseEntity<QuestionDTO> createQuestion(@RequestBody QuestionDTO questionDTO) {
+    public ResponseEntity<QuestionDTO> createQuestion(@Valid @RequestBody QuestionDTO questionDTO) {
         Question question = EntityMapper.toEntity(questionDTO);
         Question created = questionService.createQuestion(question);
         return ResponseEntity.status(HttpStatus.CREATED).body(EntityMapper.toDTO(created));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<QuestionDTO> updateQuestion(@PathVariable Long id, @RequestBody QuestionDTO questionDTO) {
+    public ResponseEntity<QuestionDTO> updateQuestion(@PathVariable @jakarta.validation.constraints.Min(1) Long id, @Valid @RequestBody QuestionDTO questionDTO) {
         Question question = EntityMapper.toEntity(questionDTO);
         Question updated = questionService.updateQuestion(id, question);
         return ResponseEntity.ok(EntityMapper.toDTO(updated));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteQuestion(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteQuestion(@PathVariable @jakarta.validation.constraints.Min(1) Long id) {
         questionService.deleteQuestion(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/count/section/{sectionId}")
-    public ResponseEntity<Long> countBySectionId(@PathVariable Long sectionId) {
+    public ResponseEntity<Long> countBySectionId(@PathVariable @jakarta.validation.constraints.Min(1) Long sectionId) {
         return ResponseEntity.ok(questionService.countBySectionId(sectionId));
     }
 

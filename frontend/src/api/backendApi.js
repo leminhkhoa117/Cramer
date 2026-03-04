@@ -84,7 +84,9 @@ export const authApi = {
 // ============================================
 export const courseApi = {
   getAll: (page = 0, size = 6, search = '') => apiClient.get('/courses', { params: { page, size, search } }),
+  getAllV2: () => apiClient.get('/courses/v2'), // Returns full TestSetDTO objects
   getTestsByCourse: (courseName) => apiClient.get(`/courses/${courseName}/tests`),
+  getDetails: (courseCode) => apiClient.get(`/courses/${courseCode}/details`),
 };
 
 // ============================================

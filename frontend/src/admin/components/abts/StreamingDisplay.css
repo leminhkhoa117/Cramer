@@ -1,0 +1,409 @@
+/**
+ * StreamingDisplay - Studio Theme Adaptation
+ * 
+ * Adapts the terminal-like streaming display to the improved Studio UI.
+ * Uses CSS variables from Studio.css (--st-*) for consistency.
+ */
+
+.streaming-display {
+    /* Use Studio card styling with slightly darker terminal bg */
+    background: rgba(15, 17, 26, 0.95);
+    border: 1px solid var(--st-border, rgba(255, 255, 255, 0.08));
+    border-radius: var(--st-radius, 12px);
+    overflow: hidden;
+    overscroll-behavior: contain;
+    /* Keep monospace for the "terminal" feel */
+    font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', monospace;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    /* Fill container */
+    min-height: 400px;
+    max-height: calc(100vh - 120px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(12px);
+}
+
+/* Ensure it fills the preview area properly */
+.step-preview-container .streaming-display {
+    height: 100%;
+    border-radius: var(--st-radius, 12px);
+}
+
+/* Header */
+.streaming-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--st-border, rgba(255, 255, 255, 0.08));
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.streaming-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--st-text-main, #f8fafc);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.streaming-status svg {
+    color: var(--st-primary, #8b5cf6);
+}
+
+.streaming-status svg.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Abort Button */
+.abort-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.abort-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+}
+
+/* Progress Bar */
+.streaming-progress {
+    position: relative;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--st-primary, #8b5cf6), #d946ef);
+    box-shadow: 0 0 12px var(--st-primary-glow, rgba(139, 92, 246, 0.3));
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    display: none;
+    /* Moved to header */
+}
+
+/* Progress percentage in header */
+.progress-text-header {
+    margin-left: 12px;
+    font-size: 0.875rem;
+    color: var(--st-primary, #8b5cf6);
+    font-weight: 600;
+    background: rgba(139, 92, 246, 0.15);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+/* Event Log (The Terminal) */
+.streaming-log {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* Prevent over-scrolling that reveals white background */
+    padding: 24px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--st-text-muted, #94a3b8);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    background: rgba(15, 17, 26, 1);
+}
+
+/* Custom Scrollbar for Terminal */
+.streaming-log::-webkit-scrollbar {
+    width: 6px;
+}
+
+.streaming-log::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.streaming-log::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.streaming-log::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Log Entries */
+.log-entry {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    opacity: 0;
+    animation: slideIn 0.2s forwards;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.log-icon {
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+    font-size: 1.1em;
+}
+
+.log-message {
+    color: var(--st-text-main, #e2e8f0);
+}
+
+/* Specific Event Colors (All prefixed with type-) */
+.log-entry.type-started .log-message {
+    color: #34d399;
+}
+
+/* Green */
+.log-entry.type-ai_calling .log-message {
+    color: #a78bfa;
+}
+
+/* Purple */
+.log-entry.type-ai_thinking .log-message {
+    color: #fbbf24;
+}
+
+/* Amber */
+.log-entry.type-error .log-message {
+    color: #ef4444;
+}
+
+/* Red */
+.log-entry.type-completed .log-message {
+    color: #34d399;
+    font-weight: 600;
+}
+
+.log-entry.type-connecting .log-message {
+    color: #60a5fa;
+}
+
+/* Blue */
+
+.log-entry.type-validating .log-message {
+    color: #60A5FA;
+}
+
+.log-entry.type-retry .log-message {
+    color: #F59E0B;
+}
+
+.log-entry.type-failed .log-message {
+    color: #EF4444;
+}
+
+.log-entry.type-sending .log-message {
+    color: #60A5FA;
+}
+
+.log-entry.type-connected .log-message {
+    color: #34D399;
+}
+
+.log-entry.type-aborted .log-message {
+    color: #EF4444;
+}
+
+/* Complex Log Entry Types */
+.log-entry.type-timeout_warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 4px 0;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.log-entry.type-timeout_warning .log-message {
+    color: #F59E0B;
+    font-weight: 500;
+}
+
+/* Progress Event Fix */
+.log-entry.type-progress {
+    background: transparent !important;
+    border: none !important;
+    display: flex !important;
+    width: 100% !important;
+    padding: 2px 0;
+}
+
+.log-entry.type-progress .log-message {
+    color: #a78bfa;
+    opacity: 0.8;
+}
+
+/* Typer */
+.typing-dots {
+    color: var(--st-text-muted);
+}
+
+/* Reasoning / Thinking Block - Appears at TOP */
+.reasoning-section {
+    margin: 16px;
+    margin-top: 12px;
+    background: rgba(139, 92, 246, 0.05);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.reasoning-header {
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--st-text-muted);
+    border-bottom: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+.reasoning-header:hover {
+    color: var(--st-text-main);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.reasoning-content {
+    padding: 16px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.reasoning-content.expanded {
+    max-height: 400px;
+    overflow-y: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.reasoning-content pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    font-family: inherit;
+}
+
+/* Typing Cursor */
+.typing-cursor {
+    display: inline-block;
+    width: 0.6em;
+    height: 1.2em;
+    background: var(--st-primary);
+    margin-left: 4px;
+    vertical-align: text-bottom;
+    animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+    50% {
+        opacity: 0;
+    }
+}
+
+/* Stage Indicators (Footer) */
+.stage-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stage-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.3;
+    transition: all 0.3s;
+}
+
+.stage-indicator.active,
+.stage-indicator.complete,
+.stage-indicator.current {
+    opacity: 1;
+}
+
+.stage-indicator .stage-icon {
+    font-size: 1.4rem;
+    color: var(--st-text-muted);
+}
+
+.stage-indicator.complete .stage-icon {
+    color: #34d399;
+}
+
+.stage-indicator.current .stage-icon {
+    color: var(--st-primary);
+    animation: pulse 2s infinite;
+}
+
+.stage-indicator .stage-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: var(--st-font, sans-serif);
+    font-weight: 500;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}

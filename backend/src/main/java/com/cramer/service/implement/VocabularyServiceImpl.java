@@ -3,9 +3,9 @@ package com.cramer.service.implement;
 import com.cramer.config.LLMConfig;
 import com.cramer.dto.VocabularyCreateDTO;
 import com.cramer.dto.VocabularyDTO;
-import com.cramer.entity.Profile;
+
 import com.cramer.entity.Vocabulary;
-import com.cramer.repository.ProfileRepository;
+
 import com.cramer.repository.VocabularyRepository;
 import com.cramer.service.TranslationBillingService;
 import com.cramer.service.VocabularyService;
@@ -22,6 +22,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.Objects;
 
 /**
  * Implementation of VocabularyService.
@@ -33,7 +34,7 @@ public class VocabularyServiceImpl implements VocabularyService {
     private static final Logger logger = LoggerFactory.getLogger(VocabularyServiceImpl.class);
 
     private final VocabularyRepository vocabularyRepository;
-    private final ProfileRepository profileRepository;
+
     private final TranslationBillingService translationBillingService;
     private final LLMConfig llmConfig;
     private final RestTemplate restTemplate;
@@ -41,11 +42,11 @@ public class VocabularyServiceImpl implements VocabularyService {
 
     public VocabularyServiceImpl(
             VocabularyRepository vocabularyRepository,
-            ProfileRepository profileRepository,
+
             TranslationBillingService translationBillingService,
             LLMConfig llmConfig) {
         this.vocabularyRepository = vocabularyRepository;
-        this.profileRepository = profileRepository;
+
         this.translationBillingService = translationBillingService;
         this.llmConfig = llmConfig;
         this.restTemplate = new RestTemplate();
@@ -81,6 +82,7 @@ public class VocabularyServiceImpl implements VocabularyService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public VocabularyDTO create(UUID userId, VocabularyCreateDTO createDTO) {
         logger.info("Creating vocabulary entry for user: {}, word: {}", userId, createDTO.getWord());
 
@@ -135,7 +137,7 @@ public class VocabularyServiceImpl implements VocabularyService {
             }
         }
 
-        Vocabulary saved = vocabularyRepository.save(vocabulary);
+        Vocabulary saved = Objects.requireNonNull(vocabularyRepository.save(vocabulary));
         logger.info("Created vocabulary entry with ID: {}", saved.getId());
 
         return VocabularyDTO.fromEntity(saved);
@@ -143,6 +145,7 @@ public class VocabularyServiceImpl implements VocabularyService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public VocabularyDTO update(Long id, UUID userId, VocabularyDTO updateDTO) {
         logger.info("Updating vocabulary {} for user: {}", id, userId);
 
@@ -180,7 +183,7 @@ public class VocabularyServiceImpl implements VocabularyService {
             vocabulary.setNotes(updateDTO.getNotes());
         }
 
-        Vocabulary saved = vocabularyRepository.save(vocabulary);
+        Vocabulary saved = Objects.requireNonNull(vocabularyRepository.save(vocabulary));
         return VocabularyDTO.fromEntity(saved);
     }
 
@@ -192,7 +195,7 @@ public class VocabularyServiceImpl implements VocabularyService {
         Vocabulary vocabulary = vocabularyRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Vocabulary entry not found or access denied"));
 
-        vocabularyRepository.delete(vocabulary);
+        vocabularyRepository.delete(Objects.requireNonNull(vocabulary));
         logger.info("Deleted vocabulary entry: {}", id);
     }
 
@@ -270,7 +273,7 @@ public class VocabularyServiceImpl implements VocabularyService {
 
         try {
             ResponseEntity<String> response = restTemplate.exchange(
-                    url, HttpMethod.POST, entity, String.class);
+                    url, Objects.requireNonNull(HttpMethod.POST), entity, String.class);
 
             if (response.getStatusCode() != HttpStatus.OK) {
                 throw new RuntimeException("DeepSeek API returned status: " + response.getStatusCode());

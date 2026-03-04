@@ -15,8 +15,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.cramer.entity.TestSet;
+import com.cramer.entity.IeltsTest;
 
 @Service
 public class DashboardService {
@@ -28,14 +32,18 @@ public class DashboardService {
     private final QuestionRepository questionRepository;
     private final SectionRepository sectionRepository;
     private final WritingSubmissionRepository writingSubmissionRepository;
+    private final TestSetRepository testSetRepository;
+    private final IeltsTestRepository ieltsTestRepository;
 
     public DashboardService(ProfileRepository profileRepository,
-                            TargetRepository targetRepository,
-                            TestAttemptRepository testAttemptRepository,
-                            UserAnswerRepository userAnswerRepository,
-                            QuestionRepository questionRepository,
-                            SectionRepository sectionRepository,
-                            WritingSubmissionRepository writingSubmissionRepository) {
+            TargetRepository targetRepository,
+            TestAttemptRepository testAttemptRepository,
+            UserAnswerRepository userAnswerRepository,
+            QuestionRepository questionRepository,
+            SectionRepository sectionRepository,
+            WritingSubmissionRepository writingSubmissionRepository,
+            TestSetRepository testSetRepository,
+            IeltsTestRepository ieltsTestRepository) {
         this.profileRepository = profileRepository;
         this.targetRepository = targetRepository;
         this.testAttemptRepository = testAttemptRepository;
@@ -43,6 +51,8 @@ public class DashboardService {
         this.questionRepository = questionRepository;
         this.sectionRepository = sectionRepository;
         this.writingSubmissionRepository = writingSubmissionRepository;
+        this.testSetRepository = testSetRepository;
+        this.ieltsTestRepository = ieltsTestRepository;
     }
 
     public DashboardSummaryDTO buildDashboardSummary(UUID userId, int page, int size, String search) {
@@ -101,45 +111,68 @@ public class DashboardService {
         return EntityMapper.toDTO(savedTarget);
     }
 
-    private PageDTO<CourseProgressDTO> aggregateCourseProgress(List<TestAttempt> attempts, List<UserAnswer> allAnswers, int page, int size, String search) {
+    private PageDTO<CourseProgressDTO> aggregateCourseProgress(List<TestAttempt> attempts, List<UserAnswer> allAnswers,
+            int page, int size, String search) {
         if (attempts == null || attempts.isEmpty()) {
             return new PageDTO<>(List.of(), page, size, 0, 0);
         }
 
         // 1. Group attempts by TestKey (Source + TestNum + Skill)
         Map<TestKey, List<TestAttempt>> attemptsByTest = attempts.stream()
-                .collect(Collectors.groupingBy(a -> new TestKey(a.getExamSource(), parseTestNumber(a.getTestNumber()), a.getSkill())));
+                .collect(Collectors.groupingBy(
+                        a -> new TestKey(a.getExamSource(), parseTestNumber(a.getTestNumber()), a.getSkill())));
 
         // 2. Convert groups to CourseProgressDTO (with history)
-        Map<Long, List<UserAnswer>> answersByAttemptId = allAnswers == null ?
-                Collections.emptyMap() :
-                allAnswers.stream().collect(Collectors.groupingBy(a -> a.getAttempt().getId()));
+        Map<Long, List<UserAnswer>> answersByAttemptId = allAnswers == null ? Collections.emptyMap()
+                : allAnswers.stream().collect(Collectors.groupingBy(a -> a.getAttempt().getId()));
         Map<TestKey, Integer> totalQuestionsCache = new HashMap<>();
+
+        // 3. Build name resolution cache for examSource -> setName, testNumber ->
+        // testName
+        Set<String> examSources = attempts.stream().map(TestAttempt::getExamSource).collect(Collectors.toSet());
+        Map<String, TestSet> setsByCode = examSources.stream()
+                .map(code -> testSetRepository.findByCode(code).orElse(null))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(TestSet::getCode, Function.identity()));
+
+        // Build testName lookup: "examSource_testNumber" -> testName
+        Map<String, String> testNameLookup = new HashMap<>();
+        for (TestSet ts : setsByCode.values()) {
+            List<IeltsTest> tests = ieltsTestRepository.findByTestSetIdOrderByTestNumberAsc(ts.getId());
+            for (IeltsTest t : tests) {
+                testNameLookup.put(ts.getCode() + "_" + t.getTestNumber(), t.getName());
+            }
+        }
 
         List<CourseProgressDTO> courseProgressList = new ArrayList<>();
 
         for (Map.Entry<TestKey, List<TestAttempt>> entry : attemptsByTest.entrySet()) {
-            TestKey key = entry.getKey();
+            // Process each group
             List<TestAttempt> testAttempts = entry.getValue();
 
             // Sort attempts by startedAt desc (latest first)
-            testAttempts.sort(Comparator.comparing(TestAttempt::getStartedAt, Comparator.nullsLast(Comparator.reverseOrder())));
+            testAttempts.sort(
+                    Comparator.comparing(TestAttempt::getStartedAt, Comparator.nullsLast(Comparator.reverseOrder())));
 
             // Find the latest non-CANCELLED attempt for display
             TestAttempt latestAttempt = testAttempts.stream()
                     .filter(a -> !"CANCELLED".equals(a.getStatus()))
                     .findFirst()
                     .orElse(null);
-            
+
             // Skip this test if all attempts are cancelled
-            if (latestAttempt == null) continue;
+            if (latestAttempt == null)
+                continue;
 
             // Filter by search if needed
             if (search != null && !search.trim().isEmpty()) {
                 String lowerSearch = search.toLowerCase().trim();
-                boolean matches = (latestAttempt.getExamSource() != null && latestAttempt.getExamSource().toLowerCase().contains(lowerSearch)) ||
-                                  (latestAttempt.getSkill() != null && latestAttempt.getSkill().toLowerCase().contains(lowerSearch));
-                if (!matches) continue;
+                boolean matches = (latestAttempt.getExamSource() != null
+                        && latestAttempt.getExamSource().toLowerCase().contains(lowerSearch)) ||
+                        (latestAttempt.getSkill() != null
+                                && latestAttempt.getSkill().toLowerCase().contains(lowerSearch));
+                if (!matches)
+                    continue;
             }
 
             // Build History - exclude CANCELLED attempts (they have no value to show)
@@ -151,7 +184,8 @@ public class DashboardService {
                                 .count();
                         Double band = null;
                         if ("COMPLETED".equals(a.getStatus())) {
-                            if ("reading".equalsIgnoreCase(a.getSkill()) || "listening".equalsIgnoreCase(a.getSkill())) {
+                            if ("reading".equalsIgnoreCase(a.getSkill())
+                                    || "listening".equalsIgnoreCase(a.getSkill())) {
                                 band = IeltsScoreConverter.convertToBand(a.getScore() != null ? a.getScore() : correct);
                             } else if ("writing".equalsIgnoreCase(a.getSkill())) {
                                 // For writing, get band from writing_submissions
@@ -164,10 +198,11 @@ public class DashboardService {
 
             // Build Main DTO from Latest Attempt
             int totalQuestions = resolveTotalQuestions(latestAttempt, totalQuestionsCache);
-            List<UserAnswer> attemptAnswers = answersByAttemptId.getOrDefault(latestAttempt.getId(), Collections.emptyList());
+            List<UserAnswer> attemptAnswers = answersByAttemptId.getOrDefault(latestAttempt.getId(),
+                    Collections.emptyList());
             int answersAttempted = attemptAnswers.size();
             int correctCount = (int) attemptAnswers.stream().filter(a -> Boolean.TRUE.equals(a.getCorrect())).count();
-            
+
             // Calculate score based on skill type
             double score;
             if ("writing".equalsIgnoreCase(latestAttempt.getSkill())) {
@@ -177,14 +212,33 @@ public class DashboardService {
             } else {
                 score = IeltsScoreConverter.convertToBand(correctCount);
             }
-            
+
             double completionRate = totalQuestions > 0 ? (double) answersAttempted / totalQuestions : 0.0;
+
+            // Resolve human-readable names
+            String setName = null;
+            String testName = null;
+            TestSet ts = setsByCode.get(latestAttempt.getExamSource());
+            if (ts != null) {
+                setName = ts.getName();
+                String lookupKey = ts.getCode() + "_" + parseTestNumber(latestAttempt.getTestNumber());
+                testName = testNameLookup.get(lookupKey);
+            }
+            // Fallback to formatted exam source if no set found
+            if (setName == null) {
+                setName = latestAttempt.getExamSource();
+            }
+            if (testName == null) {
+                testName = "Test " + latestAttempt.getTestNumber();
+            }
 
             courseProgressList.add(new CourseProgressDTO(
                     latestAttempt.getId(),
                     latestAttempt.getExamSource(),
                     parseTestNumber(latestAttempt.getTestNumber()),
                     latestAttempt.getSkill(),
+                    setName,
+                    testName,
                     totalQuestions,
                     answersAttempted,
                     correctCount,
@@ -192,12 +246,12 @@ public class DashboardService {
                     completionRate,
                     latestAttempt.getStatus(), // Use actual status
                     score,
-                    history
-            ));
+                    history));
         }
 
         // 3. Sort by latest attempt time
-        courseProgressList.sort(Comparator.comparing(CourseProgressDTO::getLastAttempt, Comparator.nullsLast(Comparator.reverseOrder())));
+        courseProgressList.sort(Comparator.comparing(CourseProgressDTO::getLastAttempt,
+                Comparator.nullsLast(Comparator.reverseOrder())));
 
         // 4. Pagination
         int totalElements = courseProgressList.size();
@@ -206,7 +260,7 @@ public class DashboardService {
         int end = Math.min(start + size, totalElements);
 
         if (start >= totalElements) {
-             return new PageDTO<>(List.of(), page, size, totalElements, totalPages);
+            return new PageDTO<>(List.of(), page, size, totalElements, totalPages);
         }
 
         List<CourseProgressDTO> pageContent = courseProgressList.subList(start, end);
@@ -221,13 +275,14 @@ public class DashboardService {
 
         // Create a map of Question ID -> Skill
         Set<Long> questionIds = answers.stream().map(a -> a.getQuestion().getId()).collect(Collectors.toSet());
-        List<Question> questions = questionRepository.findAllById(questionIds);
-        
+        List<Question> questions = questionRepository.findAllById(Objects.requireNonNull(questionIds));
+
         Set<Long> sectionIds = questions.stream().map(Question::getSectionId).collect(Collectors.toSet());
-        List<Section> sections = sectionRepository.findAllById(sectionIds);
+        List<Section> sections = sectionRepository.findAllById(Objects.requireNonNull(sectionIds));
 
         Map<Long, String> questionIdToSkillMap = new HashMap<>();
-        Map<Long, Section> sectionMap = sections.stream().collect(Collectors.toMap(Section::getId, Function.identity()));
+        Map<Long, Section> sectionMap = sections.stream()
+                .collect(Collectors.toMap(Section::getId, Function.identity()));
 
         for (Question q : questions) {
             Section s = sectionMap.get(q.getSectionId());
@@ -243,9 +298,8 @@ public class DashboardService {
                         Collectors.collectingAndThen(Collectors.toList(), list -> {
                             long total = list.size();
                             long correct = list.stream().filter(a -> a.getCorrect() != null && a.getCorrect()).count();
-                            return new long[]{total, correct};
-                        })
-                ));
+                            return new long[] { total, correct };
+                        })));
 
         return skillStats.entrySet().stream()
                 .map(entry -> {
@@ -279,8 +333,7 @@ public class DashboardService {
                 .map(answer -> new RecentActivityDTO(
                         answer.getQuestion().getId(),
                         answer.getSubmittedAt(),
-                        answer.getCorrect()
-                ))
+                        answer.getCorrect()))
                 .collect(Collectors.toList());
     }
 
@@ -290,10 +343,14 @@ public class DashboardService {
         }
         List<DashboardGoalDTO> goals = new ArrayList<>();
         LocalDate examDate = targetDto.examDate();
-        if (targetDto.listening() != null) goals.add(new DashboardGoalDTO("Listening", String.valueOf(targetDto.listening()), examDate));
-        if (targetDto.reading() != null) goals.add(new DashboardGoalDTO("Reading", String.valueOf(targetDto.reading()), examDate));
-        if (targetDto.writing() != null) goals.add(new DashboardGoalDTO("Writing", String.valueOf(targetDto.writing()), examDate));
-        if (targetDto.speaking() != null) goals.add(new DashboardGoalDTO("Speaking", String.valueOf(targetDto.speaking()), examDate));
+        if (targetDto.listening() != null)
+            goals.add(new DashboardGoalDTO("Listening", String.valueOf(targetDto.listening()), examDate));
+        if (targetDto.reading() != null)
+            goals.add(new DashboardGoalDTO("Reading", String.valueOf(targetDto.reading()), examDate));
+        if (targetDto.writing() != null)
+            goals.add(new DashboardGoalDTO("Writing", String.valueOf(targetDto.writing()), examDate));
+        if (targetDto.speaking() != null)
+            goals.add(new DashboardGoalDTO("Speaking", String.valueOf(targetDto.speaking()), examDate));
         return goals;
     }
 
@@ -306,16 +363,13 @@ public class DashboardService {
         TestKey key = new TestKey(
                 attempt.getExamSource(),
                 parsedTestNumber,
-                attempt.getSkill()
-        );
+                attempt.getSkill());
 
-        return cache.computeIfAbsent(key, k ->
-                questionRepository.countBySection_ExamSourceAndSection_TestNumberAndSection_Skill(
+        return cache.computeIfAbsent(key,
+                k -> questionRepository.countBySection_ExamSourceAndSection_TestNumberAndSection_Skill(
                         k.examSource(),
                         k.testNumber(),
-                        k.skill()
-                )
-        );
+                        k.skill()));
     }
 
     private Integer parseTestNumber(String rawTestNumber) {
@@ -330,19 +384,21 @@ public class DashboardService {
     }
 
     /**
-     * Get the overall band score for a writing attempt using IELTS weighted average.
-     * Task 1 = 1/3 weight, Task 2 = 2/3 weight (consistent with WritingSubmissionService)
+     * Get the overall band score for a writing attempt using IELTS weighted
+     * average.
+     * Task 1 = 1/3 weight, Task 2 = 2/3 weight (consistent with
+     * WritingSubmissionService)
      */
     private Double getWritingAttemptBand(Long attemptId) {
         List<WritingSubmission> submissions = writingSubmissionRepository.findByAttemptId(attemptId);
         if (submissions.isEmpty()) {
             return null;
         }
-        
+
         // Find graded bands for Task 1 and Task 2
         Double task1Band = null;
         Double task2Band = null;
-        
+
         for (WritingSubmission sub : submissions) {
             if ("COMPLETED".equals(sub.getGradingStatus()) && sub.getOverallBand() != null) {
                 if (sub.getTaskNumber() == 1) {
@@ -352,7 +408,7 @@ public class DashboardService {
                 }
             }
         }
-        
+
         // Calculate weighted average using IELTS formula
         Double result;
         if (task1Band != null && task2Band != null) {
@@ -367,7 +423,7 @@ public class DashboardService {
         } else {
             result = null;
         }
-        
+
         return result;
     }
 

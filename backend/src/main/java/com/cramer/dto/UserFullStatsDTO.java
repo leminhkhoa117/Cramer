@@ -19,7 +19,7 @@ public class UserFullStatsDTO {
     
     // Subscription info
     private SubscriptionTierDTO currentTier;
-    private Integer aiGradingsRemaining;
+    private Integer attemptAisRemaining;
     private Integer dailyChatRemaining;
     private Boolean isSubscriptionActive;
     

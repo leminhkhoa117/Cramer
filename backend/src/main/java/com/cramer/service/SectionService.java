@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -47,7 +48,7 @@ public class SectionService {
         logger.info("Fetching full section by ID: {}", id);
 
         // 1. Fetch the section entity
-        Section section = sectionRepository.findById(id)
+        Section section = sectionRepository.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Section", "id", id));
 
         // 2. Fetch the associated questions
@@ -82,7 +83,7 @@ public class SectionService {
     @Transactional(readOnly = true)
     public Optional<Section> getSectionById(Long id) {
         logger.info("Fetching section by ID: {}", id);
-        return sectionRepository.findById(id);
+        return sectionRepository.findById(Objects.requireNonNull(id));
     }
 
     /**
@@ -127,13 +128,13 @@ public class SectionService {
      * 
      * @param examSource the exam source
      * @param testNumber the test number
-     * @param skill the skill type
+     * @param skill      the skill type
      * @param partNumber the part number
      * @return Optional containing the section if found
      */
     @Transactional(readOnly = true)
-    public Optional<Section> getSpecificSection(String examSource, Integer testNumber, 
-                                                String skill, Integer partNumber) {
+    public Optional<Section> getSpecificSection(String examSource, Integer testNumber,
+            String skill, Integer partNumber) {
         logger.info("Fetching specific section: {}-T{}-{}-P{}", examSource, testNumber, skill, partNumber);
         return sectionRepository.findByExamSourceAndTestNumberAndSkillAndPartNumber(
                 examSource, testNumber, skill, partNumber);
@@ -144,7 +145,7 @@ public class SectionService {
      * 
      * @param examSource the exam source
      * @param testNumber the test number
-     * @param skill the skill type
+     * @param skill      the skill type
      * @return list of sections ordered by part
      */
     @Transactional(readOnly = true)
@@ -161,17 +162,17 @@ public class SectionService {
      * @throws IllegalArgumentException if section already exists
      */
     public Section createSection(Section section) {
-        logger.info("Creating new section: {}-T{}-{}-P{}", 
-                section.getExamSource(), section.getTestNumber(), 
+        logger.info("Creating new section: {}-T{}-{}-P{}",
+                section.getExamSource(), section.getTestNumber(),
                 section.getSkill(), section.getPartNumber());
-        
+
         if (sectionRepository.existsByExamSourceAndTestNumberAndSkillAndPartNumber(
-                section.getExamSource(), section.getTestNumber(), 
+                section.getExamSource(), section.getTestNumber(),
                 section.getSkill(), section.getPartNumber())) {
             logger.error("Section already exists");
             throw new IllegalArgumentException("Section already exists with these parameters");
         }
-        
+
         Section savedSection = sectionRepository.save(section);
         logger.info("Section created successfully with ID: {}", savedSection.getId());
         return savedSection;
@@ -180,27 +181,27 @@ public class SectionService {
     /**
      * Update an existing section.
      * 
-     * @param id the section ID
+     * @param id             the section ID
      * @param updatedSection the updated section data
      * @return the updated section
      * @throws IllegalArgumentException if section not found
      */
     public Section updateSection(Long id, Section updatedSection) {
         logger.info("Updating section with ID: {}", id);
-        
-        Section existingSection = sectionRepository.findById(id)
+
+        Section existingSection = sectionRepository.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> {
                     logger.error("Section not found with ID: {}", id);
                     return new IllegalArgumentException("Section not found with ID: " + id);
                 });
-        
+
         existingSection.setExamSource(updatedSection.getExamSource());
         existingSection.setTestNumber(updatedSection.getTestNumber());
         existingSection.setSkill(updatedSection.getSkill());
         existingSection.setPartNumber(updatedSection.getPartNumber());
         existingSection.setDisplayContentUrl(updatedSection.getDisplayContentUrl());
         existingSection.setPassageText(updatedSection.getPassageText());
-        
+
         Section savedSection = sectionRepository.save(existingSection);
         logger.info("Section updated successfully: {}", id);
         return savedSection;
@@ -214,13 +215,13 @@ public class SectionService {
      */
     public void deleteSection(Long id) {
         logger.info("Deleting section with ID: {}", id);
-        
-        if (!sectionRepository.existsById(id)) {
+
+        if (!sectionRepository.existsById(Objects.requireNonNull(id))) {
             logger.error("Section not found with ID: {}", id);
             throw new IllegalArgumentException("Section not found with ID: " + id);
         }
-        
-        sectionRepository.deleteById(id);
+
+        sectionRepository.deleteById(Objects.requireNonNull(id));
         logger.info("Section deleted successfully: {}", id);
     }
 
@@ -246,4 +247,27 @@ public class SectionService {
         logger.info("Getting total section count");
         return sectionRepository.count();
     }
+
+    // -------------------------------------------------------------------------
+    // New methods for Test Hierarchy
+    // -------------------------------------------------------------------------
+
+    /**
+     * Get sections by Test ID.
+     */
+    @Transactional(readOnly = true)
+    public List<Section> getSectionsByTestId(Long testId) {
+        logger.info("Fetching sections for Test ID: {}", testId);
+        return sectionRepository.findByIeltsTestId(testId);
+    }
+
+    /**
+     * Get sections by Test ID and Skill (ordered).
+     */
+    @Transactional(readOnly = true)
+    public List<Section> getSectionsByTestIdAndSkill(Long testId, String skill) {
+        logger.info("Fetching sections for Test ID: {}, Skill: {}", testId, skill);
+        return sectionRepository.findSectionsForTestId(testId, skill);
+    }
 }
+

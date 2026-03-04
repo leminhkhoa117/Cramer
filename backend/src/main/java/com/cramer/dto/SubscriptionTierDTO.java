@@ -19,8 +19,8 @@ public class SubscriptionTierDTO {
 
     private Long id;
     private String code;
-    private String nameVi;
-    private String nameEn;
+    private String name;
+    // removed duplicate nameEn
     private Integer priceVnd;
 
     // ATTEMPT system fields
@@ -67,8 +67,8 @@ public class SubscriptionTierDTO {
         return SubscriptionTierDTO.builder()
                 .id(entity.getId())
                 .code(entity.getCode())
-                .nameVi(entity.getNameVi())
-                .nameEn(entity.getNameEn())
+                .name(entity.getName())
+                .name(entity.getName())
                 .priceVnd(entity.getPriceVnd())
                 // ATTEMPT system
                 .monthlyAttemptLimit(entity.getMonthlyAttemptLimit())

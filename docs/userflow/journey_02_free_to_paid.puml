@@ -1,0 +1,166 @@
+@startuml User_Journey_Free_to_Paid
+!theme blueprint
+title Cramer CMS - Conversion Journey\n(Free User to Paid Subscriber)
+
+skinparam {
+    BackgroundColor #1a1a2e
+    TitleFontColor #ffffff
+    TitleFontSize 18
+    DefaultFontColor #e8e8e8
+    ArrowColor #64b5f6
+    NoteBackgroundColor #424242
+    NoteFontColor #ffffff
+    ActivityBackgroundColor #37474f
+    ActivityBorderColor #78909c
+}
+
+|#2c3e50|Free User (Cramerie)|
+start
+:Active free user with 5+ completed tests;
+note right
+  **User Profile:**
+  - Using app 2-3 weeks
+  - Completed Reading/Listening tests
+  - Wants to practice Writing
+  - Has 30 Lua remaining
+end note
+
+:Navigates to Writing test;
+:Clicks "Bat dau bai thi";
+
+|#e74c3c|Friction Point #1: AI Grading|
+:Sees **Grading Quota Info**;
+:Message: "Ban da het luot cham diem AI
+mien phi thang nay";
+note right
+  **Conversion Trigger:**
+  User realizes they need
+  paid feature to continue
+end note
+
+if (Has enough Lua?) then (yes - 20 Lua)
+  :Can use Lua for 1 grading;
+  :But Lua will run out soon;
+else (no)
+  :Cannot proceed with AI grading;
+endif
+
+:Sees options:
+- Mua them Lua
+- Nang cap goi;
+
+|#f39c12|Consideration|
+:Clicks "Xem cac goi";
+:Redirects to **Subscription Page** (/subscription);
+:Reviews current usage:
+- 18/20 Reading attempts used
+- 15/20 Listening attempts used
+- 0 AI gradings remaining;
+
+:Compares upgrade options;
+note right
+  **Value Comparison:**
+  
+  **Cramerich (79K/mo):**
+  - Unlimited attempts
+  - 5 AI gradings/month
+  - 100 Lua bonus
+  
+  **Cramerous (149K/mo):**
+  - Unlimited attempts
+  - 10 AI gradings/month
+  - 200 Lua bonus
+  - Priority support
+end note
+
+|#e74c3c|Friction Point #2: Quota Limit|
+:Returns to practice;
+:Tries to start another Reading test;
+:Sees **Quota Exceeded Modal**;
+:Message: "Ban da dat gioi han 20 bai/ky nang";
+note right
+  **Second Trigger:**
+  Even basic practice
+  is now limited
+end note
+
+:Options:
+- Pay 10 Lua per extra attempt
+- Upgrade subscription;
+
+|#9b59b6|Decision Point|
+:Calculates cost:
+- 10 more tests = 100 Lua = 10,000 VND
+- Or subscription = 79,000 VND for unlimited;
+
+if (Heavy user?) then (yes)
+  :Subscription is better value;
+  :Decides to upgrade;
+else (no - occasional)
+  :Buys Lua pack instead;
+  :Journey ends (for now);
+  stop
+endif
+
+|#3498db|Purchase Flow|
+:Clicks "Nang cap len Cramerich";
+:Redirects to PayOS checkout;
+:Enters payment details;
+
+fork
+  :Bank transfer / QR Pay;
+fork again
+  :Credit/Debit card;
+fork again
+  :E-wallet (MoMo, ZaloPay);
+end fork
+
+:Confirms payment: 79,000 VND;
+:PayOS processes payment;
+
+|#27ae60|Conversion Success|
+:Payment successful!;
+:Redirects to **Success Page**;
+note right
+  **Immediate Benefits:**
+  - 100 Lua credited
+  - Unlimited attempts unlocked
+  - 5 AI gradings available
+end note
+
+:Auto-redirects to Subscription page;
+:Sees "Cramerich" badge;
+:All limits removed;
+
+|#1abc9c|Post-Conversion|
+:Returns to Writing test;
+:Starts test with AI grading enabled;
+:Completes Task 1 and Task 2;
+:Submits for AI grading;
+:Receives detailed feedback;
+note right
+  **Value Delivered:**
+  - Band score breakdown
+  - Grammar corrections
+  - Vocabulary suggestions
+  - Sample essay
+end note
+
+:Feels investment was worth it;
+:Plans to use remaining 4 gradings;
+:Becomes regular user;
+
+stop
+
+legend right
+  **Conversion Funnel:**
+  |= Stage |= Rate |
+  | Free Trial | 100% |
+  | Hits Limit | 60% |
+  | Views Pricing | 40% |
+  | Starts Checkout | 15% |
+  | Completes Payment | 10% |
+  | Retained (30 days) | 7% |
+endlegend
+
+@enduml

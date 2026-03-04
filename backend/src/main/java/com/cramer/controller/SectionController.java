@@ -6,6 +6,7 @@ import com.cramer.entity.Section;
 import com.cramer.exception.ResourceNotFoundException;
 import com.cramer.service.SectionService;
 import com.cramer.util.EntityMapper;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/sections")
-public class SectionController {
+public class SectionController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(SectionController.class);
 
@@ -52,7 +53,7 @@ public class SectionController {
      * GET /api/sections/{id}/full
      */
     @GetMapping("/{id}/full")
-    public ResponseEntity<FullSectionDTO> getFullSectionById(@PathVariable Long id) {
+    public ResponseEntity<FullSectionDTO> getFullSectionById(@PathVariable @jakarta.validation.constraints.Min(1) Long id) {
         logger.info("REST request to get full section by ID: {}", id);
         FullSectionDTO fullSection = sectionService.getFullSectionById(id);
         return ResponseEntity.ok(fullSection);
@@ -63,7 +64,7 @@ public class SectionController {
      * GET /api/sections/{id}
      */
     @GetMapping("/{id}")
-    public ResponseEntity<SectionDTO> getSectionById(@PathVariable Long id) {
+    public ResponseEntity<SectionDTO> getSectionById(@PathVariable @jakarta.validation.constraints.Min(1) Long id) {
         logger.info("REST request to get section by ID: {}", id);
         Section section = sectionService.getSectionById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Section", "id", id));
@@ -75,7 +76,7 @@ public class SectionController {
      * GET /api/sections/exam/{examSource}
      */
     @GetMapping("/exam/{examSource}")
-    public ResponseEntity<List<SectionDTO>> getSectionsByExamSource(@PathVariable String examSource) {
+    public ResponseEntity<List<SectionDTO>> getSectionsByExamSource(@PathVariable @jakarta.validation.constraints.NotBlank String examSource) {
         logger.info("REST request to get sections by exam source: {}", examSource);
         List<SectionDTO> sections = sectionService.getSectionsByExamSource(examSource)
                 .stream()

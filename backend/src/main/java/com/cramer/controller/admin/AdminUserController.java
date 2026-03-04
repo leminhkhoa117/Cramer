@@ -125,4 +125,61 @@ public class AdminUserController {
         }
         return ResponseEntity.ok(updatedUser);
     }
+
+    /**
+     * Cập nhật gói đăng ký (subscription tier) của user
+     * 
+     * Admin có thể thay đổi gói của user:
+     * - Nếu chuyển sang cramerich: set thời hạn 1/3/6 tháng
+     * - Nếu chuyển sang cramerie (free): không có thời hạn
+     * 
+     * @param id ID của user
+     * @param request Chứa tierCode (cramerie, cramerich), durationMonths (1, 3, 6), reason (lý do thay đổi)
+     */
+    @PatchMapping("/{id}/subscription")
+    public ResponseEntity<AdminUserDTO> updateUserSubscription(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> request,
+            @RequestHeader("X-User-Id") String adminUserId
+    ) {
+        String tierCode = (String) request.get("tierCode");
+        String reason = (String) request.get("reason");
+        
+        // Get duration months, default to 1 if not provided
+        int durationMonths = 1;
+        Object durationObj = request.get("durationMonths");
+        if (durationObj != null) {
+            if (durationObj instanceof Integer) {
+                durationMonths = (Integer) durationObj;
+            } else if (durationObj instanceof String) {
+                durationMonths = Integer.parseInt((String) durationObj);
+            }
+        }
+        
+        if (tierCode == null || tierCode.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        // Validate tier code
+        if (!tierCode.equals("cramerie") && !tierCode.equals("cramerich")) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        // Validate duration (1, 3, or 6 months)
+        if (durationMonths != 1 && durationMonths != 3 && durationMonths != 6) {
+            durationMonths = 1; // Default to 1 month if invalid
+        }
+        
+        try {
+            AdminUserDTO updatedUser = adminUserService.updateUserSubscription(id, tierCode, durationMonths, reason, adminUserId);
+            if (updatedUser == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(updatedUser);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

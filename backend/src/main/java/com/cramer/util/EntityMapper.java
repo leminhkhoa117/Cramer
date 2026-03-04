@@ -54,7 +54,8 @@ public class EntityMapper {
                 section.getDisplayContentUrl(),
                 section.getSectionLayout(),
                 section.getPassageText(),
-                section.getAudioUrl()
+                section.getAudioUrl(),
+                section.getImageDescription()
         );
     }
 
@@ -73,6 +74,7 @@ public class EntityMapper {
         section.setSectionLayout(dto.getSectionLayout());
         section.setPassageText(dto.getPassageText());
         section.setAudioUrl(dto.getAudioUrl());
+        section.setImageDescription(dto.getImageDescription());
         return section;
     }
 

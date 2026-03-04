@@ -21,8 +21,9 @@ public class UserSubscriptionDTO {
     private OffsetDateTime startedAt;
     private OffsetDateTime expiresAt;
     private String status;
-    private Integer aiGradingsUsed;
-    private Integer aiGradingsRemaining;
+    // Note: aiGradingsUsed/aiGradingsRemaining replaced by attemptAis fields
+    private Integer attemptAisUsed;
+    private Integer attemptAisRemaining;
     private Boolean autoRenew;
     private Boolean isActive;
 
@@ -39,8 +40,8 @@ public class UserSubscriptionDTO {
                 .startedAt(entity.getStartedAt())
                 .expiresAt(entity.getExpiresAt())
                 .status(entity.getStatus().name())
-                .aiGradingsUsed(entity.getAiGradingsUsed())
-                .aiGradingsRemaining(entity.getRemainingAiGradings())
+                .attemptAisUsed(entity.getAttemptAisUsed())
+                .attemptAisRemaining(entity.getRemainingAttemptAis())
                 .autoRenew(entity.getAutoRenew())
                 .isActive(entity.isActive())
                 .build();

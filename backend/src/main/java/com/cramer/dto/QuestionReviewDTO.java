@@ -10,12 +10,12 @@ public class QuestionReviewDTO {
     private JsonNode userAnswerContent;
     private JsonNode correctAnswer;
     private Boolean isCorrect;
-    private String explanation;
+    private JsonNode explanation;
 
     // Constructors
     public QuestionReviewDTO() {}
 
-    public QuestionReviewDTO(Integer questionNumber, String questionUid, String questionType, JsonNode questionContent, JsonNode userAnswerContent, JsonNode correctAnswer, Boolean isCorrect, String explanation) {
+    public QuestionReviewDTO(Integer questionNumber, String questionUid, String questionType, JsonNode questionContent, JsonNode userAnswerContent, JsonNode correctAnswer, Boolean isCorrect, JsonNode explanation) {
         this.questionNumber = questionNumber;
         this.questionUid = questionUid;
         this.questionType = questionType;
@@ -83,11 +83,11 @@ public class QuestionReviewDTO {
         this.isCorrect = isCorrect;
     }
 
-    public String getExplanation() {
+    public JsonNode getExplanation() {
         return explanation;
     }
 
-    public void setExplanation(String explanation) {
+    public void setExplanation(JsonNode explanation) {
         this.explanation = explanation;
     }
 }

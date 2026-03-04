@@ -35,7 +35,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/credits")
 @Tag(name = "Credit (Lúa) Management", description = "APIs for managing user Lúa credits and transactions")
-public class CreditController {
+public class CreditController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(CreditController.class);
 
@@ -59,7 +59,7 @@ public class CreditController {
     })
     @GetMapping
     public ResponseEntity<UserCreditDTO> getBalance(Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         logger.info("💰 GET /api/credits - User: {}", userId);
         
         UserCreditDTO credits = creditService.getBalance(userId);
@@ -76,9 +76,9 @@ public class CreditController {
     })
     @GetMapping("/check/{amount}")
     public ResponseEntity<Boolean> hasEnoughCredits(
-            @Parameter(description = "Amount to check") @PathVariable int amount,
+            @Parameter(description = "Amount to check") @PathVariable @jakarta.validation.constraints.Min(1) int amount,
             Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         logger.info("🔍 GET /api/credits/check/{} - User: {}", amount, userId);
         
         boolean hasEnough = creditService.hasEnoughCredits(userId, amount);
@@ -95,12 +95,12 @@ public class CreditController {
     })
     @GetMapping("/transactions")
     public ResponseEntity<PageDTO<CreditTransactionDTO>> getTransactionHistory(
-            @Parameter(description = "Page number (0-based)") 
-            @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") 
-            @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Page number (0-based)")
+            @RequestParam(defaultValue = "0") @jakarta.validation.constraints.Min(0) int page,
+            @Parameter(description = "Page size")
+            @RequestParam(defaultValue = "20") @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(100) int size,
             Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         logger.info("📜 GET /api/credits/transactions - User: {}, page: {}, size: {}", userId, page, size);
         
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
@@ -127,7 +127,7 @@ public class CreditController {
     })
     @GetMapping("/stats")
     public ResponseEntity<UserFullStatsDTO> getUserStats(Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         logger.info("📊 GET /api/credits/stats - User: {}", userId);
         
         UserFullStatsDTO stats = creditService.getUserStats(userId);
@@ -165,7 +165,7 @@ public class CreditController {
     public ResponseEntity<LuaPurchaseResponseDTO> purchasePackage(
             @Valid @RequestBody LuaPurchaseDTO request,
             Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         logger.info("💰 POST /api/credits/purchase - User: {}, Package: {}", userId, request.getPackageCode());
         
         LuaPurchaseResponseDTO response = luaCreditService.initiatePurchase(userId, request.getPackageCode());
@@ -188,13 +188,13 @@ public class CreditController {
     @GetMapping("/history")
     public ResponseEntity<PageDTO<CreditHistoryDTO>> getHistory(
             @Parameter(description = "Filter type: all, earn, or spend")
-            @RequestParam(defaultValue = "all") String type,
+            @RequestParam(defaultValue = "all") @jakarta.validation.constraints.Pattern(regexp = "all|earn|spend") String type,
             @Parameter(description = "Page number (0-based)")
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "0") @jakarta.validation.constraints.Min(0) int page,
             @Parameter(description = "Page size")
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "20") @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(100) int size,
             Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId = getCurrentUserId(authentication);
         logger.info("📜 GET /api/credits/history - User: {}, Type: {}, Page: {}", userId, type, page);
         
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));

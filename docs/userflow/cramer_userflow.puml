@@ -1,0 +1,751 @@
+@startuml Cramer_CMS_Complete_User_Flow
+!theme blueprint
+title Cramer CMS - IELTS Learning Platform\nComprehensive User Flow Diagram
+
+' ============================================================================
+' STYLE CONFIGURATION
+' ============================================================================
+
+skinparam {
+    BackgroundColor #1a1a2e
+    TitleFontColor #ffffff
+    TitleFontSize 24
+    DefaultFontColor #e8e8e8
+    DefaultFontSize 11
+    ArrowColor #64b5f6
+    
+    ' Actor styling
+    ActorBackgroundColor #4caf50
+    ActorBorderColor #2e7d32
+    
+    ' Component styling
+    ComponentBackgroundColor #263238
+    ComponentBorderColor #546e7a
+    
+    ' Database styling
+    DatabaseBackgroundColor #1565c0
+    DatabaseBorderColor #0d47a1
+    
+    ' Rectangle styling
+    RectangleBackgroundColor #37474f
+    RectangleBorderColor #78909c
+    RectangleFontColor #eceff1
+    
+    ' Note styling
+    NoteBackgroundColor #424242
+    NoteBorderColor #757575
+    NoteFontColor #ffffff
+    
+    ' Package styling
+    PackageBackgroundColor #1e1e1e
+    PackageBorderColor #5c6bc0
+    PackageFontColor #ffffff
+    
+    ' State styling
+    StateBackgroundColor #2d2d44
+    StateBorderColor #7c4dff
+}
+
+' ============================================================================
+' ACTORS
+' ============================================================================
+
+actor "Guest User" as Guest #lightblue
+actor "Authenticated User" as User #lightgreen
+actor "Premium User\n(Cramerich/Cramerous)" as Premium #gold
+actor "Admin User" as Admin #coral
+
+' ============================================================================
+' EXTERNAL SYSTEMS
+' ============================================================================
+
+cloud "External Services" as External {
+    [Supabase Auth\n(JWT + OAuth)] as SupabaseAuth
+    [Supabase Storage\n(Assets/Audio)] as SupabaseStorage
+    database "PostgreSQL\n(Supabase)" as DB
+    [PayOS Gateway\n(Payments)] as PayOS
+    [DeepSeek API\n(AI Grading)] as DeepSeek
+    [OpenRouter API\n(400+ Models)] as OpenRouter
+    [Google OAuth] as GoogleOAuth
+}
+
+' ============================================================================
+' FRONTEND APPLICATION - PUBLIC PAGES
+' ============================================================================
+
+package "PUBLIC PAGES (No Auth Required)" as PublicPages #2c3e50 {
+    
+    rectangle "Landing Page\n[/]" as HomePage {
+        (Hero Section)
+        (Features Showcase)
+        (Demo Section)
+        (Testimonials)
+        (FAQ Section)
+        (Signup CTA)
+    }
+    
+    rectangle "Login/Register\n[/login]" as LoginPage {
+        (Email/Password Form)
+        (Google OAuth)
+        (OTP Verification)
+        (Password Recovery)
+    }
+    
+    rectangle "About\n[/about]" as AboutPage {
+        (3D Scene Background)
+        (Mission Statement)
+        (Team Introduction)
+    }
+    
+    rectangle "Pricing\n[/pricing]" as PricingPage {
+        (Tier Comparison)
+        (Lua Pack Options)
+        (Interactive AI Demo)
+        (FAQ Accordion)
+    }
+}
+
+' ============================================================================
+' FRONTEND APPLICATION - PROTECTED PAGES
+' ============================================================================
+
+package "PROTECTED PAGES (Auth Required)" as ProtectedPages #34495e {
+    
+    rectangle "Dashboard\n[/dashboard]" as Dashboard {
+        frame "Tab 1: Test History" as DashHistory {
+            (Attempt Cards)
+            (Pagination)
+            (Search/Filter)
+            (Retake Button)
+        }
+        frame "Tab 2: Progress Charts" as DashProgress {
+            (Score Trends)
+            (Monthly Analytics)
+        }
+        frame "Tab 3: Skill Analysis" as DashSkills {
+            (Reading Stats)
+            (Listening Stats)
+            (Writing Stats)
+        }
+    }
+    
+    rectangle "Courses\n[/courses]" as CoursesPage {
+        (Test Set Grid)
+        (Search Bar)
+        (Source Filter)
+        (Course Cards)
+    }
+    
+    rectangle "Course Detail\n[/courses/:name]" as CourseDetail {
+        (Test List)
+        (Skill Availability)
+        (Start/Resume Buttons)
+    }
+    
+    rectangle "Profile\n[/profile]" as ProfilePage {
+        frame "Tab 1: Personal Info" as ProfileInfo {
+            (Avatar Upload)
+            (Cover Image)
+            (Username/Name Edit)
+        }
+        frame "Tab 2: AI Settings" as ProfileAI {
+            (LLM API Key)
+            (Model Selection)
+            (Provider Choice)
+        }
+        frame "Tab 3: Security" as ProfileSecurity {
+            (Session Management)
+            (Password Change)
+            (Linked Accounts)
+        }
+    }
+    
+    rectangle "Vocabulary\n[/vocabulary]" as VocabPage {
+        (Word Grid/List View)
+        (Add/Edit Modal)
+        (Mastery Toggle)
+        (AI Translation)
+        (Search/Filter)
+    }
+    
+    rectangle "Subscription\n[/subscription]" as SubscriptionPage {
+        frame "Tab 1: Limits" as SubLimits {
+            (Usage Progress Bars)
+            (Quota Display)
+            (Lua Balance)
+        }
+        frame "Tab 2: Upgrade" as SubUpgrade {
+            (Tier Cards)
+            (Lúa Packs)
+        }
+        frame "Tab 3: History" as SubHistory {
+            (Payment Records)
+            (Credit Transactions)
+        }
+    }
+    
+    rectangle "Payment Success\n[/payment/success]" as PaymentSuccess {
+        (Order Details)
+        (Redirect to Subscription)
+    }
+    
+    rectangle "Payment Cancel\n[/payment/cancel]" as PaymentCancel {
+        (Retry Button)
+        (Return to Pricing)
+    }
+}
+
+' ============================================================================
+' TEST-TAKING SYSTEM
+' ============================================================================
+
+package "TEST-TAKING SYSTEM" as TestSystem #2c3e50 {
+    
+    rectangle "Reading/Listening Test\n[/test/:source/:testNum/:skill]" as TestPage {
+        frame "Test Layout" as TestLayout {
+            (TestHeader + Timer)
+            (Left: Passage/Audio)
+            (Right: Questions)
+            (TestFooter + Navigation)
+        }
+        frame "Features" as TestFeatures {
+            (60-min Countdown)
+            (Auto-save Every 5min)
+            (Part Navigation)
+            (Text Highlighting)
+            (Audio Autoplay Toggle)
+        }
+        frame "Modals" as TestModals {
+            (Resume Confirmation)
+            (Submit Confirmation)
+            (Exit Confirmation)
+        }
+    }
+    
+    rectangle "Writing Test\n[/test/writing/:source/:testNum]" as WritingPage {
+        frame "Writing Layout" as WritingLayout {
+            (Task Prompt Panel)
+            (Essay Editor Panel)
+            (Resizable Divider)
+        }
+        frame "Task Management" as TaskMgmt {
+            (Task 1: 150 words min)
+            (Task 2: 250 words min)
+            (Word Count Display)
+            (Task Switcher)
+        }
+        frame "Grading Info" as GradingInfo {
+            (Quota Check)
+            (Lua Cost Display)
+            (Warning Messages)
+        }
+    }
+    
+    rectangle "Test Review\n[/test/review/:attemptId]" as ReviewPage {
+        frame "Review Content" as ReviewContent {
+            (Band Score Display)
+            (Correct/Wrong Breakdown)
+            (Part Navigation)
+            (Answer Comparison)
+        }
+        frame "Actions" as ReviewActions {
+            (Retake Test)
+            (View Passage)
+            (Scroll Sync)
+        }
+    }
+    
+    rectangle "Writing Review\n[/test/writing/review/:attemptId]" as WritingReviewPage {
+        frame "AI Feedback" as AIFeedback {
+            (Overall Band Score)
+            (4 Criteria Scores)
+            (Task 1/Task 2 Toggle)
+        }
+        frame "Analysis" as WritingAnalysis {
+            (Error Highlights)
+            (Paragraph Analysis)
+            (Vocabulary Analysis)
+            (Sample Essays)
+        }
+        frame "Error Types" as ErrorTypes {
+            note right: Grammar (red)\nSpelling (yellow)\nVocabulary (purple)\nPunctuation (blue)\nCoherence (green)\nStyle (yellow)
+        }
+    }
+}
+
+' ============================================================================
+' ADMIN PANEL
+' ============================================================================
+
+package "ADMIN PANEL [/admin/*]" as AdminPanel #1a237e {
+    
+    rectangle "Admin Dashboard\n[/admin/dashboard]" as AdminDash {
+        (Total Users Metric)
+        (Monthly Revenue)
+        (Published Tests)
+        (Growth Indicators)
+        (Activity Timeline)
+        (Quick Actions)
+    }
+    
+    rectangle "User Management\n[/admin/users]" as AdminUsers {
+        rectangle "User List" as UserList {
+            (Search/Filter)
+            (Role Badges)
+            (Subscription Display)
+        }
+        rectangle "User Detail\n[/admin/users/:id]" as UserDetail {
+            (Profile Editing)
+            (Subscription Mgmt)
+            (Credit Adjustments)
+            (Activity History)
+        }
+    }
+    
+    rectangle "Finance\n[/admin/finance]" as AdminFinance {
+        (Finance Overview)
+        (Transaction History)
+        (Revenue Reports)
+        (Revenue Charts)
+    }
+    
+    rectangle "Content Management" as AdminContent {
+        rectangle "Set List\n[/admin/content/sets]" as SetList {
+            (Test Set Grid)
+            (Create Set Modal)
+            (Publish/Unpublish)
+        }
+        rectangle "Set Detail\n[/admin/content/sets/:id]" as SetDetail {
+            (Tests in Set)
+            (Create Test)
+            (Reorder Tests)
+        }
+        rectangle "Test Editor\n[/admin/content/editor/:id]" as TestEditor {
+            frame "Editor Features" as EditorFeatures {
+                (Section Management)
+                (Question Editing)
+                (Passage Input)
+                (Audio Upload)
+            }
+            frame "Preview" as EditorPreview {
+                (Admin Preview Mode)
+                (Answer Toggle)
+                (Transcript Toggle)
+            }
+            frame "Status Control" as StatusControl {
+                (Draft)
+                (Published)
+                (Archived)
+            }
+        }
+        rectangle "Hashtag Management\n[/admin/content/hashtags]" as HashtagMgmt {
+            (Hashtag CRUD)
+            (Categories)
+            (Usage Count)
+        }
+    }
+    
+    rectangle "AI Studio (ABTS)\n[/admin/content/generate]" as AIStudio {
+        frame "Step 1: Config" as ABTSConfig {
+            (Skill Selection)
+            (Part Selection)
+            (Topic Input)
+            (Model Selection)
+            (Temperature)
+            (Reasoning Toggle)
+        }
+        frame "Step 2: Part Config" as ABTSParts {
+            (Question Types)
+            (Question Counts)
+            (Difficulty)
+            (Randomize Option)
+        }
+        frame "Step 3: Generate" as ABTSGenerate {
+            (SSE Streaming)
+            (Progress Display)
+            (Reasoning Tokens)
+            (Cancel Option)
+        }
+        frame "Step 4: Preview" as ABTSPreview {
+            (Content Preview)
+            (Validation Issues)
+            (Issue Selection)
+        }
+        frame "Step 5: Refine" as ABTSRefine {
+            (Agent 2 Refinement)
+            (Patch Application)
+            (Re-validation)
+        }
+        frame "Step 6: Save" as ABTSSave {
+            (Set Selection)
+            (Test Selection)
+            (Database Persist)
+        }
+    }
+}
+
+' ============================================================================
+' BACKEND SERVICES
+' ============================================================================
+
+package "BACKEND SERVICES (Spring Boot 3.x)" as BackendServices #1b5e20 {
+    
+    rectangle "Test Content Services" as TestContentSvc {
+        [TestService] as TestSvc
+        [TestSetService] as TestSetSvc
+        [TestManagementService] as TestMgmtSvc
+        [SectionService] as SectionSvc
+        [QuestionService] as QuestionSvc
+        [HashtagService] as HashtagSvc
+    }
+    
+    rectangle "Test Attempt Services" as AttemptSvc {
+        [TestAttemptService] as AttemptService
+        [WritingSubmissionService] as WritingSubmitSvc
+    }
+    
+    rectangle "AI & Grading Services" as AISvc {
+        [LLMGradingService] as LLMGrading
+        [AsyncGradingService] as AsyncGrading
+        [ChatService] as ChatSvc
+    }
+    
+    rectangle "ABTS Services" as ABTSSvc {
+        [ABTSService] as ABTSOrch
+        [OpenRouterClient] as ORClient
+        [PromptBuilderService] as PromptBuilder
+        [JsonValidatorService] as JsonValidator
+        [RefinementService] as RefineSvc
+        [JsonPatcher] as Patcher
+    }
+    
+    rectangle "User & Profile Services" as UserSvc {
+        [ProfileService] as ProfileSvc
+        [DashboardService] as DashboardSvc
+        [VocabularyService] as VocabSvc
+    }
+    
+    rectangle "Subscription & Billing" as BillingSvc {
+        [SubscriptionService] as SubSvc
+        [CreditService] as CreditSvc
+        [LuaCreditService] as LuaSvc
+        [PaymentService] as PaymentSvc
+        [QuotaBillingService] as QuotaBillingSvc
+        [ChatBillingService] as ChatBillSvc
+        [TranslationBillingService] as TransBillSvc
+        [FeatureGatingService] as FeatureGate
+        [QuotaService] as QuotaSvc
+    }
+    
+    rectangle "Admin Services" as AdminSvc {
+        [AdminUserService] as AdminUserSvc
+        [AdminContentService] as AdminContentSvc
+        [AdminAuditService] as AuditSvc
+        [CourseService] as CourseSvc
+    }
+}
+
+' ============================================================================
+' FRONTEND STATE MANAGEMENT (ZUSTAND)
+' ============================================================================
+
+package "ZUSTAND STATE STORES" as StateStores #4a148c {
+    
+    frame "Auth & Profile" as AuthStores {
+        [useAuthStore] as AuthStore
+        [useProfileStore] as ProfileStore
+    }
+    
+    frame "Test-Taking" as TestStores {
+        [useTestStore] as TestStore
+        [useTestSessionStore] as SessionStore
+    }
+    
+    frame "Data & Content" as DataStores {
+        [useDashboardStore] as DashStore
+        [useCourseStore] as CourseStore
+        [useVocabularyStore] as VocabStore
+    }
+    
+    frame "Subscription & Quota" as SubStores {
+        [useUserStatsStore] as StatsStore
+        [useSubscriptionStore] as SubscriptionStore
+        [useQuotaStore] as QuotaStore
+    }
+    
+    frame "Admin" as AdminStores {
+        [useABTSStore] as ABTSStore
+        [useTestEditorStore] as EditorStore
+        [useTestSetStore] as SetStore
+        [useAdminDashboardStore] as AdminDashStore
+    }
+}
+
+' ============================================================================
+' USER FLOW RELATIONSHIPS
+' ============================================================================
+
+' Guest User Flows
+Guest --> HomePage : Visit
+Guest --> AboutPage : Learn More
+Guest --> PricingPage : View Plans
+Guest --> LoginPage : Sign Up/Login
+
+' Authentication Flow
+LoginPage --> SupabaseAuth : Email/Password
+LoginPage --> GoogleOAuth : OAuth Flow
+SupabaseAuth --> AuthStore : JWT Token
+GoogleOAuth --> SupabaseAuth : OAuth Callback
+AuthStore --> ProfileStore : Auto-Sync Profile
+AuthStore --> Dashboard : Redirect on Success
+
+' Authenticated User Flows
+User --> Dashboard : Home
+User --> CoursesPage : Browse Tests
+User --> VocabPage : Manage Vocabulary
+User --> ProfilePage : Edit Profile
+User --> SubscriptionPage : Manage Subscription
+
+' Course Selection Flow
+CoursesPage --> CourseDetail : Select Course
+CourseDetail --> TestPage : Start Reading/Listening
+CourseDetail --> WritingPage : Start Writing
+
+' Test-Taking Flow
+TestPage --> TestStore : Load UI State
+TestPage --> SessionStore : Manage Attempt
+TestPage --> AttemptService : Start/Resume Attempt
+TestPage --> AttemptService : Save Progress (5min)
+TestPage --> AttemptService : Submit Answers
+AttemptService --> DB : Persist Attempt
+AttemptService --> ReviewPage : Redirect on Submit
+
+' Writing Test Flow
+WritingPage --> TestStore : Essay State
+WritingPage --> WritingSubmitSvc : Save Draft
+WritingPage --> WritingSubmitSvc : Submit Essays
+WritingSubmitSvc --> AsyncGrading : Trigger AI Grading
+AsyncGrading --> LLMGrading : Call DeepSeek
+LLMGrading --> DeepSeek : API Request
+DeepSeek --> WritingReviewPage : Results Ready
+
+' Review Flow
+ReviewPage --> AttemptService : Get Review Data
+WritingReviewPage --> WritingSubmitSvc : Get Writing Review
+ReviewPage --> Dashboard : Return to History
+WritingReviewPage --> Dashboard : Return to History
+
+' Vocabulary Flow
+VocabPage --> VocabStore : CRUD Operations
+VocabStore --> VocabSvc : API Calls
+VocabSvc --> TransBillSvc : AI Translation Billing
+TransBillSvc --> DeepSeek : Translation Request
+
+' Subscription & Payment Flow
+SubscriptionPage --> PaymentSvc : Create Payment
+PricingPage --> PaymentSvc : Purchase Tier/Lua
+PaymentSvc --> PayOS : Payment Link
+PayOS --> PaymentSuccess : Success Webhook
+PayOS --> PaymentCancel : Cancel Redirect
+PaymentSuccess --> SubSvc : Activate Subscription
+PaymentSuccess --> CreditSvc : Credit Lua
+
+' Quota & Billing Flow
+User --> QuotaSvc : Check Quota
+QuotaSvc --> QuotaBillingSvc : Pre-check Attempt
+QuotaBillingSvc --> CreditSvc : Charge Lua (if over)
+QuotaBillingSvc --> AttemptService : Allow/Block
+
+' Chat Flow
+User --> ChatSvc : Send Message
+ChatSvc --> ChatBillSvc : Check/Bill Usage
+ChatBillSvc --> CreditSvc : Charge Lua (if over)
+ChatSvc --> DeepSeek : AI Response
+
+' Premium User Features
+Premium --> FeatureGate : Check Access
+FeatureGate --> SubSvc : Validate Tier
+
+' Admin Flows
+Admin --> AdminDash : Overview
+Admin --> AdminUsers : Manage Users
+Admin --> AdminFinance : View Finances
+Admin --> SetList : Manage Test Sets
+Admin --> AIStudio : Generate Content
+
+' Admin Content Management
+SetList --> SetDetail : Select Set
+SetDetail --> TestEditor : Edit Test
+TestEditor --> SectionSvc : Section CRUD
+TestEditor --> QuestionSvc : Question CRUD
+TestEditor --> SupabaseStorage : Upload Audio
+
+' ABTS Flow
+AIStudio --> ABTSStore : Manage State
+ABTSStore --> ABTSOrch : Generate Request
+ABTSOrch --> PromptBuilder : Build Prompts
+ABTSOrch --> ORClient : Call OpenRouter
+ORClient --> OpenRouter : Streaming Request
+OpenRouter --> ABTSOrch : SSE Response
+ABTSOrch --> JsonValidator : Validate Output
+JsonValidator --> ABTSStore : Validation Issues
+ABTSStore --> RefineSvc : Refine Content
+RefineSvc --> Patcher : Apply Patches
+ABTSStore --> DB : Save Content
+
+' Database Connections
+TestSvc --> DB : Read Tests
+TestSetSvc --> DB : CRUD Sets
+SectionSvc --> DB : CRUD Sections
+QuestionSvc --> DB : CRUD Questions
+AttemptService --> DB : Test Attempts
+WritingSubmitSvc --> DB : Writing Submissions
+ProfileSvc --> DB : Profiles
+VocabSvc --> DB : Vocabulary
+SubSvc --> DB : Subscriptions
+CreditSvc --> DB : Credits/Transactions
+PaymentSvc --> DB : Payment Orders
+QuotaSvc --> DB : Quota Tracking
+AdminUserSvc --> DB : User Management
+AdminContentSvc --> DB : Content Admin
+AuditSvc --> DB : Audit Logs
+
+' ============================================================================
+' DETAILED FLOW ANNOTATIONS
+' ============================================================================
+
+note right of TestPage
+  **Test-Taking Flow:**
+  1. User selects test from CourseDetail
+  2. startOrResumeAttempt() called
+  3. If existing IN_PROGRESS: show Resume modal
+  4. If forceNew=true: cancel old, create new
+  5. Timer starts (60 min)
+  6. Auto-save every 5 minutes
+  7. Submit triggers scoring
+  8. Redirect to Review page
+end note
+
+note left of WritingPage
+  **Writing Test Flow:**
+  1. Load Task 1 & Task 2 prompts
+  2. Essay editor with word count
+  3. Minimum: 150 (T1), 250 (T2)
+  4. Auto-save drafts
+  5. On submit: check AI grading quota
+  6. Async grading via DeepSeek
+  7. Poll for results (3s interval)
+  8. Display detailed feedback
+end note
+
+note bottom of AIStudio
+  **ABTS Controller Endpoints (16 total):**
+  - POST /generate/{reading,listening,writing}
+  - POST /generate/{skill}/stream (SSE)
+  - POST /validate, /save, /refine/stream
+  - GET /templates, /models, /status
+  
+  **Two-Pass Generation:**
+  Phase 1: Passage/Transcript
+  Phase 2: Questions from Phase 1
+  
+  **Validation Layers:**
+  1. Schema (JSON structure)
+  2. Content (word limits, counts)
+  3. Business Rules (question numbering)
+  
+  **Refinement (Agent 2):**
+  - Issue selection by category
+  - AI generates JSON patches
+  - JsonPatcher: REPLACE/INSERT/APPEND
+end note
+
+note right of BillingSvc
+  **QuotaBillingService Flow:**
+  1. Premium users -> always allowed
+  2. Check global/skill caps
+  3. Cap hit -> charge Lua or block
+  4. Within cap -> allowed, no charge
+  
+  **Lua Costs (from source):**
+  - ATTEMPT_OVERAGE_COST = 10 Lua
+  - ATTEMPT_AI_OVERAGE_COST = 20 Lua
+  - Translation: 1 Lua
+  - Chat (over limit): 2 Lua
+  
+  **SubscriptionService Limits:**
+  - getMonthlyChatLimit(userId)
+  - getMonthlyGradingsRemaining(userId)
+  - checkAIGradingAllowed(userId)
+end note
+
+note left of StateStores
+  **Zustand Patterns:**
+  - Selector pattern for perf
+  - Immer for immutability
+  - DevTools in dev mode
+  - Auto-sync between stores
+  - SessionStorage persist (Dashboard)
+end note
+
+' ============================================================================
+' DATA FLOW LEGEND
+' ============================================================================
+
+legend right
+  |<#4caf50>| Guest User |
+  |<#8bc34a>| Authenticated User |
+  |<#ffc107>| Premium User |
+  |<#ff5722>| Admin User |
+  |<#2196f3>| Frontend Page |
+  |<#00bcd4>| Backend Service |
+  |<#9c27b0>| State Store |
+  |<#607d8b>| External API |
+  |<#3f51b5>| Database |
+endlegend
+
+' ============================================================================
+' DATABASE SCHEMA OVERVIEW
+' ============================================================================
+
+note bottom of DB
+  **Key Tables (26 total):**
+  
+  **User Management:**
+  - profiles (user data)
+  
+  **IELTS Content:**
+  - test_sets (Cambridge books)
+  - tests (individual tests)
+  - sections (passages/parts)
+  - questions (40 per test)
+  - hashtags + test_hashtags
+  
+  **Test Attempts:**
+  - test_attempts
+  - user_answers
+  - writing_submissions
+  
+  **Subscription & Billing:**
+  - subscription_tiers
+  - user_subscriptions
+  - user_credits
+  - credit_transactions
+  - lua_packs
+  - payment_orders
+  
+  **AI Features:**
+  - chat_messages
+  - chatbot_usage
+  
+  **Vocabulary:**
+  - vocabulary
+  - translation_usage
+  
+  **Quotas:**
+  - user_quotas
+  - skill_quotas
+  - target
+end note
+
+@enduml

@@ -24,11 +24,8 @@ public class LuaPack {
     @Column(name = "code", nullable = false, unique = true, length = 50)
     private String code; // lua_100, lua_500, lua_2000
 
-    @Column(name = "name_vi", nullable = false, length = 100)
-    private String nameVi;
-
-    @Column(name = "name_en", nullable = false, length = 100)
-    private String nameEn;
+    @Column(name = "name", nullable = false, length = 100)
+    private String name;
 
     @Column(name = "emoji", length = 10)
     @Builder.Default
@@ -81,7 +78,8 @@ public class LuaPack {
      * Calculate effective price per 100 Lúa.
      */
     public int getPricePer100Lua() {
-        if (luaAmount == 0) return 0;
+        if (luaAmount == 0)
+            return 0;
         return (int) Math.round((double) priceVnd / luaAmount * 100);
     }
 }

@@ -59,7 +59,7 @@ public class WritingSubmissionService {
      */
     @Transactional
     public WritingSubmissionDTO saveDraft(Long attemptId, Integer taskNumber, String essayText, UUID userId) {
-        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+        TestAttempt attempt = testAttemptRepository.findById(Objects.requireNonNull(attemptId))
                 .orElseThrow(() -> new IllegalArgumentException("Attempt not found: " + attemptId));
 
         if (!attempt.getUserId().equals(userId)) {
@@ -85,7 +85,7 @@ public class WritingSubmissionService {
     public Map<String, Object> submitForGrading(Long attemptId, Map<Integer, String> essays, UUID userId) {
         logger.info("Submitting writing essays for attempt {} by user {}", attemptId, userId);
 
-        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+        TestAttempt attempt = testAttemptRepository.findById(Objects.requireNonNull(attemptId))
                 .orElseThrow(() -> new IllegalArgumentException("Attempt not found: " + attemptId));
 
         if (!attempt.getUserId().equals(userId)) {
@@ -191,7 +191,7 @@ public class WritingSubmissionService {
      * Get grading status for an attempt.
      */
     public Map<String, Object> getGradingStatus(Long attemptId, UUID userId) {
-        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+        TestAttempt attempt = testAttemptRepository.findById(Objects.requireNonNull(attemptId))
                 .orElseThrow(() -> new IllegalArgumentException("Attempt not found"));
 
         if (!attempt.getUserId().equals(userId)) {
@@ -242,7 +242,7 @@ public class WritingSubmissionService {
      */
     @Transactional(readOnly = true)
     public WritingReviewDTO getWritingReview(Long attemptId, UUID userId) {
-        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+        TestAttempt attempt = testAttemptRepository.findById(Objects.requireNonNull(attemptId))
                 .orElseThrow(() -> new IllegalArgumentException("Attempt not found"));
 
         if (!attempt.getUserId().equals(userId)) {
@@ -356,7 +356,7 @@ public class WritingSubmissionService {
      * Get submissions for an attempt.
      */
     public List<WritingSubmissionDTO> getSubmissions(Long attemptId, UUID userId) {
-        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+        TestAttempt attempt = testAttemptRepository.findById(Objects.requireNonNull(attemptId))
                 .orElseThrow(() -> new IllegalArgumentException("Attempt not found"));
 
         if (!attempt.getUserId().equals(userId)) {
@@ -392,7 +392,7 @@ public class WritingSubmissionService {
     public Map<String, Object> regradeAttempt(Long attemptId, UUID userId) {
         logger.info("Re-grading writing attempt {} for user {}", attemptId, userId);
 
-        TestAttempt attempt = testAttemptRepository.findById(attemptId)
+        TestAttempt attempt = testAttemptRepository.findById(Objects.requireNonNull(attemptId))
                 .orElseThrow(() -> new IllegalArgumentException("Attempt not found: " + attemptId));
 
         if (!attempt.getUserId().equals(userId)) {
