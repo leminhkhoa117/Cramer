@@ -15,6 +15,7 @@ const TestPage = () => {
     const { source, testNum, skill } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const normalizedSkill = skill?.toLowerCase();
 
     // Check if navigating from "Làm lại" button (forceNew flag)
     const forceNew = location.state?.forceNew || false;
@@ -308,8 +309,12 @@ const TestPage = () => {
         }
     }, [activeAudioIndex, testStatus, skill, loading]);
 
-    // ============ REDIRECT WRITING TO DEDICATED PAGE ============
-    if (skill === 'writing') {
+    // ============ SKILL ROUTE GUARDS ============
+    if (!['reading', 'listening', 'writing'].includes(normalizedSkill)) {
+        return <Navigate to="/courses" replace />;
+    }
+
+    if (normalizedSkill === 'writing') {
         return <Navigate to={`/test/writing/${source}/${testNum}`} replace />;
     }
 

@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { supabase, authHelpers } from '../api/supabaseClient';
 import { setupApiClient } from '../api/backendApi';
-import { setupSpeakingApiClient } from '../api/speakingApi';
 
 /**
  * Zustand store for authentication state management.
@@ -290,7 +289,6 @@ const useAuthStore = create(
               if (accessToken) {
                 console.log('🔑 Setting up API client with new token');
                 setupApiClient(() => accessToken);
-                setupSpeakingApiClient(() => accessToken);
               }
             },
             { fireImmediately: true }

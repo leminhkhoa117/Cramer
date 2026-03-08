@@ -124,3 +124,148 @@ Frontend `.env`:
 - `docs/CRAMER_ABTS_SPECS.md` - ABTS specification
 - `docs/CRAMER_CMS_ADMIN_SPECS.md` - Admin panel specs
 - `backend/BUILD_INSTRUCTIONS.md` - Detailed build troubleshooting
+
+## Google Workspace Sync Protocol
+
+When handling any non-trivial task, include a **Workspace Copy Pack** so Jacob and Khoa can paste updates quickly into Google Workspace.
+
+### Scope and timing
+
+- Provide update drafts at relevant checkpoints: **START**, **PROGRESS**, **DONE**.
+- Keep this lightweight: only include tabs affected by the task.
+- Never invent Issue/PR links, IDs, dates, or metrics. Use `TBD` if unknown.
+
+### Output format requirements
+
+- Use fenced code blocks for copy-ready snippets.
+- For Google Sheets tabs, output **TSV rows** (tab-separated) for easy paste.
+- Prefer Vietnamese wording for row text unless user asks for another language.
+- Use date format `dd/mm/yyyy`.
+
+### `0 - Worksheet` schemas and allowed dropdown values
+
+1) **A. Now-Next-Later**
+
+- Columns: `Item | Bucket | Owner | Status | Main Link | Updated | Note`
+- Bucket: `Now`, `Next`, `Later`
+- Owner: `Jacob`, `Khoa`, `Both`
+- Status: `Scoped`, `Doing`, `Review`, `Blocked`, `Done`
+
+2) **B. Feature Pipeline**
+
+- Columns: `Feature | Stage | Lead | Success Signal | Main Link | Next Step`
+- Stage: `Discovery`, `Spec`, `Build`, `Validate`, `Shipped`
+- Lead: `Jacob`, `Khoa`, `Both`
+
+3) **C. Risks-Dependencies**
+
+- Columns: `Type | Topic | Severity | Owner | Action Needed | State | Link`
+- Type: `Risk`, `Dependency`
+- Severity: `High`, `Medium`, `Low`
+- Owner: `Jacob`, `Khoa`, `Both`
+- State: `Open`, `Watching`, `Resolved`
+
+4) **D. Release Log**
+
+- Columns: `Date | What Shipped | Proof Links | Impact | Follow-up`
+- Impact: `User-facing`, `Internal`, `Mixed`
+- Follow-up: `None`, `Minor`, `Important`
+
+### Companion drafts for Google Docs (when relevant)
+
+- **`2 - Decision Log`**: include ADR-lite draft if decision is long-lived or expensive to reverse (architecture, auth/security, schema, AI behavior, billing/quota).
+- **`3 - Weekly Notes`**: include concise bullets split into `Done`, `In progress`, `Blocked`, `Next`.
+- **`4 - Prompt Templates`**: if a useful prompt pattern emerges, include reusable template fields: `Name`, `When to use`, `Inputs`, `Prompt`, `Expected output`.
+
+### Response skeleton
+
+Use these headings when returning workspace snippets:
+
+- `Workspace Copy Pack - START`
+- `Workspace Copy Pack - PROGRESS`
+- `Workspace Copy Pack - DONE`
+
+Only include affected tabs; omit unchanged tabs.
+
+### Quick prompts (copy-paste)
+
+Use these ultra-short prompts in any AI tool (OpenCode, Antigravity, Copilot Chat, Claude Code). AI should infer context from the current session and return copy-ready output.
+
+**Ultra-short aliases (recommended)**
+
+- `ws s` or `ws start` -> Generate only `Workspace Copy Pack - START`
+- `ws p` or `ws progress` -> Generate only `Workspace Copy Pack - PROGRESS`
+- `ws d` or `ws done` -> Generate only `Workspace Copy Pack - DONE`
+- `ws all` -> Generate relevant checkpoints among START/PROGRESS/DONE
+- Optional scope: `ws d A,D` (only include tabs A and D)
+
+**Alias interpretation rules**
+
+- Infer task summary, progress, and evidence from the current session.
+- Use `TBD` for missing links/IDs/metrics instead of guessing.
+- Keep only affected tabs; omit unchanged tabs.
+- Return copy-ready blocks only.
+
+If you need stricter control, use the extended prompts below.
+
+1) **START prompt**
+
+```text
+Task: <short task summary>
+Generate only "Workspace Copy Pack - START".
+Requirements:
+- Include only affected tabs from "0 - Worksheet".
+- Use TSV rows for Sheets output.
+- Use Vietnamese wording for row content.
+- Date format: dd/mm/yyyy.
+- Do not invent issue/PR IDs, links, dates, or metrics; use TBD if unknown.
+- Return copy-ready blocks only.
+```
+
+2) **PROGRESS prompt**
+
+```text
+Task: <short task summary>
+Current progress: <what is completed / what remains>
+Generate only "Workspace Copy Pack - PROGRESS".
+Requirements:
+- Include only tabs affected right now.
+- Use TSV rows for Sheets output.
+- Keep each row concise and factual.
+- Date format: dd/mm/yyyy.
+- Use TBD for unknown values.
+- Return copy-ready blocks only.
+```
+
+3) **DONE prompt**
+
+```text
+Task completed: <short task summary>
+Evidence: <files changed, test command results, PR/issue links if available>
+Generate only "Workspace Copy Pack - DONE".
+Requirements:
+- Include only tabs affected by this completed task.
+- Use TSV rows for Sheets output.
+- Use Vietnamese wording for row content.
+- Date format: dd/mm/yyyy.
+- Use TBD where information is missing.
+- Return copy-ready blocks only.
+```
+
+4) **Full-cycle prompt (START + PROGRESS + DONE)**
+
+```text
+Task: <short task summary>
+Context: <optional branch/issue/doc links>
+Progress status: <start|in-progress|done>
+Generate Workspace copy packs for all relevant checkpoints among START, PROGRESS, DONE.
+Requirements:
+- Follow "0 - Worksheet" schemas exactly.
+- Use TSV rows for Sheets output.
+- Keep outputs concise and copy-ready.
+- Date format: dd/mm/yyyy.
+- Use TBD for unknown values.
+- Omit unchanged tabs.
+```
+
+
