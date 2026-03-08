@@ -230,10 +230,6 @@ function AppContent() {
               element={<PaymentCancelPage />}
             />
 
-            {/* Legacy speaking routes redirect to courses */}
-            <Route path="/speaking/*" element={<Navigate to="/courses" replace />} />
-            <Route path="/test/speaking/*" element={<Navigate to="/courses" replace />} />
-
             {/* Admin Routes - separate layout, no Header/Footer */}
             <Route
               path="/admin"
