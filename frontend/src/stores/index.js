@@ -27,6 +27,3 @@ export { default as useUserStatsStore } from './useUserStatsStore';
 
 // Subscription Management
 export { default as useSubscriptionStore } from './useSubscriptionStore';
-
-// Speaking Session
-export { default as useSpeakingStore } from './useSpeakingStore';
