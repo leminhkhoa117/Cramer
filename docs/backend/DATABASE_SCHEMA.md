@@ -36,8 +36,8 @@ The Cramer database is hosted on **Supabase** (PostgreSQL) and serves as the bac
 | Domain | Description | Key Tables |
 |--------|-------------|------------|
 | **User Management** | User profiles and authentication | `profiles` |
-| **IELTS Content** | Test sections and questions for Reading, Listening, Writing | `sections`, `questions` |
-| **Test Attempts** | User test progress and answers | `test_attempts`, `user_answers`, `writing_submissions` |
+| **IELTS Content** | Test sections and questions for Reading, Listening, Writing, Speaking | `test_sets`, `tests`, `sections`, `questions` |
+| **Test Attempts** | User test progress and answers, including Speaking runtime | `test_attempts`, `user_answers`, `writing_submissions`, `speaking_sessions`, `speaking_transcripts` |
 | **Subscription & Billing** | Subscription tiers, payments, and virtual currency | `subscription_tiers`, `user_subscriptions`, `payment_orders`, `user_credits`, `credit_transactions`, `lua_packs` |
 | **AI Features** | AI chatbot and usage tracking | `chat_messages`, `chatbot_usage` |
 | **Vocabulary** | Vocabulary notebook with AI translations | `vocabulary`, `translation_usage` |
@@ -229,14 +229,14 @@ spring:
 
 #### `sections`
 
-> **Description:** Stores test sections (passages for Reading, parts for Listening, tasks for Writing).
+> **Description:** Stores test sections (passages for Reading, parts for Listening/Speaking, tasks for Writing).
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
 | `id` | `bigint` | NO | Identity | **Primary Key.** Auto-incrementing. |
 | `exam_source` | `varchar` | NO | - | Source identifier (e.g., `cam17`, `cam18`). |
 | `test_number` | `varchar` | NO | - | Test number as string (e.g., `'1'`, `'2'`). |
-| `skill` | `varchar` | NO | - | Skill type: `reading`, `listening`, `writing`. |
+| `skill` | `varchar` | NO | - | Skill type: `reading`, `listening`, `writing`, `speaking`. |
 | `part_number` | `integer` | NO | - | Part/section number within test. |
 | `display_content_url` | `varchar` | YES | - | URL for external display content. |
 | `passage_text` | `text` | YES | - | Full HTML-formatted passage/transcript. |
@@ -263,21 +263,26 @@ spring:
 - `idx_sections_exam` on (`exam_source`, `test_number`)
 - `idx_sections_test_id` on (`test_id`)
 
+**Speaking Notes:**
+- Speaking content now uses the shared hierarchy `test_sets` -> `tests` -> `sections` -> `questions`
+- For Speaking rows, `sections.skill = 'speaking'` and `sections.part_number in (1, 2, 3)`
+- The legacy dedicated content tables were archived to `_legacy` tables during the Speaking schema migration
+
 ---
 
 #### `questions`
 
-> **Description:** Stores individual questions for test sections.
+> **Description:** Stores individual questions for test sections, including the Speaking prompt pool.
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
 | `id` | `bigint` | NO | Identity | **Primary Key.** Auto-incrementing. |
 | `section_id` | `bigint` | NO | - | **Foreign Key** to `sections.id`. |
-| `question_number` | `integer` | NO | - | Question number (1-40 for R/L). |
+| `question_number` | `integer` | NO | - | Question number (global for Reading/Listening, per-section for Speaking). |
 | `question_uid` | `varchar` | NO | - | Unique ID: `{exam}-t{test}-{skill}-q{num}`. |
 | `question_type` | `varchar` | NO | - | Question type enum (see below). |
-| `question_content` | `jsonb` | NO | - | Question text, options in JSON format. |
-| `correct_answer` | `jsonb` | NO | - | Correct answer(s) as JSON array. |
+| `question_content` | `jsonb` | NO | - | Question text, options, or Speaking prompt payload in JSON format. |
+| `correct_answer` | `jsonb` | NO | - | Correct answer(s) as JSON array; can be `null` for Speaking. |
 | `explanation` | `text` | YES | - | Optional answer explanation. |
 | `word_limit` | `varchar` | YES | - | Answer length constraint. |
 | `image_url` | `varchar` | YES | - | Associated image URL. |
@@ -301,6 +306,9 @@ spring:
 | `TABLE_COMPLETION` | Fill blanks in table |
 | `FLOW_CHART_COMPLETION` | Fill blanks in flowchart |
 | `MATCHING` | Generic matching (Listening) |
+| `PART_1` | Speaking Part 1 authored prompt |
+| `PART_2` | Speaking Part 2 cue card prompt |
+| `PART_3` | Speaking Part 3 discussion prompt |
 
 **Constraints:**
 - Primary Key: `questions_pkey` on `id`
@@ -310,6 +318,11 @@ spring:
 **Indexes:**
 - `idx_questions_section` on (`section_id`)
 - `idx_questions_type` on (`question_type`)
+
+**Speaking Notes:**
+- Speaking uses `question_type = PART_1 | PART_2 | PART_3`
+- Speaking authored payload is stored in `question_content` JSONB with `schemaVersion`, `partType`, `promptText`, and part-specific fields such as `cueCardBullets`, `prepTimeSeconds`, and `talkTimeSeconds`
+- `question_content` is authored content, while runtime truth is captured later in `speaking_sessions.session_blueprint` and `speaking_transcripts.question_snapshot`
 
 ---
 
@@ -408,6 +421,103 @@ spring:
 **RLS Policies:**
 - `Service role can manage all writing submissions` - Backend full access
 - `Users can manage their own writing submissions` - Users can CRUD their own
+
+---
+
+#### `speaking_sessions`
+
+> **Description:** Stores a user's Speaking session runtime plan and grading lifecycle. Active Speaking content is loaded from the shared hierarchy, while this table stores user-specific runtime state.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | `bigint` | NO | Identity | **Primary Key.** Auto-incrementing. |
+| `user_id` | `uuid` | NO | - | **Foreign Key** to `profiles.id`. |
+| `test_id` | `bigint` | NO | - | **Foreign Key** to `tests.id`. |
+| `session_mode` | `varchar(20)` | NO | - | Session mode: `FULL`, `PART_1`, `PART_2`, `PART_3`. |
+| `status` | `varchar(30)` | NO | `'in_progress'` | Lifecycle state: `in_progress`, `completed`, `grading`, `graded`, `grading_failed`, `abandoned`, `expired`. |
+| `accent` | `varchar(20)` | NO | - | Examiner accent selected by user. |
+| `speed` | `numeric(3,2)` | NO | `1.00` | Examiner speech speed multiplier. |
+| `session_blueprint` | `jsonb` | NO | - | Runtime truth for the planned session flow, selected prompts, and normalized turns. |
+| `is_finalized` | `boolean` | NO | `false` | Prevents further transcript writes after completion/abandonment. |
+| `total_duration_seconds` | `integer` | YES | - | Total session duration in seconds. |
+| `overall_band` | `numeric(2,1)` | YES | - | Overall Speaking band score. |
+| `fluency_band` | `numeric(2,1)` | YES | - | Fluency and coherence band. |
+| `lexical_band` | `numeric(2,1)` | YES | - | Lexical resource band. |
+| `grammar_band` | `numeric(2,1)` | YES | - | Grammar range and accuracy band. |
+| `pronunciation_band` | `numeric(2,1)` | YES | - | Pronunciation band. |
+| `grading_result` | `jsonb` | YES | - | Detailed grading payload for result view/history. |
+| `lua_cost` | `integer` | NO | `0` | Lua cost reserved for the session. |
+| `lua_deducted` | `boolean` | NO | `false` | Whether Lua has been deducted on completion. |
+| `started_at` | `timestamptz` | NO | `now()` | Session start timestamp. |
+| `completed_at` | `timestamptz` | YES | - | User submission or finalized exit time. |
+| `graded_at` | `timestamptz` | YES | - | When grading completed or failed terminally. |
+| `created_at` | `timestamptz` | NO | `now()` | Creation timestamp. |
+| `updated_at` | `timestamptz` | NO | `now()` | Last modification timestamp. |
+
+**Constraints:**
+- Primary Key: `speaking_sessions_pkey1` on `id`
+- Foreign Key: `speaking_sessions_user_id_fkey1` references `profiles(id)`
+- Foreign Key: `speaking_sessions_test_id_fkey1` references `tests(id)`
+- Check: `chk_speaking_sessions_mode`
+- Check: `chk_speaking_sessions_status`
+- Check: `chk_speaking_sessions_accent`
+- Check: `chk_speaking_sessions_speed_positive`
+- Check: `chk_speaking_sessions_lua_cost_non_negative`
+- Check: band score range and timestamp/status consistency checks
+
+**Indexes:**
+- `idx_speaking_sessions_user_created` on (`user_id`, `created_at DESC`)
+- `idx_speaking_sessions_test_created` on (`test_id`, `created_at DESC`)
+- `idx_speaking_sessions_status_created` on (`status`, `created_at DESC`)
+
+**RLS Policies:**
+- `speaking_sessions_service_role_policy` - Service role full access
+- `speaking_sessions_user_select` - Users can view their own sessions
+- `speaking_sessions_user_insert` - Users can create their own sessions
+- `speaking_sessions_user_update_open` - Users can update their own non-finalized sessions
+
+---
+
+#### `speaking_transcripts`
+
+> **Description:** Stores one runtime turn per Speaking session. This is the persisted runtime truth for each asked prompt and user response.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | `bigint` | NO | Identity | **Primary Key.** Auto-incrementing. |
+| `session_id` | `bigint` | NO | - | **Foreign Key** to `speaking_sessions.id`. |
+| `source_question_id` | `bigint` | YES | - | Optional link back to `questions.id`. |
+| `part_number` | `integer` | NO | - | Speaking part number (`1`, `2`, `3`). |
+| `turn_index` | `integer` | NO | - | Unique turn order within a session. |
+| `question_snapshot` | `jsonb` | NO | - | Runtime truth of the exact prompt payload used for this turn. |
+| `audio_storage_path` | `text` | YES | - | Storage object key in the Speaking audio bucket. |
+| `audio_duration_seconds` | `integer` | YES | - | Uploaded audio duration. |
+| `transcript_text` | `text` | YES | - | STT or manually curated transcript. |
+| `transcript_confidence` | `numeric(4,3)` | YES | - | Transcript confidence score from 0 to 1. |
+| `question_evaluation` | `jsonb` | YES | - | Optional turn-level evaluation details. |
+| `recorded_at` | `timestamptz` | NO | `now()` | When the turn was recorded. |
+| `created_at` | `timestamptz` | NO | `now()` | Creation timestamp. |
+| `updated_at` | `timestamptz` | NO | `now()` | Last modification timestamp. |
+
+**Constraints:**
+- Primary Key: `speaking_transcripts_pkey1` on `id`
+- Foreign Key: `speaking_transcripts_session_id_fkey1` references `speaking_sessions(id)`
+- Foreign Key: `speaking_transcripts_source_question_id_fkey` references `questions(id)`
+- Unique: `uq_speaking_transcripts_session_turn` on (`session_id`, `turn_index`)
+- Check: `chk_speaking_transcripts_part_number`
+- Check: `chk_speaking_transcripts_turn_index_positive`
+- Check: `chk_speaking_transcripts_audio_duration_non_negative`
+- Check: `chk_speaking_transcripts_confidence_range`
+
+**Indexes:**
+- `uq_speaking_transcripts_session_turn` on (`session_id`, `turn_index`)
+- `idx_speaking_transcripts_session_turn` on (`session_id`, `turn_index`)
+- `idx_speaking_transcripts_source_question` on (`source_question_id`)
+
+**RLS Policies:**
+- `speaking_transcripts_service_role_policy` - Service role full access
+- `speaking_transcripts_user_select` - Users can view transcripts for their own sessions
+- `speaking_transcripts_user_insert_open` - Users can insert transcripts only for their own non-finalized sessions
 
 ---
 
@@ -779,6 +889,10 @@ spring:
 | `payment_orders` | `user_id` | `profiles` | `id` |
 | `payment_orders` | `tier_id` | `subscription_tiers` | `id` |
 | `questions` | `section_id` | `sections` | `id` |
+| `speaking_sessions` | `test_id` | `tests` | `id` |
+| `speaking_sessions` | `user_id` | `profiles` | `id` |
+| `speaking_transcripts` | `session_id` | `speaking_sessions` | `id` |
+| `speaking_transcripts` | `source_question_id` | `questions` | `id` |
 | `user_answers` | `attempt_id` | `test_attempts` | `id` |
 | `user_answers` | `question_id` | `questions` | `id` |
 | `user_subscriptions` | `tier_id` | `subscription_tiers` | `id` |
@@ -800,6 +914,12 @@ spring:
 | `credit_transactions` | `idx_credit_transactions_user` | `user_id` | B-tree |
 | `credit_transactions` | `idx_credit_transactions_type` | `user_id, type` | B-tree |
 | `questions` | `idx_questions_section` | `section_id` | B-tree |
+| `speaking_sessions` | `idx_speaking_sessions_user_created` | `user_id, created_at DESC` | B-tree |
+| `speaking_sessions` | `idx_speaking_sessions_test_created` | `test_id, created_at DESC` | B-tree |
+| `speaking_sessions` | `idx_speaking_sessions_status_created` | `status, created_at DESC` | B-tree |
+| `speaking_transcripts` | `uq_speaking_transcripts_session_turn` | `session_id, turn_index` | B-tree (Unique) |
+| `speaking_transcripts` | `idx_speaking_transcripts_session_turn` | `session_id, turn_index` | B-tree |
+| `speaking_transcripts` | `idx_speaking_transcripts_source_question` | `source_question_id` | B-tree |
 | `sections` | `idx_sections_skill` | `skill` | B-tree |
 | `test_attempts` | `idx_test_attempts_user` | `user_id` | B-tree |
 | `test_attempts` | `idx_test_attempts_section` | `section_id` | B-tree |
@@ -832,6 +952,13 @@ Row Level Security is enabled on most tables to ensure users can only access the
 | | Users can update own profile | UPDATE | `auth.uid() = id` |
 | **questions** | Public read access | SELECT | `true` |
 | **sections** | Public read access | SELECT | `true` |
+| **speaking_sessions** | speaking_sessions_service_role_policy | ALL | `true` (service_role only) |
+| | speaking_sessions_user_select | SELECT | `auth.uid() = user_id` |
+| | speaking_sessions_user_insert | INSERT | `auth.uid() = user_id` |
+| | speaking_sessions_user_update_open | UPDATE | `auth.uid() = user_id AND is_finalized = false` |
+| **speaking_transcripts** | speaking_transcripts_service_role_policy | ALL | `true` (service_role only) |
+| | speaking_transcripts_user_select | SELECT | `EXISTS session owned by auth.uid()` |
+| | speaking_transcripts_user_insert_open | INSERT | `EXISTS non-finalized session owned by auth.uid()` |
 | **subscription_tiers** | Public read access | SELECT | `true` |
 | **test_attempts** | Service role full access | ALL | `auth.jwt() ->> 'role' = 'service_role'` |
 | | Users can view own attempts | SELECT | `auth.uid() = user_id` |
