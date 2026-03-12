@@ -39,17 +39,17 @@ This document provides a comprehensive reference for all JPA entities in the Cra
 | 10 | `WritingSubmission` | `writing_submissions` | Attempt | Writing essays with AI grading results |
 | 10a | `SpeakingSession` *(planned mapping)* | `speaking_sessions` | Attempt | Speaking runtime session lifecycle and grading state |
 | 10b | `SpeakingTranscript` *(planned mapping)* | `speaking_transcripts` | Attempt | Turn-level Speaking runtime truth |
-| 13 | `SubscriptionTier` | `subscription_tiers` | Subscription | Tier definitions (Cramerie, Cramerich) |
-| 14 | `UserSubscription` | `user_subscriptions` | Subscription | User's active subscription |
-| 15 | `UserCredit` | `user_credits` | Subscription | User's Lua (credit) balance |
-| 16 | `CreditTransaction` | `credit_transactions` | Subscription | Credit movement history |
-| 17 | `PaymentOrder` | `payment_orders` | Subscription | PayOS payment order tracking |
-| 18 | `LuaPack` | `lua_packs` | Subscription | Purchasable Lua packages |
-| 19 | `UserQuota` | `user_quotas` | Quota | Global monthly quota usage |
-| 20 | `SkillQuota` | `skill_quotas` | Quota | Per-skill monthly quota usage |
-| 21 | `TranslationUsage` | `translation_usage` | Quota | Monthly translation usage |
-| 22 | `ChatMessage` | `chat_messages` | AI/Chat | Chat conversation messages |
-| 23 | `ChatbotUsage` | `chatbot_usage` | AI/Chat | Daily chatbot usage tracking |
+| 11 | `SubscriptionTier` | `subscription_tiers` | Subscription | Tier definitions (Cramerie, Cramerich) |
+| 12 | `UserSubscription` | `user_subscriptions` | Subscription | User's active subscription |
+| 13 | `UserCredit` | `user_credits` | Subscription | User's Lua (credit) balance |
+| 14 | `CreditTransaction` | `credit_transactions` | Subscription | Credit movement history |
+| 15 | `PaymentOrder` | `payment_orders` | Subscription | PayOS payment order tracking |
+| 16 | `LuaPack` | `lua_packs` | Subscription | Purchasable Lua packages |
+| 17 | `UserQuota` | `user_quotas` | Quota | Global monthly quota usage |
+| 18 | `SkillQuota` | `skill_quotas` | Quota | Per-skill monthly quota usage |
+| 19 | `TranslationUsage` | `translation_usage` | Quota | Monthly translation usage |
+| 20 | `ChatMessage` | `chat_messages` | AI/Chat | Chat conversation messages |
+| 21 | `ChatbotUsage` | `chatbot_usage` | AI/Chat | Daily chatbot usage tracking |
 | 24 | `Vocabulary` | `vocabulary` | Vocabulary | User's saved vocabulary entries |
 | 25 | `UserActivity` | `user_activities` | Activity | User activity timeline |
 | 26 | `AdminAuditLog` | `admin_audit_log` | Audit | Admin action audit trail |
