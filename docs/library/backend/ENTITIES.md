@@ -1,6 +1,6 @@
 # Cramer Backend - JPA Entity Documentation
 
-> **Last Updated:** January 6, 2026  
+> **Last Updated:** March 11, 2026  
 > **Spring Boot Version:** 3.x  
 > **Database:** PostgreSQL (Supabase)
 
@@ -37,22 +37,28 @@ This document provides a comprehensive reference for all JPA entities in the Cra
 | 8 | `TestAttempt` | `test_attempts` | Attempt | User's test attempt session |
 | 9 | `UserAnswer` | `user_answers` | Attempt | Individual answers for questions |
 | 10 | `WritingSubmission` | `writing_submissions` | Attempt | Writing essays with AI grading results |
+| 10a | `SpeakingSession` *(planned mapping)* | `speaking_sessions` | Attempt | Speaking runtime session lifecycle and grading state |
+| 10b | `SpeakingTranscript` *(planned mapping)* | `speaking_transcripts` | Attempt | Turn-level Speaking runtime truth |
 | 11 | `SubscriptionTier` | `subscription_tiers` | Subscription | Tier definitions (Cramerie, Cramerich) |
 | 12 | `UserSubscription` | `user_subscriptions` | Subscription | User's active subscription |
-| 13 | `UserCredit` | `user_credits` | Subscription | User's Lúa (credit) balance |
+| 13 | `UserCredit` | `user_credits` | Subscription | User's Lua (credit) balance |
 | 14 | `CreditTransaction` | `credit_transactions` | Subscription | Credit movement history |
 | 15 | `PaymentOrder` | `payment_orders` | Subscription | PayOS payment order tracking |
-| 16 | `LuaPack` | `lua_packs` | Subscription | Purchasable Lúa packages |
+| 16 | `LuaPack` | `lua_packs` | Subscription | Purchasable Lua packages |
 | 17 | `UserQuota` | `user_quotas` | Quota | Global monthly quota usage |
 | 18 | `SkillQuota` | `skill_quotas` | Quota | Per-skill monthly quota usage |
 | 19 | `TranslationUsage` | `translation_usage` | Quota | Monthly translation usage |
 | 20 | `ChatMessage` | `chat_messages` | AI/Chat | Chat conversation messages |
 | 21 | `ChatbotUsage` | `chatbot_usage` | AI/Chat | Daily chatbot usage tracking |
-| 22 | `Vocabulary` | `vocabulary` | Vocabulary | User's saved vocabulary entries |
-| 23 | `UserActivity` | `user_activities` | Activity | User activity timeline |
-| 24 | `AdminAuditLog` | `admin_audit_log` | Audit | Admin action audit trail |
+| 24 | `Vocabulary` | `vocabulary` | Vocabulary | User's saved vocabulary entries |
+| 25 | `UserActivity` | `user_activities` | Activity | User activity timeline |
+| 26 | `AdminAuditLog` | `admin_audit_log` | Audit | Admin action audit trail |
 
-**Total Entities: 24**
+**Total implemented entities: 24**
+
+**Additional planned mappings documented: 2**
+
+**Note:** `SpeakingSession` and `SpeakingTranscript` are documented here as planned JPA mappings because the live Supabase schema is already active, while backend entity classes may be implemented in subsequent Speaking backend tasks.
 
 ---
 
@@ -112,7 +118,7 @@ Individual IELTS test within a set.
 
 ### 3. Section
 
-Exam sections (Reading passages, Listening parts).
+Exam sections (Reading passages, Listening/Speaking parts, Writing tasks).
 
 | Field | Column | Type | Constraints | Description |
 |-------|--------|------|-------------|-------------|
@@ -120,8 +126,8 @@ Exam sections (Reading passages, Listening parts).
 | `ieltsTest` | `test_id` | FK → IeltsTest | | Parent test |
 | `examSource` | `exam_source` | `String` | | Source code (backward compat) |
 | `testNumber` | `test_number` | `Integer` | | Test number (backward compat) |
-| `skill` | `skill` | `String` | | "reading", "listening", "writing" |
-| `partNumber` | `part_number` | `Integer` | | Part number (1, 2, 3, 4) |
+| `skill` | `skill` | `String` | | "reading", "listening", "writing", "speaking" |
+| `partNumber` | `part_number` | `Integer` | | Part number (1, 2, 3, 4); Speaking uses 1-3 |
 | `displayContentUrl` | `display_content_url` | `String` | | Image/PDF URL |
 | `sectionLayout` | `section_layout` | `JSONB` | | Flexible block-based layouts |
 | `passageText` | `passage_text` | `TEXT` | | Full text for Reading passages |
@@ -132,11 +138,16 @@ Exam sections (Reading passages, Listening parts).
 **Relationships:**
 - `@ManyToOne` → `IeltsTest` (ieltsTest)
 
+**Speaking Notes:**
+- Speaking content reuses the shared hierarchy: `test_sets` -> `tests` -> `sections` -> `questions`
+- Speaking sections use `skill = 'speaking'`
+- Speaking content tables from the legacy model were archived to `_legacy` tables in the database migration
+
 ---
 
 ### 4. Question
 
-Individual questions within sections.
+Individual questions within sections, including Speaking authored prompts.
 
 | Field | Column | Type | Constraints | Description |
 |-------|--------|------|-------------|-------------|
@@ -144,9 +155,9 @@ Individual questions within sections.
 | `sectionId` | `section_id` | `Long` | FK → Section | Parent section |
 | `questionNumber` | `question_number` | `Integer` | | Sequential number |
 | `questionUid` | `question_uid` | `String` | UNIQUE | Unique ID (e.g., "cam17-t1-r-q1") |
-| `questionType` | `question_type` | `String` | | FILL_IN_BLANK, TRUE_FALSE_NOT_GIVEN, etc. |
-| `questionContent` | `question_content` | `JSONB` | | Question text and options |
-| `correctAnswer` | `correct_answer` | `JSONB` | | Correct answer(s) as JSON array |
+| `questionType` | `question_type` | `String` | | FILL_IN_BLANK, TRUE_FALSE_NOT_GIVEN, PART_1, PART_2, PART_3, etc. |
+| `questionContent` | `question_content` | `JSONB` | | Question text/options or Speaking prompt payload |
+| `correctAnswer` | `correct_answer` | `JSONB` | | Correct answer(s) as JSON array; may be null for Speaking |
 | `explanation` | `explanation` | `JSONB` | | Structured explanation |
 | `wordLimit` | `word_limit` | `String` | | Word limit constraint |
 | `imageUrl` | `image_url` | `String` | | Question-specific image |
@@ -162,6 +173,11 @@ Individual questions within sections.
 
 **Relationships:**
 - `@ManyToOne` → `Section` (section)
+
+**Speaking Notes:**
+- Speaking uses `question_type = PART_1 | PART_2 | PART_3`
+- Speaking `question_content` uses JSONB with base fields such as `schemaVersion`, `partType`, and `promptText`
+- Part 2 prompts can additionally include `cueCardBullets`, `prepTimeSeconds`, and `talkTimeSeconds`
 
 ---
 
@@ -296,6 +312,81 @@ Writing essays with AI grading results.
 | `submittedAt` | `submitted_at` | `OffsetDateTime` | NOT NULL | Submission time |
 | `gradedAt` | `graded_at` | `OffsetDateTime` | | Grading completion time |
 | `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
+
+---
+
+### Speaking runtime (planned post-migration mappings)
+
+These tables are already active in the live Supabase schema and should be treated as the source of truth for future backend entity implementation.
+
+### 10a. SpeakingSession *(planned mapping)*
+
+Runtime session record for IELTS Speaking.
+
+| Field | Column | Type | Constraints | Description |
+|-------|--------|------|-------------|-------------|
+| `id` | `id` | `Long` | PK, auto-increment | Primary key |
+| `userId` | `user_id` | `UUID` | FK -> Profile, NOT NULL | Session owner |
+| `testId` | `test_id` | `Long` | FK -> IeltsTest, NOT NULL | Shared-hierarchy Speaking test |
+| `sessionMode` | `session_mode` | `String(20)` | NOT NULL | FULL, PART_1, PART_2, PART_3 |
+| `status` | `status` | `String(30)` | NOT NULL | in_progress, completed, grading, graded, grading_failed, abandoned, expired |
+| `accent` | `accent` | `String(20)` | NOT NULL | british, american, australian, neutral |
+| `speed` | `speed` | `BigDecimal` | NOT NULL | Examiner speed multiplier |
+| `sessionBlueprint` | `session_blueprint` | `JSONB` | NOT NULL | Runtime truth for planned turns |
+| `isFinalized` | `is_finalized` | `Boolean` | NOT NULL | Blocks further transcript writes |
+| `totalDurationSeconds` | `total_duration_seconds` | `Integer` | | Session duration |
+| `overallBand` | `overall_band` | `BigDecimal` | | Overall band |
+| `fluencyBand` | `fluency_band` | `BigDecimal` | | Fluency and coherence |
+| `lexicalBand` | `lexical_band` | `BigDecimal` | | Lexical resource |
+| `grammarBand` | `grammar_band` | `BigDecimal` | | Grammar range and accuracy |
+| `pronunciationBand` | `pronunciation_band` | `BigDecimal` | | Pronunciation |
+| `gradingResult` | `grading_result` | `JSONB` | | Detailed grading payload |
+| `luaCost` | `lua_cost` | `Integer` | NOT NULL | Session credit cost |
+| `luaDeducted` | `lua_deducted` | `Boolean` | NOT NULL | Credit deduction state |
+| `startedAt` | `started_at` | `OffsetDateTime` | NOT NULL | Session start |
+| `completedAt` | `completed_at` | `OffsetDateTime` | | Submission/finalization time |
+| `gradedAt` | `graded_at` | `OffsetDateTime` | | Grading completion time |
+| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
+| `updatedAt` | `updated_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
+
+**Relationships:**
+- Planned `@ManyToOne` -> `Profile` via `user_id`
+- Planned `@ManyToOne` -> `IeltsTest` via `test_id`
+
+**Runtime Truth Notes:**
+- `sessionBlueprint` is the frozen runtime plan for a session
+- This table stores grading lifecycle, history metadata, and cleanup-related state
+
+---
+
+### 10b. SpeakingTranscript *(planned mapping)*
+
+Turn-level runtime record for IELTS Speaking.
+
+| Field | Column | Type | Constraints | Description |
+|-------|--------|------|-------------|-------------|
+| `id` | `id` | `Long` | PK, auto-increment | Primary key |
+| `sessionId` | `session_id` | `Long` | FK -> SpeakingSession, NOT NULL | Parent session |
+| `sourceQuestionId` | `source_question_id` | `Long` | FK -> Question | Optional authored source question |
+| `partNumber` | `part_number` | `Integer` | NOT NULL | Speaking part 1-3 |
+| `turnIndex` | `turn_index` | `Integer` | NOT NULL, UNIQUE per session | Session turn order |
+| `questionSnapshot` | `question_snapshot` | `JSONB` | NOT NULL | Runtime truth for the exact prompt used |
+| `audioStoragePath` | `audio_storage_path` | `TEXT` | | Object key in storage bucket |
+| `audioDurationSeconds` | `audio_duration_seconds` | `Integer` | | Audio duration |
+| `transcriptText` | `transcript_text` | `TEXT` | | STT/manual transcript |
+| `transcriptConfidence` | `transcript_confidence` | `BigDecimal` | | Value from 0 to 1 |
+| `questionEvaluation` | `question_evaluation` | `JSONB` | | Optional turn-level evaluation |
+| `recordedAt` | `recorded_at` | `OffsetDateTime` | NOT NULL | Recording time |
+| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
+| `updatedAt` | `updated_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
+
+**Relationships:**
+- Planned `@ManyToOne` -> `SpeakingSession` via `session_id`
+- Planned optional `@ManyToOne` -> `Question` via `source_question_id`
+
+**Runtime Truth Notes:**
+- `questionSnapshot` is the persisted runtime truth for each turn
+- `(session_id, turn_index)` is the stable upsert key expected by the Speaking API flow
 
 ---
 
