@@ -161,34 +161,10 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
-        <!-- Java-WebSocket client for connecting to Gemini Live API -->
-        <dependency>
-            <groupId>org.java-websocket</groupId>
-            <artifactId>Java-WebSocket</artifactId>
-            <version>1.5.6</version>
-        </dependency>
-
-        <!-- ==================== GEMINI LIVE DEPENDENCIES ==================== -->
-        <!-- Google Cloud Speech for real-time transcription -->
-        <dependency>
-            <groupId>com.google.cloud</groupId>
-            <artifactId>google-cloud-speech</artifactId>
-            <version>4.14.0</version>
-        </dependency>
-
-        <!-- gRPC Netty for Gemini Live API communication -->
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-netty-shaded</artifactId>
-            <version>1.60.0</version>
-        </dependency>
-
-        <!-- Google AI Generative for Gemini API calls -->
-        <dependency>
-            <groupId>com.google.cloud</groupId>
-            <artifactId>google-cloud-vertexai</artifactId>
-            <version>1.1.0</version>
-        </dependency>
+        <!-- NOTE: java-websocket, google-cloud-speech, grpc-netty-shaded, and google-cloud-vertexai
+             were removed because they were unused (planned Gemini Live speaking feature not yet
+             implemented) and grpc-netty-shaded carried CVE-2025-55163 (HIGH severity, MadeYouReset
+             HTTP/2 DDoS). Re-add these when the speaking feature is built using a patched version. -->
     </dependencies>
 
     <build>
