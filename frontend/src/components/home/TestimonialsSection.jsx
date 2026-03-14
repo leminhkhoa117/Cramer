@@ -4,30 +4,8 @@ import { FaQuoteLeft, FaChevronLeft, FaChevronRight, FaStar } from 'react-icons/
 
 const TestimonialsSection = () => {
     const sectionRef = useRef(null);
-    const [headerInView, setHeaderInView] = useState(false);
     const [activeIndex, setActiveIndex] = useState(0);
     const [autoPlay, setAutoPlay] = useState(true);
-
-    // Header intersection observer
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setHeaderInView(true);
-                    observer.unobserve(entry.target);
-                }
-            },
-            { threshold: 0.2 }
-        );
-
-        if (sectionRef.current) {
-            observer.observe(sectionRef.current);
-        }
-
-        return () => {
-            if (sectionRef.current) observer.unobserve(sectionRef.current);
-        };
-    }, []);
 
     // Auto-play carousel
     useEffect(() => {
@@ -96,15 +74,29 @@ const TestimonialsSection = () => {
     return (
         <section ref={sectionRef} className="testimonials-section">
             <div className="testimonials-container">
-                {/* Header */}
-                <div className={`testimonials-header ${headerInView ? 'in-view' : ''}`}>
-                    <span className="testimonials-label">Đánh giá từ học viên</span>
+                {/* Header — framer-motion whileInView */}
+                <motion.div
+                    className="testimonials-header in-view"
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.3 }}
+                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                >
+                    <motion.span
+                        className="testimonials-label"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ type: 'spring', stiffness: 120, damping: 14, delay: 0.1 }}
+                    >
+                        Đánh giá từ học viên
+                    </motion.span>
                     <h2 className="testimonials-title">
                         Học viên nói gì về
                         <br />
                         <span className="text-gradient">Cramer</span>
                     </h2>
-                </div>
+                </motion.div>
 
                 {/* Testimonial Carousel */}
                 <div className="testimonial-carousel">

@@ -1,0 +1,542 @@
+/* ============================================
+   SECTION: GUIDE (Grid cards + Interactive journey)
+   ============================================ */
+.guide-section {
+    padding: var(--section-padding);
+    position: relative;
+    background: transparent;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.guide-container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+    position: relative;
+    z-index: 1;
+}
+
+/* Header */
+.guide-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.guide-header.in-view {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.guide-label {
+    display: inline-block;
+    padding: 0.5rem 1.25rem;
+    background: rgba(124, 58, 237, 0.12);
+    color: var(--color-primary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 999px;
+    margin-bottom: 1rem;
+}
+
+.guide-title {
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+}
+
+.guide-subtitle {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.7;
+}
+
+/* ============================================
+   GUIDE CARDS GRID (3-column layout)
+   ============================================ */
+.guide-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.guide-card {
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease;
+    visibility: visible;
+}
+
+.guide-cards-grid.in-view .guide-card {
+    animation: fadeInUp 0.6s ease-out forwards;
+    opacity: 1;
+}
+
+.guide-cards-grid.in-view .guide-card:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.guide-cards-grid.in-view .guide-card:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.guide-cards-grid.in-view .guide-card:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+/* Guide card */
+.guide-card {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.3s ease, opacity 0.3s ease;
+    transform-style: preserve-3d;
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+.guide-card-3d {
+    transform-style: preserve-3d;
+}
+
+.guide-card-inner {
+    position: relative;
+    padding: 2rem;
+    border-radius: var(--radius-xl);
+    color: white;
+    overflow: hidden;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Step badge */
+.guide-step-badge {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 800;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    z-index: 10;
+}
+
+/* Icon */
+.guide-icon-wrapper {
+    width: 55px;
+    height: 55px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: transform 0.3s ease;
+}
+
+.guide-card:hover .guide-icon-wrapper {
+    transform: scale(1.1);
+}
+
+.guide-icon {
+    font-size: 1.35rem;
+}
+
+/* Content */
+.guide-card-content {
+    position: relative;
+    z-index: 1;
+    flex-grow: 1;
+}
+
+.guide-card-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.guide-card-description {
+    font-size: 0.95rem;
+    line-height: 1.65;
+    opacity: 1;
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Decoration circles */
+.guide-card-decoration {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.decoration-circle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.decoration-circle--1 {
+    width: 180px;
+    height: 180px;
+    bottom: -50px;
+    right: -50px;
+    animation: circle-breathe 4s ease-in-out infinite;
+}
+
+.decoration-circle--2 {
+    width: 100px;
+    height: 100px;
+    top: -25px;
+    left: -25px;
+    animation: circle-breathe 5s ease-in-out infinite 1s;
+}
+
+@keyframes circle-breathe {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.1;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0.2;
+    }
+}
+
+/* Glare effect for 3D cards */
+.guide-card-glare {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-xl);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 5;
+}
+
+.guide-card-3d:hover .guide-card-glare {
+    opacity: 1;
+}
+
+/* CTA Button */
+.guide-cta {
+    text-align: center;
+}
+
+.guide-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 1rem 2rem;
+    background: var(--gradient-primary);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    border: none;
+    border-radius: 999px;
+    text-decoration: none;
+    box-shadow: 0 10px 30px rgba(124, 58, 237, 0.35);
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.guide-cta-btn:hover {
+    color: white;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 15px 40px rgba(124, 58, 237, 0.45);
+}
+
+.guide-cta-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.guide-cta-btn .cta-arrow {
+    font-size: 0.85rem;
+    transition: transform 0.3s ease;
+}
+
+.guide-cta-btn:hover .cta-arrow {
+    transform: translateX(5px);
+}
+
+/* ============================================
+   INTERACTIVE JOURNEY LAYOUT
+   ============================================ */
+.guide-section--interactive {
+    padding: 3rem 0;
+}
+
+.journey-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+/* Step Indicators */
+.journey-steps {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    margin-bottom: 3rem;
+    position: relative;
+}
+
+.journey-step-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    padding: 0 2rem;
+    transition: all 0.3s ease;
+}
+
+.journey-step-indicator:hover {
+    transform: translateY(-2px);
+}
+
+.journey-step-circle {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 3px solid rgba(124, 58, 237, 0.3);
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.journey-step-indicator.active .journey-step-circle {
+    border-width: 3px;
+    color: white;
+    background: var(--color-primary);
+    box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4);
+    transform: scale(1.1);
+}
+
+.journey-step-indicator.completed .journey-step-circle {
+    border-color: transparent;
+    color: white;
+}
+
+.journey-check-icon {
+    font-size: 1rem;
+}
+
+.journey-step-label {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: center;
+    max-width: 120px;
+    transition: color 0.3s ease;
+}
+
+.journey-step-indicator.active .journey-step-label {
+    color: var(--color-primary);
+}
+
+.journey-step-indicator.completed .journey-step-label {
+    color: var(--text-primary);
+}
+
+/* Connecting line between steps */
+.journey-step-line {
+    position: absolute;
+    top: 28px;
+    left: calc(50% + 40px);
+    width: calc(100% - 20px);
+    height: 3px;
+    background: rgba(124, 58, 237, 0.15);
+    border-radius: 2px;
+    z-index: -1;
+    transition: background 0.3s ease;
+}
+
+/* Content Card */
+.journey-content-wrapper {
+    perspective: 1000px;
+}
+
+.journey-content-card {
+    display: flex;
+    gap: 2.5rem;
+    padding: 2.5rem;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(124, 58, 237, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.06);
+    transition: all 0.3s ease;
+}
+
+.journey-content-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 35px rgba(124, 58, 237, 0.1);
+    border-color: rgba(124, 58, 237, 0.2);
+}
+
+/* Icon section */
+.journey-icon-section {
+    flex-shrink: 0;
+    width: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+}
+
+.journey-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.journey-icon {
+    font-size: 2rem;
+    color: white;
+}
+
+.journey-step-number {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+/* Details section */
+.journey-details-section {
+    flex: 1;
+}
+
+.journey-content-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.journey-content-description {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+}
+
+.journey-details-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.journey-details-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.journey-detail-bullet {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Navigation buttons */
+.journey-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+}
+
+.journey-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: inherit;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.journey-nav-btn--prev {
+    background: transparent;
+    border: 2px solid rgba(124, 58, 237, 0.2);
+    color: var(--text-secondary);
+}
+
+.journey-nav-btn--prev:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.journey-nav-btn--prev:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.journey-nav-btn--next,
+.journey-nav-btn--start {
+    background: var(--gradient-primary);
+    border: none;
+    color: white;
+    box-shadow: 0 8px 25px rgba(124, 58, 237, 0.35);
+}
+
+.journey-nav-btn--next:hover,
+.journey-nav-btn--start:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(124, 58, 237, 0.45);
+}
+
+.journey-nav-btn--start {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.35);
+}
+
+.journey-nav-btn--start:hover {
+    box-shadow: 0 12px 30px rgba(16, 185, 129, 0.45);
+}

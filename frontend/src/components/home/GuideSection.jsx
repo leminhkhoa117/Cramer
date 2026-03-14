@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { FaUserPlus, FaClipboardCheck, FaGraduationCap, FaArrowRight, FaArrowLeft, FaCheck } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,31 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 const GuideSection = () => {
   const navigate = useNavigate();
   const sectionRef = useRef(null);
-  const headerRef = useRef(null);
-  const [headerInView, setHeaderInView] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([]);
-
-  // Header intersection observer
-  useEffect(() => {
-    const headerObserver = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setHeaderInView(true);
-          headerObserver.unobserve(entry.target);
-        }
-      },
-      { threshold: 0.2 }
-    );
-
-    if (headerRef.current) {
-      headerObserver.observe(headerRef.current);
-    }
-
-    return () => {
-      if (headerRef.current) headerObserver.unobserve(headerRef.current);
-    };
-  }, []);
 
   const handleStartClick = () => {
     navigate('/login');
@@ -114,12 +91,23 @@ const GuideSection = () => {
   return (
     <section ref={sectionRef} className="guide-section guide-section--interactive">
       <div className="guide-container">
-        {/* Header */}
-        <div
-          ref={headerRef}
-          className={`guide-header ${headerInView ? 'in-view' : ''}`}
+        {/* Header — framer-motion whileInView */}
+        <motion.div
+          className="guide-header in-view"
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
-          <span className="guide-label">Bắt đầu dễ dàng</span>
+          <motion.span
+            className="guide-label"
+            initial={{ opacity: 0, scale: 0.8 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ type: 'spring', stiffness: 120, damping: 14, delay: 0.1 }}
+          >
+            Bắt đầu dễ dàng
+          </motion.span>
           <h2 className="guide-title">
             Chỉ <span className="text-gradient">3 bước đơn giản</span>
             <br />
@@ -128,7 +116,7 @@ const GuideSection = () => {
           <p className="guide-subtitle">
             Không cần chuẩn bị gì phức tạp, Cramer sẽ hướng dẫn bạn từng bước một
           </p>
-        </div>
+        </motion.div>
 
         {/* Interactive Journey */}
         <div className="journey-container">

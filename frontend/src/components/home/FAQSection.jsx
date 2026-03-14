@@ -1,32 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef } from 'react';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { FaChevronDown, FaQuestionCircle } from 'react-icons/fa';
 
 const FAQSection = () => {
     const sectionRef = useRef(null);
-    const [headerInView, setHeaderInView] = useState(false);
+    const faqInView = useInView(sectionRef, { once: true, amount: 0.2 });
     const [openIndex, setOpenIndex] = useState(0); // First FAQ open by default
-
-    // Header intersection observer
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setHeaderInView(true);
-                    observer.unobserve(entry.target);
-                }
-            },
-            { threshold: 0.2 }
-        );
-
-        if (sectionRef.current) {
-            observer.observe(sectionRef.current);
-        }
-
-        return () => {
-            if (sectionRef.current) observer.unobserve(sectionRef.current);
-        };
-    }, []);
 
     const faqs = [
         {
@@ -62,15 +41,29 @@ const FAQSection = () => {
     return (
         <section ref={sectionRef} className="faq-section">
             <div className="faq-container">
-                {/* Header */}
-                <div className={`faq-header ${headerInView ? 'in-view' : ''}`}>
-                    <span className="faq-label">Câu hỏi thường gặp</span>
+                {/* Header — framer-motion whileInView */}
+                <motion.div
+                    className="faq-header in-view"
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.3 }}
+                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                >
+                    <motion.span
+                        className="faq-label"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ type: 'spring', stiffness: 120, damping: 14, delay: 0.1 }}
+                    >
+                        Câu hỏi thường gặp
+                    </motion.span>
                     <h2 className="faq-title">
                         Giải đáp mọi
                         <br />
                         <span className="text-gradient">thắc mắc của bạn</span>
                     </h2>
-                </div>
+                </motion.div>
 
                 {/* FAQ Items */}
                 <div className="faq-list">
@@ -79,7 +72,7 @@ const FAQSection = () => {
                             key={index}
                             className={`faq-item ${openIndex === index ? 'open' : ''}`}
                             initial={{ opacity: 0, y: 20 }}
-                            animate={headerInView ? { opacity: 1, y: 0 } : {}}
+                            animate={faqInView ? { opacity: 1, y: 0 } : {}}
                             transition={{ delay: index * 0.05 }}
                         >
                             <button
