@@ -1,15 +1,66 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useCountUp } from '../../hooks/useCountUp';
 import logoImage from '../../../pictures/logo/Icon.png';
+
+// Animated stat counter component
+const HeroStat = ({ target, suffix, label, isActive, delay = 0 }) => {
+  const value = useCountUp(target, 2000, isActive);
+
+  return (
+    <motion.div
+      className="hero-stat"
+      initial={{ opacity: 0, y: 20 }}
+      animate={isActive ? { opacity: 1, y: 0 } : {}}
+      transition={{ type: 'spring', stiffness: 80, damping: 18, delay }}
+    >
+      <span className="hero-stat-number">
+        {value.toLocaleString()}{suffix}
+      </span>
+      <span className="hero-stat-label">{label}</span>
+    </motion.div>
+  );
+};
 
 const HeroSection = () => {
   const navigate = useNavigate();
   const heroRef = useRef(null);
+  const statsRef = useRef(null);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [enableParallax, setEnableParallax] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth > 992;
+  });
+  const statsInView = useInView(statsRef, { once: true, amount: 0.5 });
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 992px)');
+    const updateParallaxMode = () => setEnableParallax(!mediaQuery.matches);
+
+    updateParallaxMode();
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', updateParallaxMode);
+    } else {
+      mediaQuery.addListener(updateParallaxMode);
+    }
+
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', updateParallaxMode);
+      } else {
+        mediaQuery.removeListener(updateParallaxMode);
+      }
+    };
+  }, []);
 
   // Parallax scroll handler
   useEffect(() => {
+    if (!enableParallax) {
+      setScrollProgress(0);
+      return undefined;
+    }
+
     const handleScroll = () => {
       if (!heroRef.current) return;
 
@@ -22,8 +73,9 @@ const HeroSection = () => {
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [enableParallax]);
 
   const handleNavigate = (path) => {
     window.scrollTo(0, 0);
@@ -77,8 +129,8 @@ const HeroSection = () => {
   ];
 
   // Content fade out on scroll
-  const contentOpacity = Math.max(0, 1 - scrollProgress * 1.5);
-  const contentScale = 1 - scrollProgress * 0.1;
+  const contentOpacity = enableParallax ? Math.max(0, 1 - scrollProgress * 1.5) : 1;
+  const contentScale = enableParallax ? 1 - scrollProgress * 0.1 : 1;
 
   return (
     <section ref={heroRef} className="hero-section hero-section--parallax">
@@ -137,6 +189,15 @@ const HeroSection = () => {
           >
             Khám phá khóa học
           </button>
+        </motion.div>
+
+        {/* Animated stat counters */}
+        <motion.div ref={statsRef} className="hero-stats-bar" variants={textVariants}>
+          <HeroStat target={10000} suffix="+" label="Học viên" isActive={statsInView} delay={0} />
+          <div className="hero-stat-divider" />
+          <HeroStat target={500} suffix="+" label="Đề thi" isActive={statsInView} delay={0.15} />
+          <div className="hero-stat-divider" />
+          <HeroStat target={95} suffix="%" label="Hài lòng" isActive={statsInView} delay={0.3} />
         </motion.div>
 
         {/* Scroll indicator */}

@@ -1,0 +1,207 @@
+/* ============================================
+   CRAMER HOMEPAGE - BASE STYLES
+   Variables, utilities, shared keyframes
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ============================================
+   CSS VARIABLES
+   ============================================ */
+:root {
+    --color-primary: #7c3aed;
+    --color-primary-hover: #6d28d9;
+    --color-primary-light: #a78bfa;
+    --color-secondary: #6366f1;
+    --color-accent: #8b5cf6;
+
+    --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+    --gradient-purple-pink: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+    --gradient-blue: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+    --gradient-teal: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);
+    --gradient-orange: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+
+    --bg-light: #f9fafb;
+    --bg-gradient: linear-gradient(180deg, #ffffff 0%, #f5f3ff 50%, #ede9fe 100%);
+
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --text-light: #9ca3af;
+
+    --section-padding: 5rem 0;
+    --container-padding: 2rem;
+    --container-max: 1200px;
+
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+}
+
+/* ============================================
+   TEXT GRADIENT UTILITY
+   Used across all homepage section headers
+   ============================================ */
+.text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ============================================
+   LOADING SPINNER
+   ============================================ */
+.section-loader {
+    background: transparent;
+}
+
+.section-loader-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(124, 58, 237, 0.1);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ============================================
+   HOME PAGE CONTAINER
+   ============================================ */
+.home-page {
+    width: 100%;
+    background: var(--bg-gradient);
+    padding-top: var(--header-clearance, 90px);
+    scroll-behavior: smooth;
+}
+
+/* ============================================
+   PARALLAX DIVIDERS
+   ============================================ */
+.parallax-divider {
+    position: relative;
+    height: 40px;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.parallax-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.07;
+    will-change: transform;
+}
+
+.parallax-divider--1 .parallax-orb--1 {
+    width: 300px;
+    height: 300px;
+    background: var(--gradient-purple-pink);
+    left: 10%;
+    top: -100px;
+    transform: translateY(calc(var(--scroll, 0px) * 0.08));
+}
+
+.parallax-divider--1 .parallax-orb--2 {
+    width: 200px;
+    height: 200px;
+    background: var(--gradient-blue);
+    right: 15%;
+    top: -60px;
+    transform: translateY(calc(var(--scroll, 0px) * -0.05));
+}
+
+.parallax-divider--2 .parallax-orb--1 {
+    width: 250px;
+    height: 250px;
+    background: var(--gradient-teal);
+    right: 10%;
+    top: -80px;
+    transform: translateY(calc(var(--scroll, 0px) * 0.06));
+}
+
+.parallax-divider--2 .parallax-orb--2 {
+    width: 180px;
+    height: 180px;
+    background: var(--gradient-orange);
+    left: 20%;
+    top: -50px;
+    transform: translateY(calc(var(--scroll, 0px) * -0.04));
+}
+
+.parallax-divider--3 .parallax-orb--1 {
+    width: 280px;
+    height: 280px;
+    background: var(--gradient-primary);
+    left: 30%;
+    top: -90px;
+    transform: translateY(calc(var(--scroll, 0px) * 0.07));
+}
+
+.parallax-divider--3 .parallax-orb--2 {
+    width: 220px;
+    height: 220px;
+    background: var(--gradient-purple-pink);
+    right: 5%;
+    top: -70px;
+    transform: translateY(calc(var(--scroll, 0px) * -0.06));
+}
+
+/* ============================================
+   SELECTIVE SCROLL-SNAP (Desktop only)
+   ============================================ */
+@media (min-width: 768px) {
+    .home-page {
+        scroll-snap-type: y proximity;
+    }
+
+    .home-page.home-page--no-snap {
+        scroll-snap-type: none;
+    }
+
+    .hero-section {
+        scroll-snap-align: start;
+    }
+
+    .demo-section {
+        scroll-snap-align: start;
+    }
+
+    .signup-section {
+        scroll-snap-align: start;
+    }
+}
+
+/* ============================================
+   SHARED KEYFRAMES
+   ============================================ */
+@keyframes float-gentle {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) translateZ(0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) translateZ(0);
+    }
+}
