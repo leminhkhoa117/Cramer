@@ -1,10 +1,12 @@
 # Cramer IELTS Platform - Database Schema Documentation
 
-> **Generated:** January 6, 2026  
-> **Database:** Supabase PostgreSQL  
-> **Total Tables:** 26  
-> **Tables with RLS:** 22  
-> **Applied Migrations:** 39
+> **Last Verified Against Live Supabase:** March 14, 2026
+> **Database:** Supabase PostgreSQL
+> **Public Schema Tables:** 34
+> **Active App Tables Documented Here:** 28
+> **Archived Legacy Tables:** 6 (`speaking_*_legacy`)
+> **Active App Tables with RLS:** 25
+> **Applied Migrations:** 52
 
 ---
 
@@ -31,14 +33,17 @@
 
 ## Overview
 
-The Cramer IELTS platform uses Supabase (PostgreSQL) as its primary database. The schema is designed to support:
+This is the single source of truth for the live public Supabase schema used by Cramer.
 
-- **IELTS Test Management**: Reading, Listening, Writing sections with questions
-- **User Progress Tracking**: Test attempts, answers, and AI grading
+The schema is designed to support:
+
+- **IELTS Test Management**: Reading, Listening, Writing, and Speaking content via the shared `test_sets -> tests -> sections -> questions` hierarchy
+- **User Progress Tracking**: Test attempts, answers, AI grading, and Speaking runtime sessions/transcripts
 - **Subscription System**: Tiered plans (Cramerie, Cramerich, Cramerous)
 - **Virtual Currency (Lúa)**: Credits for premium features
 - **Vocabulary Notebook**: Personal word collections with AI translation
 - **Admin Management**: User management, audit logs, activity tracking
+- **Legacy Archive Preservation**: Archived Speaking-era tables retained as `speaking_*_legacy` for traceability
 
 ---
 
@@ -59,34 +64,38 @@ The Cramer IELTS platform uses Supabase (PostgreSQL) as its primary database. Th
 
 ## Table Summary
 
-| Table | Rows | RLS | Description |
-|-------|------|-----|-------------|
-| `profiles` | 4 | ✅ | User profile information |
-| `target` | 3 | ✅ | User IELTS score targets |
-| `test_sets` | 3 | ✅ | Test collections (e.g., Cambridge IELTS 17) |
-| `tests` | 6 | ✅ | Individual tests within sets |
-| `sections` | 34 | ❌ | Test sections (Reading passages, Listening parts) |
-| `questions` | 360 | ❌ | IELTS questions with answers |
-| `hashtags` | 24 | ✅ | Content categorization tags |
-| `test_hashtags` | 2 | ✅ | Many-to-many: tests ↔ hashtags |
-| `test_attempts` | 82 | ✅ | User test attempt records |
-| `user_answers` | 93 | ✅ | User answers for questions |
-| `writing_submissions` | 14 | ✅ | Writing essays with AI grading |
-| `vocabulary` | 4 | ✅ | User vocabulary notebook |
-| `subscription_tiers` | 3 | ❌ | Available subscription plans |
-| `user_subscriptions` | 4 | ✅ | User subscription records |
-| `user_credits` | 4 | ✅ | User Lúa balance |
-| `credit_transactions` | 20 | ✅ | Lúa transaction history |
-| `lua_packs` | 3 | ✅ | Lúa purchase packages |
-| `payment_orders` | 15 | ✅ | PayOS payment records |
-| `user_quotas` | 5 | ✅ | Global monthly quota tracking |
-| `skill_quotas` | 8 | ✅ | Per-skill monthly quotas |
-| `translation_usage` | 4 | ✅ | AI translation usage tracking |
-| `chatbot_usage` | 3 | ✅ | Daily chatbot message usage |
-| `chat_messages` | 8 | ✅ | Chat conversation history |
-| `user_activities` | 15 | ✅ | User activity timeline |
-| `admin_audit_log` | 13 | ✅ | Admin action audit trail |
-| `abts_templates` | 8 | ✅ | AI test generation templates |
+| Table | RLS | Description |
+|-------|-----|-------------|
+| `profiles` | ✅ | User profile information |
+| `target` | ✅ | User IELTS score targets |
+| `test_sets` | ✅ | Test collections (e.g., Cambridge IELTS 17) |
+| `tests` | ✅ | Individual tests within sets |
+| `sections` | ❌ | Shared content sections for Reading, Listening, Writing, and Speaking |
+| `questions` | ❌ | Shared authored question/prompt pool |
+| `hashtags` | ✅ | Content categorization tags |
+| `test_hashtags` | ✅ | Many-to-many: tests ↔ hashtags |
+| `test_attempts` | ✅ | User test attempt records |
+| `user_answers` | ✅ | User answers for questions |
+| `writing_submissions` | ✅ | Writing essays with AI grading |
+| `speaking_sessions` | ✅ | Speaking session runtime lifecycle, blueprint, and grading state |
+| `speaking_transcripts` | ✅ | Turn-level Speaking runtime truth |
+| `vocabulary` | ✅ | User vocabulary notebook |
+| `subscription_tiers` | ❌ | Available subscription plans |
+| `user_subscriptions` | ✅ | User subscription records |
+| `user_credits` | ✅ | User Lúa balance |
+| `credit_transactions` | ✅ | Lúa transaction history |
+| `lua_packs` | ✅ | Lúa purchase packages |
+| `payment_orders` | ✅ | PayOS payment records |
+| `user_quotas` | ✅ | Global monthly quota tracking |
+| `skill_quotas` | ✅ | Per-skill monthly quotas |
+| `translation_usage` | ✅ | AI translation usage tracking |
+| `chatbot_usage` | ✅ | Daily chatbot message usage |
+| `chat_messages` | ✅ | Chat conversation history |
+| `user_activities` | ✅ | User activity timeline |
+| `admin_audit_log` | ✅ | Admin action audit trail |
+| `abts_templates` | ✅ | AI test generation templates |
+
+**Archived legacy tables retained in the live public schema:** `speaking_fixed_questions_legacy`, `speaking_questions_legacy`, `speaking_sessions_legacy`, `speaking_tests_legacy`, `speaking_topics_legacy`, `speaking_transcripts_legacy`
 
 ---
 
@@ -105,6 +114,7 @@ The Cramer IELTS platform uses Supabase (PostgreSQL) as its primary database. Th
 | `source_type` | varchar | YES | 'custom' | Source type: cambridge, custom, ai_generated |
 | `is_published` | boolean | YES | false | Publication status |
 | `display_order` | integer | YES | 0 | Sort order |
+| `is_system` | boolean | YES | - | System-owned set flag retained in live schema |
 | `created_by` | uuid | YES | - | FK → auth.users |
 | `created_at` | timestamptz | YES | now() | - |
 | `updated_at` | timestamptz | YES | now() | - |
@@ -140,7 +150,7 @@ The Cramer IELTS platform uses Supabase (PostgreSQL) as its primary database. Th
 ---
 
 ### `sections`
-> Test sections (Reading passages, Listening parts, Writing tasks)
+> Test sections (Reading passages, Listening parts, Writing tasks, Speaking parts)
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
@@ -148,7 +158,7 @@ The Cramer IELTS platform uses Supabase (PostgreSQL) as its primary database. Th
 | `test_id` | bigint | YES | - | FK → tests.id (NULL for legacy data) |
 | `exam_source` | varchar | YES | - | Legacy: Source book (e.g., "IELTS Cambridge 17") |
 | `test_number` | integer | YES | - | Legacy: Test number |
-| `skill` | varchar | YES | - | READING, LISTENING, WRITING |
+| `skill` | varchar | YES | - | READING, LISTENING, WRITING, SPEAKING |
 | `part_number` | integer | YES | - | Part/passage number |
 | `display_content_url` | varchar | YES | - | Image URL for display |
 | `passage_text` | text | YES | - | Full passage text |
@@ -164,10 +174,14 @@ The Cramer IELTS platform uses Supabase (PostgreSQL) as its primary database. Th
 **Foreign Keys:**
 - `test_id` → `tests.id`
 
+**Speaking Notes:**
+- Speaking content stays on the shared hierarchy, not in dedicated content tables
+- For authored Speaking rows, `skill = 'speaking'` and `part_number IN (1, 2, 3)`
+
 ---
 
 ### `questions`
-> IELTS questions with correct answers and explanations
+> IELTS questions and Speaking prompt payloads with authored content and explanations
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
@@ -175,9 +189,9 @@ The Cramer IELTS platform uses Supabase (PostgreSQL) as its primary database. Th
 | `section_id` | bigint | YES | - | FK → sections.id |
 | `question_number` | integer | YES | - | Question number within section |
 | `question_uid` | varchar | YES | - | Unique identifier (UNIQUE) |
-| `question_type` | varchar | YES | - | Type: MCQ, FILL_BLANK, TRUE_FALSE_NG, MATCHING, etc. |
-| `question_content` | jsonb | YES | - | Question data (prompt, options, etc.) |
-| `correct_answer` | jsonb | YES | - | Correct answer(s) |
+| `question_type` | varchar | YES | - | Type: MCQ, FILL_BLANK, TRUE_FALSE_NG, MATCHING, PART_1, PART_2, PART_3, etc. |
+| `question_content` | jsonb | YES | - | Authored payload (prompt, options, Speaking prompt JSON, etc.) |
+| `correct_answer` | jsonb | YES | - | Correct answer(s); may be NULL for Speaking |
 | `image_url` | varchar | YES | - | Question image URL |
 | `word_limit` | varchar | YES | - | Word limit for short answers |
 | `explanation` | jsonb | YES | - | Structured: {detail, quote, strategy} |
@@ -186,6 +200,10 @@ The Cramer IELTS platform uses Supabase (PostgreSQL) as its primary database. Th
 
 **Foreign Keys:**
 - `section_id` → `sections.id`
+
+**Speaking Notes:**
+- Speaking authored prompts use `question_type IN ('PART_1', 'PART_2', 'PART_3')`
+- Speaking `question_content` stores authored prompt JSON, while runtime truth is later frozen in `speaking_sessions.session_blueprint` and `speaking_transcripts.question_snapshot`
 
 ---
 
@@ -376,6 +394,85 @@ The Cramer IELTS platform uses Supabase (PostgreSQL) as its primary database. Th
 
 **Check Constraints:**
 - `task_number IN (1, 2)`
+
+---
+
+### `speaking_sessions`
+> Speaking session runtime state, frozen blueprint, and grading lifecycle. Authored Speaking content remains in the shared hierarchy; this table stores user-specific runtime truth.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | bigint | NO | IDENTITY | Primary key |
+| `user_id` | uuid | NO | - | FK → `profiles.id` |
+| `test_id` | bigint | NO | - | FK → `tests.id` |
+| `session_mode` | varchar(20) | NO | - | `FULL`, `PART_1`, `PART_2`, `PART_3` |
+| `status` | varchar(30) | NO | `'in_progress'` | `in_progress`, `completed`, `grading`, `graded`, `grading_failed`, `abandoned`, `expired` |
+| `accent` | varchar(20) | NO | - | Examiner accent selected by the user |
+| `speed` | numeric(3,2) | NO | `1.00` | Examiner speed multiplier |
+| `session_blueprint` | jsonb | NO | - | Runtime truth for the planned session flow and normalized turns |
+| `is_finalized` | boolean | NO | `false` | Blocks new transcript writes after completion/abandonment |
+| `total_duration_seconds` | integer | YES | - | Total session duration |
+| `overall_band` | numeric(2,1) | YES | - | Overall Speaking band |
+| `fluency_band` | numeric(2,1) | YES | - | Fluency and coherence |
+| `lexical_band` | numeric(2,1) | YES | - | Lexical resource |
+| `grammar_band` | numeric(2,1) | YES | - | Grammar range and accuracy |
+| `pronunciation_band` | numeric(2,1) | YES | - | Pronunciation |
+| `grading_result` | jsonb | YES | - | Detailed grading payload |
+| `lua_cost` | integer | NO | `0` | Lua cost reserved for the session |
+| `lua_deducted` | boolean | NO | `false` | Whether Lua was deducted on completion |
+| `started_at` | timestamptz | NO | `now()` | Session start timestamp |
+| `completed_at` | timestamptz | YES | - | Completion or finalized-exit timestamp |
+| `graded_at` | timestamptz | YES | - | Final grading timestamp |
+| `created_at` | timestamptz | NO | `now()` | Creation timestamp |
+| `updated_at` | timestamptz | NO | `now()` | Last update timestamp |
+
+**Indexes:** `speaking_sessions_pkey1`, `idx_speaking_sessions_user_created`, `idx_speaking_sessions_test_created`, `idx_speaking_sessions_status_created`
+
+**Foreign Keys:**
+- `user_id` → `profiles.id`
+- `test_id` → `tests.id`
+
+**Check Constraints:**
+- `chk_speaking_sessions_mode`
+- `chk_speaking_sessions_status`
+- `chk_speaking_sessions_accent`
+- `chk_speaking_sessions_speed_positive`
+- `chk_speaking_sessions_lua_cost_non_negative`
+- band score range and timestamp/status consistency checks
+
+---
+
+### `speaking_transcripts`
+> One persisted turn per Speaking session. This is the stored runtime truth for the exact prompt asked and the user's submitted response.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | bigint | NO | IDENTITY | Primary key |
+| `session_id` | bigint | NO | - | FK → `speaking_sessions.id` |
+| `source_question_id` | bigint | YES | - | Optional link back to `questions.id` |
+| `part_number` | integer | NO | - | Speaking part number (`1`, `2`, `3`) |
+| `turn_index` | integer | NO | - | Unique turn order within a session |
+| `question_snapshot` | jsonb | NO | - | Frozen runtime truth of the exact prompt payload used |
+| `audio_storage_path` | text | YES | - | Object key in the Speaking audio bucket |
+| `audio_duration_seconds` | integer | YES | - | Uploaded audio duration |
+| `transcript_text` | text | YES | - | STT or curated transcript |
+| `transcript_confidence` | numeric(4,3) | YES | - | Confidence score from `0` to `1` |
+| `question_evaluation` | jsonb | YES | - | Optional turn-level evaluation payload |
+| `recorded_at` | timestamptz | NO | `now()` | Turn recording timestamp |
+| `created_at` | timestamptz | NO | `now()` | Creation timestamp |
+| `updated_at` | timestamptz | NO | `now()` | Last update timestamp |
+
+**Indexes:** `speaking_transcripts_pkey1`, `uq_speaking_transcripts_session_turn` (UNIQUE), `idx_speaking_transcripts_session_turn`, `idx_speaking_transcripts_source_question`
+
+**Foreign Keys:**
+- `session_id` → `speaking_sessions.id`
+- `source_question_id` → `questions.id`
+
+**Check Constraints:**
+- `chk_speaking_transcripts_part_number`
+- `chk_speaking_transcripts_turn_index_positive`
+- `chk_speaking_transcripts_audio_duration_non_negative`
+- `chk_speaking_transcripts_confidence_range`
 
 ---
 
@@ -709,9 +806,12 @@ test_sets
     └── tests (set_id → test_sets.id)
             ├── test_hashtags (test_id → tests.id)
             │       └── hashtags (hashtag_id → hashtags.id)
-            └── sections (test_id → tests.id)
-                    └── questions (section_id → sections.id)
-                            └── user_answers (question_id → questions.id)
+            ├── sections (test_id → tests.id)
+            │       └── questions (section_id → sections.id)
+            │               ├── user_answers (question_id → questions.id)
+            │               └── speaking_transcripts (source_question_id → questions.id)
+            └── speaking_sessions (test_id → tests.id)
+                    └── speaking_transcripts (session_id → speaking_sessions.id)
 
 auth.users
     ├── profiles (id → auth.users.id)
@@ -732,13 +832,16 @@ auth.users
     ├── skill_quotas (user_id → auth.users.id)
     ├── translation_usage (user_id → auth.users.id)
     └── user_activities (user_id → auth.users.id)
+
+profiles
+    └── speaking_sessions (user_id → profiles.id)
 ```
 
 ---
 
 ## Row Level Security (RLS) Policies
 
-### Tables with RLS Enabled (22)
+### Active App Tables with RLS Enabled (25)
 
 | Table | Policies |
 |-------|----------|
@@ -747,6 +850,8 @@ auth.users
 | `test_attempts` | Users can manage own attempts; Service role full access + DELETE |
 | `user_answers` | Users can manage answers for own attempts; Service role full access + DELETE |
 | `writing_submissions` | Users can manage own submissions; Service role full access |
+| `speaking_sessions` | Users can view/create/update own non-finalized sessions; Service role full access |
+| `speaking_transcripts` | Users can view/insert transcripts for own non-finalized sessions; Service role full access |
 | `vocabulary` | Users CRUD own vocabulary; Service role full access |
 | `user_subscriptions` | Users can view own; Service role full access |
 | `user_credits` | Users can view own; Service role full access |
@@ -766,7 +871,9 @@ auth.users
 | `test_hashtags` | Public read; Service role full access |
 | `abts_templates` | Public read active; Admins insert/update |
 
-### Tables without RLS (4)
+Archived `speaking_*_legacy` tables also retain RLS in the live schema but are excluded from the active app table list above.
+
+### Active App Tables without RLS (3)
 
 | Table | Reason |
 |-------|--------|
@@ -784,6 +891,8 @@ auth.users
 | `set_timestamp` | target | UPDATE | `trigger_set_timestamp()` |
 | `trigger_abts_templates_updated_at` | abts_templates | UPDATE | `update_abts_templates_updated_at()` |
 | `trigger_skill_quotas_updated_at` | skill_quotas | UPDATE | `update_skill_quotas_updated_at()` |
+| `update_speaking_sessions_updated_at` | speaking_sessions | UPDATE | `update_updated_at_column()` |
+| `update_speaking_transcripts_updated_at` | speaking_transcripts | UPDATE | `update_updated_at_column()` |
 | `trigger_test_sets_updated_at` | test_sets | UPDATE | `update_test_sets_updated_at()` |
 | `update_test_sets_updated_at` | test_sets | UPDATE | `update_updated_at_column()` |
 | `trigger_tests_updated_at` | tests | UPDATE | `update_tests_updated_at()` |
@@ -824,7 +933,9 @@ Key indexes by category:
 
 ## Migration History
 
-**Total Migrations:** 39
+**Total Migrations:** 52
+
+Migration names are preserved from Supabase metadata. They are historical breadcrumbs, not the schema contract by themselves; the live table definitions in this document are authoritative.
 
 | Version | Name | Description |
 |---------|------|-------------|
@@ -866,6 +977,20 @@ Key indexes by category:
 | 20260103105932 | cleanup_redundant_tables_and_columns | Cleanup |
 | 20260103123837 | rename_explanation_keys_to_english | Rename keys to English |
 | 20260105085454 | fix_matching_options_format | Fix matching format |
+| 20260111023543 | fix_abts_templates_rls_policies | Fix ABTS template RLS policies |
+| 20260111023630 | fix_function_search_paths | Harden function search paths |
+| 20260111023811 | fix_check_and_award_achievement_overload | Fix achievement function overload |
+| 20260205063908 | create_speaking_tables | Create initial Speaking runtime tables |
+| 20260205071004 | add_graded_at_and_drop_speaking_evaluations | Add grading timestamp and simplify Speaking runtime |
+| 20260205074525 | create_speaking_audio_bucket | Provision Speaking audio storage bucket |
+| 20260205081933 | add_tts_columns_to_speaking_questions | Add legacy Speaking TTS support columns |
+| 20260225090958 | create_speaking_tests_table | Create legacy dedicated Speaking tests table |
+| 20260225091008 | add_test_id_to_speaking_questions | Link legacy Speaking questions to Speaking tests |
+| 20260225091023 | add_session_columns_blueprint_accent_finalized | Extend Speaking sessions with runtime-plan fields |
+| 20260225091040 | create_speaking_fixed_questions_table | Create legacy fixed-question Speaking table |
+| 20260225091103 | migrate_existing_questions_to_speaking_tests | Backfill legacy Speaking content migration |
+| 20260311033550 | migrate_speaking_to_shared_hierarchy_runtime_v1 | Move Speaking authored content to shared hierarchy and normalize runtime tables |
+| 20260311033637 | fix_speaking_transcripts_updated_at_column | Add/update Speaking transcript `updated_at` support |
 
 ---
 
@@ -878,40 +1003,43 @@ Key indexes by category:
 └────────┬─────────┘
          │ 1:N
          ▼
-┌──────────────────┐       ┌──────────────────┐
+┌──────────────────┐       ┌──────────────────┐      ┌───────────────┐
 │      tests       │◄─────►│  test_hashtags   │◄────►│   hashtags    │
 │   (IELTS tests)  │  N:M  │   (junction)     │ N:1  │   (tags)      │
-└────────┬─────────┘       └──────────────────┘      └───────────────┘
-         │ 1:N
-         ▼
-┌──────────────────┐
-│     sections     │
-│ (Parts/Passages) │
-└────────┬─────────┘
-         │ 1:N
-         ▼
-┌──────────────────┐       ┌──────────────────┐
-│    questions     │◄──────│   user_answers   │
-│                  │  1:N  │                  │
-└──────────────────┘       └────────▲─────────┘
-                                    │ N:1
-                           ┌────────┴─────────┐
-                           │   test_attempts  │
-                           │                  │
-                           └────────┬─────────┘
-                                    │ 1:N
-         ┌──────────────────────────┼──────────────────────────┐
-         │                          │                          │
-         ▼                          ▼                          ▼
+└──────┬─────┬─────┘       └──────────────────┘      └───────────────┘
+       │     │
+       │     └──────────────────────┐
+       │                            ▼
+       ▼                  ┌────────────────────┐
+┌──────────────────┐      │ speaking_sessions  │◄──────────────┐
+│     sections     │      │   (runtime)        │               │
+│ (Parts/Passages) │      └─────────┬──────────┘               │
+└────────┬─────────┘                │ 1:N                      │
+         │ 1:N                      ▼                          │
+         ▼               ┌────────────────────┐               │
+┌──────────────────┐     │speaking_transcripts│───────────────┘
+│    questions     │◄────│   (turn truth)     │
+└────────┬─────────┘     └────────────────────┘
+         │
+         │                    ┌──────────────────┐
+         └───────────────────►│   user_answers   │
+                              └────────▲─────────┘
+                                       │ N:1
+                              ┌────────┴─────────┐
+                              │   test_attempts  │
+                              └────────┬─────────┘
+                                       │ 1:N
+         ┌─────────────────────────────┼─────────────────────────────┐
+         │                             │                             │
+         ▼                             ▼                             ▼
 ┌──────────────────┐       ┌──────────────────┐       ┌──────────────────┐
 │writing_submissions│      │    vocabulary    │       │  chat_messages   │
-│                  │       │                  │       │                  │
 └──────────────────┘       └──────────────────┘       └──────────────────┘
 
 ┌──────────────────┐       ┌──────────────────┐       ┌──────────────────┐
-│     profiles     │       │subscription_tiers│◄──────│user_subscriptions│
-│                  │       │                  │  N:1  │                  │
-└────────┬─────────┘       └──────────────────┘       └──────────────────┘
+│     profiles     │──────►│ speaking_sessions│       │subscription_tiers│◄──────│user_subscriptions│
+│                  │       └──────────────────┘       │                  │  N:1  │                  │
+└────────┬─────────┘                                  └──────────────────┘       └──────────────────┘
          │
          ├───────► user_credits
          ├───────► credit_transactions
@@ -929,15 +1057,17 @@ Key indexes by category:
 
 | Metric | Value |
 |--------|-------|
-| **Total Tables** | 26 |
-| **Tables with RLS** | 22 (85%) |
-| **Tables without RLS** | 4 (public content) |
-| **Total Migrations** | 39 |
+| **Public Schema Tables** | 34 |
+| **Active App Tables Documented** | 28 |
+| **Archived Legacy Tables** | 6 (`speaking_*_legacy`) |
+| **Active App Tables with RLS** | 25 |
+| **Active App Tables without RLS** | 3 |
+| **Total Migrations** | 52 |
 | **Total Indexes** | 100+ |
-| **Database Triggers** | 9 |
+| **Database Triggers** | 11 |
 | **Installed Extensions** | 6 |
-| **JSONB Columns** | 12 (across 8 tables) |
+| **JSONB Columns** | 20 (across 13 tables) |
 
 ---
 
-*Documentation auto-generated from Supabase MCP tools*
+*Maintained as the live schema source of truth and verified against Supabase on 14/03/2026.*

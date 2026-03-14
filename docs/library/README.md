@@ -38,7 +38,7 @@
 | Document | Description | Lines |
 |----------|-------------|-------|
 | [API_REFERENCE.md](backend/API_REFERENCE.md) | Complete REST API documentation with endpoints, request/response formats, and authentication details | 1054 |
-| [DATABASE_SCHEMA.md](backend/DATABASE_SCHEMA.md) | PostgreSQL schema with 26 tables, RLS policies, triggers, indexes, and ER diagrams | 944 |
+| [DATABASE_SCHEMA.md](backend/DATABASE_SCHEMA.md) | Canonical live Supabase schema reference with active tables, legacy archive notes, RLS policies, triggers, indexes, and ER diagrams | 1,050+ |
 | [ENTITIES.md](backend/ENTITIES.md) | JPA entity reference covering all domain models with field definitions and relationships | 878 |
 | [SERVICES.md](backend/SERVICES.md) | Service layer documentation with 38 services, ABTS system, and dependency diagrams | 1,279 |
 | [DATA_INGESTION_READING.md](backend/DATA_INGESTION_READING.md) | Guide for parsing and ingesting IELTS Reading test content via SQL | 518 |

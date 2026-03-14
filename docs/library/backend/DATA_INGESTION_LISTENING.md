@@ -370,6 +370,6 @@ Use this when generating SQL for a new IELTS Listening test.
 
 ## Related Documentation
 
-- [Database Schema](../../../docs/backend/DATABASE_SCHEMA.md)
+- [Database Schema](./DATABASE_SCHEMA.md)
 - [Supabase Backend Setup](../../../docs/backend/supabase-backend.md)
 - [Reading Test Ingestion Guide](./DATA_INGESTION_READING.md)
