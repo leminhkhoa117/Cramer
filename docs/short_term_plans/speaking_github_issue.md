@@ -43,7 +43,7 @@ Hệ thống gồm 5 phần chính:
 ### Mục tiêu
 
 - Người dùng chọn bài Speaking và chế độ thi phù hợp (thi đủ 3 phần, hoặc chỉ thi riêng Part 1, Part 2, Part 3).
-- Khi bắt đầu buổi thi, hệ thống tạo sẵn một **bản kế hoạch câu hỏi** gọi là session blueprint -- bản này được "chốt" ngay từ đầu để đảm bảo toàn bộ buổi thi nhất quán, dù nội dung gốc có bị chỉnh sửa sau đó.
+- Khi bắt đầu buổi thi, hệ thống tạo một **session blueprint** làm runtime truth. Mọi turn đã được chọn phải được "chốt" trước khi examiner model sử dụng; với Full Test, Part 3 có thể ở trạng thái `pending_after_part_2` cho đến khi transcript Part 2 có sẵn, sau đó mới được materialize và chốt.
 - Người dùng làm bài với giám khảo AI theo luồng gần giống bài thi IELTS thật.
 - Sau khi nộp bài, hệ thống chấm điểm chạy ngầm ở phía server -- người dùng không phải chờ đợi trong lúc chấm.
 - Kết quả được trả về theo đúng 4 tiêu chí chấm điểm Speaking của IELTS: Fluency & Coherence, Lexical Resource, Grammatical Range & Accuracy, và Pronunciation.
@@ -61,7 +61,7 @@ Hệ thống gồm 5 phần chính:
 - **File ghi âm** được lưu trong kho `speaking-audio`; cơ sở dữ liệu chỉ lưu đường dẫn tới file đó (trường `audioStoragePath`) chứ không lưu chính file audio.
 - Trạng thái "đã chốt" (`is_finalized`) nằm trên **buổi thi**, không nằm trên từng lượt hỏi đáp riêng lẻ.
 - Giọng nói giám khảo (`accent`) và tốc độ nói (`speed`) do người dùng chọn trước khi bắt đầu, sau đó được gửi kèm khi tạo buổi thi.
-- Lúa (tín dụng) được **kiểm tra đủ** khi tạo buổi thi, nhưng chỉ thực sự **bị trừ** khi người dùng nộp bài hoàn thành.
+- Lúa (tín dụng) được **kiểm tra đủ** khi tạo buổi thi, nhưng chỉ thực sự **bị trừ** khi người dùng nộp bài hoàn thành. Chính sách này phải được cấu hình tập trung để dễ thay đổi sau này.
 
 ### Luồng chính từ góc nhìn người dùng
 
@@ -81,11 +81,22 @@ Hệ thống gồm 5 phần chính:
 | Nộp bài hoàn thành (`POST /api/speaking/sessions/{id}/complete`) | **Trừ lúa** -- chỉ trừ nếu chưa từng trừ cho buổi thi này (`lua_deducted = false`). |
 | Bỏ dở giữa chừng (`POST /api/speaking/sessions/{id}/abandon`) | **Không trừ** lúa. Người dùng mất mạng hoặc thoát sớm sẽ không bị mất tín dụng. |
 
+### Quy tắc ngân hàng câu hỏi và selection
+
+- **Part 1 bank:** mỗi test Speaking chính thức có **30 prompts** authored trong shared `questions`; backend random số turn mục tiêu trong khoảng **8-12**, rồi gọi selection service để chọn ra một subset coherent. Examiner model chỉ đọc các turn đã được chọn.
+- **Part 2 bank:** mỗi test Speaking chính thức có **1 cue card**; backend chọn đúng cue card này cho session.
+- **Part 3 bank:** mỗi test Speaking chính thức có **15 prompts** authored trong shared `questions`.
+- **Part 3 standalone:** nếu user thi riêng Part 3, backend random số turn mục tiêu trong khoảng **3-6**, rồi dùng selection service để chọn subset coherent từ bank 15 câu.
+- **Part 3 sau Part 2 trong Full Test:** backend chưa để examiner model tự chọn câu hỏi. Thay vào đó, sau khi transcript Part 2 được lưu, backend dùng selection service để materialize subset **3-6** câu từ bank Part 3 dựa trên cue card + transcript/context của Part 2; sau khi materialize, các turn này được chốt trong `session_blueprint` và examiner model chỉ tiêu thụ blueprint đã chốt.
+- **Validation bắt buộc khi create session:** nếu bank thực tế không đạt tối thiểu `PART_1 >= 30`, `PART_2 >= 1`, `PART_3 >= 15` cho mode cần dùng thì API phải reject với lỗi rõ ràng.
+
 ### Sub-issues
 
 - [ ] #__ -- [Prep] Thiết lập baseline sạch cho Speaking MVP
 - [ ] #__ -- [DB] Thiết kế schema & migration cho Speaking
 - [ ] #__ -- [BE] REST API - Quản lý session Speaking
+- [ ] #__ -- [DB] Speaking legacy cleanup + official content bank backfill
+- [ ] #__ -- [BE] Optional LLM-based question selection planner
 - [ ] #__ -- [BE] WebSocket + Gemini Live API integration
 - [ ] #__ -- [BE] Hệ thống chấm điểm (Grading & Evaluation)
 - [ ] #__ -- [FE] Core flow - Pages, routing, state management
@@ -100,6 +111,8 @@ Hệ thống gồm 5 phần chính:
 
 - `[DB]` chốt quy ước dữ liệu chính thức cho toàn bộ tính năng -- các issue khác đều dựa vào đây.
 - `[BE] REST` xây API dựa trên quy ước từ `[DB]`.
+- `[DB] Speaking legacy cleanup + backfill` làm sạch dữ liệu live và đưa shared content hierarchy về đúng contract chính thức mà REST API đang enforce.
+- `[BE] Planner` bổ sung tầng chọn câu hỏi provider-neutral phía backend; nên hoàn tất trước khi chốt flow real-time để blueprint behavior ổn định.
 - `[FE] Core` xây giao diện dựa trên API từ `[BE] REST`.
 - `[Infra] Storage bucket` phải sẵn sàng trước khi `[BE] Grading` có thể tải audio về chấm điểm, và trước khi `[FE] Real-time` có thể tải audio lên.
 - `[BE] WebSocket` và `[FE] Core` phải xong trước khi `[FE] Real-time` bắt đầu -- vì phần real-time cần cả WebSocket lẫn khung giao diện đã ổn.
@@ -632,6 +645,11 @@ Hai field này giúp grading/history/replay không bị lệ thuộc vào việc
   "parts": [
     {
       "partNumber": 1,
+      "bankSize": 30,
+      "selectionStatus": "selected",
+      "selectionStrategy": "topic_cluster_random_v1",
+      "targetTurnCount": 10,
+      "selectedTurnCount": 10,
       "turns": [
         {
           "turnIndex": 1,
@@ -644,10 +662,22 @@ Hai field này giúp grading/history/replay không bị lệ thuộc vào việc
           }
         }
       ]
+    },
+    {
+      "partNumber": 3,
+      "bankSize": 15,
+      "selectionStatus": "pending_after_part_2",
+      "selectionStrategy": "follow_up_context_v1",
+      "minTurnCount": 3,
+      "maxTurnCount": 6,
+      "turns": []
     }
   ]
 }
 ```
+
+- `session_blueprint` trong database có thể chứa planner state nội bộ để materialize các turn phụ thuộc context; API response cho frontend chỉ nên trả blueprint đã sanitize và các turn đã sẵn sàng để examiner model dùng.
+- `turns` trả về cho frontend là danh sách các turn đã selected/frozen ở thời điểm response; với Full Test, Part 3 có thể xuất hiện sau khi transcript Part 2 được lưu.
 
 ### Contract gợi ý cho `question_snapshot`
 
@@ -918,9 +948,9 @@ set name = excluded.name,
     is_ai_generated = excluded.is_ai_generated;
 
 -- insert 3 sections for parts 1/2/3
--- insert at least 8 PART_1 prompts
--- insert at least 2 PART_2 cue cards
--- insert at least 6 PART_3 prompts
+-- official authoring target: 30 PART_1 prompts
+-- official authoring target: 1 PART_2 cue card
+-- official authoring target: 15 PART_3 prompts
 
 commit;
 ```
@@ -1132,12 +1162,13 @@ Public Speaking API chỉ làm việc với **session runtime**. Nó không mở
 
 **Luồng xử lý**:
 1. Validate `testId`, `sessionMode`, `accent`, `speed`
-2. Load Speaking content từ `tests`, `sections`, `questions` với `sections.skill = 'speaking'`
-3. Kiểm tra `testId` có đủ content cho `sessionMode` được chọn hay không
-4. Build `sessionBlueprint` + danh sách `turns` đã normalize và sort theo `turnIndex`
-5. Kiểm tra user có đủ lúa hay không
-6. Tạo row trong `speaking_sessions` với `test_id`, `session_mode`, `accent`, `speed`, `session_blueprint`, `status = 'in_progress'`
-7. Trả về `sessionId`, `sessionBlueprint`, `turns`, và metadata frontend cần để bắt đầu session
+2. Load Speaking banks từ `tests`, `sections`, `questions` với `sections.skill = 'speaking'`
+3. Validate bank size tối thiểu cho mode được chọn (`PART_1 >= 30`, `PART_2 >= 1`, `PART_3 >= 15` khi cần)
+4. Backend random target count theo rule (`PART_1 = 8..12`, `PART_3 standalone = 3..6`) và gọi selection service để chọn subset coherent
+5. Build `sessionBlueprint`; với Full Test, Part 3 có thể ở trạng thái `pending_after_part_2` và chưa có turn ngay tại bước create
+6. Kiểm tra user có đủ lúa hay không
+7. Tạo row trong `speaking_sessions` với `test_id`, `session_mode`, `accent`, `speed`, `session_blueprint`, `status = 'in_progress'`
+8. Trả về `sessionId`, `sessionBlueprint`, `turns`, và metadata frontend cần để bắt đầu session
 
 **Response**: `SpeakingSessionDTO`
 
@@ -1246,6 +1277,7 @@ Public Speaking API chỉ làm việc với **session runtime**. Nó không mở
 - API phải kiểm tra `sessionId` có thuộc user đang đăng nhập hay không
 - API phải reject nếu `turnIndex` không tồn tại trong `sessionBlueprint` hoặc `questionSnapshot` lệch với turn đã chốt
 - API phải reject nếu session đã `isFinalized = true`
+- Nếu transcript vừa lưu là Part 2 của Full Test và Part 3 đang `pending_after_part_2`, backend phải materialize Part 3 subset từ frozen bank rồi update `sessionBlueprint`
 
 ### `POST /api/speaking/sessions/{id}/complete`
 
@@ -1253,13 +1285,14 @@ Public Speaking API chỉ làm việc với **session runtime**. Nó không mở
 
 **Luồng xử lý**:
 1. Validate ownership + session đang `in_progress` + `isFinalized = false`
-2. Kiểm tra session có đủ transcript tối thiểu theo `sessionMode` hoặc trả lỗi rõ ràng
-3. Set `is_finalized = true`
-4. Set `status = "completed"`
-5. Tính `total_duration_seconds` (từ `started_at` đến now)
-6. **Trừ lúa** (`creditService.spendCredits`) chỉ nếu `lua_deducted = false`
-7. Set `lua_deducted = true` nếu trừ thành công
-8. Trigger async evaluation; worker sẽ chuyển trạng thái tiếp sang `grading`
+2. Reject nếu vẫn còn part đang `pending_after_part_2`
+3. Kiểm tra session có đủ transcript cho toàn bộ selected turns trong `sessionBlueprint` hoặc trả lỗi rõ ràng
+4. Set `is_finalized = true`
+5. Set `status = "completed"`
+6. Tính `total_duration_seconds` (từ `started_at` đến now)
+7. **Trừ lúa** (`creditService.spendCredits`) chỉ nếu `lua_deducted = false`
+8. Set `lua_deducted = true` nếu trừ thành công
+9. Trigger async evaluation; worker sẽ chuyển trạng thái tiếp sang `grading`
 
 **Response**:
 
@@ -1374,14 +1407,17 @@ Public Speaking API chỉ làm việc với **session runtime**. Nó không mở
 | Service | Trách nhiệm |
 |---------|-------------|
 | `SpeakingSessionService` | Session lifecycle (create, complete, abandon, save transcript, history) |
-| `SpeakingContentService` | Đọc shared content tables và build prompt pool (danh sách câu hỏi để hệ thống chọn) |
+| `SpeakingContentService` | Đọc shared content tables, validate bank, build/mutate runtime blueprint |
+| `SpeakingSelectionPlannerService` | Random target count + chọn coherent subset từ bank authored |
 
 ## Validation rules tối thiểu
 
 - `sessionMode` chỉ nhận `FULL | PART_1 | PART_2 | PART_3`
 - `speed` phải là số dương; MVP nên chỉ chấp nhận `0.85 | 1.00 | 1.15`
+- `POST /api/speaking/sessions` phải reject nếu bank chính thức không đạt `PART_1 >= 30`, `PART_2 >= 1`, `PART_3 >= 15` cho mode tương ứng
 - `partNumber` trong transcript phải khớp turn tương ứng trong `sessionBlueprint`
 - `turnIndex` phải dương và tồn tại trong `sessionBlueprint`
+- Full Test có thể defer Part 3 đến sau transcript Part 2, nhưng một khi đã materialize thì turn list của Part 3 không được đổi nữa
 - `complete` và `abandon` phải idempotent hoặc trả lỗi rõ ràng nếu session đã finalized
 
 ## Repositories cần tạo / tái sử dụng
@@ -1398,6 +1434,18 @@ Public Speaking API chỉ làm việc với **session runtime**. Nó không mở
 
 ```properties
 speaking.session.lua-cost=${SPEAKING_LUA_COST:15}
+speaking.session.lua-check-on-create=${SPEAKING_LUA_CHECK_ON_CREATE:true}
+speaking.session.lua-charge-on-complete=${SPEAKING_LUA_CHARGE_ON_COMPLETE:true}
+speaking.session.part1.bank-size=${SPEAKING_PART1_BANK_SIZE:30}
+speaking.session.part1.min-selected=${SPEAKING_PART1_MIN_SELECTED:8}
+speaking.session.part1.max-selected=${SPEAKING_PART1_MAX_SELECTED:12}
+speaking.session.part2.bank-size=${SPEAKING_PART2_BANK_SIZE:1}
+speaking.session.part2.min-selected=${SPEAKING_PART2_MIN_SELECTED:1}
+speaking.session.part2.max-selected=${SPEAKING_PART2_MAX_SELECTED:1}
+speaking.session.part3.bank-size=${SPEAKING_PART3_BANK_SIZE:15}
+speaking.session.part3.min-selected=${SPEAKING_PART3_MIN_SELECTED:3}
+speaking.session.part3.max-selected=${SPEAKING_PART3_MAX_SELECTED:6}
+speaking.session.part3.defer-until-context=${SPEAKING_PART3_DEFER_UNTIL_CONTEXT:true}
 ```
 
 ## Acceptance Criteria
@@ -1406,6 +1454,7 @@ speaking.session.lua-cost=${SPEAKING_LUA_COST:15}
 - [ ] `POST /api/speaking/sessions` tạo được `sessionBlueprint` từ shared content tables
 - [ ] `POST /api/speaking/sessions` báo lỗi rõ ràng nếu `testId` không có đủ Speaking content cho `sessionMode` được chọn
 - [ ] `POST /transcripts` lưu đúng `turnIndex`, `questionSnapshot`, `audioStoragePath` và retry-safe theo `(sessionId, turnIndex)`
+- [ ] Full Test materialize được Part 3 sau khi transcript Part 2 được lưu, và examiner chỉ dùng turn đã được chốt trong blueprint
 - [ ] Credit check chặn session khi hết lúa
 - [ ] Credit deduction chỉ xảy ra khi complete (không khi abandon) và không bị trừ hai lần
 - [ ] `GET /grading-status` trả đúng `completed | grading | graded | grading_failed`
@@ -1416,7 +1465,276 @@ speaking.session.lua-cost=${SPEAKING_LUA_COST:15}
 
 ---
 
-## SUB-ISSUE 3: [BE] WebSocket + Gemini Live API Integration
+## SUB-ISSUE 3: [DB] Speaking legacy cleanup + official content bank backfill
+
+### Title
+
+```
+[DB] Speaking legacy cleanup + official content bank backfill
+```
+
+### Labels
+
+```
+speaking, database, priority:high
+```
+
+### Body
+
+---BEGIN COPY---
+
+## Mô tả
+
+Issue này xử lý phần dữ liệu Speaking đang còn lẫn giữa schema runtime mới, shared content hierarchy mới và các bảng `_legacy` cũ.
+
+Mục tiêu là làm cho dữ liệu live khớp với contract chính thức mà REST API hiện tại đang enforce, để các official Speaking tests có thể tạo session thành công mà không phụ thuộc vào mock data.
+
+**Parent issue**: #__
+**Depends on**: [DB] Thiết kế schema & migration cho Speaking (#__), [BE] REST API - Quản lý session Speaking (#__)
+
+## Mục tiêu của issue này
+
+- Xác định rõ cách xử lý các bảng `speaking_*_legacy`: giữ archive, export rồi drop, hay migration theo lộ trình khác
+- Làm sạch / backfill shared hierarchy `test_sets -> tests -> sections -> questions` cho Speaking official content
+- Chuẩn hóa bank câu hỏi chính thức để khớp contract:
+  - Part 1: `30` prompts / test
+  - Part 2: `1` cue card / test
+  - Part 3: `15` prompts / test
+- Tách rõ dữ liệu official với mock/test data để backend không vô tình lấy nhầm data seed thử nghiệm
+
+## Phạm vi xử lý
+
+### 1. Inventory legacy Speaking tables
+
+Rà soát toàn bộ các bảng archived hiện có trong live schema:
+
+- `speaking_topics_legacy`
+- `speaking_tests_legacy`
+- `speaking_questions_legacy`
+- `speaking_fixed_questions_legacy`
+- `speaking_sessions_legacy`
+- `speaking_transcripts_legacy`
+
+Với mỗi bảng cần ghi lại:
+
+- còn row hay không
+- còn code/runtime nào đang đọc hay không
+- còn cần giữ vì lý do audit/traceability hay không
+
+### 2. Chốt policy cho `_legacy`
+
+Policy phải được ghi rõ trong docs và issue outcome:
+
+- nếu **giữ lại**: đánh dấu rõ đây là archive-only, không còn được runtime sử dụng
+- nếu **drop**: chỉ drop sau khi đã backup/export và xác nhận không còn dependency runtime/docs quan trọng
+
+> Không thực hiện xoá dữ liệu phá huỷ nếu chưa có phương án backup/export rõ ràng.
+
+### 3. Backfill official Speaking content vào shared hierarchy
+
+Với mỗi official Speaking test trong shared hierarchy:
+
+- tạo đủ `sections.skill = 'speaking'`
+- đảm bảo `questions.question_type` đúng `PART_1 | PART_2 | PART_3`
+- đảm bảo bank size tối thiểu:
+  - `PART_1 >= 30`
+  - `PART_2 >= 1`
+  - `PART_3 >= 15`
+
+### 4. Chuẩn hóa `question_content`
+
+`questions.question_content` cho Speaking phải đủ metadata để planner/REST dùng được:
+
+- `schemaVersion`
+- `partType`
+- `promptText`
+- `topicLabel`
+- với Part 2: field cue-card phù hợp như `cueCardBullets`, `prepTimeSeconds`, `talkTimeSeconds` nếu contract hiện tại dùng
+
+### 5. Xử lý mock / test data
+
+- Mock data không nên trộn với official production-like data mà REST sẽ expose cho user thật
+- Nếu chưa xóa hẳn, phải có cách phân biệt rõ (ví dụ tách test set riêng, status riêng, hoặc naming convention rõ ràng)
+- Không để backend create session nhầm trên bank dữ liệu seed thử nghiệm nhưng nhìn giống official data
+
+## Verification cần làm
+
+### SQL / schema verification
+
+- Verify số lượng prompts theo từng `test_id`, `part_number`
+- Verify tất cả official Speaking tests đều pass bank contract mới
+- Verify `_legacy` tables không còn được dùng trong active runtime path
+
+### Backend verification
+
+- `POST /api/speaking/sessions` phải tạo được session thành công cho ít nhất 1 official Speaking test sau khi backfill
+- Nếu bank của test nào đó chưa đủ chuẩn, lỗi trả về phải rõ ràng và đúng contract
+
+## Ngoài phạm vi issue này
+
+- Refactor tổng thể các bảng quota / Lua / subscription ngoài Speaking
+- Thay selection heuristic bằng LLM planner
+
+## Acceptance Criteria
+
+- [ ] Có inventory rõ ràng cho toàn bộ `speaking_*_legacy` tables và quyết định xử lý được ghi lại
+- [ ] Không còn active runtime/code path nào phụ thuộc vào `speaking_*_legacy`
+- [ ] Shared hierarchy Speaking có official tests đáp ứng đúng bank contract `30 / 1 / 15`
+- [ ] `questions.question_content` của Speaking đủ metadata để REST/planner dùng ổn định
+- [ ] Mock/test data được tách hoặc làm sạch để không gây nhầm với official data
+- [ ] `POST /api/speaking/sessions` chạy thành công trên official Speaking data sau khi backfill
+- [ ] Docs liên quan được cập nhật theo quyết định cleanup/backfill cuối cùng
+
+---END COPY---
+
+---
+
+## SUB-ISSUE 4: [BE] Optional LLM-based question selection planner
+
+### Title
+
+```
+[BE] Optional LLM-based question selection planner
+```
+
+### Labels
+
+```
+speaking, backend, priority:medium
+```
+
+### Body
+
+---BEGIN COPY---
+
+## Mô tả
+
+Issue này bổ sung tầng chọn câu hỏi Speaking bằng LLM theo cách **provider-neutral**, trong khi vẫn giữ heuristic fallback để hệ thống không phụ thuộc cứng vào một model provider duy nhất.
+
+Hiện tại backend đã có `SpeakingSelectionPlannerService` và một heuristic implementation. Issue này nâng planner lên mức có thể:
+
+- nhận full bank câu hỏi authored
+- nhận target turn count đã được random trước
+- chọn ra subset coherent, đa dạng topic, hợp lệ về ID/turn count
+- fallback an toàn nếu provider lỗi, timeout hoặc trả kết quả không hợp lệ
+
+**Parent issue**: #__
+**Depends on**: [BE] REST API - Quản lý session Speaking (#__), [DB] Speaking legacy cleanup + official content bank backfill (#__)
+
+## Nguyên tắc thiết kế
+
+- Không khóa cứng vào 1 provider ngay từ đầu
+- Backend tự random `targetTurnCount` trước, LLM chỉ chọn subset phù hợp với target đó
+- LLM không được quyền sinh câu hỏi mới; chỉ được chọn từ bank authored đã truyền vào
+- Runtime truth vẫn là `session_blueprint` do backend materialize và lưu xuống DB
+- Nếu provider unavailable / invalid / timeout thì fallback về heuristic planner hiện tại
+
+## Các trường hợp cần hỗ trợ
+
+### 1. Part 1 selection
+
+Input:
+
+- bank `30` câu Part 1
+- `targetTurnCount` đã random trong khoảng `8..12`
+
+Output kỳ vọng:
+
+- danh sách `sourceQuestionId` có độ dài đúng bằng target
+- coherent nhưng vẫn đa dạng topic
+- ưu tiên phủ `2-3` topics thay vì quá dàn trải hoặc quá lặp
+
+### 2. Part 3 standalone selection
+
+Input:
+
+- bank `15` câu Part 3
+- `targetTurnCount` đã random trong khoảng `3..6`
+
+Output kỳ vọng:
+
+- subset coherent theo topic/idea cluster
+
+### 3. Part 3 follow-up after Part 2
+
+Input:
+
+- bank `15` câu Part 3
+- `targetTurnCount` đã random trong khoảng `3..6`
+- `part2QuestionSnapshot`
+- transcript/context của Part 2 answer
+
+Output kỳ vọng:
+
+- subset follow-up hợp lý với cue card và câu trả lời Part 2
+- không đổi các turn đã materialize sau khi ghi vào `session_blueprint`
+
+## Components / interfaces
+
+### 1. `SpeakingSelectionPlannerService` (existing seam)
+
+Giữ interface provider-neutral. Có thể bổ sung implementation mới như:
+
+- `LlmSpeakingSelectionPlannerService`
+- `HeuristicSpeakingSelectionPlannerService` (fallback)
+
+### 2. Provider config
+
+Ví dụ config đề xuất:
+
+```properties
+speaking.selection.provider=${SPEAKING_SELECTION_PROVIDER:heuristic}
+speaking.selection.model=${SPEAKING_SELECTION_MODEL:}
+speaking.selection.timeout-ms=${SPEAKING_SELECTION_TIMEOUT_MS:12000}
+speaking.selection.fallback=${SPEAKING_SELECTION_FALLBACK:heuristic}
+```
+
+### 3. Prompt / response contract
+
+LLM input nên gồm:
+
+- target turn count
+- selection rules
+- bank prompts với `sourceQuestionId`, `topicLabel`, `promptText`, metadata cần thiết
+- với Part 3 follow-up: Part 2 context
+
+LLM output nên tối giản, ví dụ:
+
+```json
+{
+  "selectedQuestionIds": [501, 504, 509, 510, 515, 520, 521, 525],
+  "reasoningSummary": "Balanced across hobbies, study, and daily routine with coherent transitions."
+}
+```
+
+## Validation bắt buộc cho LLM output
+
+- số lượng ID phải đúng bằng `targetTurnCount`
+- tất cả ID phải thuộc bank đầu vào
+- không duplicate ID
+- với Part 2 chỉ được trả đúng `1` cue card
+- nếu invalid -> log rõ ràng + fallback về heuristic
+
+## Provider strategy
+
+- Có thể dùng OpenRouter-compatible provider đầu tiên, nhưng abstraction không được hard-code business logic vào OpenRouter/Gemini/DeepSeek
+- Nếu sau này đổi provider, session contract và planner interface không phải thay lớn
+
+## Acceptance Criteria
+
+- [ ] Có implementation LLM planner mới nhưng vẫn giữ heuristic fallback
+- [ ] Planner config cho phép bật/tắt provider mà không đổi business contract của Speaking REST
+- [ ] Part 1 chọn đúng `8..12` câu từ bank `30` theo target đã random sẵn
+- [ ] Part 3 chọn đúng `3..6` câu từ bank `15`, bao gồm cả standalone và follow-up sau Part 2
+- [ ] Invalid/timeout/provider failure không làm hỏng session creation; backend fallback an toàn
+- [ ] `session_blueprint` vẫn là runtime truth duy nhất sau khi planner chọn xong
+- [ ] Có test cho success path và fallback path
+
+---END COPY---
+
+---
+
+## SUB-ISSUE 5: [BE] WebSocket + Gemini Live API Integration
 
 ### Title
 
@@ -1446,7 +1764,7 @@ Vai trò của WebSocket trong feature này là:
 - trả trạng thái fallback khi Gemini Live không dùng được
 
 **Parent issue**: #__
-**Depends on**: [BE] REST API (#__)
+**Depends on**: [BE] REST API (#__), [BE] Optional LLM-based question selection planner (#__)
 
 ## Kiến trúc
 
@@ -1461,6 +1779,7 @@ Lý do dùng WebSocket thay vì REST: REST phù hợp cho request-response rời
 
 - WebSocket chỉ xử lý **real-time transport** (luồng dữ liệu thời gian thực)
 - Việc chọn câu hỏi nào đã được REST API chốt sẵn trong `sessionBlueprint`
+- Planner behavior phải được chốt trước; WebSocket chỉ tiêu thụ blueprint đã frozen, không tự re-plan
 - WebSocket không tự bốc câu hỏi ngẫu nhiên từ database
 - File audio vẫn do frontend upload riêng lên bucket; WebSocket không thay thế upload flow đó
 - `questionSnapshot` trong `sessionBlueprint` phải giữ nguyên contract của `questions.question_content`
@@ -1611,7 +1930,7 @@ gemini.api.key=${GEMINI_API_KEY:}
 
 ---
 
-## SUB-ISSUE 4: [BE] Hệ thống chấm điểm (Grading & Evaluation)
+## SUB-ISSUE 6: [BE] Hệ thống chấm điểm (Grading & Evaluation)
 
 ### Title
 
@@ -1793,7 +2112,7 @@ openrouter.api.key=${OPENROUTER_API_KEY:}
 
 ---
 
-## SUB-ISSUE 5: [FE] Core Flow - Pages, Routing, State Management
+## SUB-ISSUE 7: [FE] Core Flow - Pages, Routing, State Management
 
 ### Title
 
@@ -1996,7 +2315,7 @@ export function setupSpeakingApiClient(apiInstance) {
 
 ---
 
-## SUB-ISSUE 6: [FE] Real-time Session - Audio & WebSocket
+## SUB-ISSUE 8: [FE] Real-time Session - Audio & WebSocket
 
 ### Title
 
@@ -2232,7 +2551,7 @@ User speaks -> MediaRecorder -> audio chunks (250ms mỗi chunk)
 
 ---
 
-## SUB-ISSUE 7: [Infra] Storage bucket, access rules & audio paths
+## SUB-ISSUE 9: [Infra] Storage bucket, access rules & audio paths
 
 ### Title
 
@@ -2358,7 +2677,7 @@ Lợi ích của path này:
 
 ---
 
-## SUB-ISSUE 8: [Infra] Cleanup, fallback policy & kiểm thử
+## SUB-ISSUE 10: [Infra] Cleanup, fallback policy & kiểm thử
 
 ### Title
 
@@ -2564,19 +2883,21 @@ Tạo issue từ section `PARENT ISSUE` trong file này, gán:
 
 Ghi lại số issue, ví dụ `#100`.
 
-#### 2) Tạo 9 sub-issues như issue độc lập
+#### 2) Tạo 11 sub-issues như issue độc lập
 
-Tạo lần lượt từ `SUB-ISSUE 0` tới `SUB-ISSUE 8`, rồi ghi lại số thật, ví dụ:
+Tạo lần lượt từ `SUB-ISSUE 0` tới `SUB-ISSUE 10`, rồi ghi lại số thật, ví dụ:
 
 - `#101` Prep
 - `#102` DB
 - `#103` BE REST
-- `#104` BE WebSocket
-- `#105` BE Grading
-- `#106` FE Core
-- `#107` FE Realtime
-- `#108` Infra Storage bucket
-- `#109` Infra Cleanup + testing
+- `#104` DB Legacy cleanup + backfill
+- `#105` BE Planner
+- `#106` BE WebSocket
+- `#107` BE Grading
+- `#108` FE Core
+- `#109` FE Realtime
+- `#110` Infra Storage bucket
+- `#111` Infra Cleanup + testing
 
 ---
 
@@ -2587,8 +2908,8 @@ Không chỉ dùng checklist markdown. Hãy tạo quan hệ sub-issue thật tro
 1. Mở parent issue `#100`.
 2. Ở cuối phần mô tả issue, chọn:
    - `Create sub-issue` (nếu tạo mới), hoặc
-   - nút dropdown cạnh đó -> `Add existing issue` (để gắn `#101..#109`).
-3. Thêm đủ 9 issue con.
+   - nút dropdown cạnh đó -> `Add existing issue` (để gắn `#101..#111`).
+3. Thêm đủ 11 issue con.
 
 Kết quả mong đợi:
 
@@ -2616,15 +2937,17 @@ Thao tác:
 
 | Issue | Blocked by | Blocking |
 |---|---|---|
-| `#101` [Prep] | - | `#102,#103,#104,#105,#106,#107,#108,#109` |
-| `#102` [DB] | `#101` | `#103,#106,#108` |
-| `#103` [BE] REST | `#101,#102` | `#104,#105,#106,#109` |
-| `#104` [BE] WS | `#103` | `#107,#109` |
-| `#105` [BE] Grading | `#103,#108` | `#109` |
-| `#106` [FE] Core | `#102,#103` | `#107,#109` |
-| `#107` [FE] Realtime | `#104,#106,#108` | `#109` |
-| `#108` [Infra] Storage | `#101,#102` | `#105,#107,#109` |
-| `#109` [Infra] Cleanup & Testing | `#103,#104,#105,#106,#107,#108` | - |
+| `#101` [Prep] | - | `#102,#103,#104,#105,#106,#107,#108,#109,#110,#111` |
+| `#102` [DB] | `#101` | `#103,#104,#108,#110` |
+| `#103` [BE] REST | `#101,#102` | `#104,#105,#106,#107,#108,#111` |
+| `#104` [DB] Legacy cleanup + backfill | `#102,#103` | `#105,#106,#107,#111` |
+| `#105` [BE] Planner | `#103,#104` | `#106,#111` |
+| `#106` [BE] WS | `#103,#105` | `#109,#111` |
+| `#107` [BE] Grading | `#103,#104,#110` | `#111` |
+| `#108` [FE] Core | `#102,#103` | `#109,#111` |
+| `#109` [FE] Realtime | `#106,#108,#110` | `#111` |
+| `#110` [Infra] Storage | `#101,#102` | `#107,#109,#111` |
+| `#111` [Infra] Cleanup & Testing | `#103,#104,#105,#106,#107,#108,#109,#110` | - |
 
 Kết quả mong đợi:
 
@@ -2814,8 +3137,10 @@ Paste các dòng TSV sau vào Google Sheet tab "A. Now-Next-Later":
 [Prep] Thiết lập baseline sạch cho Speaking MVP	Now	Jacob	Doing	TBD	TBD	Merge homepage vào main, gỡ legacy Speaking code, verify build sạch
 [DB] Schema & migration Speaking	Now	TBD	Scoped	TBD	TBD	Shared content hierarchy + runtime tables + RLS + minimal seed
 [BE] REST API Speaking	Next	TBD	Scoped	TBD	TBD	Session lifecycle, transcript saving, grading status, history
-[BE] WebSocket + Gemini Live	Next	TBD	Scoped	TBD	TBD	Realtime audio bridge theo session blueprint
-[BE] Grading & Evaluation	Next	TBD	Scoped	TBD	TBD	Async grading từ audio + transcript + question snapshot
+[DB] Speaking legacy cleanup + backfill	Next	TBD	Scoped	TBD	TBD	Inventory legacy tables, clean mock data, backfill official bank 30/1/15
+[BE] Optional LLM planner	Later	TBD	Scoped	TBD	TBD	Provider-neutral planner cho coherent subset, co heuristic fallback
+[BE] WebSocket + Gemini Live	Later	TBD	Scoped	TBD	TBD	Realtime audio bridge theo session blueprint da chot
+[BE] Grading & Evaluation	Later	TBD	Scoped	TBD	TBD	Async grading từ audio + transcript + question snapshot
 [FE] Core flow Speaking	Next	TBD	Scoped	TBD	TBD	Pages, routes, pre-brief, session creation, results polling
 [FE] Real-time session	Later	TBD	Scoped	TBD	TBD	Mic recording, WS, examiner audio, upload từng turn
 [Infra] Storage bucket + audio paths	Next	TBD	Scoped	TBD	TBD	Bucket speaking-audio, private access, audioStoragePath
@@ -2825,7 +3150,7 @@ Paste các dòng TSV sau vào Google Sheet tab "A. Now-Next-Later":
 #### Tab B. Feature Pipeline
 
 ```tsv
-Tính năng Speaking - AI IELTS Examiner	Build	TBD	User hoàn thành 1 buổi thi Speaking end-to-end với AI examiner	TBD	Hoàn thành [DB], sau đó song song [BE] REST, [FE] Core và [Infra] Storage
+Tính năng Speaking - AI IELTS Examiner	Build	TBD	User hoàn thành 1 buổi thi Speaking end-to-end với AI examiner	TBD	Hoàn thành [DB], [BE] REST, rồi cleanup/backfill + planner trước khi mở rộng realtime
 ```
 
 #### Tab C. Risks-Dependencies
@@ -2833,6 +3158,8 @@ Tính năng Speaking - AI IELTS Examiner	Build	TBD	User hoàn thành 1 buổi th
 ```tsv
 Dependency	Gemini Live API key	High	Both	Cần API key hoạt động để test WebSocket + audio	Open	https://ai.google.dev/gemini-api/docs/live
 Dependency	OpenRouter API key	High	Both	Cần cho grading service (Gemini multimodal)	Open	TBD
+Risk	Speaking bank live chưa đạt 30/1/15	High	Both	Cần cleanup/backfill shared hierarchy trước khi rollout official session creation	Open	TBD
+Risk	Planner provider chưa chốt	Medium	Both	Giữ abstraction provider-neutral và heuristic fallback trước khi chọn provider thật	Watching	TBD
 Risk	Gemini Live API latency/stability	Medium	TBD	Audio stream có thể bị delay hoặc disconnect	Open	Đã có fallback text-only mode
 Risk	Transcript real-time quality	Medium	TBD	Transcript có thể không hoàn hảo; grading vẫn cần ưu tiên audio recording	Open	TBD
 Dependency	Supabase Storage bucket	High	Jacob	Cần bucket 'speaking-audio' và access rules trước khi làm realtime + grading	Open	TBD
@@ -2846,6 +3173,7 @@ Risk	Xóa code cũ gây lỗi build	Low	Jacob	51 files bị xóa, imports có th
 ```tsv
 TBD	[Prep] Xóa code Speaking cũ, clean main	TBD	Internal	None
 TBD	[DB] Schema Speaking tạo xong trên Supabase	TBD	Internal	None
+TBD	[DB] Speaking cleanup + backfill official bank	TBD	Internal	None
 TBD	[Infra] Bucket speaking-audio + access rules	TBD	Internal	None
 ```
 
@@ -2860,11 +3188,13 @@ TBD	[Infra] Bucket speaking-audio + access rules	TBD	Internal	None
 ```tsv
 [Prep] Thiết lập baseline sạch cho Speaking MVP	Now	Jacob	Done	TBD	TBD	Đã merge homepage, dọn legacy Speaking và build OK
 [DB] Schema & migration Speaking	Now	TBD	Doing	TBD	TBD	Đang viết migration SQL
-[BE] REST API Speaking	Next	TBD	Scoped	TBD	TBD	Chờ DB xong
-[BE] WebSocket + Gemini Live	Next	TBD	Scoped	TBD	TBD	Chờ REST API xong
+[BE] REST API Speaking	Now	TBD	Doing	TBD	TBD	Đang hoàn thiện session lifecycle và contract runtime
+[DB] Speaking legacy cleanup + backfill	Next	TBD	Scoped	TBD	TBD	Chờ REST contract ổn định để backfill bank 30/1/15
+[BE] Optional LLM planner	Later	TBD	Scoped	TBD	TBD	Chờ cleanup/backfill xong rồi nối provider-neutral planner
+[BE] WebSocket + Gemini Live	Later	TBD	Scoped	TBD	TBD	Chờ planner/blueprint behavior chốt xong
 [BE] Grading & Evaluation	Next	TBD	Scoped	TBD	TBD	Chờ REST API + bucket storage
-[FE] Core flow Speaking	Now	TBD	Doing	TBD	TBD	Đang làm pre-brief + create session + results flow
-[FE] Real-time session	Next	TBD	Scoped	TBD	TBD	Chờ FE core + BE WS + bucket storage
+[FE] Core flow Speaking	Next	TBD	Scoped	TBD	TBD	Chờ REST contract ổn định
+[FE] Real-time session	Later	TBD	Scoped	TBD	TBD	Chờ FE core + BE WS + bucket storage
 [Infra] Storage bucket + audio paths	Now	Jacob	Doing	TBD	TBD	Đang chốt private bucket và audioStoragePath
 [Infra] Cleanup + fallback policy + testing	Later	TBD	Scoped	TBD	TBD	Làm sau khi các flow chính đã ổn định
 ```
@@ -2872,7 +3202,7 @@ TBD	[Infra] Bucket speaking-audio + access rules	TBD	Internal	None
 #### Tab B. Feature Pipeline (cập nhật stage)
 
 ```tsv
-Tính năng Speaking - AI IELTS Examiner	Build	TBD	User hoàn thành 1 buổi thi Speaking end-to-end với AI examiner	TBD	Hoàn thành DB schema và bucket storage, tiếp tục BE REST + FE Core song song
+Tính năng Speaking - AI IELTS Examiner	Build	TBD	User hoàn thành 1 buổi thi Speaking end-to-end với AI examiner	TBD	Hoàn thành REST contract, cleanup/backfill official data, rồi chốt planner trước khi làm realtime
 ```
 
 ---
@@ -2887,6 +3217,8 @@ Tính năng Speaking - AI IELTS Examiner	Build	TBD	User hoàn thành 1 buổi th
 [Prep] Thiết lập baseline sạch cho Speaking MVP	Now	Jacob	Done	TBD	TBD	Hoàn thành
 [DB] Schema & migration Speaking	Now	TBD	Done	TBD	TBD	Shared hierarchy + runtime tables + RLS + minimal seed
 [BE] REST API Speaking	Now	TBD	Done	TBD	TBD	Session lifecycle + transcript + grading status + history
+[DB] Speaking legacy cleanup + backfill	Now	TBD	Done	TBD	TBD	Legacy policy chot, official bank 30/1/15 da san sang
+[BE] Optional LLM planner	Now	TBD	Done	TBD	TBD	Provider-neutral planner + heuristic fallback OK
 [BE] WebSocket + Gemini Live	Now	TBD	Done	TBD	TBD	Audio hai chiều OK
 [BE] Grading & Evaluation	Now	TBD	Done	TBD	TBD	Async grading < 60s
 [FE] Core flow Speaking	Now	TBD	Done	TBD	TBD	Routes active, pre-brief + session create + results OK
@@ -2906,6 +3238,8 @@ Tính năng Speaking - AI IELTS Examiner	Shipped	TBD	User hoàn thành 1 buổi 
 ```tsv
 Dependency	Gemini Live API key	High	Both	Đã cấu hình và test OK	Resolved	TBD
 Dependency	OpenRouter API key	High	Both	Đã cấu hình và test OK	Resolved	TBD
+Risk	Speaking bank live chưa đạt 30/1/15	High	Both	Official bank đã được cleanup/backfill theo contract	Resolved	TBD
+Risk	Planner provider chưa chốt	Medium	Both	Planner abstraction ổn định, provider có thể đổi mà không vỡ contract	Resolved	TBD
 Risk	Gemini Live API latency/stability	Medium	TBD	Fallback text-only hoạt động	Resolved	TBD
 Risk	Transcript real-time quality	Medium	TBD	Grading vẫn ưu tiên audio recording	Watching	Monitor chất lượng transcript
 Dependency	Supabase Storage bucket	High	Jacob	Bucket 'speaking-audio' đã tạo và access rules OK	Resolved	TBD
@@ -3017,7 +3351,7 @@ Cần xác định thời điểm trừ credit (lúa) cho speaking session.
 ### Tuần TBD
 
 **Done**:
-- Tạo GitHub Issues cho Speaking feature (1 parent + 9 sub-issues)
+- Tạo GitHub Issues cho Speaking feature (1 parent + 11 sub-issues)
 - Chốt data model: shared content hierarchy + runtime tables
 - Chốt storage model: private bucket + audioStoragePath
 
@@ -3029,8 +3363,9 @@ Cần xác định thời điểm trừ credit (lúa) cho speaking session.
 
 **Next**:
 - [DB] Schema & migration
-- [Infra] Storage bucket + audio paths
-- [BE] REST API + [FE] Core flow (song song)
+- [BE] REST API
+- [DB] Speaking legacy cleanup + backfill
+- [BE] Optional LLM planner
 ```
 
 #### 4 - Prompt Templates
