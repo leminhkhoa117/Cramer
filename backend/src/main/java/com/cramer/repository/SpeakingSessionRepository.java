@@ -18,8 +18,8 @@ public interface SpeakingSessionRepository extends JpaRepository<SpeakingSession
     Optional<SpeakingSession> findByIdAndUserId(Long id, UUID userId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT s FROM SpeakingSession s WHERE s.id = :id")
-    Optional<SpeakingSession> findAndLockById(@Param("id") Long id);
+    @Query("SELECT s FROM SpeakingSession s WHERE s.id = :id AND s.userId = :userId")
+    Optional<SpeakingSession> findAndLockByIdAndUserId(@Param("id") Long id, @Param("userId") UUID userId);
 
     @Query("SELECT s FROM SpeakingSession s WHERE s.userId = :userId AND (:status IS NULL OR s.status = :status)")
     Page<SpeakingSession> findHistoryByUserId(

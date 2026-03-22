@@ -173,7 +173,7 @@ class SpeakingSessionServiceImplTest {
                 .transcriptConfidence(new BigDecimal("0.910"))
                 .build();
 
-        when(speakingSessionRepository.findAndLockById(77L)).thenReturn(Optional.of(session));
+        when(speakingSessionRepository.findAndLockByIdAndUserId(77L, userId)).thenReturn(Optional.of(session));
         when(speakingTranscriptRepository.findBySessionIdAndTurnIndex(77L, 1)).thenReturn(Optional.of(existingTranscript));
         when(speakingTranscriptRepository.save(any(SpeakingTranscript.class))).thenAnswer(invocation -> {
             SpeakingTranscript transcript = invocation.getArgument(0);
@@ -190,6 +190,31 @@ class SpeakingSessionServiceImplTest {
         assertThat(captor.getValue().getQuestionSnapshot()).isEqualTo(turnSnapshot);
         assertThat(captor.getValue().getPartNumber()).isEqualTo(1);
         assertThat(captor.getValue().getAudioStoragePath()).isEqualTo("user/session/turn-001.webm");
+    }
+
+    @Test
+    @DisplayName("saveTranscript should reject unsafe audio storage paths")
+    void saveTranscript_unsafeAudioPath_throws() {
+        SpeakingSession session = speakingSession(79L, userId, blueprint, "PART_1");
+
+        SaveSpeakingTranscriptDTO request = SaveSpeakingTranscriptDTO.builder()
+                .sourceQuestionId(501L)
+                .partNumber(1)
+                .turnIndex(1)
+                .questionSnapshot(turnSnapshot.deepCopy())
+                .audioStoragePath("https://example.com/audio.webm")
+                .transcriptText("Unsafe path")
+                .audioDurationSeconds(12)
+                .transcriptConfidence(new BigDecimal("0.900"))
+                .build();
+
+        when(speakingSessionRepository.findAndLockByIdAndUserId(79L, userId)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> speakingSessionService.saveTranscript(79L, request, userId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must not contain a URL scheme");
+
+        verify(speakingTranscriptRepository, never()).save(any(SpeakingTranscript.class));
     }
 
     @Test
@@ -217,7 +242,7 @@ class SpeakingSessionServiceImplTest {
                 .transcriptConfidence(new BigDecimal("0.950"))
                 .build();
 
-        when(speakingSessionRepository.findAndLockById(78L)).thenReturn(Optional.of(session));
+        when(speakingSessionRepository.findAndLockByIdAndUserId(78L, userId)).thenReturn(Optional.of(session));
         when(speakingTranscriptRepository.findBySessionIdAndTurnIndex(78L, 1)).thenReturn(Optional.of(transcript));
         when(speakingTranscriptRepository.save(any(SpeakingTranscript.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(speakingContentService.hasPendingDeferredPart3(fullBlueprint)).thenReturn(true);
@@ -244,7 +269,7 @@ class SpeakingSessionServiceImplTest {
                 .turnIndex(1)
                 .build();
 
-        when(speakingSessionRepository.findAndLockById(88L)).thenReturn(Optional.of(session));
+        when(speakingSessionRepository.findAndLockByIdAndUserId(88L, userId)).thenReturn(Optional.of(session));
         when(speakingContentService.hasPendingDeferredPart3(blueprint)).thenReturn(false);
         when(speakingTranscriptRepository.findBySessionIdOrderByTurnIndexAsc(88L)).thenReturn(List.of(transcript));
         when(speakingSessionRepository.save(any(SpeakingSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -262,7 +287,7 @@ class SpeakingSessionServiceImplTest {
     void completeSession_pendingPart3_throws() {
         SpeakingSession session = speakingSession(99L, userId, blueprint, "FULL");
 
-        when(speakingSessionRepository.findAndLockById(99L)).thenReturn(Optional.of(session));
+        when(speakingSessionRepository.findAndLockByIdAndUserId(99L, userId)).thenReturn(Optional.of(session));
         when(speakingContentService.hasPendingDeferredPart3(blueprint)).thenReturn(true);
 
         assertThatThrownBy(() -> speakingSessionService.completeSession(99L, userId))
@@ -271,6 +296,16 @@ class SpeakingSessionServiceImplTest {
 
         verify(creditService, never()).spendCredits(any(), any(Integer.class), any(), any(), any());
         verify(speakingEvaluationDispatchService, never()).dispatchEvaluation(any(), any());
+    }
+
+    @Test
+    @DisplayName("getSession should return not found when the session is not owned by the user")
+    void getSession_notOwned_throwsNotFound() {
+        when(speakingSessionRepository.findByIdAndUserId(100L, userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> speakingSessionService.getSession(100L, userId))
+                .isInstanceOf(com.cramer.exception.ResourceNotFoundException.class)
+                .hasMessageContaining("SpeakingSession not found");
     }
 
     private SpeakingSession speakingSession(Long id, UUID ownerId, ObjectNode sessionBlueprint, String sessionMode) {

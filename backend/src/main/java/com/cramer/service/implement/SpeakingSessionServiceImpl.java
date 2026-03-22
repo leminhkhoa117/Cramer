@@ -34,11 +34,11 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -49,6 +49,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 
     private static final Logger logger = LoggerFactory.getLogger(SpeakingSessionServiceImpl.class);
+    private static final Pattern URL_SCHEME_PATTERN = Pattern.compile("^[a-zA-Z][a-zA-Z0-9+.-]*://.*");
 
     private final SpeakingSessionRepository speakingSessionRepository;
     private final SpeakingTranscriptRepository speakingTranscriptRepository;
@@ -134,7 +135,7 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
         transcript.setSourceQuestionId(expectedTurn.sourceQuestionId());
         transcript.setPartNumber(expectedTurn.partNumber());
         transcript.setQuestionSnapshot(expectedTurn.questionSnapshot().deepCopy());
-        transcript.setAudioStoragePath(request.getAudioStoragePath().trim());
+        transcript.setAudioStoragePath(normalizeAudioStoragePath(request.getAudioStoragePath()));
         transcript.setTranscriptText(normalizeNullableText(request.getTranscriptText()));
         transcript.setAudioDurationSeconds(request.getAudioDurationSeconds());
         transcript.setTranscriptConfidence(request.getTranscriptConfidence());
@@ -280,23 +281,19 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
     }
 
     private SpeakingSession getOwnedSession(Long sessionId, UUID userId) {
-        SpeakingSession session = speakingSessionRepository.findById(Objects.requireNonNull(sessionId))
+        SpeakingSession session = speakingSessionRepository.findByIdAndUserId(
+                        Objects.requireNonNull(sessionId),
+                        Objects.requireNonNull(userId))
                 .orElseThrow(() -> new ResourceNotFoundException("SpeakingSession", "id", sessionId));
-        assertOwnership(session, userId);
         return session;
     }
 
     private SpeakingSession getLockedOwnedSession(Long sessionId, UUID userId) {
-        SpeakingSession session = speakingSessionRepository.findAndLockById(Objects.requireNonNull(sessionId))
+        SpeakingSession session = speakingSessionRepository.findAndLockByIdAndUserId(
+                        Objects.requireNonNull(sessionId),
+                        Objects.requireNonNull(userId))
                 .orElseThrow(() -> new ResourceNotFoundException("SpeakingSession", "id", sessionId));
-        assertOwnership(session, userId);
         return session;
-    }
-
-    private void assertOwnership(SpeakingSession session, UUID userId) {
-        if (!session.getUserId().equals(userId)) {
-            throw new AccessDeniedException("User does not have access to this speaking session.");
-        }
     }
 
     private void ensureOpenSessionForTranscriptWrite(SpeakingSession session) {
@@ -554,6 +551,31 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String normalizeAudioStoragePath(String rawAudioStoragePath) {
+        if (rawAudioStoragePath == null) {
+            throw new IllegalArgumentException("audioStoragePath must not be null");
+        }
+
+        String normalized = rawAudioStoragePath.trim();
+        if (normalized.isEmpty()) {
+            throw new IllegalArgumentException("audioStoragePath must not be empty");
+        }
+        if (normalized.startsWith("/")) {
+            throw new IllegalArgumentException("audioStoragePath must not be an absolute path");
+        }
+        if (normalized.contains("..")) {
+            throw new IllegalArgumentException("audioStoragePath must not contain '..' segments");
+        }
+        if (normalized.contains("\\")) {
+            throw new IllegalArgumentException("audioStoragePath must not contain backslashes");
+        }
+        if (URL_SCHEME_PATTERN.matcher(normalized).matches()) {
+            throw new IllegalArgumentException("audioStoragePath must not contain a URL scheme");
+        }
+
+        return normalized;
     }
 
     private record ExpectedTurn(int turnIndex, int partNumber, Long sourceQuestionId, JsonNode questionSnapshot) {

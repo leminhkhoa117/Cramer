@@ -63,7 +63,6 @@ public class SpeakingTranscript {
     @Column(name = "question_evaluation", columnDefinition = "jsonb")
     private JsonNode questionEvaluation;
 
-    @CreationTimestamp
     @Column(name = "recorded_at", nullable = false)
     private OffsetDateTime recordedAt;
 
