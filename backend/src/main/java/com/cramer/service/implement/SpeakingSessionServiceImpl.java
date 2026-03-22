@@ -152,7 +152,7 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
                 && speakingContentService.hasPendingDeferredPart3(session.getSessionBlueprint())) {
             SpeakingContentService.SpeakingContentPlan updatedPlan = speakingContentService.materializeDeferredPart3(
                     session.getSessionBlueprint(),
-                    request.getTranscriptText());
+                    transcriptText);
             session.setSessionBlueprint(updatedPlan.sessionBlueprint());
             speakingSessionRepository.save(session);
         }
@@ -577,6 +577,9 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
         }
         if (URL_SCHEME_PATTERN.matcher(normalized).matches()) {
             throw new IllegalArgumentException("audioStoragePath must not contain a URL scheme");
+        }
+        if (normalized.indexOf(':') != -1) {
+            throw new IllegalArgumentException("audioStoragePath must not contain ':' characters or URL schemes");
         }
 
         return normalized;
