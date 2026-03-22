@@ -175,13 +175,13 @@ stateDiagram-v2
 ```
 
 ## 3. Question design and bank
-- **Part 1:** 8-12 short questions across 2-3 topics (home, work/study, hobbies).
+- **Part 1:** authored bank of 30 prompts per test; runtime session selects 8-12 short questions across 2-3 topics.
 - **Part 2:** Cue card with 3-4 bullets (who/what/when/why/how).
-- **Part 3:** 6-8 questions that generalize Part 2 topic (causes, impacts, comparisons, future).
+- **Part 3:** authored bank of 15 prompts per test; runtime session selects 3-6 follow-up questions, ideally using Part 2 topic and answer context when available.
 
 ### 3.1 Proposed question bank schema
 
-This schema is modeled after the existing `questions` table but adapted for Speaking. **Not yet implemented.**
+Current Cramer runtime uses the shared `tests -> sections -> questions` hierarchy for Speaking authored content. The schema below is historical design context only, not the active source of truth.
 
 | Column | Type | Required | Description |
 |--------|------|----------|-------------|

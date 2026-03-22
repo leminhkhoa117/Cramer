@@ -165,13 +165,13 @@ stateDiagram-v2
 ```
 
 ## 3. Thiết kế câu hỏi
-- **Part 1:** 8-12 câu, 2-3 chủ đề.
+- **Part 1:** bank authored 30 câu cho mỗi test; runtime session chọn ra 8-12 câu trên 2-3 chủ đề.
 - **Part 2:** cue card 3-4 gợi ý.
-- **Part 3:** 6-8 câu hỏi trừu tượng mở rộng.
+- **Part 3:** bank authored 15 câu cho mỗi test; runtime session chọn ra 3-6 câu follow-up, ưu tiên dùng ngữ cảnh từ chủ đề và câu trả lời Part 2 khi có.
 
 ### 3.1 Schema ngân hàng câu hỏi (đề xuất)
 
-Schema này dựa trên bảng `questions` hiện có, điều chỉnh cho Speaking. **Chưa triển khai.**
+Runtime Speaking hiện tại của Cramer dùng shared hierarchy `tests -> sections -> questions` cho authored content. Bảng phía dưới chỉ còn giá trị tham khảo lịch sử, không phải source of truth đang hoạt động.
 
 | Cột | Kiểu | Bắt buộc | Mô tả |
 |-----|------|----------|-------|

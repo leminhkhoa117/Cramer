@@ -37,8 +37,8 @@ This document provides a comprehensive reference for all JPA entities in the Cra
 | 8 | `TestAttempt` | `test_attempts` | Attempt | User's test attempt session |
 | 9 | `UserAnswer` | `user_answers` | Attempt | Individual answers for questions |
 | 10 | `WritingSubmission` | `writing_submissions` | Attempt | Writing essays with AI grading results |
-| 10a | `SpeakingSession` *(planned mapping)* | `speaking_sessions` | Attempt | Speaking runtime session lifecycle and grading state |
-| 10b | `SpeakingTranscript` *(planned mapping)* | `speaking_transcripts` | Attempt | Turn-level Speaking runtime truth |
+| 10a | `SpeakingSession` | `speaking_sessions` | Attempt | Speaking runtime session lifecycle and grading state |
+| 10b | `SpeakingTranscript` | `speaking_transcripts` | Attempt | Turn-level Speaking runtime truth |
 | 11 | `SubscriptionTier` | `subscription_tiers` | Subscription | Tier definitions (Cramerie, Cramerich) |
 | 12 | `UserSubscription` | `user_subscriptions` | Subscription | User's active subscription |
 | 13 | `UserCredit` | `user_credits` | Subscription | User's Lua (credit) balance |
@@ -54,11 +54,9 @@ This document provides a comprehensive reference for all JPA entities in the Cra
 | 25 | `UserActivity` | `user_activities` | Activity | User activity timeline |
 | 26 | `AdminAuditLog` | `admin_audit_log` | Audit | Admin action audit trail |
 
-**Total implemented entities: 24**
+**Total implemented entities: 26**
 
-**Additional planned mappings documented: 2**
-
-**Note:** `SpeakingSession` and `SpeakingTranscript` are documented here as planned JPA mappings because the live Supabase schema is already active, while backend entity classes may be implemented in subsequent Speaking backend tasks.
+**Note:** `SpeakingSession` and `SpeakingTranscript` are implemented runtime entities that map to the active live Supabase Speaking tables.
 
 ---
 
@@ -315,11 +313,11 @@ Writing essays with AI grading results.
 
 ---
 
-### Speaking runtime (planned post-migration mappings)
+### Speaking runtime
 
-These tables are already active in the live Supabase schema and should be treated as the source of truth for future backend entity implementation.
+These tables are active in the live Supabase schema and are implemented in the backend runtime.
 
-### 10a. SpeakingSession *(planned mapping)*
+### 10a. SpeakingSession
 
 Runtime session record for IELTS Speaking.
 
@@ -350,8 +348,8 @@ Runtime session record for IELTS Speaking.
 | `updatedAt` | `updated_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
 
 **Relationships:**
-- Planned `@ManyToOne` -> `Profile` via `user_id`
-- Planned `@ManyToOne` -> `IeltsTest` via `test_id`
+- Runtime owner reference via `user_id`
+- Runtime test reference via `test_id`
 
 **Runtime Truth Notes:**
 - `sessionBlueprint` is the frozen runtime plan for a session
@@ -359,7 +357,7 @@ Runtime session record for IELTS Speaking.
 
 ---
 
-### 10b. SpeakingTranscript *(planned mapping)*
+### 10b. SpeakingTranscript
 
 Turn-level runtime record for IELTS Speaking.
 
@@ -381,8 +379,8 @@ Turn-level runtime record for IELTS Speaking.
 | `updatedAt` | `updated_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
 
 **Relationships:**
-- Planned `@ManyToOne` -> `SpeakingSession` via `session_id`
-- Planned optional `@ManyToOne` -> `Question` via `source_question_id`
+- Runtime session reference via `session_id`
+- Optional authored question reference via `source_question_id`
 
 **Runtime Truth Notes:**
 - `questionSnapshot` is the persisted runtime truth for each turn
