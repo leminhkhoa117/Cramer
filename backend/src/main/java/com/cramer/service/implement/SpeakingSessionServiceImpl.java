@@ -125,23 +125,27 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 
         validateTranscriptAgainstExpectedTurn(request, expectedTurn);
 
-        SpeakingTranscript transcript = speakingTranscriptRepository
+        String audioStoragePath = normalizeAudioStoragePath(request.getAudioStoragePath());
+        String transcriptText = normalizeNullableText(request.getTranscriptText());
+        OffsetDateTime recordedAt = OffsetDateTime.now();
+
+        speakingTranscriptRepository.upsertTranscript(
+                sessionId,
+                expectedTurn.sourceQuestionId(),
+                expectedTurn.partNumber(),
+                request.getTurnIndex(),
+                expectedTurn.questionSnapshot().toString(),
+                audioStoragePath,
+                request.getAudioDurationSeconds(),
+                transcriptText,
+                request.getTranscriptConfidence(),
+                null,
+                recordedAt);
+
+        SpeakingTranscript savedTranscript = speakingTranscriptRepository
                 .findBySessionIdAndTurnIndex(sessionId, request.getTurnIndex())
-                .orElseGet(() -> SpeakingTranscript.builder()
-                        .sessionId(sessionId)
-                        .turnIndex(request.getTurnIndex())
-                        .build());
-
-        transcript.setSourceQuestionId(expectedTurn.sourceQuestionId());
-        transcript.setPartNumber(expectedTurn.partNumber());
-        transcript.setQuestionSnapshot(expectedTurn.questionSnapshot().deepCopy());
-        transcript.setAudioStoragePath(normalizeAudioStoragePath(request.getAudioStoragePath()));
-        transcript.setTranscriptText(normalizeNullableText(request.getTranscriptText()));
-        transcript.setAudioDurationSeconds(request.getAudioDurationSeconds());
-        transcript.setTranscriptConfidence(request.getTranscriptConfidence());
-        transcript.setRecordedAt(OffsetDateTime.now());
-
-        SpeakingTranscript savedTranscript = speakingTranscriptRepository.save(transcript);
+                .orElseThrow(() -> new IllegalStateException(
+                        "Speaking transcript upsert did not persist turnIndex " + request.getTurnIndex()));
 
         if (request.getPartNumber() == 2
                 && "FULL".equals(session.getSessionMode())

@@ -174,22 +174,25 @@ class SpeakingSessionServiceImplTest {
                 .build();
 
         when(speakingSessionRepository.findAndLockByIdAndUserId(77L, userId)).thenReturn(Optional.of(session));
+        existingTranscript.setRecordedAt(OffsetDateTime.now());
         when(speakingTranscriptRepository.findBySessionIdAndTurnIndex(77L, 1)).thenReturn(Optional.of(existingTranscript));
-        when(speakingTranscriptRepository.save(any(SpeakingTranscript.class))).thenAnswer(invocation -> {
-            SpeakingTranscript transcript = invocation.getArgument(0);
-            transcript.setRecordedAt(OffsetDateTime.now());
-            return transcript;
-        });
         var result = speakingSessionService.saveTranscript(77L, request, userId);
 
         assertThat(result.getTranscriptId()).isEqualTo(501L);
         assertThat(result.getStatus()).isEqualTo("saved");
 
-        ArgumentCaptor<SpeakingTranscript> captor = ArgumentCaptor.forClass(SpeakingTranscript.class);
-        verify(speakingTranscriptRepository).save(captor.capture());
-        assertThat(captor.getValue().getQuestionSnapshot()).isEqualTo(turnSnapshot);
-        assertThat(captor.getValue().getPartNumber()).isEqualTo(1);
-        assertThat(captor.getValue().getAudioStoragePath()).isEqualTo("user/session/turn-001.webm");
+        verify(speakingTranscriptRepository).upsertTranscript(
+                eq(77L),
+                eq(501L),
+                eq(1),
+                eq(1),
+                eq(turnSnapshot.toString()),
+                eq("user/session/turn-001.webm"),
+                eq(35),
+                eq("I usually go out with friends."),
+                eq(new BigDecimal("0.910")),
+                eq(null),
+                any(OffsetDateTime.class));
     }
 
     @Test
@@ -214,7 +217,7 @@ class SpeakingSessionServiceImplTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("must not contain a URL scheme");
 
-        verify(speakingTranscriptRepository, never()).save(any(SpeakingTranscript.class));
+        verify(speakingTranscriptRepository, never()).upsertTranscript(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -243,8 +246,8 @@ class SpeakingSessionServiceImplTest {
                 .build();
 
         when(speakingSessionRepository.findAndLockByIdAndUserId(78L, userId)).thenReturn(Optional.of(session));
+        transcript.setRecordedAt(OffsetDateTime.now());
         when(speakingTranscriptRepository.findBySessionIdAndTurnIndex(78L, 1)).thenReturn(Optional.of(transcript));
-        when(speakingTranscriptRepository.save(any(SpeakingTranscript.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(speakingContentService.hasPendingDeferredPart3(fullBlueprint)).thenReturn(true);
         when(speakingContentService.materializeDeferredPart3(fullBlueprint, request.getTranscriptText()))
                 .thenReturn(new SpeakingContentService.SpeakingContentPlan(updatedBlueprint, List.of()));
