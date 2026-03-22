@@ -1,0 +1,49 @@
+name: Keep Supabase Awake
+
+on:
+  schedule:
+    - cron: "17 2 */2 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping-healthcheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Ping public Supabase healthcheck RPC
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          set -euo pipefail
+
+          http_code=$(curl -sS \
+            --fail-with-body \
+            --retry 5 \
+            --retry-all-errors \
+            --retry-delay 15 \
+            --max-time 60 \
+            -o response.json \
+            -w "%{http_code}" \
+            -X POST \
+            -H "apikey: ${SUPABASE_PUBLISHABLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_PUBLISHABLE_KEY}" \
+            -H "Content-Type: application/json" \
+            "${SUPABASE_URL}/rest/v1/rpc/healthcheck")
+
+          echo "HTTP status: ${http_code}"
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          raw = Path("response.json").read_text(encoding="utf-8")
+          data = json.loads(raw)
+          if data.get("ok") is not True:
+              raise SystemExit(f"Unexpected healthcheck payload: {data}")
+          print(json.dumps(data, ensure_ascii=False))
+          PY
