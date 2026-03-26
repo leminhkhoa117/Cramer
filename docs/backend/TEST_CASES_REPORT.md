@@ -55,7 +55,8 @@ cd backend
 | TestControllerTest | ~10 | ✅ |
 | VocabularyControllerTest | ~18 | ✅ |
 | WritingControllerTest | ~22 | ✅ |
-| **Controller Total** | **~220** | **✅** |
+| SpeakingControllerTest | 4 | ✅ |
+| **Controller Total** | **~224** | **✅** |
 
 ---
 
@@ -79,7 +80,9 @@ cd backend
 | TestServiceTest | 9 | ✅ |
 | VocabularyServiceTest | 20 | ✅ |
 | WritingSubmissionServiceTest | 14 | ✅ |
-| **Service Total** | **~200** | **✅** |
+| SpeakingContentServiceImplTest | 4 | ✅ |
+| SpeakingSessionServiceImplTest | 7 | ✅ |
+| **Service Total** | **~211** | **✅** |
 
 ---
 

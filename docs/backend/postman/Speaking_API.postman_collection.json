@@ -1,0 +1,155 @@
+{
+  "info": {
+    "_postman_id": "1c413a87-c4c2-4b4e-a4d8-a1e8c4f2a7f5",
+    "name": "Cramer Speaking API",
+    "description": "Postman collection for authenticated IELTS Speaking runtime APIs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "jwt", "value": "" },
+    { "key": "officialSpeakingTestId", "value": "1" },
+    { "key": "sessionId", "value": "" },
+    { "key": "part1TurnIndex", "value": "1" },
+    { "key": "part1SourceQuestionId", "value": "" },
+    { "key": "part1QuestionSnapshot", "value": "{}" },
+    { "key": "part2TurnIndex", "value": "" },
+    { "key": "part2SourceQuestionId", "value": "" },
+    { "key": "part2QuestionSnapshot", "value": "{}" },
+    { "key": "transcriptAudioPath", "value": "manual-tests/speaking/session-{{sessionId}}/turn-001.webm" }
+  ],
+  "item": [
+    {
+      "name": "1. Create session (FULL)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionMode\": \"FULL\",\n  \"testId\": {{officialSpeakingTestId}},\n  \"accent\": \"british\",\n  \"speed\": 1.0\n}"
+        },
+        "url": "{{baseUrl}}/api/speaking/sessions"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+              "const data = pm.response.json();",
+              "if (data.sessionId) pm.collectionVariables.set('sessionId', String(data.sessionId));",
+              "if (Array.isArray(data.turns)) {",
+              "  const part1 = data.turns.find(t => t.partNumber === 1);",
+              "  const part2 = data.turns.find(t => t.partNumber === 2);",
+              "  if (part1) {",
+              "    pm.collectionVariables.set('part1TurnIndex', String(part1.turnIndex));",
+              "    pm.collectionVariables.set('part1SourceQuestionId', String(part1.sourceQuestionId));",
+              "    pm.collectionVariables.set('part1QuestionSnapshot', JSON.stringify(part1.questionSnapshot || {}));",
+              "  }",
+              "  if (part2) {",
+              "    pm.collectionVariables.set('part2TurnIndex', String(part2.turnIndex));",
+              "    pm.collectionVariables.set('part2SourceQuestionId', String(part2.sourceQuestionId));",
+              "    pm.collectionVariables.set('part2QuestionSnapshot', JSON.stringify(part2.questionSnapshot || {}));",
+              "  }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Get session",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" }
+        ],
+        "url": "{{baseUrl}}/api/speaking/sessions/{{sessionId}}"
+      }
+    },
+    {
+      "name": "3. Save transcript (Part 1 sample)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sourceQuestionId\": {{part1SourceQuestionId}},\n  \"partNumber\": 1,\n  \"turnIndex\": {{part1TurnIndex}},\n  \"questionSnapshot\": {{part1QuestionSnapshot}},\n  \"audioStoragePath\": \"{{transcriptAudioPath}}\",\n  \"transcriptText\": \"I usually spend time with my family and go for a short walk on weekends.\",\n  \"audioDurationSeconds\": 24,\n  \"transcriptConfidence\": 0.96\n}"
+        },
+        "url": "{{baseUrl}}/api/speaking/sessions/{{sessionId}}/transcripts"
+      }
+    },
+    {
+      "name": "4. Save transcript (Part 2 sample for FULL flow)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sourceQuestionId\": {{part2SourceQuestionId}},\n  \"partNumber\": 2,\n  \"turnIndex\": {{part2TurnIndex}},\n  \"questionSnapshot\": {{part2QuestionSnapshot}},\n  \"audioStoragePath\": \"manual-tests/speaking/session-{{sessionId}}/turn-part2.webm\",\n  \"transcriptText\": \"A memorable trip I took was to Da Nang with my family, where we visited the beach, tried local food, and relaxed together.\",\n  \"audioDurationSeconds\": 92,\n  \"transcriptConfidence\": 0.97\n}"
+        },
+        "url": "{{baseUrl}}/api/speaking/sessions/{{sessionId}}/transcripts"
+      }
+    },
+    {
+      "name": "5. Complete session",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" }
+        ],
+        "url": "{{baseUrl}}/api/speaking/sessions/{{sessionId}}/complete"
+      }
+    },
+    {
+      "name": "6. Abandon session",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" }
+        ],
+        "url": "{{baseUrl}}/api/speaking/sessions/{{sessionId}}/abandon"
+      }
+    },
+    {
+      "name": "7. Get grading status",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" }
+        ],
+        "url": "{{baseUrl}}/api/speaking/sessions/{{sessionId}}/grading-status"
+      }
+    },
+    {
+      "name": "8. Get results",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" }
+        ],
+        "url": "{{baseUrl}}/api/speaking/sessions/{{sessionId}}/results"
+      }
+    },
+    {
+      "name": "9. Get history",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" }
+        ],
+        "url": "{{baseUrl}}/api/speaking/history?page=0&size=20"
+      }
+    }
+  ]
+}

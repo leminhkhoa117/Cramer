@@ -56,7 +56,8 @@ Error responses include:
 19. [Admin: Test Hierarchy](#19-admin-test-hierarchy)
 20. [Admin: Activities & Audit](#20-admin-activities--audit)
 21. [Admin: Dashboard](#21-admin-dashboard)
-22. [Debug & Diagnostics](#22-debug--diagnostics)
+22. [Speaking Runtime](#22-speaking-runtime)
+23. [Debug & Diagnostics](#23-debug--diagnostics)
 
 ---
 
@@ -958,7 +959,78 @@ Manages TestSets, Tests, and Hashtags.
 
 ---
 
-## 22. Debug & Diagnostics
+## 22. Speaking Runtime
+
+### SpeakingController
+
+**Base Path:** `/api/speaking`
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | `/sessions` | Create a new Speaking session | Yes |
+| GET | `/sessions/{id}` | Get session metadata and blueprint | Yes |
+| POST | `/sessions/{id}/transcripts` | Retry-safe upsert for a turn transcript | Yes |
+| POST | `/sessions/{id}/complete` | Finalize session and queue grading | Yes |
+| POST | `/sessions/{id}/abandon` | Abandon session without deducting Lúa | Yes |
+| GET | `/sessions/{id}/grading-status` | Poll grading status | Yes |
+| GET | `/sessions/{id}/results` | Get graded Speaking result | Yes |
+| GET | `/history` | Paginated history for the current user | Yes |
+
+#### POST /api/speaking/sessions
+
+**Request Body:**
+```json
+{
+  "sessionMode": "FULL",
+  "testId": 1,
+  "accent": "british",
+  "speed": 1.0
+}
+```
+
+**Notes:**
+- Requires an authenticated Supabase JWT
+- Uses official Speaking authored content from the shared hierarchy
+- Current official smoke-test target is `testId = 1`
+
+#### POST /api/speaking/sessions/{id}/transcripts
+
+**Request Body:**
+```json
+{
+  "sourceQuestionId": 123,
+  "partNumber": 1,
+  "turnIndex": 1,
+  "questionSnapshot": {
+    "schemaVersion": 1,
+    "partType": "PART_1",
+    "promptText": "Do you like travelling?",
+    "topicLabel": "Travel"
+  },
+  "audioStoragePath": "manual-tests/speaking/session-123/turn-001.webm",
+  "transcriptText": "I enjoy travelling because it helps me relax.",
+  "audioDurationSeconds": 25,
+  "transcriptConfidence": 0.96
+}
+```
+
+**Notes:**
+- `turnIndex`, `sourceQuestionId`, and `questionSnapshot` must match the turn already frozen in `sessionBlueprint`
+- For FULL mode, saving the Part 2 transcript may cause deferred Part 3 selection to be materialized
+
+#### GET /api/speaking/history
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `page` | integer | No | `0` | Page index |
+| `size` | integer | No | `20` | Page size |
+| `status` | string | No | - | Optional session status filter |
+
+---
+
+## 23. Debug & Diagnostics
 
 ### DatabaseTestController
 

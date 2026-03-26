@@ -97,6 +97,8 @@ The schema is designed to support:
 
 **Archived legacy tables retained in the live public schema:** `speaking_fixed_questions_legacy`, `speaking_questions_legacy`, `speaking_sessions_legacy`, `speaking_tests_legacy`, `speaking_topics_legacy`, `speaking_transcripts_legacy`
 
+> Legacy Speaking tables are archive-only for traceability and are not part of the active runtime content path.
+
 ---
 
 ## Core Content Tables
@@ -871,7 +873,7 @@ profiles
 | `test_hashtags` | Public read; Service role full access |
 | `abts_templates` | Public read active; Admins insert/update |
 
-Archived `speaking_*_legacy` tables also retain RLS in the live schema but are excluded from the active app table list above.
+Archived `speaking_*_legacy` tables also retain RLS in the live schema but are excluded from the active app table list above. They are treated as archive-only and should not be used by active runtime paths.
 
 ### Active App Tables without RLS (3)
 
