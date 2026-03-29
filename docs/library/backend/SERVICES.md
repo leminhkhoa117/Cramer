@@ -66,8 +66,27 @@ This document provides a comprehensive reference for all services in the Cramer 
 | 35 | `RefinementService` | Concrete | service.abts | AI content refinement |
 | 36 | `RefinementPromptBuilder` | Concrete | service.abts | Refinement prompt generation |
 | 37 | `JsonPatcher` | Concrete | service.abts | JSON patch application |
+| 38 | `SpeakingSessionService` | Interface | service | Speaking session lifecycle orchestration |
+| 39 | `SpeakingContentService` | Interface | service | Build session blueprint from shared hierarchy authored content |
+| 40 | `SpeakingSelectionPlannerService` | Interface | service | Select Speaking question subsets for runtime turns |
+| 41 | `SpeakingEvaluationDispatchService` | Interface | service | Dispatch grading/evaluation after session completion |
 
-**Total Services: 37** (Interface: 15, Concrete: 22)
+**Total Services: 41** (Interface: 19, Concrete: 22)
+
+### Speaking Runtime Services
+
+| Service | Type | Package | Purpose |
+|---|---|---|---|
+| `SpeakingSessionService` | Interface | service | Speaking session lifecycle orchestration |
+| `SpeakingContentService` | Interface | service | Build session blueprint from shared hierarchy authored content |
+| `SpeakingSelectionPlannerService` | Interface | service | Select Speaking question subsets for runtime turns |
+| `SpeakingEvaluationDispatchService` | Interface | service | Dispatch grading/evaluation after session completion |
+
+**Implementation notes:**
+
+- Active runtime authored content is read from `tests -> sections -> questions`
+- Runtime truth is stored in `speaking_sessions` and `speaking_transcripts`
+- No active runtime service should depend on `speaking_*_legacy`
 
 ---
 
