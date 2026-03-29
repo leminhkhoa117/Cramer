@@ -4,11 +4,7 @@ import com.cramer.service.SpeakingEvaluationDispatchService;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.stereotype.Service;
 
-@Service
-@ConditionalOnMissingBean(SpeakingEvaluationDispatchService.class)
 public class NoopSpeakingEvaluationDispatchService implements SpeakingEvaluationDispatchService {
 
     private static final Logger logger = LoggerFactory.getLogger(NoopSpeakingEvaluationDispatchService.class);
