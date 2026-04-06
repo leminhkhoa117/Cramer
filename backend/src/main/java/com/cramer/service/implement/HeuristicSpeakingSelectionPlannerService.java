@@ -18,9 +18,16 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.springframework.stereotype.Service;
 
-@Service
+/**
+ * Heuristic (non-LLM) implementation of {@link SpeakingSelectionPlannerService}.
+ *
+ * <p>Uses topic-clustering and token-overlap scoring to select questions.
+ * Also serves as the fallback when the LLM planner fails.</p>
+ *
+ * <p>This class is <strong>not</strong> annotated with {@code @Service};
+ * bean registration is handled by {@code SpeakingSelectionPlannerConfig}.</p>
+ */
 public class HeuristicSpeakingSelectionPlannerService implements SpeakingSelectionPlannerService {
 
     private static final Pattern TOKEN_SPLIT = Pattern.compile("[^a-z0-9]+");
