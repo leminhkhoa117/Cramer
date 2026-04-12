@@ -1,6 +1,6 @@
 # Cramer Backend - Service Layer Documentation
 
-> **Last Updated:** January 10, 2026  
+> **Last Updated:** April 5, 2026  
 > **Spring Boot Version:** 3.x  
 > **Architecture:** Interface + Implementation pattern
 
@@ -70,8 +70,10 @@ This document provides a comprehensive reference for all services in the Cramer 
 | 39 | `SpeakingContentService` | Interface | service | Build session blueprint from shared hierarchy authored content |
 | 40 | `SpeakingSelectionPlannerService` | Interface | service | Select Speaking question subsets for runtime turns |
 | 41 | `SpeakingEvaluationDispatchService` | Interface | service | Dispatch grading/evaluation after session completion |
+| 42 | `LlmSpeakingSelectionPlannerService` | Concrete | service.implement | LLM-powered Speaking question selection with heuristic fallback |
+| 43 | `SpeakingSelectionPromptBuilder` | Concrete | service.speaking | LLM prompt building and response parsing for Speaking selection |
 
-**Total Services: 41** (Interface: 19, Concrete: 22)
+**Total Services: 43** (Interface: 19, Concrete: 24)
 
 ### Speaking Runtime Services
 
@@ -80,13 +82,25 @@ This document provides a comprehensive reference for all services in the Cramer 
 | `SpeakingSessionService` | Interface | service | Speaking session lifecycle orchestration |
 | `SpeakingContentService` | Interface | service | Build session blueprint from shared hierarchy authored content |
 | `SpeakingSelectionPlannerService` | Interface | service | Select Speaking question subsets for runtime turns |
+| `HeuristicSpeakingSelectionPlannerService` | Concrete | service.implement | Heuristic (topic-cluster-random) question selection planner |
+| `LlmSpeakingSelectionPlannerService` | Concrete | service.implement | LLM-powered question selection with heuristic fallback |
+| `SpeakingSelectionPromptBuilder` | Concrete | service.speaking | Builds LLM prompts and parses/validates selection responses |
 | `SpeakingEvaluationDispatchService` | Interface | service | Dispatch grading/evaluation after session completion |
+
+**Configuration classes:**
+
+| Config | Package | Purpose |
+|---|---|---|
+| `SpeakingSelectionProperties` | config | `speaking.selection.*` props (provider, model, timeout, temperature, maxTokens) |
+| `SpeakingSelectionPlannerConfig` | config | Bean wiring — selects `LlmSpeakingSelectionPlannerService` or `HeuristicSpeakingSelectionPlannerService` based on `speaking.selection.provider` |
 
 **Implementation notes:**
 
 - Active runtime authored content is read from `tests -> sections -> questions`
 - Runtime truth is stored in `speaking_sessions` and `speaking_transcripts`
 - No active runtime service should depend on `speaking_*_legacy`
+- `LlmSpeakingSelectionPlannerService` uses its own `RestTemplate` (12s timeout) and injects `OpenRouterConfig` for credentials — it does **not** modify `OpenRouterClient`
+- When `speaking.selection.provider=heuristic` (default), `SpeakingSelectionPlannerConfig` registers `HeuristicSpeakingSelectionPlannerService` as the active bean; when `llm`, it wraps it with `LlmSpeakingSelectionPlannerService` which auto-falls back on any failure
 
 ---
 
