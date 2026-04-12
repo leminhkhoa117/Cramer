@@ -8,6 +8,7 @@ import com.cramer.service.speaking.SpeakingSelectionPromptBuilder;
 import com.cramer.service.speaking.SpeakingSelectionPromptBuilder.PromptPair;
 import com.cramer.service.speaking.SpeakingSelectionPromptBuilder.SelectionParseResult;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,6 +43,7 @@ public class LlmSpeakingSelectionPlannerService implements SpeakingSelectionPlan
 
     private static final Logger log = LoggerFactory.getLogger(LlmSpeakingSelectionPlannerService.class);
     private static final String STRATEGY_LLM = "llm_selection_v1";
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final OpenRouterConfig openRouterConfig;
     private final SpeakingSelectionProperties selectionProperties;
@@ -230,7 +232,7 @@ public class LlmSpeakingSelectionPlannerService implements SpeakingSelectionPlan
 
     private String extractContentFromResponse(String responseBody) {
         try {
-            JsonNode root = new com.fasterxml.jackson.databind.ObjectMapper().readTree(responseBody);
+            JsonNode root = OBJECT_MAPPER.readTree(responseBody);
             JsonNode choices = root.get("choices");
             if (choices == null || !choices.isArray() || choices.isEmpty()) {
                 throw new RuntimeException("No choices in OpenRouter response");
