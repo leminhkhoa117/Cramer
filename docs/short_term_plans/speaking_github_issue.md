@@ -16,7 +16,7 @@
 | 0 | [Prep] Baseline sạch | [#3](https://github.com/leminhkhoa117/Cramer/issues/3) ✅ CLOSED | Done | Jacob |
 | 1 | [DB] Schema & migration | [#4](https://github.com/leminhkhoa117/Cramer/issues/4) ✅ CLOSED | Runtime tables OK | Jacob |
 | 2 | [BE] REST API | [#9](https://github.com/leminhkhoa117/Cramer/issues/9) ✅ CLOSED | Controller + service done | Khoa |
-| 3 | [DB] Legacy cleanup + backfill | [#12](https://github.com/leminhkhoa117/Cramer/issues/12) 🟡 OPEN | Migration viết xong nhưng 10/11 tests bank mock (5/2/4); legacy còn 283 rows | Jacob |
+| 3 | [DB] Legacy cleanup + backfill | [#12](https://github.com/leminhkhoa117/Cramer/issues/12) ✅ CLOSED | Official test #1 Cam17 đạt 30/1/15; mock tests #32-41 sections marked DRAFT; legacy 6 tables archived với RLS+COMMENT | Jacob |
 | 4 | [BE] LLM planner | [#13](https://github.com/leminhkhoa117/Cramer/issues/13) ✅ CLOSED | Heuristic + LLM planner OK | Khoa |
 | 5 | [BE] WebSocket + Gemini Live | [#16](https://github.com/leminhkhoa117/Cramer/issues/16) 🟡 OPEN | Backend checkpoint xong, chờ FE integration + E2E | Khoa |
 | 6 | [BE] Grading & Evaluation | [#17](https://github.com/leminhkhoa117/Cramer/issues/17) ⬜ OPEN | Mới có Noop dispatcher | Khoa |
@@ -120,7 +120,7 @@ Hệ thống gồm 5 phần chính:
 - [x] [#3](https://github.com/leminhkhoa117/Cramer/issues/3) — [Prep] Thiết lập baseline sạch cho Speaking MVP
 - [x] [#4](https://github.com/leminhkhoa117/Cramer/issues/4) — [DB] Thiết kế schema & migration cho Speaking
 - [x] [#9](https://github.com/leminhkhoa117/Cramer/issues/9) — [BE] REST API - Quản lý session Speaking
-- [ ] [#12](https://github.com/leminhkhoa117/Cramer/issues/12) — [DB] Speaking legacy cleanup + official content bank backfill
+- [x] [#12](https://github.com/leminhkhoa117/Cramer/issues/12) — [DB] Speaking legacy cleanup + official content bank backfill
 - [x] [#13](https://github.com/leminhkhoa117/Cramer/issues/13) — [BE] Optional LLM-based question selection planner
 - [ ] [#16](https://github.com/leminhkhoa117/Cramer/issues/16) — [BE] WebSocket + Gemini Live API integration
 - [ ] [#17](https://github.com/leminhkhoa117/Cramer/issues/17) — [BE] Hệ thống chấm điểm (Grading & Evaluation)
