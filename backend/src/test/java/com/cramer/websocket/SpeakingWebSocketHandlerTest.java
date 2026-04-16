@@ -599,6 +599,105 @@ class SpeakingWebSocketHandlerTest {
             );
     }
 
+    @Test
+    @DisplayName(
+        "afterConnectionEstablished should reject when user does not own the speaking session"
+    )
+    void afterConnectionEstablished_crossUserOwnership_closesSocket()
+        throws Exception {
+        UUID otherUserId = UUID.fromString(
+            "11111111-1111-1111-1111-111111111111"
+        );
+
+        WebSocketSession webSocketSession = mockWebSocketSession(
+            "ws-cross-user",
+            URI.create(
+                "ws://localhost/ws/speaking/42?token=" + VALID_TOKEN
+            ),
+            true
+        );
+
+        when(jwtUtil.validateToken(VALID_TOKEN)).thenReturn(true);
+        when(jwtUtil.extractUserId(VALID_TOKEN)).thenReturn(
+            otherUserId.toString()
+        );
+        when(
+            speakingSessionService.getSession(42L, otherUserId)
+        ).thenThrow(
+            new IllegalArgumentException(
+                "Speaking session 42 not found for user."
+            )
+        );
+
+        CapturedMessages capturedMessages = new CapturedMessages();
+        captureMessages(webSocketSession, capturedMessages);
+
+        FakeGeminiConnection fakeConnection = new FakeGeminiConnection();
+        SpeakingWebSocketHandler handler = new SpeakingWebSocketHandler(
+            speakingSessionService,
+            jwtUtil,
+            objectMapper,
+            geminiLiveProperties,
+            "gemini-api-key",
+            (state, listener) -> {
+                fakeConnection.listener = listener;
+                return fakeConnection;
+            }
+        );
+
+        handler.afterConnectionEstablished(webSocketSession);
+
+        assertThat(fakeConnection.connectCalled).isFalse();
+        verifyCloseCalled(webSocketSession);
+    }
+
+    @Test
+    @DisplayName(
+        "upstream onGoAway should also transition the session to fallback text mode"
+    )
+    void liveMode_upstreamGoAway_transitionsToFallback() throws Exception {
+        SpeakingSessionDTO speakingSession = openSpeakingSession();
+        WebSocketSession webSocketSession = mockWebSocketSession(
+            "ws-goaway",
+            URI.create("ws://localhost/ws/speaking/42?token=" + VALID_TOKEN),
+            true
+        );
+
+        when(jwtUtil.validateToken(VALID_TOKEN)).thenReturn(true);
+        when(jwtUtil.extractUserId(VALID_TOKEN)).thenReturn(USER_ID.toString());
+        when(speakingSessionService.getSession(42L, USER_ID))
+            .thenReturn(speakingSession);
+
+        CapturedMessages capturedMessages = new CapturedMessages();
+        captureMessages(webSocketSession, capturedMessages);
+
+        FakeGeminiConnection fakeConnection = new FakeGeminiConnection();
+        fakeConnection.open = true;
+        fakeConnection.ready = true;
+
+        SpeakingWebSocketHandler handler = new SpeakingWebSocketHandler(
+            speakingSessionService,
+            jwtUtil,
+            objectMapper,
+            geminiLiveProperties,
+            "gemini-api-key",
+            (state, listener) -> {
+                fakeConnection.listener = listener;
+                return fakeConnection;
+            }
+        );
+
+        handler.afterConnectionEstablished(webSocketSession);
+        fakeConnection.listener.onGoAway("Gemini quota exceeded");
+
+        assertThat(fakeConnection.closeCalled).isTrue();
+        assertThat(capturedMessages.textPayloads).anySatisfy(payload ->
+            assertThat(payload)
+                .contains("\"type\":\"status\"")
+                .contains("\"status\":\"fallback_text_mode\"")
+        );
+    }
+
     private SpeakingSessionDTO openSpeakingSession() {
         ObjectNode questionSnapshot = objectMapper.createObjectNode();
         questionSnapshot.put("schemaVersion", 1);

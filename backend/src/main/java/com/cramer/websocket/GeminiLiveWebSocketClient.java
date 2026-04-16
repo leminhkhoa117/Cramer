@@ -60,6 +60,13 @@ public class GeminiLiveWebSocketClient implements GeminiLiveConnection {
     private final StringBuilder textBuffer = new StringBuilder();
 
     /**
+     * Cap for {@link #textBuffer} reassembly. If upstream floods fragmented text frames
+     * beyond this size we bail out and notify an error instead of letting the buffer grow
+     * the heap. 1 MiB is far above any realistic Gemini Live response.
+     */
+    private static final int MAX_TEXT_BUFFER_CHARS = 1_048_576;
+
+    /**
      * Callback contract used by the backend speaking handler.
      */
     public interface GeminiLiveListener {
@@ -168,6 +175,29 @@ public class GeminiLiveWebSocketClient implements GeminiLiveConnection {
 
                 webSocketRef.compareAndSet(null, webSocket);
                 open.set(true);
+
+                // Re-check disposed after publishing the socket. If close() raced
+                // with handshake completion, the getAndSet(null) there returned null
+                // and left this socket unreferenced. Clean it up here to avoid
+                // leaking the upstream connection (file descriptor + heap).
+                if (disposed.get()) {
+                    WebSocket orphan = webSocketRef.getAndSet(null);
+                    open.set(false);
+                    ready.set(false);
+                    if (orphan != null) {
+                        try {
+                            orphan.sendClose(
+                                WebSocket.NORMAL_CLOSURE,
+                                "disposed after connect completed"
+                            );
+                        } catch (Exception ex) {
+                            logger.debug(
+                                "Ignoring orphan Gemini close error: {}",
+                                ex.getMessage()
+                            );
+                        }
+                    }
+                }
             });
     }
 
@@ -667,6 +697,19 @@ public class GeminiLiveWebSocketClient implements GeminiLiveConnection {
             boolean last
         ) {
             textBuffer.append(data);
+            if (textBuffer.length() > MAX_TEXT_BUFFER_CHARS) {
+                int overflowSize = textBuffer.length();
+                textBuffer.setLength(0);
+                notifyError(
+                    "Upstream text frame exceeded maximum buffer size (" +
+                    overflowSize +
+                    " > " +
+                    MAX_TEXT_BUFFER_CHARS +
+                    " chars); dropping."
+                );
+                webSocket.request(1);
+                return CompletableFuture.completedFuture(null);
+            }
             if (last) {
                 String payload = textBuffer.toString();
                 textBuffer.setLength(0);
