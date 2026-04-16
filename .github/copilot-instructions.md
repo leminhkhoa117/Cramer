@@ -1,315 +1,282 @@
-## Quick context for AI code agents
+This file provides guidance when working with code in this repository.
 
-This repository is a two-part web app: a Spring Boot backend (Maven, Java 21) and a React + Vite frontend. Primary data lives in a Supabase Postgres instance (see `docs/backend/supabase-backend.md`). The backend exposes REST APIs under `/api/**` and uses JWTs (Supabase tokens) for authentication.
+## Verification Protocol (Anti-Hallucination)
 
-Keep changes small, well-scoped and documented. If you modify DB schema, update `docs/backend/*` and coordinate with the Supabase project.
+1. **Verify Paths**: Never assume a file exists based on common patterns. detailed directory structures often vary. Use `ls` or `find` to confirm.
+2. **Read Before Explaining**: logical assumptions are often wrong. Read the code file before explaining 'how it works'.
+3. **Check Usage**: Before stating a library or feature is used, `grep` the codebase to prove it.
+4. **Admit Unknowns**: It is better to stop and ask or search than to invent a plausible-sounding answer.
 
-## Where to look first (high-value files)
-- Root README: `README.md` — project overview and links to backend docs.
-- Backend main: `backend/src/main/java/com/cramer/CramerBackendApplication.java`.
-- Backend config: `backend/src/main/java/com/cramer/config/` — especially `SecurityConfig.java`, `JwtAuthFilter.java`, `ConditionalDataSourceConfig.java`, `WebConfig.java`.
-- Backend env & run: `backend/.env` (example), `backend/run-local.cmd`, `backend/run-app.ps1`, `backend/BUILD_INSTRUCTIONS.md` and `backend/pom.xml`.
-- Backend properties: `backend/src/main/resources/application.properties` (datasource, supabase keys, swagger path).
-- API surface and client: `frontend/src/api/backendApi.js` — shows axios usage, token provider (`setupApiClient`) and endpoints.
-- Frontend: `frontend/package.json`, `frontend/README.md`, Vite/Tailwind config files.
-- Docker: `docker-compose.yml` and `docker-compose.dev.yml` for containerized runs.
+## Project Overview
 
-## Runtime & build essentials (exact commands)
-- Backend (Windows, preferred):
-  - Start dev app (uses root `.env`): `backend\run-local.cmd` (CMD) or `backend\run-app.ps1` (PowerShell).
-  - Build jar: `cd backend && .\mvnw.cmd clean package -DskipTests` then run `java -jar target\cramer-backend-0.0.1-SNAPSHOT.jar`.
-  - Maven run: `cd backend && .\mvnw.cmd spring-boot:run`.
-  - Swagger UI: http://localhost:8080/swagger-ui.html (use Authorize with a Supabase JWT).
+Cramer is an IELTS practice platform with a Spring Boot backend and React frontend. It uses Supabase for PostgreSQL database, authentication, and storage. The platform includes an AI-Based Test Generation System (ABTS) for creating IELTS content.
 
-- Frontend:
-  - Install: `cd frontend && npm install`
-  - Dev server: `npm run dev` (default port 5173)
-  - Important env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, optional `VITE_API_BASE_URL`.
+## Build & Run Commands
 
-- Docker: use `docker-compose.yml` or `docker-compose.dev.yml` at repo root.
+### Backend (Spring Boot + Maven)
 
-## Authentication & API expectations
-- All `/api/**` routes are guarded by Spring Security: `SecurityConfig` configures `.requestMatchers("/api/**").authenticated()` and inserts `JwtAuthFilter` before username/password filter.
-- `JwtAuthFilter` extracts `userId` from Supabase JWTs and grants `ROLE_USER` to validated tokens — controllers expect authenticated requests with an `Authorization: Bearer <token>` header.
-- Frontend sets Authorization with the `setupApiClient` token provider (see `frontend/src/api/backendApi.js`).
-- JWT authentication is fully functional as of 2025-12-04.
+```bash
+# Development (Linux/macOS) - loads .env from root
+cd backend && ./run-app.sh
 
-## Data & DB patterns
-- Schema lives in Supabase (Postgres). Backend uses `spring-data-jpa` + `jsonb` payloads for question content.
-- **RLS (Row Level Security)**: Tables `test_attempts` and `user_answers` have RLS enabled. Service role policies have been added to allow backend operations (DELETE, etc.).
-- Conditional DB wiring: `ConditionalDataSourceConfig` only creates the `DataSource` if `spring.datasource.url` is set.
+# Development (Windows)
+cd backend && ./run-app.ps1
 
-## Test Attempt Flow
-- `POST /api/test-attempts/start` — creates or resumes an IN_PROGRESS attempt.
-- `POST /api/test-attempts/{id}/progress` — saves answers, timeLeft, currentPart.
-- `POST /api/test-attempts/{id}/submit` — submits and scores the attempt (marks as COMPLETED).
-- `POST /api/test-attempts/{id}/cancel` — **deletes** the attempt and all associated answers (fixed 2025-12-04).
-- `DELETE /api/test-attempts/{id}` — alternative delete endpoint.
-- Frontend uses `hasFetchedRef` to prevent duplicate API calls in React StrictMode.
+# Manual build
+cd backend && ./mvnw clean package -DskipTests
+java -jar target/cramer-backend-0.0.1-SNAPSHOT.jar
 
-## Writing Test Attempt Flow (with forceNew parameter)
-- `POST /api/test-attempts/start?forceNew=false` (default):
-  - If IN_PROGRESS exists → return it (resume)
-  - If COMPLETED exists → return COMPLETED (frontend shows choice modal)
-  - If CANCELLED exists → create new attempt
-- `POST /api/test-attempts/start?forceNew=true`:
-  - Cancel all IN_PROGRESS attempts and create new
-- Frontend `location.state.forceNew` controls this behavior:
-  - Dashboard "Làm lại" button → `forceNew=true`
-  - Direct URL access → `forceNew=false` → shows modal if COMPLETED
-- `ResumeConfirmationModal` handles both IN_PROGRESS ("Tiếp tục") and COMPLETED ("Xem kết quả") states.
+# Maven run directly
+cd backend && ./mvnw spring-boot:run
+```
 
-## Conventions & patterns to follow
-- API routes: controllers are under `backend/src/main/java/com/cramer/controller/` and use `/api/{resource}` conventions.
-- Use Springdoc OpenAPI (Swagger) for new endpoints.
-- Repository delete methods should use explicit `@Query` annotations with `@Modifying(clearAutomatically = true, flushAutomatically = true)` for reliable deletion.
+### Frontend (React + Vite)
 
-## Edit & testing rules for agents
-- Small PRs only: change one component at a time.
-- After making backend changes, always rebuild: `cd backend && .\mvnw.cmd clean package -DskipTests` and restart.
-- Don't commit secrets: `.env` at repo root is local only.
+```bash
+cd frontend && npm install
+npm run dev          # Dev server on port 5173
+npm run build        # Production build
+npm run preview      # Preview production build
+```
 
-## Known Issues (Resolved)
-- ✅ Test cancellation now properly deletes attempts (fixed 2025-12-04).
-- ✅ RLS policies added for service_role on test_attempts and user_answers tables.
-- ✅ Duplicate API calls in React StrictMode prevented with refs.
+### Swagger UI
 
-## Recent Changes (2025-12-05)
-When adding new features, especially those that touch both the backend and frontend, please document the changes in the repo docs and update `GEMINI.md`/`AGENTS.md` accordingly.
+http://localhost:8080/swagger-ui.html (requires JWT token via Authorize button)
 
-- **ABTS Multi-Part Mode Simplification (2026-01-04) ✅ COMPLETED:**
-  - Removed "Từng phần (1 part mỗi lần)" option from AI test generation UI
-  - Only "Chọn nhiều (Chọn parts cần tạo)" mode remains (always MULTI_PART)
-  - **StudioConfigView.jsx changes:**
-    - Removed toggle between SINGLE_PART and MULTI_PART scopes
-    - Removed SINGLE_PART-only elements (Part dropdown, global passage length, total questions slider)
-    - Enhanced per-part configuration panel with:
-      - Topic input per part
-      - Passage length dropdown per part (Reading only)
-      - Facts input per part (when generationMode === 'CUSTOM_FACTS')
-      - Question types chips (already existed)
-  - **useABTSStore.js changes:**
-    - Default scope changed to 'MULTI_PART' (was SINGLE_PART)
-    - `togglePartSelection` always maintains MULTI_PART scope
-    - `clearPartSelections` stays in MULTI_PART mode
-    - Per-part actions already existed: `setPartTopic`, `addPartFact`, `removePartFact`, `setPartPassageLength`
-    - Added `updateGeneratedQuestion` action for preview editing
-  - **StepPreview.jsx changes:**
-    - Already integrated with `QuestionEditModal` for editing questions in preview
-    - Connected `onQuestionEdit` handler to open modal
-  - **SaveAIContentModal.jsx changes:**
-    - Now accepts `selectedParts` prop (array of selected part numbers)
-    - Displays "Part 1, Part 2, Part 3" instead of hardcoded "Part 2"
-    - Also receives `questionCount` from generation result
-  - **AIGenerationPage.jsx changes:**
-    - Passes `selectedParts` and `questionCount` to SaveAIContentModal
-  - **Status:** Fully implemented, ready for testing
+## Architecture
 
-- **DeepSeek V3.2 Migration (2025-12-12) ✅ COMPLETED:**
-  - Migrated from Google Gemini to DeepSeek V3.2 for AI writing grading
-  - Created `LLMGradingService.java` (new) - uses OpenAI-compatible API format
-  - Renamed entity fields: `geminiApiKey` → `llmApiKey`, `geminiModel` → `llmModel`
-  - Added new field: `llmProvider` (default: "deepseek")
-  - Updated `Profile.java`, `ProfileDTO.java`, `ProfileServiceImpl.java`
-  - Updated `WritingSubmissionService.java`, `AsyncGradingService.java` to use `LLMGradingService`
-  - Updated `Profile.jsx` UI: DeepSeek API key input, model selector (deepseek-chat, deepseek-reasoner)
-  - **Image Description Feature:** Added `image_description` column to `sections` table to store detailed text descriptions of Task 1 charts/maps/diagrams. DeepSeek doesn't support image input, so AI grading uses text descriptions instead.
-  - DB Migrations: 
-    - `docs/backend/migrations/003_deepseek_migration.sql` (column renames)
-    - `docs/backend/migrations/004_add_image_description_column.sql` (image description support)
-  - Added descriptions for Cambridge 17 Test 1 (Norbiton maps) and Test 2 (Police Budget charts)
-  - Updated `Section.java` entity with `imageDescription` field
-  - Modified `LLMGradingService.buildUserPrompt()` to include image description in AI prompt
-  - **Status:** Fully deployed and functional
+### Tech Stack
 
-- **Subscription, Credit (Lúa), and Achievement Backend (2025-12-13) ✅ COMPLETED:**
-  - Complete backend infrastructure for monetization and gamification
-  - **New Entities** (in `backend/src/main/java/com/cramer/entity/`):
-    - `SubscriptionTier.java` — Tier definitions (Cramerie, Cramerich, Cramerous)
-    - `UserSubscription.java` — User's active subscription with usage tracking
-    - `UserCredit.java` — User's Lúa balance and lifetime stats
-    - `CreditTransaction.java` — Transaction history (earn/spend)
-    - `Achievement.java` — Badge definitions with categories and rewards
-    - `UserAchievement.java` — Badges earned by users
-    - `UserStreak.java` — Login streak tracking
-    - `ChatbotUsage.java` — Daily AI chat usage limits
-  - **New DTOs** (in `backend/src/main/java/com/cramer/dto/`):
-    - `SubscriptionTierDTO.java`, `UserSubscriptionDTO.java`, `UserCreditDTO.java`
-    - `CreditTransactionDTO.java`, `AchievementDTO.java`, `UserAchievementDTO.java`
-    - `UserFullStatsDTO.java` — Aggregated user stats (sub + credits + streak + achievements)
-    - `GradingStatusDTO.java` — AI grading availability check
-  - **New Repositories** (in `backend/src/main/java/com/cramer/repository/`):
-    - `SubscriptionTierRepository.java`, `UserSubscriptionRepository.java`
-    - `UserCreditRepository.java`, `CreditTransactionRepository.java`
-    - `AchievementRepository.java`, `UserAchievementRepository.java`
-    - `UserStreakRepository.java`, `ChatbotUsageRepository.java`
-  - **New Services** (interfaces in `service/`, implementations in `service/implement/`):
-    - `SubscriptionService.java` / `SubscriptionServiceImpl.java` — Tier management, AI grading limits
-    - `CreditService.java` / `CreditServiceImpl.java` — Lúa balance, earn/spend transactions
-    - `AchievementService.java` / `AchievementServiceImpl.java` — Badge awarding, milestone checks
-  - **New Controllers**:
-    - `SubscriptionController.java` — `/api/subscriptions/tiers`, `/current`, `/grading-status`
-    - `CreditController.java` — `/api/credits`, `/transactions`, `/stats`
-    - `AchievementController.java` — `/api/achievements`, `/mine`, `/unnotified`
-  - **DB Migration**: `docs/backend/migrations/006_subscription_credit_achievement.sql`
-    - Tables: `subscription_tiers`, `user_subscriptions`, `user_credits`, `credit_transactions`
-    - Tables: `achievements`, `user_achievements`, `user_streaks`, `chatbot_usage`
-    - Pre-populated tiers (Cramerie/Cramerich/Cramerous) and default achievements
-    - RLS policies for all tables
-  - **Pricing Tiers**:
-    - 🌾 Cramerie (Free): 0 AI gradings, 20 chat/day, 50 initial Lúa
-    - 🌻 Cramerich (79,000đ): 5 AI gradings/mo, 100 chat/day, 100 initial Lúa
-    - 🌟 Cramerous (149,000đ): 10 AI gradings/mo, unlimited chat, 200 initial Lúa
-  - **Status:** Backend complete, ready for frontend integration
+- **Backend**: Spring Boot 3.3, Java 17, Spring Data JPA, Spring Security
+- **Frontend**: React 18, Vite, Zustand (state), Tailwind CSS, React Bootstrap
+- **Database**: Supabase PostgreSQL with RLS policies
+- **AI Integration**: DeepSeek V3.2 (via OpenAI-compatible API) for writing grading, OpenRouter for ABTS
 
-- **PayOS Payment Gateway Integration (2025-12-14) ✅ COMPLETED:**
-  - Vietnamese payment gateway integration for subscription and Lúa purchases
-  - **Backend Configuration** (`backend/src/main/java/com/cramer/config/`):
-    - `PayOSConfig.java` — PayOS client configuration (clientId, apiKey, checksumKey)
-  - **Environment Variables Required**:
-    - `PAYOS_CLIENT_ID` — Client ID from PayOS Merchant Dashboard
-    - `PAYOS_API_KEY` — API Key from PayOS Merchant Dashboard
-    - `PAYOS_CHECKSUM_KEY` — Checksum Key for HMAC-SHA256 signatures
-    - `PAYOS_RETURN_URL` — Redirect URL after successful payment (default: http://localhost:5173/payment/success)
-    - `PAYOS_CANCEL_URL` — Redirect URL after cancelled payment (default: http://localhost:5173/payment/cancel)
-  - **New Entity**: `PaymentOrder.java` — Tracks payment attempts with status (PENDING/PAID/CANCELLED/EXPIRED)
-  - **New Repository**: `PaymentOrderRepository.java`
-  - **New Service**: `PaymentService.java` / `PaymentServiceImpl.java`
-    - `createSubscriptionPayment()` — Creates PayOS payment link for tier upgrades
-    - `createLuaPackPayment()` — Creates PayOS payment link for Lúa purchases
-    - `handleWebhook()` — Processes PayOS webhook, updates order, grants subscription/credits
-    - HMAC-SHA256 signature generation and verification
-  - **New Controller**: `PaymentController.java`
-    - `POST /api/payments/subscription` — Create subscription payment
-    - `POST /api/payments/lua` — Create Lúa pack payment
-    - `POST /api/payments/webhook` — PayOS webhook (public, no auth)
-    - `GET /api/payments/status/{orderCode}` — Check payment status
-    - `GET /api/payments/history` — User payment history
-    - `GET /api/payments/lua-packs` — Available Lúa packs (public)
-    - `GET /api/payments/config-status` — Check if PayOS is configured (public)
-  - **Frontend**:
-    - `PaymentSuccessPage.jsx` — Success page with order details
-    - `PaymentCancelPage.jsx` — Cancel page with retry options
-    - `PaymentPage.css` — Glassmorphic styling for payment pages
-    - Updated `PricingPage.jsx` — Calls payment API on tier/Lúa pack click
-    - Updated `TierCard.jsx`, `LuaPackCard.jsx` — Loading state during payment processing
-    - Added `paymentApi` to `backendApi.js`
-  - **Routes**: `/payment/success`, `/payment/cancel`
-  - **DB Migration**: `docs/backend/migrations/007_payos_payment_integration.sql`
-    - Table: `payment_orders` with RLS policies
-  - **Security**: Webhook endpoint is public (no JWT required) but verifies HMAC signature
-  - **Status:** Fully deployed, pending PayOS production credentials
+### Backend Structure (`backend/src/main/java/com/cramer/`)
 
-- **Subscription Management Page (2025-12-13) ✅ COMPLETED:**
-  - Comprehensive subscription status page at `/subscription`
-  - **Backend**:
-    - `SubscriptionStatusDTO.java` — Comprehensive DTO with nested classes for tier, usage, credits, payments
-    - `GET /api/subscriptions/my-status` — Returns full subscription status
-    - Updated `SubscriptionService.java` and `SubscriptionServiceImpl.java` with `getSubscriptionStatus()` method
-  - **Frontend**:
-    - `SubscriptionPage.jsx` — Full subscription management page with:
-      - Hero section with tier badge and status
-      - Subscription details card (dates, progress, upgrade CTA)
-      - Usage tracking cards (AI gradings, daily chat)
-      - Lúa balance card with buy more link
-      - Features list from tier
-      - Payment history section
-    - `SubscriptionPage.css` — Glassmorphic styling with tier-specific colors
-    - Added route `/subscription` in `App.jsx`
-    - Added "Gói đăng ký" link in Header dropdown menu
-    - Added `getMyStatus()` to `subscriptionApi` in `backendApi.js`
-  - **UI Features**:
-    - Tier-specific colors: Cramerie (green), Cramerich (gold), Cramerous (purple)
-    - Animated progress bars for usage tracking
-    - Responsive design for mobile
+- `controller/` - REST endpoints (`/api/**` are authenticated)
+- `controller/admin/` - Admin-only endpoints (ABTSController, TestHierarchyController, etc.)
+- `service/` - Business logic
+- `service/abts/` - AI test generation (ABTSService, PromptBuilderService)
+- `service/implement/` - Service implementations
+- `entity/` - JPA entities with JSONB support (Hypersistence Utils)
+- `repository/` - Spring Data repositories
+- `config/` - SecurityConfig, JwtAuthFilter, WebConfig, PayOSConfig
+- `dto/` - Data transfer objects
 
-- **State Management Migration to Zustand (2025-12-10):**
-  - Migrated from React Context to Zustand for all global state management
-  - New stores in `frontend/src/stores/`:
-    - `useAuthStore.js` — Auth user, session, login/logout/OAuth actions
-    - `useProfileStore.js` — User profile with auto-sync to auth changes
-    - `useTestStore.js` — Test-taking UI state (answers, timer, modals, navigation)
-    - `useTestSessionStore.js` — Test API operations with 5-min caching TTL
-    - `useDashboardStore.js` — Dashboard data with pagination (sessionStorage persisted)
-    - `useCourseStore.js` — Courses list with caching + pagination
-    - `index.js` — Clean re-exports for convenient imports
-  - `AuthContext.jsx` is **deprecated** (kept for reference only, not imported anywhere)
-  - **Import pattern**: `import { useAuthStore, useProfileStore } from '../stores'`
-  - **Selector pattern**: `const user = useAuthStore(state => state.user)` — use selectors for granular subscriptions
-  - **Benefits**: data caching prevents refetch on navigation, reduced re-renders, DevTools integration
-  - **Props drilling eliminated**: `TestPageContent` reduced from 24 props to 5 props
-  - **Code duplication removed**: `TestPage.jsx` and `WritingTestPage.jsx` share stores (~200 lines consolidated)
+### Frontend Structure (`frontend/src/`)
 
-- **Writing feature + AI Grading (2025-12-05):**
-  - Backend: `WritingController`, `WritingSubmission` entity, `WritingSubmissionRepository`, DTOs (`WritingSubmitDTO`, `WritingSubmissionDTO`, `WritingReviewDTO`), services (`AsyncGradingService`, `GeminiGradingService`, `WritingSubmissionService`).
-  - Frontend: `WritingTestPage.jsx`, `WritingResultPage.jsx`, `WritingTestPage.css`, `WritingResultPage.css`, `ResumeConfirmationModal.jsx` and `TestPageContent.jsx` updates.
-  - Docs & migrations: `docs/backend/migrations/001_writing_feature.sql`, `docs/backend/IELTS Cambridge 17_T1_W.sql`, marking criteria `docs/marking_criteria/*` and sample assets under `docs/test_materials/`.
-  - Behavior changes: test attempt flow updated to avoid ghost `IN_PROGRESS` attempts and improved deletion semantics.
+- `stores/` - Zustand stores (useAuthStore, useTestStore, useProfileStore, etc.)
+- `api/backendApi.js` - Axios client with JWT token injection
+- `pages/` - Public user-facing pages
+- `admin/` - Admin dashboard module
+  - `admin/pages/` - Admin pages (ContentListPage, AIGenerationPage, etc.)
+  - `admin/components/` - Admin UI components
+  - `admin/stores/useABTSStore.js` - ABTS frontend state
+- `components/` - Shared React components
+- `css/` - Stylesheets
 
-Add a short summary like the above whenever a commit touches multiple subsystems so agents and reviewers can quickly understand the scope without scanning code changes.
+### Database Schema (Supabase)
 
-## Useful quick links in repo
-- API client: `frontend/src/api/backendApi.js`
-- Test page: `frontend/src/pages/TestPage.jsx`
-- Test attempt service: `backend/src/main/java/com/cramer/service/TestAttemptService.java`
-- Swagger config: `backend/src/main/resources/application.properties`
-- Docs: `docs/backend/supabase-backend.md`, `backend/BUILD_INSTRUCTIONS.md`
+- `profiles` - User profile data linked to Supabase auth
+- `test_sets` -> `tests` -> `sections` -> `questions` - Content hierarchy
+- `test_attempts`, `user_answers` - User test progress (RLS enabled)
+- `subscription_tiers`, `user_subscriptions`, `user_credits` - Monetization
+- `payment_orders` - PayOS payment tracking
 
-## Subagent Protocols
+## Key Patterns
 
-To utilize specific expert personas, you (the Main Model) are authorized to autonomously trigger the following Subagents based on the user's intent.
+### Authentication
 
-### 🚨 Orchestration & Auto-Triggering Protocol
-**Before responding, perform a "Routing Step" to select the expert:**
-1.  **Analyze Intent:**
-    - Audit/Debug -> `bugAgent`
-    - Plan/Architect -> `implementAgent`
-    - Build/Fix -> `executionAgent`
-    - Database/SQL/RLS -> `dbAgent`
-    - UI/CSS/Design -> `uiAgent`
-    - Testing/QA -> `testAgent`
-2.  **Concurrent Execution:** You may chain agents (e.g., `implementAgent` -> `dbAgent` -> `executionAgent`).
+- JwtAuthFilter validates Supabase JWTs before UsernamePasswordAuthFilter
+- Extract user ID: `SecurityContextHolder.getContext().getAuthentication().getName()`
+- Frontend sets `Authorization: Bearer <token>` via setupApiClient in backendApi.js
 
-**Output Header:**
-> 🤖 **Active Subagent:** `[Agent Name]`
-> **Context:** [Brief reasoning]
+### State Management
 
----
+- All global state uses Zustand stores (AuthContext is deprecated)
+- Import pattern: `import { useAuthStore, useProfileStore } from '../stores'`
+- Use selectors: `const user = useAuthStore(state => state.user)`
 
-### 1. `bugAgent` (The Deep Auditor)
-**Trigger:** "find bugs", "audit", "why is this failing"
-**Focus:** Logic gaps, race conditions, security flaws (Spring Security), duplicate API calls (Strict Mode).
-**Protocol:** Analyze -> Trace Data Flow -> Report (Severity/Location/Evidence). **Do not fix yet.**
+### Repository Operations
 
-### 2. `implementAgent` (The Architect)
-**Trigger:** "plan feature", "design", "how to build"
-**Focus:** System design, API contracts, Schem changes, File structure.
-**Protocol:** Check `docs/` -> Draft SQL -> Define API Contract -> List Files -> Handoff to Builder.
-### 3. `executionAgent` (The Builder)
-**Trigger:** "implement", "fix", "code this"
-**Focus:** Writing working Java/React code, small PRs, updating Docs.
-**Protocol:** Adhere to plan -> Update code -> Update `docs/` -> Verify (mvnw/npm).
+- Use `@Query` with `@Modifying(clearAutomatically = true, flushAutomatically = true)` for DELETE operations
+- RLS requires service_role policies for backend operations
 
-### 4. `dbAgent` (The DBA)
-**Trigger:** "schema change", "optimize SQL", "fix RLS", "migration"
-**Focus:** Supabase Postgres, RLS Policies, Spring Data JPA performance, JSONB handling.
-**Protocol:**
-1. Write raw SQL Migrations first.
-2. Ensure RLS policies exist for both `service_role` and `authenticated` users.
-3. Optimize JPA queries (prevent N+1).
+### ABTS Question Ranges
 
-### 5. `uiAgent` (The Designer)
-**Trigger:** "make it pretty", "glassmorphism", "fix CSS", "UI update"
-**Focus:** Tailwind CSS, React Components, Responsiveness, Animations.
-**Protocol:**
-1. Focus purely on the View Layer (JSX/CSS).
-2. Apply `Glassmorphism` and responsive utilities (`md:`, `lg:`).
-3. Ensure Accessibility (ARIA).
+| Skill     | Part 1 | Part 2 | Part 3 | Part 4 |
+| --------- | ------ | ------ | ------ | ------ |
+| Reading   | Q1-13  | Q14-26 | Q27-40 | -      |
+| Listening | Q1-10  | Q11-20 | Q21-30 | Q31-40 |
+| Writing   | Task 1 | Task 2 | -      | -      |
 
-### 6. `testAgent` (The QA Engineer)
-**Trigger:** "write tests", "test coverage", "create unit test"
-**Focus:** JUnit 5, Mockito, React Testing Library.
-**Protocol:**
-1. Mock external dependencies (Supabase/DeepSeek).
-2. Write "Happy Path" AND "Failure Path" tests.
-3. Output full test files ready for `src/test/`.
+## Environment Variables
+
+Root `.env` file (loaded by run scripts):
+
+- `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`
+- `SUPABASE_JWT_SECRET`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY`
+
+Frontend `.env`:
+
+- `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+- `VITE_API_BASE_URL` (optional, defaults to localhost:8080)
+
+## Development Notes
+
+- After backend changes: rebuild with `./mvnw clean package -DskipTests` and restart
+- Convert .env line endings if needed: `dos2unix .env` or `sed -i 's/\r$//' .env`
+- DB schema changes require migration files in `docs/backend/migrations/`
+- Keep PRs small and well-scoped; update docs when modifying schema
+
+## Key Documentation
+
+- `docs/backend/supabase-backend.md` - Schema and operational guidance
+- `docs/CRAMER_ABTS_SPECS.md` - ABTS specification
+- `docs/CRAMER_CMS_ADMIN_SPECS.md` - Admin panel specs
+- `backend/BUILD_INSTRUCTIONS.md` - Detailed build troubleshooting
+
+## Google Workspace Sync Protocol
+
+When handling any non-trivial task, include a **Workspace Copy Pack** so Jacob and Khoa can paste updates quickly into Google Workspace.
+
+### Scope and timing
+
+- Provide update drafts at relevant checkpoints: **START**, **PROGRESS**, **DONE**.
+- Keep this lightweight: only include tabs affected by the task.
+- Never invent Issue/PR links, IDs, dates, or metrics. Use `TBD` if unknown.
+
+### Output format requirements
+
+- Use fenced code blocks for copy-ready snippets.
+- For Google Sheets tabs, output **TSV rows** (tab-separated) for easy paste.
+- Prefer Vietnamese wording for row text unless user asks for another language.
+- Use date format `dd/mm/yyyy`.
+
+### `0 - Worksheet` schemas and allowed dropdown values
+
+1) **A. Now-Next-Later**
+
+- Columns: `Item | Bucket | Owner | Status | Main Link | Updated | Note`
+- Bucket: `Now`, `Next`, `Later`
+- Owner: `Jacob`, `Khoa`, `Both`
+- Status: `Scoped`, `Doing`, `Review`, `Blocked`, `Done`
+
+2) **B. Feature Pipeline**
+
+- Columns: `Feature | Stage | Lead | Success Signal | Main Link | Next Step`
+- Stage: `Discovery`, `Spec`, `Build`, `Validate`, `Shipped`
+- Lead: `Jacob`, `Khoa`, `Both`
+
+3) **C. Risks-Dependencies**
+
+- Columns: `Type | Topic | Severity | Owner | Action Needed | State | Link`
+- Type: `Risk`, `Dependency`
+- Severity: `High`, `Medium`, `Low`
+- Owner: `Jacob`, `Khoa`, `Both`
+- State: `Open`, `Watching`, `Resolved`
+
+4) **D. Release Log**
+
+- Columns: `Date | What Shipped | Proof Links | Impact | Follow-up`
+- Impact: `User-facing`, `Internal`, `Mixed`
+- Follow-up: `None`, `Minor`, `Important`
+
+### Companion drafts for Google Docs (when relevant)
+
+- **`2 - Decision Log`**: include ADR-lite draft if decision is long-lived or expensive to reverse (architecture, auth/security, schema, AI behavior, billing/quota).
+- **`3 - Weekly Notes`**: include concise bullets split into `Done`, `In progress`, `Blocked`, `Next`.
+- **`4 - Prompt Templates`**: if a useful prompt pattern emerges, include reusable template fields: `Name`, `When to use`, `Inputs`, `Prompt`, `Expected output`.
+
+### Response skeleton
+
+Use these headings when returning workspace snippets:
+
+- `Workspace Copy Pack - START`
+- `Workspace Copy Pack - PROGRESS`
+- `Workspace Copy Pack - DONE`
+
+Only include affected tabs; omit unchanged tabs.
+
+### Quick prompts (copy-paste)
+
+Use these ultra-short prompts in any AI tool (OpenCode, Antigravity, Copilot Chat, Claude Code). AI should infer context from the current session and return copy-ready output.
+
+**Ultra-short aliases (recommended)**
+
+- `ws s` or `ws start` -> Generate only `Workspace Copy Pack - START`
+- `ws p` or `ws progress` -> Generate only `Workspace Copy Pack - PROGRESS`
+- `ws d` or `ws done` -> Generate only `Workspace Copy Pack - DONE`
+- `ws all` -> Generate relevant checkpoints among START/PROGRESS/DONE
+- Optional scope: `ws d A,D` (only include tabs A and D)
+
+**Alias interpretation rules**
+
+- Infer task summary, progress, and evidence from the current session.
+- Use `TBD` for missing links/IDs/metrics instead of guessing.
+- Keep only affected tabs; omit unchanged tabs.
+- Return copy-ready blocks only.
+
+If you need stricter control, use the extended prompts below.
+
+1) **START prompt**
+
+```text
+Task: <short task summary>
+Generate only "Workspace Copy Pack - START".
+Requirements:
+- Include only affected tabs from "0 - Worksheet".
+- Use TSV rows for Sheets output.
+- Use Vietnamese wording for row content.
+- Date format: dd/mm/yyyy.
+- Do not invent issue/PR IDs, links, dates, or metrics; use TBD if unknown.
+- Return copy-ready blocks only.
+```
+
+2) **PROGRESS prompt**
+
+```text
+Task: <short task summary>
+Current progress: <what is completed / what remains>
+Generate only "Workspace Copy Pack - PROGRESS".
+Requirements:
+- Include only tabs affected right now.
+- Use TSV rows for Sheets output.
+- Keep each row concise and factual.
+- Date format: dd/mm/yyyy.
+- Use TBD for unknown values.
+- Return copy-ready blocks only.
+```
+
+3) **DONE prompt**
+
+```text
+Task completed: <short task summary>
+Evidence: <files changed, test command results, PR/issue links if available>
+Generate only "Workspace Copy Pack - DONE".
+Requirements:
+- Include only tabs affected by this completed task.
+- Use TSV rows for Sheets output.
+- Use Vietnamese wording for row content.
+- Date format: dd/mm/yyyy.
+- Use TBD where information is missing.
+- Return copy-ready blocks only.
+```
+
+4) **Full-cycle prompt (START + PROGRESS + DONE)**
+
+```text
+Task: <short task summary>
+Context: <optional branch/issue/doc links>
+Progress status: <start|in-progress|done>
+Generate Workspace copy packs for all relevant checkpoints among START, PROGRESS, DONE.
+Requirements:
+- Follow "0 - Worksheet" schemas exactly.
+- Use TSV rows for Sheets output.
+- Keep outputs concise and copy-ready.
+- Date format: dd/mm/yyyy.
+- Use TBD for unknown values.
+- Omit unchanged tabs.
+```

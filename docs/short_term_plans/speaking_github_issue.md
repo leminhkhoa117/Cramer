@@ -1,8 +1,33 @@
-# Speaking Feature - GitHub Issue Draft
+# Speaking Feature — GitHub Issue Draft & Execution Plan
 
-> File này chứa nội dung để copy-paste vào GitHub Issues.
-> Mỗi section tương ứng với 1 issue trên GitHub.
-> Xem hướng dẫn sử dụng GitHub Issues ở cuối file.
+> **Purpose**: Single source of truth cho Speaking MVP rollout.
+> - Phần đầu: content copy-paste cho GitHub Issues (parent + 11 sub-issues).
+> - Phần giữa mỗi sub-issue upcoming: `Execution Plan (Review)` chưng cất từ 5 subagents review.
+> - Phần cuối: workflow GitHub + Google Workspace sync packs.
+>
+> **Last reviewed**: 16/04/2026
+>
+> **Repo**: [leminhkhoa117/Cramer](https://github.com/leminhkhoa117/Cramer)
+
+## Status Dashboard
+
+| # | Sub-issue | GitHub | Thực tế | Owner |
+|---|-----------|--------|---------|-------|
+| 0 | [Prep] Baseline sạch | [#3](https://github.com/leminhkhoa117/Cramer/issues/3) ✅ CLOSED | Done | Jacob |
+| 1 | [DB] Schema & migration | [#4](https://github.com/leminhkhoa117/Cramer/issues/4) ✅ CLOSED | Runtime tables OK | Jacob |
+| 2 | [BE] REST API | [#9](https://github.com/leminhkhoa117/Cramer/issues/9) ✅ CLOSED | Controller + service done | Khoa |
+| 3 | [DB] Legacy cleanup + backfill | [#12](https://github.com/leminhkhoa117/Cramer/issues/12) 🟡 OPEN | Migration viết xong nhưng 10/11 tests bank mock (5/2/4); legacy còn 283 rows | Jacob |
+| 4 | [BE] LLM planner | [#13](https://github.com/leminhkhoa117/Cramer/issues/13) ✅ CLOSED | Heuristic + LLM planner OK | Khoa |
+| 5 | [BE] WebSocket + Gemini Live | [#16](https://github.com/leminhkhoa117/Cramer/issues/16) 🟡 OPEN | Backend checkpoint xong, chờ FE integration + E2E | Khoa |
+| 6 | [BE] Grading & Evaluation | [#17](https://github.com/leminhkhoa117/Cramer/issues/17) ⬜ OPEN | Mới có Noop dispatcher | Khoa |
+| 7 | [FE] Core flow | [#18](https://github.com/leminhkhoa117/Cramer/issues/18) ⬜ OPEN | Chưa có code | Khoa |
+| 8 | [FE] Real-time session | [#19](https://github.com/leminhkhoa117/Cramer/issues/19) ⬜ OPEN | Chưa có code | Khoa |
+| 9 | [Infra] Storage bucket | [#20](https://github.com/leminhkhoa117/Cramer/issues/20) ⬜ OPEN | Bucket chưa tạo | Jacob |
+| 10 | [Infra] Cleanup + testing | [#21](https://github.com/leminhkhoa117/Cramer/issues/21) ⬜ OPEN | Chưa có scheduler | Jacob |
+
+Legend: ✅ done · 🟡 in progress / partial · ⬜ not started
+
+---
 
 ---
 
@@ -92,19 +117,19 @@ Hệ thống gồm 5 phần chính:
 
 ### Sub-issues
 
-- [ ] #__ -- [Prep] Thiết lập baseline sạch cho Speaking MVP
-- [ ] #__ -- [DB] Thiết kế schema & migration cho Speaking
-- [ ] #__ -- [BE] REST API - Quản lý session Speaking
-- [ ] #__ -- [DB] Speaking legacy cleanup + official content bank backfill
-- [ ] #__ -- [BE] Optional LLM-based question selection planner
-- [ ] #__ -- [BE] WebSocket + Gemini Live API integration
-- [ ] #__ -- [BE] Hệ thống chấm điểm (Grading & Evaluation)
-- [ ] #__ -- [FE] Core flow - Pages, routing, state management
-- [ ] #__ -- [FE] Real-time session - Audio & WebSocket
-- [ ] #__ -- [Infra] Storage bucket, access rules & audio paths
-- [ ] #__ -- [Infra] Cleanup, fallback policy & kiểm thử
+- [x] [#3](https://github.com/leminhkhoa117/Cramer/issues/3) — [Prep] Thiết lập baseline sạch cho Speaking MVP
+- [x] [#4](https://github.com/leminhkhoa117/Cramer/issues/4) — [DB] Thiết kế schema & migration cho Speaking
+- [x] [#9](https://github.com/leminhkhoa117/Cramer/issues/9) — [BE] REST API - Quản lý session Speaking
+- [ ] [#12](https://github.com/leminhkhoa117/Cramer/issues/12) — [DB] Speaking legacy cleanup + official content bank backfill
+- [x] [#13](https://github.com/leminhkhoa117/Cramer/issues/13) — [BE] Optional LLM-based question selection planner
+- [ ] [#16](https://github.com/leminhkhoa117/Cramer/issues/16) — [BE] WebSocket + Gemini Live API integration
+- [ ] [#17](https://github.com/leminhkhoa117/Cramer/issues/17) — [BE] Hệ thống chấm điểm (Grading & Evaluation)
+- [ ] [#18](https://github.com/leminhkhoa117/Cramer/issues/18) — [FE] Core flow - Pages, routing, state management
+- [ ] [#19](https://github.com/leminhkhoa117/Cramer/issues/19) — [FE] Real-time session - Audio & WebSocket
+- [ ] [#20](https://github.com/leminhkhoa117/Cramer/issues/20) — [Infra] Storage bucket, access rules & audio paths
+- [ ] [#21](https://github.com/leminhkhoa117/Cramer/issues/21) — [Infra] Cleanup, fallback policy & kiểm thử
 
-> Thay `#__` bằng số issue thật sau khi tạo từng sub-issue trên GitHub.
+> Trạng thái đồng bộ với GitHub tại thời điểm 16/04/2026.
 > **Sub-issue [Prep] phải hoàn thành TRƯỚC tất cả sub-issues khác.**
 
 ### Thứ tự phụ thuộc giữa các sub-issue
@@ -1763,8 +1788,8 @@ Vai trò của WebSocket trong feature này là:
 - bám theo `sessionBlueprint` đã được tạo từ REST API
 - trả trạng thái fallback khi Gemini Live không dùng được
 
-**Parent issue**: #__
-**Depends on**: [BE] REST API (#__), [BE] Optional LLM-based question selection planner (#__)
+**Parent issue**: #2
+**Depends on**: [BE] REST API (#9), [BE] Optional LLM-based question selection planner (#13)
 
 ## Kiến trúc
 
@@ -1791,6 +1816,7 @@ Lý do dùng WebSocket thay vì REST: REST phù hợp cho request-response rời
 
 - Đăng ký `SpeakingWebSocketHandler` tại `/ws/speaking/{sessionId}`
 - Cho phép CORS (cho frontend được phép gọi từ domain khác) từ frontend origins
+- Gắn `SpeakingWebSocketAuthInterceptor` để reject handshake không có JWT hợp lệ trước khi upgrade sang WebSocket
 - Implement `WebSocketConfigurer`
 
 ```java
@@ -1811,7 +1837,7 @@ Extends `AbstractWebSocketHandler`. Quản lý vòng đời WebSocket session.
 
 **Kết nối (`afterConnectionEstablished`)**:
 1. Extract `sessionId` từ URI path
-2. Validate JWT / user ownership của session
+2. Nhận user identity đã được validate ở handshake layer (fallback cũ vẫn giữ trong handler để fail closed nếu interceptor không populate attributes như kỳ vọng)
 3. Load `speaking_sessions.session_blueprint`, `session_mode`, `accent`, `speed`, `status`, `is_finalized`
 4. Reject nếu session không còn mở để thi (`status != 'in_progress'` hoặc `is_finalized = true`)
 5. Kiểm tra `speaking.gemini.live.enabled` và `gemini.api.key`
@@ -1844,25 +1870,27 @@ Extends `AbstractWebSocketHandler`. Quản lý vòng đời WebSocket session.
 
 ### 3. `GeminiLiveWebSocketClient` (`com.cramer.websocket`)
 
-Extends `org.java_websocket.client.WebSocketClient`. Kết nối tới Gemini Live API.
+Implementation hiện tại dùng JDK `java.net.http.WebSocket` thay vì `org.java_websocket.client.WebSocketClient`. Mục tiêu vẫn giữ nguyên: kết nối server-to-server tới Gemini Live API và bridge event về `SpeakingWebSocketHandler`.
 
-**URI**: 
+**URI hiện tại**: 
 ```
-wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=<API_KEY>
+wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=<API_KEY>
 ```
 
-**Lifecycle**:
-1. `onOpen`: Gửi setup message (model config, voice, system instruction)
-2. `onMessage`: Parse Gemini responses (`modelTurn`, `inputTranscript`, `turnComplete`, `setupComplete`)
-3. Forward audio/transcript về `SpeakingWebSocketHandler`
-4. `onClose`/`onError`: Log + thông báo Frontend
+**Lifecycle hiện tại**:
+1. `connect()`: mở upstream WebSocket tới Gemini Live
+2. `onOpen`: gửi setup message (model config, voice, system instruction)
+3. `onText`: parse Gemini responses (`modelTurn`, `inputTranscription`, `outputTranscription`, `turnComplete`, `setupComplete`, `goAway`)
+4. Forward audio/transcript/speaking-state về `SpeakingWebSocketHandler`
+5. `onClose`/`onError`: reset state nội bộ; handler sẽ downgrade sang `fallback_text_mode` nếu upstream không còn dùng được
+6. Có thêm `disposed` guard để tránh orphan connection khi frontend đóng socket trước lúc upstream connect hoàn tất
 
 **Key methods**:
 - `sendSetupMessage()` -- cấu hình model, voice, system prompt
-- `sendQuestionPrompt(Map<String, Object> questionSnapshot)` -- gửi đúng prompt/cue card đã chốt cho examiner đọc
+- `sendQuestionPrompt(JsonNode questionSnapshot)` -- gửi đúng prompt/cue card đã chốt cho examiner đọc
 - `sendAudioChunk(byte[] audioData)` -- forward audio user
 - `sendEndOfTurn()` -- báo user nói xong
-- `createGeminiUri(String apiKey)` -- static, build URI
+- `createGeminiUri(String endpoint, String apiKey)` -- static, build URI
 
 ### 4. `GeminiLiveService` (`com.cramer.service`) -- Optional helper
 
@@ -1882,8 +1910,8 @@ wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.
    b. transcript (JSON) -> forward tới FE
    c. Khi đọc xong: examiner_speaking=false -> FE mở mic
 6. User nói -> FE gửi binary audio chunks
-7. Backend forward audio tới Gemini via realtime_input.media_chunks
-8. Gemini trả về inputTranscript + turnComplete
+7. Backend forward audio tới Gemini qua `realtimeInput.audio`
+8. Gemini trả về `inputTranscription` / `outputTranscription` + `turnComplete`
 9. Backend forward về FE
 10. Lặp lại từ bước 1 cho turn tiếp theo
 ```
@@ -1892,8 +1920,9 @@ wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.
 
 | Tình huống | Hành vi |
 |------------|---------|
+| JWT thiếu / sai ở handshake | Reject HTTP handshake với `401` trước khi WebSocket upgrade |
 | Gemini Live không cấu hình hoặc không kết nối được | Trả `status=fallback_text_mode`; frontend vẫn hiển thị prompt dạng text |
-| Mất kết nối giữa chừng | Gửi `error` rõ ràng để frontend quyết định reconnect hoặc kết thúc session |
+| Mất kết nối giữa chừng / upstream `goAway` / upstream `close` | Backend downgrade sang `fallback_text_mode`; frontend vẫn có thể tiếp tục theo text prompt |
 | Gemini trả transcript kém | Vẫn ưu tiên giữ audio recording; transcript real-time chỉ là hỗ trợ UI |
 
 ## Configuration
@@ -1903,34 +1932,66 @@ speaking.gemini.live.enabled=${SPEAKING_GEMINI_LIVE_ENABLED:true}
 gemini.api.key=${GEMINI_API_KEY:}
 ```
 
+> Giai đoạn hiện tại vẫn support `access_token` / `token` query parameter để tương thích với browser WebSocket flow. Đây là compatibility path, không nên xem là auth model cuối cùng.
+
 ## Dependencies (Maven)
 
 ```xml
-<!-- Java-WebSocket client library -->
-<dependency>
-    <groupId>org.java-websocket</groupId>
-    <artifactId>Java-WebSocket</artifactId>
-    <version>1.5.6</version>
-</dependency>
+<!-- Không bắt buộc thêm Java-WebSocket nếu tiếp tục dùng JDK java.net.http.WebSocket -->
+<!-- spring-boot-starter-websocket vẫn cần cho endpoint /ws/speaking/{sessionId} -->
 ```
 
 ## Acceptance Criteria
 
-- [ ] WebSocket kết nối thành công FE <-> BE <-> Gemini
-- [ ] Handler dùng đúng `sessionBlueprint` đã được tạo từ REST API
-- [ ] Audio hai chiều hoạt động (examiner đọc câu hỏi, user trả lời)
-- [ ] Transcript real-time hiển thị đúng
-- [ ] Chỉ session thuộc đúng user và chưa finalized mới mở WebSocket được
-- [ ] Fallback `fallback_text_mode` hoạt động khi Gemini unavailable
-- [ ] Graceful disconnect khi session kết thúc hoặc abandon
-- [ ] Error handling cho mất kết nối giữa chừng
-- [ ] Không bị memory leak (sessions map được dọn khi disconnect)
+- [x] Backend đã có endpoint `/ws/speaking/{sessionId}` và bridge FE <-> BE <-> Gemini ở mức checkpoint backend
+- [x] Handler refresh session state và dùng đúng `sessionBlueprint` runtime từ REST/session service
+- [x] Audio hai chiều đã có backend transport path (examiner audio binary -> FE, user audio binary -> Gemini)
+- [x] Transcript real-time đã có backend event path (`transcript`, `examiner_speaking`, `turn_complete`)
+- [x] Chỉ session thuộc đúng user và chưa finalized mới mở WebSocket được
+- [x] Fallback `fallback_text_mode` hoạt động khi Gemini unavailable hoặc upstream fail/close/goAway
+- [x] Graceful fail-closed cơ bản khi session stale/finalized giữa chừng
+- [x] Có lifecycle hardening cơ bản để giảm orphan connection / stale upstream session
+- [x] Invalid JWT bị reject từ handshake layer trước khi WebSocket upgrade hoàn tất
+- [ ] Cần FE integration + manual E2E để xác nhận production-readiness hoàn chỉnh
 
 ---END COPY---
 
 ---
 
 ## SUB-ISSUE 6: [BE] Hệ thống chấm điểm (Grading & Evaluation)
+
+> **GitHub**: [#17](https://github.com/leminhkhoa117/Cramer/issues/17) ⬜ OPEN · Owner: Khoa
+>
+> ### 📋 Execution Plan (distilled from 5 free-form subagent reviews)
+>
+> **1. Audio format & payload handling**
+> - FE uploads `audio/webm;codecs=opus` (default MediaRecorder) nhưng OpenRouter `input_audio.format` **chỉ chấp nhận mp3/wav**. Cần `SpeakingAudioPreparer`: transcode webm/opus → mp3 16kHz mono trước khi base64.
+> - Cap per-turn: ≤ 180s duration, total payload ≤ 18 MB base64 → nếu vượt, fallback text-only grading.
+> - Raise `max_tokens` lên **8192** cho grading call (hiện hardcode 4096 trong `OpenRouterClient.callWithAudio`).
+> - ffmpeg dependency phải có sẵn trong Railway container image.
+>
+> **2. Multi-turn assembly**
+> - Gửi **một `AudioPart` per turn** interleaved với `TextPart` markers (`"--- Turn N (Part p) Q: {questionSnapshot} ---"`), sắp xếp theo `turnIndex`. Không concat audio vì mất Part-level attribution.
+> - Nếu tổng size vượt ngưỡng → fan-out **per-part grading** + aggregator prompt.
+>
+> **3. State-machine & invariants**
+> - Tạo enum `SpeakingSessionStatus` + helper `transitionTo(session, next)` trong locked tx. Allowed matrix: `in_progress → completed → grading → (graded | grading_failed)`; `grading_failed → grading` cho retry (max 2).
+> - Thêm cột `grading_attempts int default 0`, `last_grading_error text`, `grading_result.schema_version` (`"1.0"`) cho evolution.
+> - DB check constraint: `overall_band BETWEEN 0 AND 9 AND (overall_band*2)::int = overall_band*2` (half-step validity). Validate band range + half-step sau khi parse LLM output; snap hoặc reject.
+> - `@Scheduled` **sweeper** (mỗi 60s) requeue session kẹt `completed` >5min hoặc `grading` >10min → `grading_failed` (watchdog).
+>
+> **4. Graceful degradation & refund**
+> - Thêm field `gradingMode: "multimodal" | "text_only" | "heuristic"` + `degradedReason` vào `grading_result` JSONB.
+> - Retry path: multimodal → 1× backoff → text-only (DeepSeek) → terminal fail + **auto-refund lúa** via credit ledger (idempotent key `(sessionId, "refund_grading_failed")`).
+> - Admin endpoint `POST /api/admin/speaking/sessions/{id}/regrade?mode=...` không re-debit.
+> - Partial session (FULL abandoned sau Part 1): `overallBand = null`, per-part bands only, `partialReason` flagged.
+>
+> **5. Observability & acceptance additions**
+> - Metrics: `speaking.grading.success/fail/retry`, `p95 latency`, band distribution.
+> - Structured log: `grading_result.audioMeta { totalBytesSent, turnsSent, transcodedFrom, model, promptHash, blueprintVersion }`.
+> - Integration test: webm input → graded; corrupt audio → `grading_failed` với `error.code="AUDIO_DECODE_FAILED"`; stuck grading >10min → watchdog fires; refund idempotent khi admin regrade; text-only fallback cap pronunciation band confidence=`low`.
+
+---
 
 ### Title
 
@@ -2113,6 +2174,46 @@ openrouter.api.key=${OPENROUTER_API_KEY:}
 ---
 
 ## SUB-ISSUE 7: [FE] Core Flow - Pages, Routing, State Management
+
+> **GitHub**: [#18](https://github.com/leminhkhoa117/Cramer/issues/18) ⬜ OPEN · Owner: Khoa
+>
+> ### 📋 Execution Plan (distilled from 5 free-form subagent reviews)
+>
+> **1. Backend DTO alignment (wire format)**
+> - **Status casing**: backend `SpeakingGradingStatusDTO.status` là raw String; Writing flow dùng UPPERCASE (`WritingResultPage.jsx`). Chốt **UPPERCASE** cho Speaking và share const `SPEAKING_STATUS` giữa FE/BE để tránh switch fallthrough.
+> - DTO có sẵn nhưng plan bỏ sót: `progress` (String), `estimatedSeconds`, `updatedAt` → dùng cho ProcessingScreen ETA.
+> - `SpeakingSessionDTO` có `status`, `isFinalized`, `luaCost`, `startedAt`, `completedAt`, `gradedAt` → store phải track `serverStatus` separate từ local `phase`. Hydrate `phase` từ `serverStatus + isFinalized` khi mount để resume.
+> - `speed` backend là `BigDecimal` → coerce bằng `Number(dto.speed)` khi read, send numeric. Unit test round-trip `BigDecimal("1.15")`.
+> - `sessionBlueprint` (JsonNode) treat as read-only opaque; UI drive từ `turns[]` duy nhất.
+>
+> **2. Accent/speed persistence + credit UX reuse**
+> - Reuse pattern `localStorage` prefixed (`speaking_setup_accent`, `speaking_setup_speed`) như `WritingResultPage` đã làm với `writingResult_essayViewMode`.
+> - Mirror lên `profiles.preferred_accent`, `profiles.preferred_speed` (nullable, no backfill) via `useProfileStore.updateProfile`.
+> - **Credit check**: reuse component `GradingQuotaInfo` cho insufficient-credit state; gate **Start button**, không chỉ submit. Backend nên return typed `errorCode: "INSUFFICIENT_CREDIT"` (tránh string match `"lượt"|"quota"`).
+>
+> **3. Data contract CourseDetailPage → SpeakingPartModal**
+> - `CourseDetailPage.jsx` hiện hardcode 3 skills (Reading/Listening/Writing). Endpoint `/api/courses/{code}/tests` chỉ trả `List<Integer>` test numbers → **không đủ** cho Speaking eligibility check.
+> - **Extend endpoint** (hoặc thêm `/v2`) trả `[{ testId, testNumber, skills: {reading,listening,writing,speaking}, isPublished }]`.
+> - Per-test skill availability filter: chỉ render Speaking card khi `skills.speaking === true`. Hiện live DB chỉ test #1 (Cam17) đủ bank 30/1/15 và published.
+> - `SpeakingPartModal` nhận props `{ testId, testNumber, testSetCode }`, sau khi chọn mode: `navigate('/speaking/session/{mode}?testId={testId}', { replace: true })`.
+> - Per-mode gating: disable Part 3 button nếu bank Part 3 < 15 cho test đó.
+>
+> **4. State-machine persistence & safety**
+> - Zustand `persist` với `sessionStorage` (scope per tab), partialize `{ sessionId, phase, sessionMode, testId }`; exclude transcripts/audio blobs.
+> - **URL carries `sessionId`**: sau khi create, `navigate('...?sid={sessionId}', {replace:true})` → deep-link resume.
+> - On mount `SpeakingSessionPage` với `sid` persisted: call `GET /sessions/{id}`, derive phase từ `status`.
+> - `useBeforeUnload` + React Router `useBlocker` trong `CREATING_SESSION` / `LIVE_SESSION` với VN confirm copy. On confirm → `navigator.sendBeacon('/abandon')` (backend phải idempotent).
+> - 404 interceptor trong `speakingApi`: clear store + redirect source page + toast. Tránh infinite poll.
+> - `completeSession` failure → stay in `PROCESSING` với retry button; không navigate kết quả.
+>
+> **5. Polling hygiene (`useGradingPoll`)**
+> - `setTimeout` recursion (không `setInterval`), backoff `3→5→8→13→15s` + ±15% jitter, hard timeout **5 phút** → UI "still grading, xem lại trong History".
+> - `document.visibilitychange === 'hidden'` pause; `visible` resume với immediate fire.
+> - Cleanup useEffect return: clear timer + `AbortController.abort()`.
+> - On mount hydrate từ `GET /sessions/:id`, skip poll nếu status terminal đã có.
+> - 4xx (403/404) short-circuit, không backoff. StrictMode double-mount → ref guard.
+
+---
 
 ### Title
 
@@ -2316,6 +2417,51 @@ export function setupSpeakingApiClient(apiInstance) {
 ---
 
 ## SUB-ISSUE 8: [FE] Real-time Session - Audio & WebSocket
+
+> **GitHub**: [#19](https://github.com/leminhkhoa117/Cramer/issues/19) ⬜ OPEN · Owner: Khoa
+>
+> ### 📋 Execution Plan (distilled from 5 free-form subagent reviews)
+>
+> **1. WS auth lifecycle cho session dài (15+ phút)**
+> - `SpeakingWebSocketAuthInterceptor.beforeHandshake` validate JWT **chỉ một lần**; token default Supabase ~1h có thể expire mid-session.
+> - Transport token ưu tiên `Sec-WebSocket-Protocol: ["bearer", jwt]` thay vì `?access_token=` (query param leak vào access logs, Referer). Giữ header primary, deprecate legacy `?token=`.
+> - FE: subscribe `supabase.auth.onAuthStateChange('TOKEN_REFRESHED')` → send app-level `{type:"auth.refresh", access_token}` frame. BE handler re-validate + update per-session `authExpiresAt`; close với 4401 nếu hết hạn.
+> - BE periodic re-validation ~60s; app-level heartbeat 20s (Part 2 prep 1min silent dễ bị proxy idle-timeout).
+> - Log filter scrub `access_token`/`token` query params.
+>
+> **2. Cross-browser MediaRecorder matrix**
+> - Chrome/Edge/Firefox: `audio/webm;codecs=opus`. Safari (macOS 14.4+, iOS 14.5+): **chỉ** `audio/mp4` (AAC). iOS <14.5 không có `MediaRecorder` → feature-detect banner.
+> - Runtime probe `MediaRecorder.isTypeSupported()` theo order: `webm;opus` → `mp4` → `aac` → PCM fallback. Expose chosen MIME trong upload metadata.
+> - `getUserMedia` constraints bắt buộc: `{ echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: 16000 }`.
+> - `AudioContext` iOS suspended → `context.resume()` inside user gesture (Start Speaking button click).
+>
+> **3. Storage upload strategy**
+> - `SupabaseStorageService` **không có `delete()` và không có `createSignedUploadUrl()`** hiện tại. Hai gaps này phải đóng.
+> - Path: `{userId}/{sessionId}/turn-{turnIndex}-{epochMs}.{ext}`. RLS policy: `(storage.foldername(name))[1] = auth.uid()::text`.
+> - Recommended: **signed upload URL** từ backend (`POST /api/storage/speaking/upload-url`) → browser PUT trực tiếp. Không proxy qua Spring (tiết kiệm 40% CPU, giảm latency).
+> - Upload wrapper: exponential backoff (3 retries, 1/2/4s), `AbortController` timeout 30s, progress % qua `xhr.upload.onprogress`.
+> - Queue **sequential per session** trong Zustand → đảm bảo `turnIndex` ordering; parallel across sessions OK.
+> - Submit race: disable submit button khi `pendingUploadCount > 0`; backend `/complete` check `storage.exists()` cho mỗi expected turn với 10s grace, mark missing turns `UPLOAD_FAILED`, cho retry resume.
+>
+> **4. UX microdetails**
+> - `Part2PrepLayout`: explicit `<StartSpeakingButton>` CTA; auto-advance khi expire với 3-2-1 overlay.
+> - `TurnStatePill`: `examiner_speaking | your_turn | processing` với color + icon + `aria-live` announcement.
+> - `useSilenceDetection` (AnalyserNode, RMS < −50 dBFS sustained 2.5s) → show hint "Tap if done"; auto-advance sau 4s (**chỉ Part 1/3**, KHÔNG Part 2).
+> - `useMicHealthCheck`: sample 1s đầu RMS; flatline → toast "Mic seems muted" với link system settings.
+> - Talk-time countdown Part 2 (2:00), soft-cap badge per turn Part 1/3.
+> - Exit split: **Save & quit** (`PATCH status=paused`, resumable) vs **Abandon** (confirm modal, irreversible).
+> - `beforeunload` guard mid-session.
+>
+> **5. Acceptance additions**
+> - Force JWT expiry T+5min → server close 4401, FE auto-refresh + reconnect trong 2s, audio gap <500ms.
+> - WS drop ×3 → exactly 1 active MediaStreamTrack; không duplicate mic permission prompt.
+> - Chrome/Firefox/Safari-desktop/iOS Safari 15+ đều record thành công; network tab show correct MIME per browser.
+> - Access log audit: **không có JWT substring** trong logs sau full session.
+> - RLS test: user A không thể upload vào folder user B (403).
+> - 20 turn liên tiếp: 0 ordering violation, ≤1 retry avg.
+> - Silent-mic warning hiện trong 2s khi hot mic RMS flatline.
+
+---
 
 ### Title
 
@@ -2553,6 +2699,56 @@ User speaks -> MediaRecorder -> audio chunks (250ms mỗi chunk)
 
 ## SUB-ISSUE 9: [Infra] Storage bucket, access rules & audio paths
 
+> **GitHub**: [#20](https://github.com/leminhkhoa117/Cramer/issues/20) ⬜ OPEN · Owner: Jacob
+>
+> ### 📋 Execution Plan (distilled from 5 free-form subagent reviews)
+>
+> **1. SupabaseStorageService gap analysis**
+> - Hiện có: `download`, `downloadFromUrl`, `upload`, `getPublicUrl`, `exists`. **Thiếu**: `delete()`, `createSignedUploadUrl()`, `createSignedReadUrl()`.
+> - `getPublicUrl` trả về `/object/public/...` hardcoded (line 182) → **không được dùng cho speaking** (contract yêu cầu private).
+> - Bucket default hardcoded `"speaking-audio"` (line 39) → externalize thành `@Value("${cramer.storage.speaking-bucket}")` để env separation.
+>
+> **2. Upload auth path (recommended: signed upload URL)**
+> - So với browser direct (anon JWT + RLS) và backend-proxied (service-role):
+>   - **Backend proxy**: double bandwidth, Spring CPU tốn, giữ service-role server-side nhưng chậm.
+>   - **Browser direct anon+RLS**: cheapest nhưng phải author RLS policies chặt chẽ per path prefix.
+>   - **Signed upload URL** (chọn): backend mint short-lived token (TTL 300s), browser PUT trực tiếp. Reuse existing service-role, không cần RLS writing policy phức tạp.
+> - Add `POST /api/storage/speaking/upload-url` endpoint: validate `path` phải begin với authenticated `{userId}/`, reject `..` và cross-user prefix.
+>
+> **3. Lifecycle, retention, cost**
+> - Retention policy **explicit**:
+>   - Abandoned/expired sessions: delete audio T+24h.
+>   - Finalized + graded sessions: delete audio T+30d (debateable; lưu lâu hơn tốn storage).
+> - Object constraints: `Content-Type: audio/webm | audio/mp4`, max 15 MB/object, max 40 objects/session.
+> - Cost projection (Supabase $0.021/GB-mo storage + $0.09/GB egress):
+>   - 1k sessions/mo × 10.8 MB ≈ 10.8 GB/mo → **~$0.23/mo storage**, ~$1/mo egress cho grading download.
+>   - 10k sessions/mo → ~$2.3/mo storage, tích lũy ~130 GB sau 1 năm nếu không cleanup → **~$2.7/mo + egress**.
+> - Retention values là **constants shared với Sub-issue 10** (không duplicate magic numbers).
+>
+> **4. Privacy / security (voice = PII / biometric)**
+> - Confirm Supabase AES-256 at-rest (document trong docs/backend/supabase-backend.md).
+> - RLS `INSERT` policy: `auth.uid()::text = (storage.foldername(name))[1]` → user A không write được folder user B.
+> - Signed read URL cho grading: TTL **≤ 300s**, one-shot nếu hỗ trợ, **không log**.
+> - `deleteUserAudio(userId)` hook wired vào account-deletion flow (GDPR Art.17).
+> - Audit log row on mọi service-role read/delete: `actor, action, object_key, timestamp`.
+>
+> **5. Ops & env separation**
+> - Bucket name environment-scoped: `speaking-audio-{env}` (dev/staging/prod). Fail-fast startup ở `prod` nếu `supabase.storage.speaking-bucket` unset.
+> - Migration `docs/backend/migrations/20260416_storage_buckets.sql`: create bucket + RLS + Dashboard fallback steps.
+> - E2E test isolation: prefix `e2e/{runId}/...`; `@AfterAll` hook batch-delete via `/storage/v1/object/list` + `DELETE`. Guard: reject empty runId, bucket phải có suffix `-test`.
+> - Backup: nightly GitHub Action `supabase storage cp --recursive` → S3 Glacier (prod only); 30d retention; documented restore drill.
+> - Lint/grep check trong PR: `grep -R "\"speaking-audio\"" backend/src` chỉ hit property default.
+>
+> **6. Acceptance additions**
+> - [ ] `SupabaseStorageService.delete()` + unit test (200/404/403 branches).
+> - [ ] `createSignedUploadUrl()` + expiry ≤ 300s test.
+> - [ ] RLS test: user A → folder user B = 403.
+> - [ ] Account-deletion cascades audio files; integration test.
+> - [ ] Retention cron configurable `cramer.speaking.audio.retention-days` (default 30).
+> - [ ] E2E suite residual objects = 0 sau run.
+
+---
+
 ### Title
 
 ```
@@ -2678,6 +2874,61 @@ Lợi ích của path này:
 ---
 
 ## SUB-ISSUE 10: [Infra] Cleanup, fallback policy & kiểm thử
+
+> **GitHub**: [#21](https://github.com/leminhkhoa117/Cramer/issues/21) ⬜ OPEN · Owner: Jacob
+>
+> ### 📋 Execution Plan (distilled from 5 free-form subagent reviews)
+>
+> **1. Scheduling infrastructure (first @Scheduled trong codebase!)**
+> - `grep @Scheduled|@EnableScheduling` → **zero** matches. Cần tạo `SchedulingConfig` có `@EnableScheduling` (guarded bởi `speaking.cleanup.enabled`), không bật ở main app class.
+> - Config: `speaking.cleanup.cron` (default `0 0 * * * *` hourly), `speaking.cleanup.dry-run=false`, `speaking.cleanup.batch-size=200`.
+> - Multi-instance safety: **ShedLock** hoặc `pg_advisory_lock` keyed on job name. Nếu không adopt → document single-instance-only constraint trong Decision Log.
+> - Inject `Clock` (thay vì `LocalDateTime.now()`) cho test deterministic.
+> - First `@SpringBootTest` integration baseline với Testcontainers Postgres (hoặc H2 profile).
+>
+> **2. Cleanup correctness & safety**
+> - Metrics Micrometer: `speaking.cleanup.expired_total`, `speaking.cleanup.failed_total`, timer `speaking.cleanup.duration`. Structured log với `runId`.
+> - Dry-run mode: log intended deletions không touch storage/DB.
+> - Order: set `status='expired'` trước → delete audio → tolerate 404 (idempotent re-run safe).
+> - Grace window: skip rows với `updated_at > now() - 60s` (tránh race với late `/complete`).
+> - Batch cap 200/run; fail-fast nếu >10% errors trong batch.
+> - **Ignore** sessions trong `completed|grading|graded` trạng thái; chỉ expire `in_progress` quá 24h.
+>
+> **3. Fallback policy gaps**
+> - Thêm `SpeakingGradingWatchdogJob`: quét `status='grading' AND updated_at < now()-10m` → `grading_failed` + enqueue 1 retry (max 2 total), sau đó refund.
+> - `SpeakingRefundService.refundOnTerminalFailure(sessionId)` **idempotent** bằng unique `(sessionId, "refund_grading_failed")` trên credit ledger.
+> - User soft-delete cascade: delete audio theo prefix `{userId}/`, trong ≤1 cleanup cycle.
+> - Copy catalog `docs/speaking/user-error-copy.md` cho 6 terminal states (VN).
+>
+> **4. Test matrix completeness**
+> - Concurrency/idempotency tests:
+>   - `/complete` gọi 3× → exactly 1 credit deduction.
+>   - Concurrent `complete + abandon` → deterministic winner (pessimistic lock).
+>   - Parallel session same user (2 tabs/devices): **chính sách reject 409** (document).
+>   - WS reconnect mid-session: transcripts preserve order, no duplicates.
+> - Load baseline: k6/Gatling smoke với **20 concurrent Speaking sessions** sustained 5min; record p95 WS latency + DB connections + error rate <1%.
+> - Cleanup race: late `/complete` arrives on about-to-expire session → grace window prevents false expire.
+>
+> **5. Release readiness**
+> - Feature flag: `app.features.speaking.enabled` (BE) + `VITE_FEATURE_SPEAKING` (FE). Per-user allowlist qua `profiles.feature_flags` JSONB.
+> - Staged rollout: internal → 5% paid → 25% → 100%, 48h soak mỗi stage.
+> - Rollback: flag flip → UI hide, `/api/speaking/**` return 503, queued attempts preserve, credits auto-refund.
+> - Observability dashboards:
+>   - Supabase SQL views cho daily session funnel.
+>   - Alert rules as code (committed): error-rate >5%/10min, cleanup failed_total >0 trong 15min window, grading p95 >90s.
+> - Runbook `docs/runbooks/speaking-oncall.md`: Gemini outage triage, key rotation, quota bump, refund SQL, flag-flip steps.
+>
+> **6. Acceptance additions**
+> - [ ] `@EnableScheduling` present, boot-context test cover.
+> - [ ] Dry-run mode verified; ShedLock (hoặc decision log) present.
+> - [ ] Watchdog test: session stuck `grading` 10min → auto `grading_failed` + refund đúng 1 lúa.
+> - [ ] Complete endpoint idempotent (3× call → 1 deduction).
+> - [ ] Load: 20 concurrent sessions 5min, error rate <1%.
+> - [ ] Feature flag flip E2E demo (UI hide, API 503, refund idempotent).
+> - [ ] Synthetic Gemini outage drill executed in staging.
+> - [ ] Replace remaining `#__` placeholders với real issue IDs (AGENTS.md §Verification).
+
+---
 
 ### Title
 
@@ -3214,17 +3465,17 @@ Tính năng Speaking - AI IELTS Examiner	Build	TBD	User hoàn thành 1 buổi th
 #### Tab A. Now-Next-Later (tất cả Done)
 
 ```tsv
-[Prep] Thiết lập baseline sạch cho Speaking MVP	Now	Jacob	Done	TBD	TBD	Hoàn thành
+[Prep] Thiết lập baseline sạch cho Speaking MVP	Now	TBD	Done	TBD	TBD	Hoàn thành
 [DB] Schema & migration Speaking	Now	TBD	Done	TBD	TBD	Shared hierarchy + runtime tables + RLS + minimal seed
 [BE] REST API Speaking	Now	TBD	Done	TBD	TBD	Session lifecycle + transcript + grading status + history
-[DB] Speaking legacy cleanup + backfill	Now	TBD	Done	TBD	TBD	Legacy policy chot, official bank 30/1/15 da san sang
-[BE] Optional LLM planner	Now	TBD	Done	TBD	TBD	Provider-neutral planner + heuristic fallback OK
-[BE] WebSocket + Gemini Live	Now	TBD	Done	TBD	TBD	Audio hai chiều OK
-[BE] Grading & Evaluation	Now	TBD	Done	TBD	TBD	Async grading < 60s
-[FE] Core flow Speaking	Now	TBD	Done	TBD	TBD	Routes active, pre-brief + session create + results OK
-[FE] Real-time session	Now	TBD	Done	TBD	TBD	Mic, WS, examiner audio, upload từng turn OK
-[Infra] Storage bucket + audio paths	Now	Jacob	Done	TBD	TBD	Private bucket + audioStoragePath + access rules OK
-[Infra] Cleanup + fallback policy + testing	Now	TBD	Done	TBD	TBD	Cleanup job, fallback policy, tests pass
+[DB] Speaking legacy cleanup + backfill	Now	TBD	Doing	TBD	TBD	Đang còn open trên GitHub (#12)
+[BE] Optional LLM planner	Now	TBD	Done	TBD	TBD	Provider-neutral planner + heuristic fallback OK (#13 closed)
+[BE] WebSocket + Gemini Live	Now	TBD	Doing	TBD	TBD	Backend checkpoint đã xong; targeted tests pass, full backend tests pass; còn FE integration và manual E2E (#16 open)
+[BE] Grading & Evaluation	Now	TBD	Scoped	TBD	TBD	Chưa có issue number thật trong doc này
+[FE] Core flow Speaking	Now	TBD	Scoped	TBD	TBD	Chưa có issue number thật trong doc này
+[FE] Real-time session	Now	TBD	Scoped	TBD	TBD	Chưa có issue number thật trong doc này
+[Infra] Storage bucket + audio paths	Now	Jacob	Scoped	TBD	TBD	Chưa có issue number thật trong doc này
+[Infra] Cleanup + fallback policy + testing	Now	TBD	Scoped	TBD	TBD	Chưa có issue number thật trong doc này
 ```
 
 #### Tab B. Feature Pipeline
