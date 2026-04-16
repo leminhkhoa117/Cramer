@@ -18,7 +18,7 @@
 | 2 | [BE] REST API | [#9](https://github.com/leminhkhoa117/Cramer/issues/9) ✅ CLOSED | Controller + service done | Khoa |
 | 3 | [DB] Legacy cleanup + backfill | [#12](https://github.com/leminhkhoa117/Cramer/issues/12) ✅ CLOSED | Official test #1 Cam17 đạt 30/1/15; mock tests #32-41 sections marked DRAFT; legacy 6 tables archived với RLS+COMMENT | Jacob |
 | 4 | [BE] LLM planner | [#13](https://github.com/leminhkhoa117/Cramer/issues/13) ✅ CLOSED | Heuristic + LLM planner OK | Khoa |
-| 5 | [BE] WebSocket + Gemini Live | [#16](https://github.com/leminhkhoa117/Cramer/issues/16) 🟡 OPEN | Backend checkpoint xong, chờ FE integration + E2E | Khoa |
+| 5 | [BE] WebSocket + Gemini Live | [#16](https://github.com/leminhkhoa117/Cramer/issues/16) ✅ CLOSED | Handler + Gemini client + auth interceptor; race-leak fix + text buffer cap; 12/12 tests; chờ FE integration | Khoa |
 | 6 | [BE] Grading & Evaluation | [#17](https://github.com/leminhkhoa117/Cramer/issues/17) ⬜ OPEN | Mới có Noop dispatcher | Khoa |
 | 7 | [FE] Core flow | [#18](https://github.com/leminhkhoa117/Cramer/issues/18) ⬜ OPEN | Chưa có code | Khoa |
 | 8 | [FE] Real-time session | [#19](https://github.com/leminhkhoa117/Cramer/issues/19) ⬜ OPEN | Chưa có code | Khoa |
@@ -122,7 +122,7 @@ Hệ thống gồm 5 phần chính:
 - [x] [#9](https://github.com/leminhkhoa117/Cramer/issues/9) — [BE] REST API - Quản lý session Speaking
 - [x] [#12](https://github.com/leminhkhoa117/Cramer/issues/12) — [DB] Speaking legacy cleanup + official content bank backfill
 - [x] [#13](https://github.com/leminhkhoa117/Cramer/issues/13) — [BE] Optional LLM-based question selection planner
-- [ ] [#16](https://github.com/leminhkhoa117/Cramer/issues/16) — [BE] WebSocket + Gemini Live API integration
+- [x] [#16](https://github.com/leminhkhoa117/Cramer/issues/16) — [BE] WebSocket + Gemini Live API integration
 - [ ] [#17](https://github.com/leminhkhoa117/Cramer/issues/17) — [BE] Hệ thống chấm điểm (Grading & Evaluation)
 - [ ] [#18](https://github.com/leminhkhoa117/Cramer/issues/18) — [FE] Core flow - Pages, routing, state management
 - [ ] [#19](https://github.com/leminhkhoa117/Cramer/issues/19) — [FE] Real-time session - Audio & WebSocket
