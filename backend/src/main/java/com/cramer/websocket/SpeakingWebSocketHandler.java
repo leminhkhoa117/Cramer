@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -75,6 +76,7 @@ public class SpeakingWebSocketHandler extends AbstractWebSocketHandler {
     private final Map<String, SessionState> activeSessions =
         new ConcurrentHashMap<>();
 
+    @Autowired
     public SpeakingWebSocketHandler(
         SpeakingSessionService speakingSessionService,
         JwtUtil jwtUtil,
