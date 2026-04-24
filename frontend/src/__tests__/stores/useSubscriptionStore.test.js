@@ -52,7 +52,11 @@ const createTestSubscriptionStore = () => {
 
             let featuresMap = {};
 
-            if (data.featureAccess?.features) {
+            if (Array.isArray(data.features)) {
+              data.features.forEach(feature => {
+                featuresMap[feature] = true;
+              });
+            } else if (data.featureAccess?.features) {
               featuresMap = data.featureAccess.features;
             } else if (tierInfo.features && Array.isArray(tierInfo.features)) {
               tierInfo.features.forEach(feature => {
@@ -212,6 +216,51 @@ describe('useSubscriptionStore', () => {
 
       expect(store.getState().features.chat).toBe(true);
       expect(store.getState().features.ai_grading).toBe(true);
+    });
+
+    it('should handle root-level features array (CURRENT BACKEND SHAPE — bug S3 regression)', async () => {
+      // Backend SubscriptionStatusDTO.java:47 returns features as a root-level array
+      // of feature code strings. This test guards against bug S3 (BUG_AUDIT_2026-04-23.md)
+      // where the store didn't read this shape and `features` stayed empty {}.
+      const mockStatus = {
+        tier: { code: 'cramerich', name: 'Cramerich', priceVnd: 79000 },
+        features: ['ai_writing_grading', 'chatbot', 'unlimited_translation'],
+      };
+
+      subscriptionApi.getMyStatus.mockResolvedValueOnce({ data: mockStatus });
+
+      await act(async () => {
+        await store.getState().fetchSubscriptionStatus();
+      });
+
+      expect(store.getState().features.ai_writing_grading).toBe(true);
+      expect(store.getState().features.chatbot).toBe(true);
+      expect(store.getState().features.unlimited_translation).toBe(true);
+      expect(store.getState().hasFeature('ai_writing_grading')).toBe(true);
+      expect(store.getState().hasFeature('non_existent')).toBe(false);
+    });
+
+    it('should prefer root-level features over legacy tier.features', async () => {
+      // When both shapes present, root-level takes priority (current BE shape wins)
+      const mockStatus = {
+        tier: {
+          code: 'cramerich',
+          name: 'Cramerich',
+          priceVnd: 79000,
+          features: ['legacy_feature'],
+        },
+        features: ['new_feature_1', 'new_feature_2'],
+      };
+
+      subscriptionApi.getMyStatus.mockResolvedValueOnce({ data: mockStatus });
+
+      await act(async () => {
+        await store.getState().fetchSubscriptionStatus();
+      });
+
+      expect(store.getState().features.new_feature_1).toBe(true);
+      expect(store.getState().features.new_feature_2).toBe(true);
+      expect(store.getState().features.legacy_feature).toBeUndefined();
     });
 
     it('should not fetch if already loading', async () => {

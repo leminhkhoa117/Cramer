@@ -22,6 +22,7 @@ const skills = [
 export default function CourseDetailPage() {
     const { courseName } = useParams();
     const [displayName, setDisplayName] = useState(null);
+    const [hasFetched, setHasFetched] = useState(false);
 
     // Zustand store for course tests caching
     const {
@@ -36,6 +37,13 @@ export default function CourseDetailPage() {
 
     // Get tests from cache or fetch
     const tests = courseTests[courseName] || [];
+
+    // If we already have cached tests, mark as fetched immediately
+    const hasCachedTests = !!courseTests[courseName];
+
+    useEffect(() => {
+        if (hasCachedTests) setHasFetched(true);
+    }, [hasCachedTests]);
 
     useEffect(() => {
         const loadData = async () => {
@@ -57,13 +65,15 @@ export default function CourseDetailPage() {
                     await fetchCourseTests(courseName);
                 } catch (err) {
                     console.error('Failed to fetch course tests:', err);
+                } finally {
+                    setHasFetched(true);
                 }
             }
         };
         loadData();
     }, [courseName, getCachedTests, fetchCourseTests, getCachedDetails, fetchCourseDetails]);
 
-    const showLoader = loading && !error && tests.length === 0;
+    const showLoader = (!hasFetched || loading) && !error && tests.length === 0;
 
     // Use displayName if available, otherwise fallback to formatted courseName
     const title = displayName || formatCourseName(courseName);
@@ -98,7 +108,7 @@ export default function CourseDetailPage() {
                     {loading && <p>Đang tải...</p>}
                     {error && <p className="course-detail-error">{error}</p>}
 
-                    {!loading && !error && (
+                    {!loading && !error && hasFetched && (
                         <div className="tests-grid">
                             {tests.map(testNumber => (
                                 <div key={testNumber} className="test-card">

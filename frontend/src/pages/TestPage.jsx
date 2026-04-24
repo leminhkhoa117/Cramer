@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { useParams, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useTestStore, useTestSessionStore } from '../stores';
@@ -6,6 +6,7 @@ import { HighlightProvider } from '../contexts/HighlightContext';
 import TestPageContent from '../components/TestPageContent';
 import FullPageLoader from '../components/FullPageLoader';
 import ResumeConfirmationModal from '../components/ResumeConfirmationModal';
+import QuotaExceededModal from '../components/QuotaExceededModal';
 
 import '../css/test-page.css';
 
@@ -76,6 +77,7 @@ const TestPage = () => {
     const hasFetchedRef = useRef(false);
     const answersRef = useRef(answers);
     const handleFinalSubmitRef = useRef(null);
+    const [quotaBlock, setQuotaBlock] = useState(null);
 
     // Keep answersRef in sync
     useEffect(() => {
@@ -181,7 +183,13 @@ const TestPage = () => {
                 }
             } catch (err) {
                 if (abortController.signal.aborted) return;
-                setError('Failed to load test data. Please try again later.');
+                // U2 (BUG_AUDIT): map 402 to QuotaExceededModal instead of generic error
+                if (err?.response?.status === 402) {
+                    setQuotaBlock(err.response.data);
+                    setLoading(false);
+                    return;
+                }
+                setError('Không thể tải đề thi. Vui lòng thử lại sau.');
                 setLoading(false);
             }
         };
@@ -190,7 +198,9 @@ const TestPage = () => {
 
         return () => {
             abortController.abort();
-            hasFetchedRef.current = false;
+            // U5 (BUG_AUDIT): removed hasFetchedRef.current = false — resetting in cleanup
+            // causes StrictMode to re-run the fetch (double billing in dev).
+            // On real navigation, the component unmounts fully and a new ref is created.
         };
     }, [source, testNum, skill, forceNew, setupTestState, startOrResumeAttempt, loadTestData, loadAnswers, setLoading, setTestStatus, setError, openResumeModal]);
 
@@ -279,7 +289,7 @@ const TestPage = () => {
             return;
         }
 
-        console.log('⏱️ Timer: Starting countdown from', currentTimeLeft, 'seconds');
+        // console.log('⏱️ Timer: Starting countdown from', currentTimeLeft, 'seconds');
 
         const timer = setInterval(() => {
             const currentTime = useTestStore.getState().timeLeft;
@@ -294,7 +304,7 @@ const TestPage = () => {
         }, 1000);
 
         return () => {
-            console.log('⏱️ Timer: Cleanup');
+            // console.log('⏱️ Timer: Cleanup');
             clearInterval(timer);
         };
     }, [testStatus, skill, loading, setTimeLeft, timeLeft]);
@@ -333,6 +343,14 @@ const TestPage = () => {
 
     return (
         <>
+            <QuotaExceededModal
+                isOpen={!!quotaBlock}
+                billingResult={quotaBlock}
+                onClose={() => { setQuotaBlock(null); navigate('/dashboard'); }}
+                onBuyLua={() => navigate('/subscription?tab=lua')}
+                onUpgrade={() => navigate('/subscription')}
+            />
+
             <ResumeConfirmationModal
                 isOpen={isResumeModalOpen}
                 onResume={handleResume}

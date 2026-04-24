@@ -110,7 +110,7 @@ const useAdminContentStore = create((set, get) => ({
         } catch (error) {
             console.error('Error creating test set:', error);
             set({
-                error: error.response?.data?.error || 'Không thể tạo bộ đề mới',
+                error: error.response?.data?.message || error.response?.data?.error || 'Không thể tạo bộ đề mới',
                 isLoadingSet: false
             });
             throw error;
@@ -132,7 +132,7 @@ const useAdminContentStore = create((set, get) => ({
         } catch (error) {
             console.error('Error updating test set:', error);
             set({
-                error: error.response?.data?.error || 'Không thể cập nhật bộ đề',
+                error: error.response?.data?.message || error.response?.data?.error || 'Không thể cập nhật bộ đề',
                 isLoadingSet: false
             });
             throw error;
@@ -154,7 +154,7 @@ const useAdminContentStore = create((set, get) => ({
         } catch (error) {
             console.error('Error deleting test set:', error);
             set({
-                error: error.response?.data?.error || 'Không thể xóa bộ đề',
+                error: error.response?.data?.message || error.response?.data?.error || 'Không thể xóa bộ đề',
                 isLoadingSet: false
             });
             throw error;
@@ -178,7 +178,7 @@ const useAdminContentStore = create((set, get) => ({
         } catch (error) {
             console.error('Error creating test:', error);
             set({
-                error: error.response?.data?.error || 'Không thể tạo đề thi',
+                error: error.response?.data?.message || error.response?.data?.error || 'Không thể tạo đề thi',
                 isLoading: false
             });
             throw error;
@@ -199,7 +199,7 @@ const useAdminContentStore = create((set, get) => ({
         } catch (error) {
             console.error('Error updating test:', error);
             set({
-                error: error.response?.data?.error || 'Không thể cập nhật đề thi',
+                error: error.response?.data?.message || error.response?.data?.error || 'Không thể cập nhật đề thi',
                 isLoadingTest: false
             });
             throw error;
@@ -219,7 +219,7 @@ const useAdminContentStore = create((set, get) => ({
         } catch (error) {
             console.error('Error deleting test:', error);
             set({
-                error: error.response?.data?.error || 'Không thể xóa đề thi',
+                error: error.response?.data?.message || error.response?.data?.error || 'Không thể xóa đề thi',
                 isLoading: false
             });
             throw error;

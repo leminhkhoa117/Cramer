@@ -164,8 +164,10 @@ class SubscriptionServiceImplTest {
             // Given - no existing subscription
             when(userSubscriptionRepository.findActiveByUserId(testUserId))
                     .thenReturn(Optional.empty());
-            when(userSubscriptionRepository.existsByUserId(testUserId))
-                    .thenReturn(false);
+            when(userSubscriptionRepository.findByUserIdOrderByStartedAtDesc(testUserId))
+                    .thenReturn(List.of());
+            when(userCreditRepository.findByUserId(testUserId))
+                    .thenReturn(Optional.empty());
             when(tierRepository.findFreeTier())
                     .thenReturn(Optional.of(cramerieFreeTier));
             when(userSubscriptionRepository.save(any(UserSubscription.class)))
@@ -278,12 +280,17 @@ class SubscriptionServiceImplTest {
     class InitializeNewUserTests {
 
         @Test
-        @DisplayName("Should create free tier subscription for new user")
+        @DisplayName("Should create free tier subscription for new user and grant initial Lúa")
         void shouldCreateFreeTierSubscription() {
-            // Given
+            // Given - first-time user (no active sub, no credit row, no historical rows)
             UUID newUserId = UUID.randomUUID();
-            when(userSubscriptionRepository.existsByUserId(newUserId))
-                    .thenReturn(false);
+            cramerieFreeTier.setInitialLua(50);
+            when(userSubscriptionRepository.findActiveByUserId(newUserId))
+                    .thenReturn(Optional.empty());
+            when(userSubscriptionRepository.findByUserIdOrderByStartedAtDesc(newUserId))
+                    .thenReturn(List.of());
+            when(userCreditRepository.findByUserId(newUserId))
+                    .thenReturn(Optional.empty());
             when(tierRepository.findFreeTier())
                     .thenReturn(Optional.of(cramerieFreeTier));
             when(userSubscriptionRepository.save(any(UserSubscription.class)))
@@ -304,6 +311,66 @@ class SubscriptionServiceImplTest {
                 sub.getStatus() == UserSubscription.Status.ACTIVE &&
                 sub.getAttemptAisUsed() == 0
             ));
+            verify(creditService).initializeCredits(newUserId, 50);
+        }
+
+        @Test
+        @DisplayName("Should return existing active subscription without creating new (idempotent)")
+        void shouldReturnExistingActiveSubscription() {
+            // Given - user already has active subscription
+            when(userSubscriptionRepository.findActiveByUserId(testUserId))
+                    .thenReturn(Optional.of(testSubscription));
+
+            // When
+            UserSubscriptionDTO result = subscriptionService.initializeNewUser(testUserId);
+
+            // Then
+            assertThat(result).isNotNull();
+            assertThat(result.getTier().getCode()).isEqualTo("cramerich");
+            verify(userSubscriptionRepository, never()).save(any(UserSubscription.class));
+            verify(creditService, never()).initializeCredits(any(), anyInt());
+        }
+
+        @Test
+        @DisplayName("Should auto-downgrade expired paid user to free WITHOUT granting Lúa bonus")
+        void shouldAutoDowngradeExpiredPaidUser() {
+            // Given - user has an old Cramerich row that's ACTIVE but expired (no scheduler ran)
+            UserSubscription expiredCramerich = UserSubscription.builder()
+                    .id(50L)
+                    .userId(testUserId)
+                    .tier(cramerichTier)
+                    .status(UserSubscription.Status.ACTIVE)
+                    .startedAt(OffsetDateTime.now().minusMonths(2))
+                    .expiresAt(OffsetDateTime.now().minusMonths(1)) // expired
+                    .build();
+            when(userSubscriptionRepository.findActiveByUserId(testUserId))
+                    .thenReturn(Optional.empty()); // active filter excludes expired
+            when(userSubscriptionRepository.findByUserIdOrderByStartedAtDesc(testUserId))
+                    .thenReturn(List.of(expiredCramerich));
+            // User already has credits → not first-time
+            when(userCreditRepository.findByUserId(testUserId))
+                    .thenReturn(Optional.of(testUserCredit));
+            when(tierRepository.findFreeTier())
+                    .thenReturn(Optional.of(cramerieFreeTier));
+            when(userSubscriptionRepository.save(any(UserSubscription.class)))
+                    .thenAnswer(invocation -> {
+                        UserSubscription sub = invocation.getArgument(0);
+                        if (sub.getId() == null) {
+                            sub.setId(100L);
+                        }
+                        return sub;
+                    });
+
+            // When
+            UserSubscriptionDTO result = subscriptionService.initializeNewUser(testUserId);
+
+            // Then
+            assertThat(result).isNotNull();
+            assertThat(result.getTier().getCode()).isEqualTo("cramerie");
+            // Stale row was flipped to EXPIRED
+            assertThat(expiredCramerich.getStatus()).isEqualTo(UserSubscription.Status.EXPIRED);
+            // No Lúa granted (not first-time)
+            verify(creditService, never()).initializeCredits(any(), anyInt());
         }
     }
 

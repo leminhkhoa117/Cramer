@@ -9,8 +9,10 @@ import com.cramer.service.QuotaService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -35,12 +37,15 @@ public class QuotaServiceImpl implements QuotaService {
 
     private final UserQuotaRepository userQuotaRepository;
     private final SkillQuotaRepository skillQuotaRepository;
+    private final QuotaServiceImpl self;
 
     @Autowired
     public QuotaServiceImpl(UserQuotaRepository userQuotaRepository,
-            SkillQuotaRepository skillQuotaRepository) {
+            SkillQuotaRepository skillQuotaRepository,
+            @Lazy QuotaServiceImpl self) {
         this.userQuotaRepository = userQuotaRepository;
         this.skillQuotaRepository = skillQuotaRepository;
+        this.self = self;
     }
 
     @Override
@@ -52,7 +57,7 @@ public class QuotaServiceImpl implements QuotaService {
         String monthStr = currentMonth.format(MONTH_FORMATTER);
 
         // Get or create global quota
-        UserQuota userQuota = getOrCreateUserQuota(userId, currentMonth);
+        UserQuota userQuota = self.getOrCreateUserQuota(userId, currentMonth);
 
         // Get all skill quotas for current month
         List<SkillQuota> skillQuotaList = skillQuotaRepository.findAllByUserIdAndQuotaMonth(userId, currentMonth);
@@ -73,8 +78,8 @@ public class QuotaServiceImpl implements QuotaService {
         SkillQuota.Skill skillEnum = SkillQuota.Skill.valueOf(skill.toUpperCase());
 
         // Ensure quota rows exist (with race condition handling)
-        getOrCreateUserQuota(userId, currentMonth);
-        getOrCreateSkillQuota(userId, skillEnum, currentMonth);
+        self.getOrCreateUserQuota(userId, currentMonth);
+        self.getOrCreateSkillQuota(userId, skillEnum, currentMonth);
 
         // Increment global quota
         if (isAI) {
@@ -136,11 +141,13 @@ public class QuotaServiceImpl implements QuotaService {
 
     /**
      * Get or create UserQuota for current month.
-     * Handles race condition by catching DataIntegrityViolationException and
-     * retrying find.
+     * Runs in a NEW transaction so that DataIntegrityViolationException
+     * (when a concurrent request inserts the same row first) does not
+     * mark the caller's transaction as rollback-only.
      */
     @SuppressWarnings("null")
-    private UserQuota getOrCreateUserQuota(UUID userId, LocalDate quotaMonth) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public UserQuota getOrCreateUserQuota(UUID userId, LocalDate quotaMonth) {
         Optional<UserQuota> existing = userQuotaRepository.findByUserIdAndQuotaMonth(userId, quotaMonth);
         if (existing.isPresent()) {
             return existing.get();
@@ -168,11 +175,13 @@ public class QuotaServiceImpl implements QuotaService {
 
     /**
      * Get or create SkillQuota for current month.
-     * Handles race condition by catching DataIntegrityViolationException and
-     * retrying find.
+     * Runs in a NEW transaction so that DataIntegrityViolationException
+     * (when a concurrent request inserts the same row first) does not
+     * mark the caller's transaction as rollback-only.
      */
     @SuppressWarnings("null")
-    private SkillQuota getOrCreateSkillQuota(UUID userId, SkillQuota.Skill skill, LocalDate quotaMonth) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public SkillQuota getOrCreateSkillQuota(UUID userId, SkillQuota.Skill skill, LocalDate quotaMonth) {
         Optional<SkillQuota> existing = skillQuotaRepository.findByUserIdAndSkillAndQuotaMonth(userId, skill,
                 quotaMonth);
         if (existing.isPresent()) {

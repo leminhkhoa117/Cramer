@@ -64,7 +64,11 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
       setSuccess('Mã xác thực đã được gửi tới email của bạn.');
       setStep('verifyOtp');
     } catch (err) {
-      setError(err.message || 'Không thể gửi yêu cầu OTP. Vui lòng thử lại.');
+      if (err?.status === 429 || err?.message?.includes('rate')) {
+        setError('Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau vài phút.');
+      } else {
+        setError(err.message || 'Không thể gửi yêu cầu OTP. Vui lòng thử lại.');
+      }
     } finally {
       setLoading(false);
     }

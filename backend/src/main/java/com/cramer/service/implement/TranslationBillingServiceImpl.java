@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -36,15 +37,23 @@ public class TranslationBillingServiceImpl implements TranslationBillingService 
     private final TranslationUsageRepository translationUsageRepository;
     private final UserSubscriptionRepository subscriptionRepository;
     private final CreditService creditService;
+    /**
+     * Self-reference (via @Lazy to break the circular initialization) so internal
+     * calls to {@link #createUsageRow(UUID, LocalDate)} go through the Spring proxy
+     * and honor the {@code REQUIRES_NEW} propagation. See bug T6 (BUG_AUDIT_2026-04-23.md).
+     */
+    private final TranslationBillingServiceImpl self;
 
     @Autowired
     public TranslationBillingServiceImpl(
             TranslationUsageRepository translationUsageRepository,
             UserSubscriptionRepository subscriptionRepository,
-            @Lazy CreditService creditService) {
+            @Lazy CreditService creditService,
+            @Lazy TranslationBillingServiceImpl self) {
         this.translationUsageRepository = translationUsageRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.creditService = creditService;
+        this.self = self;
     }
 
     @Override
@@ -153,29 +162,61 @@ public class TranslationBillingServiceImpl implements TranslationBillingService 
 
     /**
      * Increment translation usage for current month.
-     * Creates record if doesn't exist.
+     * Creates record (in a separate transaction) if doesn't exist.
+     *
+     * <p><b>Race-condition handling (bug T6):</b> The previous implementation caught
+     * {@link DataIntegrityViolationException} inside the same transaction and tried
+     * to retry the increment — but Spring already marked the transaction as
+     * rollback-only when the exception was thrown, so the outer commit failed with
+     * {@code UnexpectedRollbackException}.
+     *
+     * <p>Fix: do the INSERT in a separate {@code REQUIRES_NEW} transaction (via
+     * {@link #createUsageRow(UUID, LocalDate)}). If a competing thread already
+     * inserted the row, our INSERT fails — but only the inner transaction rolls back,
+     * leaving the outer transaction healthy. We then re-attempt the increment which
+     * is guaranteed to succeed because the row now exists.
      */
     private void incrementUsage(UUID userId) {
         LocalDate firstOfMonth = LocalDate.now().withDayOfMonth(1);
 
-        // Try to increment existing
+        // Try to increment existing row first (cheap path).
         int updated = translationUsageRepository.incrementTranslationsUsed(userId, firstOfMonth);
+        if (updated > 0) {
+            return;
+        }
 
-        if (updated == 0) {
-            // No existing record, create new
-            try {
-                TranslationUsage usage = TranslationUsage.builder()
-                        .userId(userId)
-                        .usageMonth(firstOfMonth)
-                        .translationsUsed(1)
-                        .build();
-                translationUsageRepository.save(Objects.requireNonNull(usage));
-                logger.debug("🆕 Created new translation usage record for user {}", userId);
-            } catch (DataIntegrityViolationException e) {
-                // Race condition - record was created by another thread
-                translationUsageRepository.incrementTranslationsUsed(userId, firstOfMonth);
-                logger.debug("🔄 Incremented existing translation usage (race condition handled)");
+        // No existing row → INSERT in a separate transaction so that any race-induced
+        // DataIntegrityViolationException only rolls back the inner tx.
+        try {
+            self.createUsageRow(userId, firstOfMonth);
+            logger.debug("🆕 Created new translation usage record for user {}", userId);
+        } catch (DataIntegrityViolationException e) {
+            // Another thread inserted the row between our SELECT-zero and INSERT.
+            // The inner REQUIRES_NEW tx rolled back; outer tx is unaffected.
+            // The row now exists — increment must succeed.
+            logger.debug("🔄 Race detected on translation_usage insert, retrying increment for user {}", userId);
+            int retryUpdated = translationUsageRepository.incrementTranslationsUsed(userId, firstOfMonth);
+            if (retryUpdated == 0) {
+                // Extremely unlikely (would require row to disappear between INSERT-fail and UPDATE).
+                // Re-throw the original exception so the caller's transaction surfaces the failure.
+                logger.error("❌ Translation usage row vanished after race; cannot increment for user {}", userId);
+                throw e;
             }
         }
+    }
+
+    /**
+     * Insert a fresh translation_usage row in a NEW transaction so that constraint
+     * violations don't poison the caller's transaction. Public + called via {@link #self}
+     * so Spring's proxy applies the {@code REQUIRES_NEW} propagation.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createUsageRow(UUID userId, LocalDate firstOfMonth) {
+        TranslationUsage usage = TranslationUsage.builder()
+                .userId(userId)
+                .usageMonth(firstOfMonth)
+                .translationsUsed(1)
+                .build();
+        translationUsageRepository.save(Objects.requireNonNull(usage));
     }
 }

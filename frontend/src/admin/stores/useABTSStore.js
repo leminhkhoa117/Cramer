@@ -1359,7 +1359,9 @@ const useABTSStore = create((set, get) => ({
      * Start refinement with Agent 2
      */
     startRefinement: async () => {
-        const { selectedIssues, generationResult, formData } = get();
+        const { selectedIssues, generationResult, formData, isRefining } = get();
+
+        if (isRefining) return;
 
         if (selectedIssues.length === 0) {
             console.warn('No issues selected for refinement');

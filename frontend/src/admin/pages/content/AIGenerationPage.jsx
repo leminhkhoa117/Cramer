@@ -27,6 +27,7 @@ export default function AIGenerationPage() {
         isGenerating,
         generationResult,
         abortGeneration,
+        clearResult,
         formData,
         audioUrls,
         setAudioUrl
@@ -146,8 +147,12 @@ export default function AIGenerationPage() {
                     result.warnings.forEach(w => toast.warning(w));
                 }
 
+                // Reset generation result to prevent duplicate save on browser back
+                clearResult();
+
                 // Navigate to content list after short delay
                 setTimeout(() => {
+                    setIsSaving(false);
                     navigate('/admin/content', {
                         state: {
                             refreshList: true,

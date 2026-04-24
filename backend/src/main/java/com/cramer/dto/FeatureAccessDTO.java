@@ -1,5 +1,6 @@
 package com.cramer.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -46,7 +47,11 @@ public class FeatureAccessDTO {
     /**
      * Whether the current tier is a paid (premium) tier.
      * Cramerie = false, Cramerich/Cramerous = true.
+     *
+     * <p>@JsonProperty needed because Lombok generates getter `isPremium()` (no `get` prefix
+     * for `boolean is*`), and Jackson defaults to JSON key "premium" — strips the `is`.
      */
+    @JsonProperty("isPremium")
     private boolean isPremium;
 
     /**

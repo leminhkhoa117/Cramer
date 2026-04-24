@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 // Note: shallow import removed - using direct destructuring pattern for stable references
 import { sanitizeHtml } from '../utils/sanitize';
@@ -11,6 +11,7 @@ import ResumeConfirmationModal from '../components/ResumeConfirmationModal';
 import ExitTestModal from '../components/ExitTestModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import GradingQuotaInfo from '../components/GradingQuotaInfo';
+import QuotaExceededModal from '../components/QuotaExceededModal';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 
 // Reuse TestPage styles
@@ -86,6 +87,7 @@ const WritingTestPage = () => {
     const isSubmittingRef = useRef(false);
     const hasFetchedRef = useRef(false);
     const handleFinalSubmitRef = useRef(null);
+    const [quotaBlock, setQuotaBlock] = useState(null);
 
     // --- Computed Values ---
     const wordCount = getWordCount(activeTask);
@@ -167,6 +169,7 @@ const WritingTestPage = () => {
 
                 // If backend returned a COMPLETED attempt, show choice modal
                 if (attemptData.status === 'COMPLETED') {
+                    setLoading(false);
                     openResumeModal(attemptData);
                     return;
                 }
@@ -197,6 +200,11 @@ const WritingTestPage = () => {
                 setupTestState(attemptData, fullTestData, abortController.signal);
             } catch (err) {
                 if (abortController.signal.aborted) return;
+                if (err?.response?.status === 402) {
+                    setQuotaBlock(err.response.data);
+                    setLoading(false);
+                    return;
+                }
                 console.error('Error starting writing test:', err);
                 setError('Không thể tải đề Writing. Vui lòng thử lại sau.');
                 setLoading(false);
@@ -223,6 +231,7 @@ const WritingTestPage = () => {
             await setupTestState(inProgressAttempt, fullTestData);
         } catch (err) {
             setError('Không thể tải dữ liệu bài làm trước đó.');
+        } finally {
             setLoading(false);
         }
     }, [inProgressAttempt, navigate, setLoading, loadTestData, setupTestState, source, testNum, setError]);
@@ -260,6 +269,11 @@ const WritingTestPage = () => {
             await submitWriting(attempt.id, essays);
             navigate(`/test/writing/review/${attempt.id}`);
         } catch (err) {
+            if (err?.response?.status === 402) {
+                setQuotaBlock(err.response.data);
+                setLoading(false);
+                return;
+            }
             console.error('Error submitting writing test:', err);
             setError('Không thể nộp bài. Vui lòng thử lại.');
         } finally {
@@ -364,6 +378,14 @@ const WritingTestPage = () => {
 
     return (
         <>
+            <QuotaExceededModal
+                isOpen={!!quotaBlock}
+                billingResult={quotaBlock}
+                onClose={() => { setQuotaBlock(null); navigate('/dashboard'); }}
+                onBuyLua={() => navigate('/subscription?tab=lua')}
+                onUpgrade={() => navigate('/subscription')}
+            />
+
             <ResumeConfirmationModal
                 isOpen={isResumeModalOpen}
                 onResume={handleResume}

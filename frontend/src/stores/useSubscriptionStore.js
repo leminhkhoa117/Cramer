@@ -39,21 +39,30 @@ const useSubscriptionStore = create(
                     const tierInfo = data.tier || {};
                     const tierCode = tierInfo.code || 'cramerie';
 
-                    // Parse features from tier info
-                    // The backend returns features as part of the tier or as a separate field
+                    // Parse features from response. Backend actual shape (verified
+                    // SubscriptionStatusDTO.java:47) puts features as a root-level array of
+                    // feature code strings — e.g. data.features = ["ai_writing_grading", ...].
+                    // The other shapes below are kept for backward-compat with any legacy
+                    // response variants or test fixtures.
                     let featuresMap = {};
 
-                    // Option 1: Features are in a separate featureAccess field
-                    if (data.featureAccess?.features) {
+                    // Option 1 (CURRENT BE SHAPE): root-level features array
+                    if (Array.isArray(data.features)) {
+                        data.features.forEach(feature => {
+                            featuresMap[feature] = true;
+                        });
+                    }
+                    // Option 2 (legacy): features inside a separate featureAccess field
+                    else if (data.featureAccess?.features) {
                         featuresMap = data.featureAccess.features;
                     }
-                    // Option 2: Features are in tier.features as an array
+                    // Option 3 (legacy): features array inside tier
                     else if (tierInfo.features && Array.isArray(tierInfo.features)) {
                         tierInfo.features.forEach(feature => {
                             featuresMap[feature] = true;
                         });
                     }
-                    // Option 3: Features are in tier.featuresMap
+                    // Option 4 (legacy): features map inside tier
                     else if (tierInfo.featuresMap) {
                         featuresMap = tierInfo.featuresMap;
                     }

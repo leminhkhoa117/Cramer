@@ -16,6 +16,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import com.cramer.dto.AdminUserDTO;
+import com.cramer.exception.ResourceNotFoundException;
 import com.cramer.dto.AdminUserListResponse;
 import com.cramer.service.AdminAuditService;
 import com.cramer.service.AdminUserService;
@@ -285,9 +286,11 @@ public class AdminUserServiceImpl implements AdminUserService {
             logger.info("Admin {} updated user {} status to {} with reason: {}", adminId, userId, newStatus, reason);
 
             return getUserById(userId);
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error updating user status: " + userId, e);
-            return getUserById(userId);
+            throw new RuntimeException("Failed to update user: " + e.getMessage(), e);
         }
     }
 
@@ -381,9 +384,11 @@ public class AdminUserServiceImpl implements AdminUserService {
 
             return getUserById(userId);
 
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error updating credits for user: " + userId, e);
-            return getUserById(userId);
+            throw new RuntimeException("Failed to update user: " + e.getMessage(), e);
         }
     }
 
@@ -492,6 +497,9 @@ public class AdminUserServiceImpl implements AdminUserService {
 
             return getUserById(userId);
 
+        } catch (IllegalArgumentException e) {
+            // T10 (BUG_AUDIT): re-throw so GlobalExceptionHandler returns 400, not 500
+            throw e;
         } catch (Exception e) {
             logger.error("Error updating subscription for user: " + userId, e);
             throw new RuntimeException("Failed to update subscription: " + e.getMessage(), e);

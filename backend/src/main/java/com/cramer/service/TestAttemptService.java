@@ -233,6 +233,9 @@ public class TestAttemptService {
             // Don't wrap quota exceptions - let GlobalExceptionHandler return proper 402
             logger.warn("❌ [QUOTA BLOCKED] User {} blocked: {}", userId, e.getMessage());
             throw e;
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            // T8 (BUG_AUDIT): re-throw so GlobalExceptionHandler returns 400/404, not 500
+            throw e;
         } catch (Exception e) {
             logger.error(
                     "❌ [ERROR] Unhandled exception in startOrGetAttempt: userId={}, source={}, testNum={}, skill={}",

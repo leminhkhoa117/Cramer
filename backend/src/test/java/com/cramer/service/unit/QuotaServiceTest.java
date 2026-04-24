@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -51,6 +52,11 @@ class QuotaServiceTest {
 
     @BeforeEach
     void setUp() {
+        // TS1 (BUG_AUDIT_2026-04-23.md): QuotaServiceImpl.self is a @Lazy self-inject
+        // that Mockito @InjectMocks cannot populate. Wire it manually so that calls to
+        // self.getOrCreateUserQuota / self.getOrCreateSkillQuota resolve correctly.
+        ReflectionTestUtils.setField(quotaService, "self", quotaService);
+
         testUserId = UUID.fromString("00000000-0000-0000-0000-000000000001");
         currentMonth = LocalDate.now().withDayOfMonth(1);
 

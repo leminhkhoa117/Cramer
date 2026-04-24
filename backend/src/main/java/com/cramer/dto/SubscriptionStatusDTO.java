@@ -1,5 +1,6 @@
 package com.cramer.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.time.OffsetDateTime;
@@ -49,6 +50,10 @@ public class SubscriptionStatusDTO {
     // Recent payment history
     private List<PaymentInfo> recentPayments;
 
+    // Previous paid plan info (only populated when current tier is free AND user previously had a paid plan)
+    // Used to surface a renewal CTA banner on the frontend.
+    private PreviousPlanInfo previousPlan;
+
     /**
      * Tier information nested class.
      */
@@ -63,6 +68,10 @@ public class SubscriptionStatusDTO {
         private String emoji;
         private Integer priceVnd;
         private Integer displayOrder;
+        // @JsonProperty needed because Lombok generates getter `isFree()` (no `get` prefix
+        // for `boolean is*`), and Jackson defaults to JSON key "free" — strips the `is`.
+        // Frontend (SubscriptionPage.jsx, useSubscriptionStore.js) reads `isFree`/`isPremium`.
+        @JsonProperty("isFree")
         private boolean isFree;
     }
 
@@ -130,5 +139,21 @@ public class SubscriptionStatusDTO {
         private String description;
         private OffsetDateTime createdAt;
         private OffsetDateTime paidAt;
+    }
+
+    /**
+     * Previous (expired) paid plan info — surfaces a renewal CTA on the frontend
+     * when the user has been auto-downgraded to the free tier.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PreviousPlanInfo {
+        private String tierCode;
+        private String tierName;
+        private Integer priceVnd;
+        private OffsetDateTime expiredAt;
+        private Long daysSinceExpired;
     }
 }
