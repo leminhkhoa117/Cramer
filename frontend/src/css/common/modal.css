@@ -522,6 +522,11 @@
   animation: cm-spin 0.8s linear infinite;
 }
 
+.cm-loading--dark::after {
+  border-color: rgba(107, 114, 128, 0.25);
+  border-top-color: #6b7280;
+}
+
 @keyframes cm-spin {
   to {
     transform: rotate(360deg);

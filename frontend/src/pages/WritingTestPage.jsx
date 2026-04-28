@@ -13,6 +13,7 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import GradingQuotaInfo from '../components/GradingQuotaInfo';
 import QuotaExceededModal from '../components/QuotaExceededModal';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
+import useAutoSave from '../hooks/useAutoSave';
 
 // Reuse TestPage styles
 import '../css/test-page.css';
@@ -88,6 +89,10 @@ const WritingTestPage = () => {
     const hasFetchedRef = useRef(false);
     const handleFinalSubmitRef = useRef(null);
     const [quotaBlock, setQuotaBlock] = useState(null);
+    const [isResuming, setIsResuming] = useState(false);
+
+    // Auto-save: periodically persist essays + timer to backend
+    useAutoSave(testStatus === 'running', 'writing');
 
     // --- Computed Values ---
     const wordCount = getWordCount(activeTask);
@@ -214,7 +219,9 @@ const WritingTestPage = () => {
 
         return () => {
             abortController.abort();
-            hasFetchedRef.current = false;
+            // U5/U6 (BUG_AUDIT): removed hasFetchedRef.current = false — resetting in cleanup
+            // causes StrictMode to re-run the fetch (double billing in dev).
+            // The unmount cleanup in the separate effect already handles real navigation.
         };
     }, [source, testNum, forceNew, setupTestState, startOrResumeAttempt, loadTestData, loadEssays, openResumeModal, setError, setLoading]);
 
@@ -226,6 +233,7 @@ const WritingTestPage = () => {
         }
 
         try {
+            setIsResuming(true);
             setLoading(true);
             const fullTestData = await loadTestData(source, testNum, 'writing');
             await setupTestState(inProgressAttempt, fullTestData);
@@ -233,6 +241,7 @@ const WritingTestPage = () => {
             setError('Không thể tải dữ liệu bài làm trước đó.');
         } finally {
             setLoading(false);
+            setIsResuming(false);
         }
     }, [inProgressAttempt, navigate, setLoading, loadTestData, setupTestState, source, testNum, setError]);
 
@@ -265,6 +274,7 @@ const WritingTestPage = () => {
         closeConfirmModal();
 
         try {
+            setTestStatus('submitted'); // Stop auto-save before submission
             setIsSubmitting(true);
             await submitWriting(attempt.id, essays);
             navigate(`/test/writing/review/${attempt.id}`);
@@ -280,7 +290,7 @@ const WritingTestPage = () => {
             setIsSubmitting(false);
             isSubmittingRef.current = false;
         }
-    }, [attempt, essays, navigate, closeConfirmModal, setIsSubmitting, submitWriting, setError]);
+    }, [attempt, essays, navigate, closeConfirmModal, setTestStatus, setIsSubmitting, submitWriting, setError]);
 
     // Keep handleFinalSubmitRef updated
     useEffect(() => {
@@ -338,6 +348,7 @@ const WritingTestPage = () => {
 
     const handleSaveAndExit = useCallback(async () => {
         if (!attempt) return;
+        if (isSavingProgress) return; // Auto-save already in progress
 
         try {
             setIsSavingProgress(true);
@@ -355,7 +366,7 @@ const WritingTestPage = () => {
         } finally {
             setIsSavingProgress(false);
         }
-    }, [attempt, essays, timeLeft, activeTask, navigate, saveProgress, closeExitModal, setIsSavingProgress]);
+    }, [attempt, essays, timeLeft, activeTask, navigate, saveProgress, closeExitModal, setIsSavingProgress, isSavingProgress]);
 
     // --- Get Task Data ---
     const currentTask = useMemo(() => {
@@ -391,6 +402,7 @@ const WritingTestPage = () => {
                 onResume={handleResume}
                 onStartNew={handleStartNew}
                 isStartingNew={isStartingNew}
+                isResuming={isResuming}
                 attemptStatus={inProgressAttempt?.status}
             />
 

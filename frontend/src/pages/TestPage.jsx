@@ -7,6 +7,7 @@ import TestPageContent from '../components/TestPageContent';
 import FullPageLoader from '../components/FullPageLoader';
 import ResumeConfirmationModal from '../components/ResumeConfirmationModal';
 import QuotaExceededModal from '../components/QuotaExceededModal';
+import useAutoSave from '../hooks/useAutoSave';
 
 import '../css/test-page.css';
 
@@ -78,6 +79,10 @@ const TestPage = () => {
     const answersRef = useRef(answers);
     const handleFinalSubmitRef = useRef(null);
     const [quotaBlock, setQuotaBlock] = useState(null);
+    const [isResuming, setIsResuming] = useState(false);
+
+    // Auto-save: periodically persist progress to backend
+    useAutoSave(testStatus === 'running', normalizedSkill);
 
     // Keep answersRef in sync
     useEffect(() => {
@@ -212,12 +217,14 @@ const TestPage = () => {
         }
 
         try {
+            setIsResuming(true);
             setLoading(true);
             const fullTestData = await loadTestData(source, testNum, skill);
             await setupTestState(inProgressAttempt, fullTestData);
         } catch (err) {
             setError('Failed to load test data for resuming.');
             setLoading(false);
+            setIsResuming(false);
         }
     }, [inProgressAttempt, navigate, source, testNum, skill, loadTestData, setupTestState, setLoading, setError]);
 
@@ -255,6 +262,7 @@ const TestPage = () => {
         closeConfirmModal();
 
         try {
+            setTestStatus('submitted'); // Stop auto-save before submission
             setIsSubmitting(true);
             const currentAnswers = answersRef.current;
             const normalizedAnswers = Object.entries(currentAnswers || {}).reduce((acc, [questionId, value]) => {
@@ -270,7 +278,7 @@ const TestPage = () => {
             setIsSubmitting(false);
             isSubmittingRef.current = false;
         }
-    }, [attempt, navigate, closeConfirmModal, setIsSubmitting, setError, submitAttemptApi]);
+    }, [attempt, navigate, closeConfirmModal, setTestStatus, setIsSubmitting, setError, submitAttemptApi]);
 
     // Keep handleFinalSubmitRef updated
     useEffect(() => {
@@ -356,6 +364,7 @@ const TestPage = () => {
                 onResume={handleResume}
                 onStartNew={handleStartNew}
                 isStartingNew={isStartingNew}
+                isResuming={isResuming}
                 attemptStatus={inProgressAttempt?.status}
             />
 
