@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -71,4 +72,10 @@ public interface CreditTransactionRepository extends JpaRepository<CreditTransac
             @Param("userId") UUID userId,
             @Param("startDate") OffsetDateTime startDate,
             @Param("endDate") OffsetDateTime endDate);
+
+    /**
+     * Find first transaction by userId, referenceId, and category (for idempotency).
+     */
+    Optional<CreditTransaction> findFirstByUserIdAndReferenceIdAndCategory(
+            UUID userId, String referenceId, CreditTransaction.Category category);
 }

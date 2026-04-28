@@ -387,6 +387,89 @@ class CreditServiceImplTest {
     }
 
     // =========================================================================
+    // REFUND CREDITS TESTS
+    // =========================================================================
+    @Nested
+    @DisplayName("refundCredits() Tests")
+    class RefundCreditsTests {
+
+        @Test
+        @DisplayName("Should refund credits successfully and increase balance")
+        void shouldRefundCreditsSuccessfully() {
+            // Arrange
+            int refundAmount = 20;
+            String referenceId = "refund_session_1";
+
+            when(creditRepository.findByUserId(testUserId))
+                    .thenReturn(Optional.of(testUserCredit));
+            when(transactionRepository.findFirstByUserIdAndReferenceIdAndCategory(
+                    testUserId, referenceId, CreditTransaction.Category.SPEAKING_REFUND))
+                    .thenReturn(Optional.empty());
+            when(creditRepository.save(any(UserCredit.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+            when(transactionRepository.save(any(CreditTransaction.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            // Act
+            CreditTransactionDTO result = creditService.refundCredits(
+                    testUserId, refundAmount,
+                    CreditTransaction.Category.SPEAKING_REFUND,
+                    "Speaking grading failure refund",
+                    referenceId
+            );
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getAmount()).isEqualTo(refundAmount);
+            assertThat(result.getType()).isEqualTo("REFUND");
+            assertThat(result.getCategory()).isEqualTo("SPEAKING_REFUND");
+            assertThat(result.getReferenceId()).isEqualTo(referenceId);
+
+            ArgumentCaptor<UserCredit> creditCaptor = ArgumentCaptor.forClass(UserCredit.class);
+            verify(creditRepository).save(creditCaptor.capture());
+            assertThat(creditCaptor.getValue().getBalance()).isEqualTo(120); // 100 + 20
+        }
+
+        @Test
+        @DisplayName("Should be idempotent on second refund for same reference")
+        void shouldBeIdempotentOnSecondRefund() {
+            // Arrange
+            int refundAmount = 20;
+            String referenceId = "refund_session_2";
+
+            CreditTransaction existingTx = CreditTransaction.builder()
+                    .userId(testUserId)
+                    .amount(refundAmount)
+                    .balanceAfter(120)
+                    .type(CreditTransaction.Type.REFUND)
+                    .category(CreditTransaction.Category.SPEAKING_REFUND)
+                    .description("Speaking grading failure refund")
+                    .referenceId(referenceId)
+                    .build();
+
+            when(transactionRepository.findFirstByUserIdAndReferenceIdAndCategory(
+                    testUserId, referenceId, CreditTransaction.Category.SPEAKING_REFUND))
+                    .thenReturn(Optional.of(existingTx));
+
+            // Act
+            CreditTransactionDTO result = creditService.refundCredits(
+                    testUserId, refundAmount,
+                    CreditTransaction.Category.SPEAKING_REFUND,
+                    "Speaking grading failure refund",
+                    referenceId
+            );
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getAmount()).isEqualTo(refundAmount);
+            assertThat(result.getReferenceId()).isEqualTo(referenceId);
+
+            verify(creditRepository, never()).save(any(UserCredit.class));
+            verify(transactionRepository, never()).save(any(CreditTransaction.class));
+        }
+    }
+
+    // =========================================================================
     // INITIALIZE CREDITS TESTS
     // =========================================================================
     @Nested

@@ -79,6 +79,7 @@ public class CreditHistoryDTO {
             case ESSAY_FEEDBACK -> "✍️";
             case CHAT_EXTENSION -> "💬";
             case SPEAKING_SESSION -> "🎤";  // Speaking practice session
+            case SPEAKING_REFUND -> "↩️";  // Refund for speaking evaluation
             case OTHER -> "🌙";
         };
     }

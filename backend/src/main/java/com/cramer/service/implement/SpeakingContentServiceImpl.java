@@ -495,6 +495,7 @@ public class SpeakingContentServiceImpl implements SpeakingContentService {
             case "PART_1" -> List.of(1);
             case "PART_2" -> List.of(2);
             case "PART_3" -> List.of(3);
+            case "PART_2_AND_3" -> List.of(2, 3);
             default -> throw new IllegalArgumentException("Unsupported sessionMode: " + sessionMode);
         };
     }
@@ -504,8 +505,8 @@ public class SpeakingContentServiceImpl implements SpeakingContentService {
             throw new IllegalArgumentException("sessionMode is required");
         }
         String normalized = sessionMode.trim().toUpperCase(Locale.ROOT);
-        if (!List.of("FULL", "PART_1", "PART_2", "PART_3").contains(normalized)) {
-            throw new IllegalArgumentException("sessionMode must be one of FULL, PART_1, PART_2, PART_3");
+        if (!List.of("FULL", "PART_1", "PART_2", "PART_3", "PART_2_AND_3").contains(normalized)) {
+            throw new IllegalArgumentException("sessionMode must be one of FULL, PART_1, PART_2, PART_3, PART_2_AND_3");
         }
         return normalized;
     }

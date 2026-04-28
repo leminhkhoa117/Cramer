@@ -15,6 +15,12 @@ FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /app
 
+# Install ffmpeg for Speaking grading audio transcoding.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ffmpeg \
+ && ffmpeg -version \
+ && rm -rf /var/lib/apt/lists/*
+
 # Copy the jar built in the previous stage. Using pattern to match final artifact name.
 COPY --from=build /workspace/target/*-SNAPSHOT.jar ./app.jar
 

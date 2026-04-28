@@ -992,6 +992,32 @@ public class OpenRouterClient {
             Map<String, Object> jsonSchema,
             String schemaName) {
 
+        return callWithAudio(systemPrompt, contentParts, model, jsonSchema, schemaName, 4096, "allow");
+    }
+
+    /**
+     * Call OpenRouter with multimodal content (text + audio) with configurable
+     * max tokens and data collection settings.
+     * Used for IELTS Speaking grading with Gemini models.
+     *
+     * @param systemPrompt   System message for the AI
+     * @param contentParts   List of text and audio content parts
+     * @param model          Model to use (e.g., "google/gemini-2.5-flash")
+     * @param jsonSchema     JSON Schema for structured output validation
+     * @param schemaName     Name for the JSON schema
+     * @param maxTokens      Maximum tokens for the completion
+     * @param dataCollection Data collection preference ("allow" or "deny")
+     * @return OpenRouterResponse with parsed content
+     */
+    public OpenRouterResponse callWithAudio(
+            String systemPrompt,
+            List<ContentPart> contentParts,
+            String model,
+            Map<String, Object> jsonSchema,
+            String schemaName,
+            int maxTokens,
+            String dataCollection) {
+
         if (!config.hasApiKey()) {
             throw new OpenRouterException("OPENROUTER_API_KEY not configured", "AUTH_FAILED", false);
         }
@@ -1027,7 +1053,7 @@ public class OpenRouterClient {
         requestBody.put("model", model != null ? model : config.getGenerationModel());
         requestBody.put("messages", messages);
         requestBody.put("temperature", 0.7);
-        requestBody.put("max_tokens", 4096);
+        requestBody.put("max_tokens", maxTokens);
         requestBody.put("stream", false);
 
         // Add JSON schema if provided
@@ -1045,7 +1071,7 @@ public class OpenRouterClient {
         // Provider settings
         requestBody.put("provider", Map.of(
             "allow_fallbacks", true,
-            "data_collection", "allow"
+            "data_collection", dataCollection
         ));
 
         HttpHeaders headers = buildHeaders();

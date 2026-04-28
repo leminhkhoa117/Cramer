@@ -24,5 +24,7 @@ public class SpeakingResultDTO {
     private BigDecimal grammarBand;
     private BigDecimal pronunciationBand;
     private JsonNode gradingResult;
+    private SpeakingGradingResultV2DTO gradingResultV2;
+    private String gradingStatus;
     private OffsetDateTime gradedAt;
 }
