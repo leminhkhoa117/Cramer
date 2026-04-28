@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { motion, AnimatePresence, useInView, useMotionValue, useSpring, useTransform, useMotionTemplate } from 'framer-motion';
 import {
     FaPlay,
     FaClock,
@@ -65,10 +65,34 @@ const DemoSection = () => {
     const [audioPlaying, setAudioPlaying] = useState(true);
     const [wordCount, setWordCount] = useState(247);
     const [tabProgress, setTabProgress] = useState(0);
-    const [tilt, setTilt] = useState({ x: 0, y: 0 });
     const [splitRatio, setSplitRatio] = useState(0.5);
     const isDragging = useRef(false);
     const contentRef = useRef(null);
+
+    // Natural cursor-driven tilt with a resting angle.
+    // Pointer values (-0.5..0.5) feed springs so the window eases back
+    // smoothly when the cursor leaves or the section first loads.
+    // Default pose: bottom-left corner sits closest to the viewer.
+    //   rotateX > 0 pushes the top edge away / brings the bottom forward.
+    //   rotateY < 0 pushes the right edge away / brings the left forward.
+    const DEFAULT_TILT_X = 6;    // bottom edge leans toward viewer
+    const DEFAULT_TILT_Y = -7;   // left edge leans toward viewer
+    const MAX_TILT = 8;          // ceiling for cursor-driven delta
+
+    const pointerX = useMotionValue(0);
+    const pointerY = useMotionValue(0);
+    const springX = useSpring(pointerX, { stiffness: 80, damping: 18, mass: 0.6 });
+    const springY = useSpring(pointerY, { stiffness: 80, damping: 18, mass: 0.6 });
+
+    // The window leans *toward* the cursor: moving the pointer up pulls the
+    // top edge forward (negative rotateX delta), moving right pulls the
+    // right edge forward (positive rotateY delta).
+    const rotateX = useTransform(springY, (v) => DEFAULT_TILT_X + v * MAX_TILT);
+    const rotateY = useTransform(springX, (v) => DEFAULT_TILT_Y + v * MAX_TILT);
+    const glareX = useTransform(springX, (v) => `${50 + v * 60}%`);
+    const glareY = useTransform(springY, (v) => `${50 + v * 60}%`);
+    const tiltTransform = useMotionTemplate`perspective(1400px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    const glareBackground = useMotionTemplate`radial-gradient(600px circle at ${glareX} ${glareY}, rgba(255,255,255,0.18), transparent 55%)`;
 
     const CYCLE_MS = 5200;
 
@@ -122,16 +146,14 @@ const DemoSection = () => {
     const handleMouseMove = useCallback((e) => {
         if (!windowRef.current) return;
         const rect = windowRef.current.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width;
-        const y = (e.clientY - rect.top) / rect.height;
-        const tiltX = (y - 0.5) * -12;
-        const tiltY = (x - 0.5) * 12;
-        setTilt({ x: tiltX, y: tiltY });
-    }, []);
+        pointerX.set((e.clientX - rect.left) / rect.width - 0.5);
+        pointerY.set((e.clientY - rect.top) / rect.height - 0.5);
+    }, [pointerX, pointerY]);
 
     const handleMouseLeave = useCallback(() => {
-        setTilt({ x: 0, y: 0 });
-    }, []);
+        pointerX.set(0);
+        pointerY.set(0);
+    }, [pointerX, pointerY]);
 
     const startResize = useCallback((e) => {
         e.preventDefault();
@@ -235,14 +257,12 @@ const DemoSection = () => {
                     </p>
                 </motion.div>
 
-                <div
+                <motion.div
                     ref={windowRef}
                     className="demo-window--3d"
                     onMouseMove={handleMouseMove}
                     onMouseLeave={handleMouseLeave}
-                    style={{
-                        transform: `perspective(1200px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-                    }}
+                    style={{ transform: tiltTransform }}
                 >
                     <motion.div
                         className="demo-window demo-window--enhanced"
@@ -683,7 +703,12 @@ const DemoSection = () => {
                             </motion.div>
                         </AnimatePresence>
                     </motion.div>
-                </div>
+                    <motion.div
+                        className="demo-window-glare"
+                        aria-hidden="true"
+                        style={{ background: glareBackground }}
+                    />
+                </motion.div>
 
                 <motion.div
                     className="demo-cta"

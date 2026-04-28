@@ -16,7 +16,7 @@
 }
 
 .demo-container {
-    max-width: 1440px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 0 var(--container-padding);
     position: relative;
@@ -25,7 +25,7 @@
 
 .demo-header {
     text-align: center;
-    margin-bottom: 3.5rem;
+    margin-bottom: 2.5rem;
 }
 
 .demo-label {
@@ -57,36 +57,45 @@
 
 /* ---- 3D Parallax Window ---- */
 .demo-window--3d {
-    --demo-window-radius: 20px;
+    --demo-window-radius: 18px;
+    position: relative;
     transform-style: preserve-3d;
-    transition: transform 0.15s ease-out, box-shadow 0.3s ease;
     will-change: transform;
     border-radius: var(--demo-window-radius);
     isolation: isolate;
+    max-width: 1080px;
+    margin: 0 auto;
 }
 
-.demo-window--3d:hover {
-    box-shadow:
-        0 80px 160px rgba(124, 58, 237, 0.18),
-        0 30px 60px rgba(0, 0, 0, 0.1);
-}
-
-.demo-window--3d>* {
-    transform: translateZ(0);
+.demo-window--3d > * {
     border-radius: inherit;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
 }
 
+/* Soft cursor-following highlight overlay */
+.demo-window-glare {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    mix-blend-mode: screen;
+    opacity: 0.9;
+    z-index: 2;
+}
+
 /* Demo Window */
 .demo-window {
     background: var(--demo-surface);
-    border-radius: var(--demo-window-radius, 20px);
+    border-radius: var(--demo-window-radius, 18px);
     box-shadow:
-        0 60px 120px rgba(79, 70, 229, 0.14),
-        0 20px 40px rgba(15, 23, 42, 0.08);
+        0 50px 100px -30px rgba(76, 29, 149, 0.28),
+        0 18px 40px -18px rgba(15, 23, 42, 0.18),
+        0 1px 0 rgba(255, 255, 255, 0.9) inset;
     overflow: hidden;
-    border: 1px solid rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.14);
+    position: relative;
+    z-index: 1;
 }
 
 /* ---- Waveform Component ---- */
@@ -114,8 +123,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 1.5rem;
-    height: 56px;
-    background: linear-gradient(180deg, #ffffff, #f8faff);
+    height: 52px;
+    background: #ffffff;
     border-bottom: 1px solid var(--demo-border);
 }
 
@@ -206,7 +215,7 @@
 }
 
 .demo-tabs--enhanced {
-    background: linear-gradient(180deg, #ffffff, #f8faff);
+    background: #fafbff;
     border-bottom: 1px solid var(--demo-border);
     padding: 0;
 }
@@ -273,8 +282,8 @@
 /* ---- Content Area (fixed height) ---- */
 .demo-content--split {
     padding: 0;
-    height: 480px;
-    background: linear-gradient(180deg, #f7faff 0%, #eff4ff 100%);
+    height: 440px;
+    background: #f6f8fd;
     overflow: hidden;
     position: relative;
 }
@@ -336,13 +345,13 @@
 
 .demo-panel--passage {
     background: #ffffff;
-    padding: 2rem 2.5rem;
+    padding: 1.5rem 2rem;
     border-right: none;
 }
 
 .demo-panel--questions {
-    background: linear-gradient(180deg, #f7faff 0%, #edf3ff 100%);
-    padding: 1.5rem 2rem;
+    background: #f6f8fd;
+    padding: 1.25rem 1.75rem;
 }
 
 .demo-passage-title-real {

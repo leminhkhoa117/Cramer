@@ -246,3 +246,251 @@
 .testimonial-dot:hover:not(.active) {
     background: rgba(124, 58, 237, 0.4);
 }
+
+/* ============================================
+   TESTIMONIALS — INFINITE MARQUEE VARIANT
+   Used by TestimonialsSection (revamp Option B).
+   ============================================ */
+.testimonials-section--marquee {
+    padding: clamp(3rem, 6vh, 5rem) 0;
+}
+
+.testimonials-section--marquee::before,
+.testimonials-section--marquee::after { content: none; }
+
+.marquee {
+    position: relative;
+    width: 100%;
+    /* Clip horizontally (the track is width:max-content) but let card
+       shadows bleed vertically into the gap between rows. */
+    overflow-x: clip;
+    overflow-y: visible;
+    padding: 0.5rem 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    isolation: isolate;
+}
+
+.marquee__row {
+    width: 100%;
+    /* Mask region is the element's own box, so we pad vertically to give
+       card drop-shadows room to fully render before the mask ends. */
+    padding: 1.75rem 0 2.5rem;
+    overflow-x: clip;
+    overflow-y: visible;
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.marquee__track {
+    display: flex;
+    gap: 1.25rem;
+    width: max-content;
+    will-change: transform;
+}
+
+.marquee__row--a .marquee__track {
+    animation: marquee-scroll-left 60s linear infinite;
+}
+
+.marquee__row--b .marquee__track {
+    animation: marquee-scroll-right 75s linear infinite;
+}
+
+.marquee__row:hover .marquee__track,
+.marquee--paused .marquee__track {
+    animation-play-state: paused;
+}
+
+@keyframes marquee-scroll-left {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+}
+
+@keyframes marquee-scroll-right {
+    from { transform: translateX(-50%); }
+    to   { transform: translateX(0); }
+}
+
+.marquee__fade {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 80px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.marquee__fade--left  { left: 0;  background: linear-gradient(90deg,  rgba(245,243,255,0.95), transparent); }
+.marquee__fade--right { right: 0; background: linear-gradient(270deg, rgba(245,243,255,0.95), transparent); }
+
+/* Card */
+.t-card {
+    position: relative;
+    flex: 0 0 auto;
+    width: clamp(280px, 28vw, 360px);
+    padding: 1.5rem 1.4rem 1.3rem;
+    border-radius: 22px;
+    background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.95) 0%, rgba(250, 248, 255, 0.92) 100%);
+    border: 1px solid rgba(124, 58, 237, 0.1);
+    box-shadow:
+        0 24px 50px -22px rgba(76, 29, 149, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    overflow: hidden;
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.t-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--t-accent, #7c3aed), transparent);
+    opacity: 0.85;
+}
+
+.t-card:hover {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow:
+        0 32px 60px -22px rgba(76, 29, 149, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.t-card__quote-mark {
+    color: var(--t-accent, #7c3aed);
+    opacity: 0.25;
+    font-size: 1.6rem;
+    margin-bottom: 0.4rem;
+}
+
+.t-card__quote {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    margin: 0 0 1rem;
+    font-weight: 500;
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.t-card__rating {
+    display: inline-flex;
+    gap: 0.18rem;
+    margin-bottom: 0.85rem;
+}
+
+.t-card__star {
+    color: #fbbf24;
+    font-size: 0.85rem;
+    filter: drop-shadow(0 1px 2px rgba(251, 191, 36, 0.4));
+}
+
+.t-card__footer {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.65rem;
+    align-items: center;
+    padding-top: 0.85rem;
+    border-top: 1px solid rgba(124, 58, 237, 0.08);
+}
+
+.t-card__avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.85rem;
+    background: var(--t-accent, #7c3aed);
+    box-shadow: 0 6px 14px -4px rgba(124, 58, 237, 0.5);
+    border: 2px solid #fff;
+}
+
+.t-card__person {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.t-card__name {
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.t-card__role {
+    font-size: 0.74rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.t-card__band {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+    padding: 0.35rem 0.55rem;
+    border-radius: 10px;
+    background: rgba(124, 58, 237, 0.08);
+    border: 1px solid rgba(124, 58, 237, 0.18);
+    color: var(--color-primary);
+}
+
+.t-card__band-num {
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+.t-card__band-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0.75;
+    margin-top: 0.1rem;
+}
+
+.t-card__decor {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.t-card__decor--a {
+    width: 140px; height: 140px;
+    background: var(--t-accent, #7c3aed);
+    top: -40px; right: -40px;
+}
+
+.t-card__decor--b {
+    width: 90px; height: 90px;
+    background: var(--t-accent, #7c3aed);
+    bottom: -30px; left: -30px;
+    opacity: 0.18;
+}
+
+.t-card > *:not(.t-card__decor) { position: relative; z-index: 1; }
+
+@media (max-width: 640px) {
+    .t-card { width: 78vw; }
+    .marquee__row--a .marquee__track { animation-duration: 35s; }
+    .marquee__row--b .marquee__track { animation-duration: 45s; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .marquee__track { animation: none !important; transform: none !important; }
+}

@@ -1,6 +1,16 @@
 /* ============================================
    SECTION: SIGNUP (Google-only redesign)
    ============================================ */
+.signup-section {
+    padding: var(--section-padding);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    min-height: 600px;
+}
+
 .signup-section--redesigned {
     padding: var(--section-padding);
     position: relative;
@@ -228,3 +238,4 @@
     height: 40px;
     background: rgba(124, 58, 237, 0.2);
 }
+
