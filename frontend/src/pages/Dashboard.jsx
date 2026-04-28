@@ -124,14 +124,14 @@ export default function Dashboard() {
 
   // Fetch dashboard data using store action
   useEffect(() => {
-    if (!profile?.id) {
+    if (!user?.id) {
       return;
     }
     console.log('📥 Fetching dashboard summary via store');
     fetchSummary(currentPage, 4, debouncedSearchQuery).catch(err => {
       console.error('Failed to load dashboard summary:', err);
     });
-  }, [profile?.id, currentPage, debouncedSearchQuery, fetchSummary]);
+  }, [user?.id, currentPage, debouncedSearchQuery, fetchSummary]);
 
   // Callback for refreshing data (used by child components)
   const handleRefreshData = useCallback(() => {

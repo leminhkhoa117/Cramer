@@ -57,7 +57,7 @@ const useCourseStore = create(
        * Fetch courses V2 - returns full TestSetDTO objects with name, description
        */
       fetchCoursesV2: async () => {
-        set({ loading: true, error: null }, false, 'fetchCoursesV2/pending');
+        set({ loading: true, error: null, courses: [] }, false, 'fetchCoursesV2/pending');
 
         try {
           const response = await courseApi.getAllV2();

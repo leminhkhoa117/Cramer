@@ -16,6 +16,7 @@ import com.cramer.repository.UserSubscriptionRepository;
 import com.cramer.repository.VocabularyRepository;
 import com.cramer.service.CreditService;
 import com.cramer.service.SubscriptionService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,11 +56,13 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         private final PaymentOrderRepository paymentOrderRepository;
         private final CreditService creditService;
 
-        // Tier code to emoji mapping
-        private static final Map<String, String> TIER_EMOJIS = Map.of(
-                        "cramerie", "🌾",
-                        "cramerich", "🌻",
-                        "cramerous", "🌟");
+    // Tier code to emoji mapping
+    private static final Map<String, String> TIER_EMOJIS = Map.of(
+                    "cramerie", "🌾",
+                    "cramerich", "🌻",
+                    "cramerous", "🌟");
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
         @Autowired
         public SubscriptionServiceImpl(
@@ -314,9 +317,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 if (subscription == null) {
                         logger.info("⚠️ No active subscription found, initializing for user: {}", userId);
                         UserSubscriptionDTO created = initializeNewUser(userId);
-                        subscription = subscriptionRepository.findById(created.getId())
-                                        .orElseThrow(() -> new IllegalStateException(
-                                                        "Just-created subscription disappeared for user " + userId));
+                        subscription = subscriptionRepository.getReferenceById(created.getId());
                 }
 
                 SubscriptionTier tier = subscription.getTier();
@@ -457,7 +458,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 List<String> features = new ArrayList<>();
                 if (tier.getFeatures() != null && !tier.getFeatures().isEmpty()) {
                         try {
-                                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                                com.fasterxml.jackson.databind.ObjectMapper mapper = OBJECT_MAPPER;
                                 String featuresJson = tier.getFeatures().trim();
 
                                 if (featuresJson.startsWith("[")) {

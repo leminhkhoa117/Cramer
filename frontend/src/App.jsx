@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore, useProfileStore } from './stores';
 import { AnimatePresence } from 'framer-motion';
@@ -7,41 +7,44 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import PageWrapper from './components/PageWrapper';
 import FloatingAssistant from './components/FloatingAssistant';
+import FullPageLoader from './components/FullPageLoader';
 
+// Static imports — render on first paint, no lazy-load needed
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import About from './pages/About';
-import TestPage from './pages/TestPage';
-import WritingTestPage from './pages/WritingTestPage';
-import Courses from './pages/Courses';
-import CourseDetailPage from './pages/CourseDetailPage';
 import TestLayout from './components/TestLayout';
-import TestReviewPage from './pages/TestReviewPage';
-import WritingResultPage from './pages/WritingResultPage';
-import Profile from './pages/Profile';
-import VocabularyPage from './pages/VocabularyPage';
-import PricingPage from './pages/PricingPage';
-import SubscriptionPage from './pages/SubscriptionPage';
-import PaymentSuccessPage from './pages/PaymentSuccessPage';
-import PaymentCancelPage from './pages/PaymentCancelPage';
 
-// Admin imports
-import { AdminLayout } from './admin/components/layout';
-import AdminRouteGuard from './admin/components/AdminRouteGuard';
-import AdminDashboard from './admin/pages/AdminDashboard';
-import UserListPage from './admin/pages/users/UserListPage';
-import UserDetailPage from './admin/pages/users/UserDetailPage';
-import FinanceDashboard from './admin/pages/finance/FinanceDashboard';
-import TransactionHistoryPage from './admin/pages/finance/TransactionHistoryPage';
-import ReportsPage from './admin/pages/finance/ReportsPage';
-import ContentListPage from './admin/pages/content/ContentListPage';
-import TestEditorSelectPage from './admin/pages/content/TestEditorSelectPage';
-import TestEditorPage from './admin/pages/content/TestEditorPage';
-import AIGenerationPage from './admin/pages/content/AIGenerationPage';
-import HashtagManagementPage from './admin/pages/content/HashtagManagementPage';
-import SetListPage from './admin/pages/content/SetListPage';
-import SetDetailPage from './admin/pages/content/SetDetailPage';
+// User pages — lazy loaded
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const About = lazy(() => import('./pages/About'));
+const TestPage = lazy(() => import('./pages/TestPage'));
+const WritingTestPage = lazy(() => import('./pages/WritingTestPage'));
+const Courses = lazy(() => import('./pages/Courses'));
+const CourseDetailPage = lazy(() => import('./pages/CourseDetailPage'));
+const TestReviewPage = lazy(() => import('./pages/TestReviewPage'));
+const WritingResultPage = lazy(() => import('./pages/WritingResultPage'));
+const Profile = lazy(() => import('./pages/Profile'));
+const VocabularyPage = lazy(() => import('./pages/VocabularyPage'));
+const PricingPage = lazy(() => import('./pages/PricingPage'));
+const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'));
+const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'));
+const PaymentCancelPage = lazy(() => import('./pages/PaymentCancelPage'));
+
+// Admin — tất cả lazy loaded. AdminLayout import trực tiếp, không qua barrel index.js
+const AdminLayout = lazy(() => import('./admin/components/layout/AdminLayout'));
+const AdminRouteGuard = lazy(() => import('./admin/components/AdminRouteGuard'));
+const AdminDashboard = lazy(() => import('./admin/pages/AdminDashboard'));
+const UserListPage = lazy(() => import('./admin/pages/users/UserListPage'));
+const UserDetailPage = lazy(() => import('./admin/pages/users/UserDetailPage'));
+const FinanceDashboard = lazy(() => import('./admin/pages/finance/FinanceDashboard'));
+const TransactionHistoryPage = lazy(() => import('./admin/pages/finance/TransactionHistoryPage'));
+const ReportsPage = lazy(() => import('./admin/pages/finance/ReportsPage'));
+const ContentListPage = lazy(() => import('./admin/pages/content/ContentListPage'));
+const TestEditorPage = lazy(() => import('./admin/pages/content/TestEditorPage'));
+const AIGenerationPage = lazy(() => import('./admin/pages/content/AIGenerationPage'));
+const HashtagManagementPage = lazy(() => import('./admin/pages/content/HashtagManagementPage'));
+const SetListPage = lazy(() => import('./admin/pages/content/SetListPage'));
+const SetDetailPage = lazy(() => import('./admin/pages/content/SetDetailPage'));
 
 // This component waits for the initial auth loading to complete
 function AuthInitializer({ children }) {
@@ -122,8 +125,9 @@ function AppContent() {
     <>
       {showHeader && <Header />}
       <main className={showHeader ? 'with-fixed-header' : ''}>
-        <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
+        <Suspense fallback={<FullPageLoader />}>
+          <AnimatePresence mode="wait">
+            <Routes location={location} key={location.pathname}>
             <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
             <Route path="/login" element={<Login />} />
             <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
@@ -261,6 +265,7 @@ function AppContent() {
             </Route>
           </Routes>
         </AnimatePresence>
+        </Suspense>
       </main>
       {!isTestPage && !isReviewPage && !isAdminPage && <Footer />}
       {/* Floating Assistant Widget - visible on protected pages except test-taking and admin */}
