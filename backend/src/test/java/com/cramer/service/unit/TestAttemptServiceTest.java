@@ -359,9 +359,8 @@ class TestAttemptServiceTest {
             when(testAttemptRepository.save(any(TestAttempt.class)))
                     .thenReturn(existingAttempt);
             doNothing().when(userAnswerRepository).deleteByAttemptId(anyLong());
-            when(questionRepository.findById(1L)).thenReturn(Optional.of(q1));
-            when(questionRepository.findById(2L)).thenReturn(Optional.of(q2));
-            when(questionRepository.findById(3L)).thenReturn(Optional.of(q3));
+            when(questionRepository.findAllById(anySet()))
+                    .thenReturn(List.of(q1, q2, q3));
             when(userAnswerRepository.saveAll(anyList()))
                     .thenAnswer(invocation -> invocation.getArgument(0));
 
