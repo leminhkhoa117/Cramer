@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore, useProfileStore } from '../../stores';
 
 /**
@@ -72,28 +72,23 @@ export default function AdminRouteGuard({ children }) {
     if (isDevBypass) {
         // In dev mode with bypass enabled, allow all authenticated users
         console.warn('⚠️ Admin bypass enabled - DEV MODE ONLY');
-        return children;
+        return children ?? <Outlet />;
     }
 
     // ======================================================================
     // PRODUCTION MODE: Kiểm tra admin user ID
     // ======================================================================
 
-    // Kiểm tra user có phải admin không
     const isAdmin = ADMIN_USER_IDS.includes(user.id);
 
-    // Hoặc check từ profile.isAdmin (nếu backend đã support)
     const isAdminFromProfile = profile?.isAdmin === true || profile?.is_admin === true;
 
     if (!isAdmin && !isAdminFromProfile) {
-        // Không phải admin, redirect về trang chủ
         return <Navigate to="/" replace />;
     }
 
-    // Là admin, render children
-    return children;
+    return children ?? <Outlet />;
 }
-
 /**
  * useIsAdmin - Hook kiểm tra user có phải admin không
  * Có thể sử dụng ở bất kỳ đâu trong app

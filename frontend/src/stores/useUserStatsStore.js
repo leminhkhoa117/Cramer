@@ -52,7 +52,7 @@ const useUserStatsStore = create(
         if (!subscription?.tier) return '🌾';
         // Backend returns name (e.g., "Cramerich") or code (e.g., "cramerich")
         const tierCode = subscription.tier.code?.toLowerCase() || '';
-        const tierName = subscription.tier.name?.toLowerCase() || subscription.tier.name?.toLowerCase() || '';
+        const tierName = subscription.tier.name?.toLowerCase() || '';
         if (tierCode.includes('cramerous') || tierName.includes('cramerous')) return '🌟';
         if (tierCode.includes('cramerich') || tierName.includes('cramerich')) return '🌻';
         return '🌾';
@@ -61,7 +61,7 @@ const useUserStatsStore = create(
       getTierName: () => {
         const { subscription } = get();
         // Backend returns name for Vietnamese name, fallback to nameEn then code
-        return subscription?.tier?.name || subscription?.tier?.name || subscription?.tier?.code || 'Cramerie';
+        return subscription?.tier?.name || subscription?.tier?.code || 'Cramerie';
       },
 
       // ===== ACTIONS =====

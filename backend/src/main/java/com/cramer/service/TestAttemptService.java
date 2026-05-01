@@ -36,6 +36,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -233,6 +235,9 @@ public class TestAttemptService {
             // Don't wrap quota exceptions - let GlobalExceptionHandler return proper 402
             logger.warn("❌ [QUOTA BLOCKED] User {} blocked: {}", userId, e.getMessage());
             throw e;
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            // T8 (BUG_AUDIT): re-throw so GlobalExceptionHandler returns 400/404, not 500
+            throw e;
         } catch (Exception e) {
             logger.error(
                     "❌ [ERROR] Unhandled exception in startOrGetAttempt: userId={}, source={}, testNum={}, skill={}",
@@ -334,6 +339,13 @@ public class TestAttemptService {
             userAnswerRepository.deleteByAttemptId(attemptId);
             entityManager.flush(); // Ensure delete happens before new inserts
 
+            // Batch-load all questions in ONE query instead of N individual queries.
+            // With ~300ms network latency per query to Supabase, this reduces
+            // 40 questions × 300ms = 12s → 1 query × 300ms = 0.3s
+            Set<Long> questionIds = saveProgressDTO.getAnswers().keySet();
+            Map<Long, Question> questionsMap = questionRepository.findAllById(questionIds)
+                    .stream().collect(Collectors.toMap(Question::getId, Function.identity()));
+
             List<UserAnswer> userAnswers = new ArrayList<>();
             for (Map.Entry<Long, String> entry : saveProgressDTO.getAnswers().entrySet()) {
                 Long questionId = entry.getKey();
@@ -343,8 +355,10 @@ public class TestAttemptService {
                     continue; // Skip empty answers
                 }
 
-                Question question = questionRepository.findById(Objects.requireNonNull(questionId))
-                        .orElseThrow(() -> new ResourceNotFoundException("Question not found with id: " + questionId));
+                Question question = questionsMap.get(questionId);
+                if (question == null) {
+                    throw new ResourceNotFoundException("Question not found with id: " + questionId);
+                }
 
                 // Adapt the String answer to a JsonNode to maintain compatibility with
                 // downstream logic
@@ -396,6 +410,13 @@ public class TestAttemptService {
 
         long startGrading = System.currentTimeMillis();
         if (answers != null) {
+            // Batch-load all questions in ONE query instead of N individual queries.
+            // With ~300ms network latency per query to Supabase, this reduces
+            // 40 questions × 300ms = 12s → 1 query × 300ms = 0.3s
+            Set<Long> questionIds = answers.keySet();
+            Map<Long, Question> questionsMap = questionRepository.findAllById(questionIds)
+                    .stream().collect(Collectors.toMap(Question::getId, Function.identity()));
+
             for (Map.Entry<Long, String> entry : answers.entrySet()) {
                 Long questionId = entry.getKey();
                 String answerText = entry.getValue();
@@ -404,8 +425,10 @@ public class TestAttemptService {
                     continue; // Skip unanswered questions
                 }
 
-                Question question = questionRepository.findById(Objects.requireNonNull(questionId))
-                        .orElseThrow(() -> new ResourceNotFoundException("Question not found with id: " + questionId));
+                Question question = questionsMap.get(questionId);
+                if (question == null) {
+                    throw new ResourceNotFoundException("Question not found with id: " + questionId);
+                }
 
                 // Adapt the String answer to a JsonNode to maintain compatibility with
                 // downstream logic

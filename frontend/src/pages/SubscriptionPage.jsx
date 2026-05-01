@@ -426,6 +426,8 @@ export default function SubscriptionPage() {
   const [error, setError] = useState(null);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [processingPayment, setProcessingPayment] = useState(null);
+  const [pendingPurchase, setPendingPurchase] = useState(null);
+  // pendingPurchase = { type: 'lua', pack } or { type: 'tier', tierCode, tierName, priceVnd }
 
   // AI Grading Toggle state
   const [aiGradingEnabled, setAiGradingEnabled] = useState(true);
@@ -661,6 +663,39 @@ export default function SubscriptionPage() {
                 exit="exit"
                 transition={{ duration: 0.3 }}
               >
+                {/* Previous-plan renewal banner — shown when user was auto-downgraded from a paid tier */}
+                {status?.previousPlan && (
+                  <div
+                    className="sl-card"
+                    style={{
+                      borderLeft: '4px solid #f59e0b',
+                      background: 'linear-gradient(135deg, #fffbeb, #fef3c7)',
+                      marginBottom: '1rem'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem' }}>
+                      <FaExclamationTriangle style={{ color: '#f59e0b', fontSize: '1.5rem', flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <strong>Gói {status.previousPlan.tierName}</strong> của bạn đã hết hạn{' '}
+                        {status.previousPlan.expiredAt ? formatDate(status.previousPlan.expiredAt) : ''}
+                        {status.previousPlan.daysSinceExpired != null && (
+                          <span style={{ color: '#92400e' }}>
+                            {' '}({status.previousPlan.daysSinceExpired} ngày trước)
+                          </span>
+                        )}
+                        . Bạn đang dùng gói miễn phí. Gia hạn để tiếp tục các tính năng cao cấp.
+                      </div>
+                      <button
+                        type="button"
+                        className="sl-btn sl-btn--primary"
+                        onClick={() => setActiveTab('packages')}
+                      >
+                        Gia hạn ngay
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Subscription Details Card */}
                 <div className="sl-card">
                   <div className="sl-card__header">
@@ -857,7 +892,10 @@ export default function SubscriptionPage() {
                       </div>
                     </div>
                     <TierUpgradeCard
-                      onUpgrade={handleUpgrade}
+                      onUpgrade={(tierCode) => {
+                        const tierInfo = TIER_INFO[tierCode];
+                        setPendingPurchase({ type: 'tier', tierCode, tierName: tierInfo?.name, priceVnd: tierInfo?.priceVnd });
+                      }}
                       isProcessing={processingPayment === `tier-${TIERS.CRAMERICH}`}
                     />
                   </div>
@@ -1053,7 +1091,7 @@ export default function SubscriptionPage() {
       {selectedPackage && (
         <LuaPurchaseModal
           package={selectedPackage}
-          onConfirm={() => handlePurchaseLua(selectedPackage)}
+          onConfirm={() => setPendingPurchase({ type: 'lua', pack: selectedPackage })}
           onCancel={() => setSelectedPackage(null)}
           isProcessing={processingPayment === `lua-${selectedPackage.code}`}
           formatPrice={formatVnd}
@@ -1061,6 +1099,30 @@ export default function SubscriptionPage() {
         />
       )}
 
+      {/* Pre-confirmation Modal before PayOS payment */}
+      <ConfirmationModal
+        isOpen={!!pendingPurchase}
+        onClose={() => setPendingPurchase(null)}
+        onConfirm={() => {
+          if (!pendingPurchase) return;
+          if (pendingPurchase.type === 'lua') {
+            handlePurchaseLua(pendingPurchase.pack);
+          } else if (pendingPurchase.type === 'tier') {
+            handleUpgrade(pendingPurchase.tierCode);
+          }
+          setPendingPurchase(null);
+        }}
+        title="Xác nhận thanh toán"
+        confirmText="Tiếp tục"
+        isConfirming={false}
+      >
+        {pendingPurchase?.type === 'lua' && (
+          <p>Bạn sắp mua {pendingPurchase.pack.luaAmount.toLocaleString()} Lúa với giá {formatVnd(pendingPurchase.pack.priceVnd)} VNĐ. Tiếp tục?</p>
+        )}
+        {pendingPurchase?.type === 'tier' && (
+          <p>Bạn sắp đăng ký gói {pendingPurchase.tierName} với giá {formatVnd(pendingPurchase.priceVnd)} VNĐ/tháng. Tiếp tục?</p>
+        )}
+      </ConfirmationModal>
 
     </div>
   );

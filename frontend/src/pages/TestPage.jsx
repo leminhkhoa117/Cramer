@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { useParams, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useTestStore, useTestSessionStore } from '../stores';
@@ -6,6 +6,8 @@ import { HighlightProvider } from '../contexts/HighlightContext';
 import TestPageContent from '../components/TestPageContent';
 import FullPageLoader from '../components/FullPageLoader';
 import ResumeConfirmationModal from '../components/ResumeConfirmationModal';
+import QuotaExceededModal from '../components/QuotaExceededModal';
+import useAutoSave from '../hooks/useAutoSave';
 
 import '../css/test-page.css';
 
@@ -76,6 +78,11 @@ const TestPage = () => {
     const hasFetchedRef = useRef(false);
     const answersRef = useRef(answers);
     const handleFinalSubmitRef = useRef(null);
+    const [quotaBlock, setQuotaBlock] = useState(null);
+    const [isResuming, setIsResuming] = useState(false);
+
+    // Auto-save: periodically persist progress to backend
+    useAutoSave(testStatus === 'running', normalizedSkill);
 
     // Keep answersRef in sync
     useEffect(() => {
@@ -181,7 +188,13 @@ const TestPage = () => {
                 }
             } catch (err) {
                 if (abortController.signal.aborted) return;
-                setError('Failed to load test data. Please try again later.');
+                // U2 (BUG_AUDIT): map 402 to QuotaExceededModal instead of generic error
+                if (err?.response?.status === 402) {
+                    setQuotaBlock(err.response.data);
+                    setLoading(false);
+                    return;
+                }
+                setError('Không thể tải đề thi. Vui lòng thử lại sau.');
                 setLoading(false);
             }
         };
@@ -190,7 +203,9 @@ const TestPage = () => {
 
         return () => {
             abortController.abort();
-            hasFetchedRef.current = false;
+            // U5 (BUG_AUDIT): removed hasFetchedRef.current = false — resetting in cleanup
+            // causes StrictMode to re-run the fetch (double billing in dev).
+            // On real navigation, the component unmounts fully and a new ref is created.
         };
     }, [source, testNum, skill, forceNew, setupTestState, startOrResumeAttempt, loadTestData, loadAnswers, setLoading, setTestStatus, setError, openResumeModal]);
 
@@ -202,12 +217,14 @@ const TestPage = () => {
         }
 
         try {
+            setIsResuming(true);
             setLoading(true);
             const fullTestData = await loadTestData(source, testNum, skill);
             await setupTestState(inProgressAttempt, fullTestData);
         } catch (err) {
             setError('Failed to load test data for resuming.');
             setLoading(false);
+            setIsResuming(false);
         }
     }, [inProgressAttempt, navigate, source, testNum, skill, loadTestData, setupTestState, setLoading, setError]);
 
@@ -245,6 +262,7 @@ const TestPage = () => {
         closeConfirmModal();
 
         try {
+            setTestStatus('submitted'); // Stop auto-save before submission
             setIsSubmitting(true);
             const currentAnswers = answersRef.current;
             const normalizedAnswers = Object.entries(currentAnswers || {}).reduce((acc, [questionId, value]) => {
@@ -260,7 +278,7 @@ const TestPage = () => {
             setIsSubmitting(false);
             isSubmittingRef.current = false;
         }
-    }, [attempt, navigate, closeConfirmModal, setIsSubmitting, setError, submitAttemptApi]);
+    }, [attempt, navigate, closeConfirmModal, setTestStatus, setIsSubmitting, setError, submitAttemptApi]);
 
     // Keep handleFinalSubmitRef updated
     useEffect(() => {
@@ -279,7 +297,7 @@ const TestPage = () => {
             return;
         }
 
-        console.log('⏱️ Timer: Starting countdown from', currentTimeLeft, 'seconds');
+        // console.log('⏱️ Timer: Starting countdown from', currentTimeLeft, 'seconds');
 
         const timer = setInterval(() => {
             const currentTime = useTestStore.getState().timeLeft;
@@ -294,7 +312,7 @@ const TestPage = () => {
         }, 1000);
 
         return () => {
-            console.log('⏱️ Timer: Cleanup');
+            // console.log('⏱️ Timer: Cleanup');
             clearInterval(timer);
         };
     }, [testStatus, skill, loading, setTimeLeft, timeLeft]);
@@ -333,11 +351,20 @@ const TestPage = () => {
 
     return (
         <>
+            <QuotaExceededModal
+                isOpen={!!quotaBlock}
+                billingResult={quotaBlock}
+                onClose={() => { setQuotaBlock(null); navigate('/dashboard'); }}
+                onBuyLua={() => navigate('/subscription?tab=lua')}
+                onUpgrade={() => navigate('/subscription')}
+            />
+
             <ResumeConfirmationModal
                 isOpen={isResumeModalOpen}
                 onResume={handleResume}
                 onStartNew={handleStartNew}
                 isStartingNew={isStartingNew}
+                isResuming={isResuming}
                 attemptStatus={inProgressAttempt?.status}
             />
 

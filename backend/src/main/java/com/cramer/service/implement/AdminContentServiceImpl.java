@@ -1,6 +1,7 @@
 package com.cramer.service.implement;
 
 import com.cramer.service.AdminContentService;
+import com.cramer.exception.ResourceNotFoundException;
 import com.cramer.repository.*;
 import com.cramer.entity.*;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -629,9 +630,11 @@ public class AdminContentServiceImpl implements AdminContentService {
             result.put("message", "Đã tạo section mới");
             return result;
 
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error creating section", e);
-            throw new RuntimeException("Không thể tạo section: " + e.getMessage());
+            throw new RuntimeException("Không thể tạo section: " + e.getMessage(), e);
         }
     }
 
@@ -680,9 +683,11 @@ public class AdminContentServiceImpl implements AdminContentService {
             result.put("message", "Đã cập nhật section");
             return result;
 
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error updating section {}", sectionId, e);
-            throw new RuntimeException("Không thể cập nhật section: " + e.getMessage());
+            throw new RuntimeException("Không thể cập nhật section: " + e.getMessage(), e);
         }
     }
 
@@ -754,9 +759,11 @@ public class AdminContentServiceImpl implements AdminContentService {
             result.put("message", "Đã tạo câu hỏi mới");
             return result;
 
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error creating question in section {}", sectionId, e);
-            throw new RuntimeException("Không thể tạo câu hỏi: " + e.getMessage());
+            throw new RuntimeException("Không thể tạo câu hỏi: " + e.getMessage(), e);
         }
     }
 
@@ -833,9 +840,11 @@ public class AdminContentServiceImpl implements AdminContentService {
             result.put("message", "Đã cập nhật câu hỏi");
             return result;
 
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error updating question {}", questionId, e);
-            throw new RuntimeException("Không thể cập nhật câu hỏi: " + e.getMessage());
+            throw new RuntimeException("Không thể cập nhật câu hỏi: " + e.getMessage(), e);
         }
     }
 
@@ -850,12 +859,14 @@ public class AdminContentServiceImpl implements AdminContentService {
             logger.info("Admin {} deleted question {} - {} rows affected", adminUserId, questionId, deleted);
 
             if (deleted == 0) {
-                throw new RuntimeException("Không tìm thấy câu hỏi với ID: " + questionId);
+                throw new ResourceNotFoundException("Không tìm thấy câu hỏi với ID: " + questionId);
             }
 
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error deleting question {}", questionId, e);
-            throw new RuntimeException("Không thể xóa câu hỏi: " + e.getMessage());
+            throw new RuntimeException("Không thể xóa câu hỏi: " + e.getMessage(), e);
         }
     }
 
@@ -910,9 +921,11 @@ public class AdminContentServiceImpl implements AdminContentService {
             result.put("message", "Đã cập nhật trạng thái đề thi");
             return result;
 
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error updating test status for {} Test {}", examSource, testNumber, e);
-            throw new RuntimeException("Không thể cập nhật trạng thái: " + e.getMessage());
+            throw new RuntimeException("Không thể cập nhật trạng thái: " + e.getMessage(), e);
         }
     }
 
@@ -1019,9 +1032,11 @@ public class AdminContentServiceImpl implements AdminContentService {
             logger.info("Admin {} deleted test {} ({} sections)", adminUserId, testId, deletedSections);
             cachedOverview = null;
 
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error deleting test {}", testId, e);
-            throw new RuntimeException("Không thể xóa đề thi: " + e.getMessage());
+            throw new RuntimeException("Không thể xóa đề thi: " + e.getMessage(), e);
         }
     }
 
@@ -1036,7 +1051,7 @@ public class AdminContentServiceImpl implements AdminContentService {
             logger.info("Attempting to create test in set {} with number {}", setId, testNumber);
 
             TestSet testSet = testSetRepository.findById(setId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy bộ đề ID: " + setId));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ đề ID: " + setId));
 
             // Check if test already exists in this set
             Optional<IeltsTest> existingTest = ieltsTestRepository.findByTestSetIdAndTestNumber(setId, testNumber);
@@ -1110,9 +1125,11 @@ public class AdminContentServiceImpl implements AdminContentService {
             result.put("message", "Đã tạo test mới thành công");
             return result;
 
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error creating test in set {}/{}", setId, testNumber, e);
-            throw new RuntimeException("Không thể tạo test: " + e.getMessage());
+            throw new RuntimeException("Không thể tạo test: " + e.getMessage(), e);
         }
     }
 
@@ -1123,7 +1140,7 @@ public class AdminContentServiceImpl implements AdminContentService {
         try {
             IeltsTest test = Objects.requireNonNull(
                     ieltsTestRepository.findById(Objects.requireNonNull(testId, "testId must not be null"))
-                            .orElseThrow(() -> new RuntimeException("Không tìm thấy đề thi ID: " + testId)),
+                            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi ID: " + testId)),
                     "Test must not be null");
 
             if (testData.containsKey("nameVi"))
@@ -1174,9 +1191,11 @@ public class AdminContentServiceImpl implements AdminContentService {
             cachedOverview = null; // Invalidate cache
 
             return Map.of("success", true, "message", "Cập nhật đề thi thành công");
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error updating test {}", testId, e);
-            throw new RuntimeException("Lỗi khi cập nhật đề thi: " + e.getMessage());
+            throw new RuntimeException("Lỗi khi cập nhật đề thi: " + e.getMessage(), e);
         }
     }
 
@@ -1200,9 +1219,11 @@ public class AdminContentServiceImpl implements AdminContentService {
             testSet = Objects.requireNonNull(testSetRepository.save(testSet), "Failed to save test set");
             cachedOverview = null;
             return Map.of("success", true, "id", testSet.getId());
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error creating test set", e);
-            throw new RuntimeException("Lỗi khi tạo bộ đề: " + e.getMessage());
+            throw new RuntimeException("Lỗi khi tạo bộ đề: " + e.getMessage(), e);
         }
     }
 
@@ -1212,7 +1233,7 @@ public class AdminContentServiceImpl implements AdminContentService {
         logger.info("Updating test set {}: {}", setId, setData);
         try {
             TestSet testSet = testSetRepository.findById(setId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy bộ đề ID: " + setId));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ đề ID: " + setId));
 
             if (setData.containsKey("name"))
                 testSet.setName((String) setData.get("name"));
@@ -1228,9 +1249,11 @@ public class AdminContentServiceImpl implements AdminContentService {
             Objects.requireNonNull(testSetRepository.save(testSet), "Failed to save updated testset");
             cachedOverview = null;
             return Map.of("success", true);
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error updating test set", e);
-            throw new RuntimeException("Lỗi khi cập nhật bộ đề: " + e.getMessage());
+            throw new RuntimeException("Lỗi khi cập nhật bộ đề: " + e.getMessage(), e);
         }
     }
 
@@ -1242,9 +1265,11 @@ public class AdminContentServiceImpl implements AdminContentService {
             testSetRepository.deleteById(Objects.requireNonNull(setId, "setId must not be null"));
             cachedOverview = null;
             logger.info("Successfully deleted test set {}", setId);
+        } catch (IllegalArgumentException | ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error deleting test set", e);
-            throw new RuntimeException("Lỗi khi xóa bộ đề: " + e.getMessage());
+            throw new RuntimeException("Lỗi khi xóa bộ đề: " + e.getMessage(), e);
         }
     }
 }

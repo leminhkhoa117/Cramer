@@ -68,7 +68,6 @@ public class SubscriptionTierDTO {
                 .id(entity.getId())
                 .code(entity.getCode())
                 .name(entity.getName())
-                .name(entity.getName())
                 .priceVnd(entity.getPriceVnd())
                 // ATTEMPT system
                 .monthlyAttemptLimit(entity.getMonthlyAttemptLimit())

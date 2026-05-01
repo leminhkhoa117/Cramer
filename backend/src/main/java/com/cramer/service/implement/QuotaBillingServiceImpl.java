@@ -1,12 +1,12 @@
 package com.cramer.service.implement;
 
 import com.cramer.dto.BillingResultDTO;
-import com.cramer.dto.UserSubscriptionDTO;
 import com.cramer.entity.CreditTransaction;
+import com.cramer.entity.UserSubscription;
+import com.cramer.repository.UserSubscriptionRepository;
 import com.cramer.service.CreditService;
 import com.cramer.service.QuotaBillingService;
 import com.cramer.service.QuotaService;
-import com.cramer.service.SubscriptionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,17 +31,17 @@ public class QuotaBillingServiceImpl implements QuotaBillingService {
     private static final Set<String> PREMIUM_TIERS = Set.of("cramerich", "cramerous");
 
     private final QuotaService quotaService;
-    private final SubscriptionService subscriptionService;
     private final CreditService creditService;
+    private final UserSubscriptionRepository userSubscriptionRepository;
 
     @Autowired
     public QuotaBillingServiceImpl(
             QuotaService quotaService,
-            @Lazy SubscriptionService subscriptionService,
-            @Lazy CreditService creditService) {
+            @Lazy CreditService creditService,
+            UserSubscriptionRepository userSubscriptionRepository) {
         this.quotaService = quotaService;
-        this.subscriptionService = subscriptionService;
         this.creditService = creditService;
+        this.userSubscriptionRepository = userSubscriptionRepository;
     }
 
     @Override
@@ -133,18 +133,20 @@ public class QuotaBillingServiceImpl implements QuotaBillingService {
 
     /**
      * Check if user is on a premium tier (Cramerich or Cramerous).
+     *
+     * NOTE: This uses a direct read-only repository lookup (no side effects)
+     * instead of SubscriptionService.getUserSubscription(), which can trigger
+     * initializeNewUser() and perform writes. Writes inside the enclosing
+     * transaction — if they fail — would mark the transaction rollback-only
+     * and cause UnexpectedRollbackException at commit. Keep this method
+     * side-effect free.
      */
     private boolean isPremiumUser(UUID userId) {
-        try {
-            UserSubscriptionDTO subscription = subscriptionService.getUserSubscription(userId);
-            if (subscription == null || subscription.getTier() == null) {
-                return false;
-            }
-            String tierCode = subscription.getTier().getCode();
-            return tierCode != null && PREMIUM_TIERS.contains(tierCode.toLowerCase());
-        } catch (Exception e) {
-            logger.warn("⚠️ Failed to check premium status for user {}: {}", userId, e.getMessage());
+        UserSubscription subscription = userSubscriptionRepository.findActiveByUserId(userId).orElse(null);
+        if (subscription == null || subscription.getTier() == null) {
             return false;
         }
+        String tierCode = subscription.getTier().getCode();
+        return tierCode != null && PREMIUM_TIERS.contains(tierCode.toLowerCase());
     }
 }

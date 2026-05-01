@@ -6,6 +6,7 @@ import { writingApi } from '../api/backendApi';
 import GradingLoader from '../components/common/GradingLoader';
 import EssayComparison from '../components/EssayComparison';
 import GradingQuotaInfo from '../components/GradingQuotaInfo';
+import QuotaExceededModal from '../components/QuotaExceededModal';
 import useUserStatsStore from '../stores/useUserStatsStore';
 import useAuthStore from '../stores/useAuthStore';
 import {
@@ -62,6 +63,7 @@ const WritingResultPage = () => {
     const [selectedItemId, setSelectedItemId] = useState(null);
     const [isRegrading, setIsRegrading] = useState(false);
     const [showRegradeModal, setShowRegradeModal] = useState(false);
+    const [quotaBlock, setQuotaBlock] = useState(null);
 
     // View mode for essay column: 'original' or 'compare'
     const [essayViewMode, setEssayViewMode] = useState(() => {
@@ -75,6 +77,12 @@ const WritingResultPage = () => {
         localStorage.setItem('writingResult_essayViewMode', essayViewMode);
     }, [essayViewMode]);
 
+    // Refs to let the polling effect read latest review/error without re-triggering
+    const reviewRef = useRef(review);
+    reviewRef.current = review;
+    const errorRef = useRef(error);
+    errorRef.current = error;
+
     // Refs for scroll-to functionality
     const analysisColumnRef = useRef(null);
     const itemRefs = useRef({});
@@ -82,7 +90,7 @@ const WritingResultPage = () => {
     // Poll for grading status with improved reliability
     useEffect(() => {
         // Don't poll if we already have review data or there's an error
-        if (review || error) return;
+        if (reviewRef.current || errorRef.current) return;
 
         const abortController = new AbortController();
         let pollInterval;
@@ -205,7 +213,7 @@ const WritingResultPage = () => {
                 clearInterval(pollInterval);
             };
         }
-    }, [attemptId, review, error, pollKey, isRegrading]); // pollKey and isRegrading force restart when regrading
+    }, [attemptId, pollKey, isRegrading]); // pollKey and isRegrading force restart when regrading
 
     // Helpers
     const getTaskReview = useCallback((taskNumber) => {
@@ -388,7 +396,16 @@ const WritingResultPage = () => {
             setPollKey(prev => prev + 1);
         } catch (err) {
             console.error('Failed to start re-grading:', err);
-            setError('Không thể bắt đầu chấm lại. Vui lòng thử lại sau.');
+            const status = err?.response?.status;
+            if (status === 402) {
+                setQuotaBlock(err.response.data);
+            } else if (status === 429) {
+                setError('Bạn đang gửi yêu cầu quá nhanh. Vui lòng thử lại sau vài phút.');
+            } else if (status === 403) {
+                setError('Bạn không có quyền thực hiện thao tác này.');
+            } else {
+                setError('Không thể bắt đầu chấm lại. Vui lòng thử lại sau.');
+            }
             setLoading(false);
             setIsRegrading(false);
         }
@@ -1223,6 +1240,14 @@ const WritingResultPage = () => {
                     </div>
                 )
             }
+
+            <QuotaExceededModal
+                isOpen={!!quotaBlock}
+                billingResult={quotaBlock}
+                onClose={() => setQuotaBlock(null)}
+                onBuyLua={() => navigate('/subscription?tab=lua')}
+                onUpgrade={() => navigate('/subscription')}
+            />
         </div >
     );
 };

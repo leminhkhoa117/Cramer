@@ -9,6 +9,7 @@ import com.cramer.entity.WritingSubmission;
 import com.cramer.repository.SectionRepository;
 import com.cramer.repository.TestAttemptRepository;
 import com.cramer.repository.WritingSubmissionRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +64,7 @@ public class WritingSubmissionService {
                 .orElseThrow(() -> new IllegalArgumentException("Attempt not found: " + attemptId));
 
         if (!attempt.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Unauthorized access to attempt");
+            throw new AccessDeniedException("Unauthorized access to attempt");
         }
 
         WritingSubmission submission = writingSubmissionRepository
@@ -89,7 +90,7 @@ public class WritingSubmissionService {
                 .orElseThrow(() -> new IllegalArgumentException("Attempt not found: " + attemptId));
 
         if (!attempt.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Unauthorized access to attempt");
+            throw new AccessDeniedException("Unauthorized access to attempt");
         }
 
         // IMPORTANT: Cancel any other IN_PROGRESS attempts for the same test
@@ -195,7 +196,7 @@ public class WritingSubmissionService {
                 .orElseThrow(() -> new IllegalArgumentException("Attempt not found"));
 
         if (!attempt.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Unauthorized access");
+            throw new AccessDeniedException("Unauthorized access");
         }
 
         List<WritingSubmission> submissions = writingSubmissionRepository.findByAttemptId(attemptId);
@@ -246,7 +247,7 @@ public class WritingSubmissionService {
                 .orElseThrow(() -> new IllegalArgumentException("Attempt not found"));
 
         if (!attempt.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Unauthorized access");
+            throw new AccessDeniedException("Unauthorized access");
         }
 
         List<WritingSubmission> submissions = writingSubmissionRepository.findByAttemptId(attemptId);
@@ -360,7 +361,7 @@ public class WritingSubmissionService {
                 .orElseThrow(() -> new IllegalArgumentException("Attempt not found"));
 
         if (!attempt.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Unauthorized access");
+            throw new AccessDeniedException("Unauthorized access");
         }
 
         return writingSubmissionRepository.findByAttemptId(attemptId)
@@ -396,7 +397,7 @@ public class WritingSubmissionService {
                 .orElseThrow(() -> new IllegalArgumentException("Attempt not found: " + attemptId));
 
         if (!attempt.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Unauthorized access to attempt");
+            throw new AccessDeniedException("Unauthorized access to attempt");
         }
 
         if (!"COMPLETED".equals(attempt.getStatus())) {

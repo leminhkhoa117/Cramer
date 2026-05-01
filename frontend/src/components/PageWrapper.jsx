@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Outlet } from 'react-router-dom';
 
 const PageWrapper = ({ children }) => {
   const { pathname } = useLocation();
@@ -18,7 +18,7 @@ const PageWrapper = ({ children }) => {
       transition={{ duration: 0.25 }}
       style={{ width: '100%' }}
     >
-      {children}
+      {children ?? <Outlet />}
     </motion.div>
   );
 };

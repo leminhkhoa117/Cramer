@@ -16,6 +16,7 @@ import com.cramer.repository.UserSubscriptionRepository;
 import com.cramer.repository.VocabularyRepository;
 import com.cramer.service.CreditService;
 import com.cramer.service.SubscriptionService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -54,11 +56,13 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         private final PaymentOrderRepository paymentOrderRepository;
         private final CreditService creditService;
 
-        // Tier code to emoji mapping
-        private static final Map<String, String> TIER_EMOJIS = Map.of(
-                        "cramerie", "🌾",
-                        "cramerich", "🌻",
-                        "cramerous", "🌟");
+    // Tier code to emoji mapping
+    private static final Map<String, String> TIER_EMOJIS = Map.of(
+                    "cramerie", "🌾",
+                    "cramerich", "🌻",
+                    "cramerous", "🌟");
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
         @Autowired
         public SubscriptionServiceImpl(
@@ -185,39 +189,73 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         }
 
         @Override
+        @Transactional
         @SuppressWarnings("null")
         public UserSubscriptionDTO initializeNewUser(UUID userId) {
-                logger.info("🆕 Initializing new user subscription: {}", userId);
+                logger.info("🆕 Ensuring active subscription for user: {}", userId);
 
-                // Check if already has subscription
-                if (subscriptionRepository.existsByUserId(userId)) {
-                        return subscriptionRepository.findActiveByUserId(userId)
-                                        .map(UserSubscriptionDTO::fromEntity)
-                                        .orElseThrow(() -> new ResourceNotFoundException("UserSubscription", "userId",
-                                                        userId));
+                // 1. Idempotent: nếu đã có active sub → trả về luôn (không tạo mới)
+                Optional<UserSubscription> activeOpt = subscriptionRepository.findActiveByUserId(userId);
+                if (activeOpt.isPresent()) {
+                        return UserSubscriptionDTO.fromEntity(activeOpt.get());
                 }
 
-                // Get free tier
+                // 2. Flip stale ACTIVE rows (status='ACTIVE' nhưng expires_at < now) → EXPIRED
+                //    để DB nhất quán + hỗ trợ build previousPlan ở getSubscriptionStatus
+                expireStaleActiveRows(userId);
+
+                // 3. Tạo free tier row mới — đây là "auto-downgrade" sau khi gói trả phí hết hạn,
+                //    hoặc khởi tạo lần đầu cho user mới
                 SubscriptionTier freeTier = tierRepository.findFreeTier()
                                 .orElseThrow(() -> new ResourceNotFoundException("SubscriptionTier", "code",
                                                 FREE_TIER_CODE));
 
-                // Create subscription
                 UserSubscription subscription = UserSubscription.builder()
                                 .userId(userId)
                                 .tier(freeTier)
                                 .status(UserSubscription.Status.ACTIVE)
+                                .attemptsUsed(0)
                                 .attemptAisUsed(0)
+                                .chatbotUsed(0)
                                 .autoRenew(false)
+                                // expiresAt = null → free tier là lifetime
                                 .build();
 
                 subscription = Objects.requireNonNull(subscriptionRepository.save(subscription));
-                logger.info("✅ Created free tier subscription for user {}", userId);
+                logger.info("✅ Created free tier subscription for user {} (subId={})", userId, subscription.getId());
 
-                // Initialize credits with initial Lúa bonus
-                creditService.initializeCredits(userId, freeTier.getInitialLua());
+                // 4. Chỉ cấp initialLua bonus nếu user CHƯA TỪNG có credit record (first-time signup)
+                //    Tránh exploit: mua gói → expire → nhận initial bonus thêm lần nữa
+                boolean firstTimeUser = creditRepository.findByUserId(userId).isEmpty();
+                if (firstTimeUser && freeTier.getInitialLua() != null && freeTier.getInitialLua() > 0) {
+                        creditService.initializeCredits(userId, freeTier.getInitialLua());
+                        logger.info("🎁 Granted initial Lúa ({}) to first-time user {}", freeTier.getInitialLua(),
+                                        userId);
+                } else {
+                        logger.info("⬇️ Auto-downgraded user {} to free tier (no initial Lúa bonus)", userId);
+                }
 
                 return UserSubscriptionDTO.fromEntity(subscription);
+        }
+
+        /**
+         * Flip rows ở trạng thái ACTIVE nhưng đã quá hạn (expires_at < now) sang EXPIRED.
+         * Idempotent + safe gọi nhiều lần.
+         */
+        private void expireStaleActiveRows(UUID userId) {
+                OffsetDateTime now = OffsetDateTime.now();
+                List<UserSubscription> all = subscriptionRepository.findByUserIdOrderByStartedAtDesc(userId);
+                for (UserSubscription sub : all) {
+                        if (sub.getStatus() == UserSubscription.Status.ACTIVE
+                                        && sub.getExpiresAt() != null
+                                        && sub.getExpiresAt().isBefore(now)) {
+                                sub.setStatus(UserSubscription.Status.EXPIRED);
+                                subscriptionRepository.save(sub);
+                                logger.info("⏰ Auto-expired subscription id={} for user {} (tier={})",
+                                                sub.getId(), userId,
+                                                sub.getTier() != null ? sub.getTier().getCode() : "?");
+                        }
+                }
         }
 
         @Override
@@ -267,7 +305,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         }
 
         @Override
-        @Transactional(readOnly = true)
+        @Transactional
         public SubscriptionStatusDTO getSubscriptionStatus(UUID userId) {
                 logger.info("📊 Getting comprehensive subscription status for user: {}", userId);
 
@@ -275,15 +313,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 UserSubscription subscription = subscriptionRepository.findActiveByUserId(userId)
                                 .orElse(null);
 
-                // If no subscription, initialize one
+                // If no active subscription, initialize one (auto-downgrade or first-time)
                 if (subscription == null) {
-                        logger.info("⚠️ No subscription found, initializing free tier for user: {}", userId);
-                        initializeNewUser(userId);
-                        subscription = subscriptionRepository.findActiveByUserId(userId).orElse(null);
-                }
-
-                if (subscription == null) {
-                        throw new ResourceNotFoundException("UserSubscription", "userId", userId);
+                        logger.info("⚠️ No active subscription found, initializing for user: {}", userId);
+                        UserSubscriptionDTO created = initializeNewUser(userId);
+                        subscription = subscriptionRepository.getReferenceById(created.getId());
                 }
 
                 SubscriptionTier tier = subscription.getTier();
@@ -291,7 +325,6 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 // Build tier info
                 SubscriptionStatusDTO.TierInfo tierInfo = SubscriptionStatusDTO.TierInfo.builder()
                                 .code(tier.getCode())
-                                .name(tier.getName())
                                 .name(tier.getName())
                                 .emoji(TIER_EMOJIS.getOrDefault(tier.getCode(), "📦"))
                                 .priceVnd(tier.getPriceVnd())
@@ -425,7 +458,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 List<String> features = new ArrayList<>();
                 if (tier.getFeatures() != null && !tier.getFeatures().isEmpty()) {
                         try {
-                                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                                com.fasterxml.jackson.databind.ObjectMapper mapper = OBJECT_MAPPER;
                                 String featuresJson = tier.getFeatures().trim();
 
                                 if (featuresJson.startsWith("[")) {
@@ -465,6 +498,36 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                                                 .build())
                                 .collect(Collectors.toList());
 
+                // Build previousPlan (only when current tier is free AND user had a paid plan before)
+                SubscriptionStatusDTO.PreviousPlanInfo previousPlan = null;
+                boolean currentlyFree = tier.getPriceVnd() == null || tier.getPriceVnd() == 0;
+                if (currentlyFree) {
+                        final Long currentSubId = subscription.getId();
+                        previousPlan = subscriptionRepository.findByUserIdOrderByStartedAtDesc(userId).stream()
+                                        .filter(s -> !Objects.equals(s.getId(), currentSubId))
+                                        .filter(s -> s.getTier() != null
+                                                        && s.getTier().getPriceVnd() != null
+                                                        && s.getTier().getPriceVnd() > 0)
+                                        // Status EXPIRED hoặc CANCELLED đều coi là "previous plan"
+                                        .filter(s -> s.getStatus() == UserSubscription.Status.EXPIRED
+                                                        || s.getStatus() == UserSubscription.Status.CANCELLED
+                                                        // Edge: ACTIVE row đã quá hạn nhưng chưa kịp flip
+                                                        || (s.getStatus() == UserSubscription.Status.ACTIVE
+                                                                        && s.getExpiresAt() != null
+                                                                        && s.getExpiresAt().isBefore(now)))
+                                        .findFirst() // most recent (list đã sort startedAt DESC)
+                                        .map(s -> SubscriptionStatusDTO.PreviousPlanInfo.builder()
+                                                        .tierCode(s.getTier().getCode())
+                                                        .tierName(s.getTier().getName())
+                                                        .priceVnd(s.getTier().getPriceVnd())
+                                                        .expiredAt(s.getExpiresAt())
+                                                        .daysSinceExpired(s.getExpiresAt() != null
+                                                                        ? ChronoUnit.DAYS.between(s.getExpiresAt(), now)
+                                                                        : null)
+                                                        .build())
+                                        .orElse(null);
+                }
+
                 // Build final DTO
                 return SubscriptionStatusDTO.builder()
                                 .userId(userId)
@@ -478,6 +541,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                                 .credits(creditInfo)
                                 .features(features)
                                 .recentPayments(recentPayments)
+                                .previousPlan(previousPlan)
                                 .build();
         }
 

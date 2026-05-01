@@ -52,8 +52,11 @@ public class CreditServiceImpl implements CreditService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public UserCreditDTO getBalance(UUID userId) {
+        // NOTE: not @Transactional(readOnly=true) because this method may auto-create
+        // a default credit row for users that don't have one yet (orElseGet → save).
+        // Marking it readOnly causes UnexpectedRollbackException on commit.
         logger.info("💰 Fetching credit balance for user: {}", userId);
 
         UserCredit credit = creditRepository.findByUserId(userId)
@@ -206,8 +209,13 @@ public class CreditServiceImpl implements CreditService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public UserFullStatsDTO getUserStats(UUID userId) {
+        // NOTE: not @Transactional(readOnly=true) because this method delegates to
+        // subscriptionService.getUserSubscription (which may insert a free-tier row
+        // via initializeNewUser) and getBalance (which may insert a credit row).
+        // Read-only would cause UnexpectedRollbackException for users that haven't
+        // been initialized yet.
         logger.info("📊 Fetching full stats for user: {}", userId);
 
         // Get subscription

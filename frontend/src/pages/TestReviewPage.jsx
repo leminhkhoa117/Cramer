@@ -12,6 +12,7 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import '../css/test-review-page.css';
 import FullPageLoader from '../components/FullPageLoader';
+import ConfirmationModal from '../components/ConfirmationModal';
 import ReviewAnswerColumn from '../components/review/ReviewAnswerColumn';
 
 const TestReviewPage = () => {
@@ -24,6 +25,7 @@ const TestReviewPage = () => {
     const [activePartIndex, setActivePartIndex] = useState(0);
     const [selectedQuestionId, setSelectedQuestionId] = useState(null);
     const [isRegrading, setIsRegrading] = useState(false);
+    const [showRegradeConfirm, setShowRegradeConfirm] = useState(false);
 
     // Refs for scroll sync
     const answersColumnRef = useRef(null);
@@ -221,7 +223,7 @@ const TestReviewPage = () => {
                             <div className="review-header-right">
                                 <div className="header-actions">
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); handleRegrade(); }}
+                                        onClick={(e) => { e.stopPropagation(); setShowRegradeConfirm(true); }}
                                         className="btn btn-regrade"
                                         disabled={isRegrading}
                                     >
@@ -443,6 +445,15 @@ const TestReviewPage = () => {
                     </main>
                 </div>
             )}
+            <ConfirmationModal
+                isOpen={showRegradeConfirm}
+                onClose={() => setShowRegradeConfirm(false)}
+                onConfirm={() => { setShowRegradeConfirm(false); handleRegrade(); }}
+                title="Xác nhận chấm lại"
+                confirmText="Chấm lại"
+            >
+                <p>Chấm lại sẽ tốn thêm quota AI hoặc Lúa. Bạn có chắc chắn muốn tiếp tục?</p>
+            </ConfirmationModal>
         </>
     );
 };

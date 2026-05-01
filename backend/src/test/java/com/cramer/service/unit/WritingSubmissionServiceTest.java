@@ -13,6 +13,7 @@ import com.cramer.service.AsyncGradingService;
 import com.cramer.service.LLMGradingService;
 import com.cramer.service.QuotaBillingService;
 import com.cramer.service.WritingSubmissionService;
+import org.springframework.security.access.AccessDeniedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -169,7 +170,7 @@ class WritingSubmissionServiceTest {
             // Act & Assert
             assertThatThrownBy(() ->
                     writingSubmissionService.saveDraft(testAttemptId, 2, "Essay", differentUserId))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(AccessDeniedException.class)
                     .hasMessageContaining("Unauthorized");
         }
     }
@@ -271,7 +272,7 @@ class WritingSubmissionServiceTest {
             // Act & Assert
             assertThatThrownBy(() ->
                     writingSubmissionService.getGradingStatus(testAttemptId, differentUserId))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(AccessDeniedException.class)
                     .hasMessageContaining("Unauthorized");
         }
     }

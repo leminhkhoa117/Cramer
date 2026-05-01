@@ -183,7 +183,6 @@ public class FeatureGatingService {
         return SubscriptionTier.builder()
                 .code("cramerie")
                 .name("Cramerie")
-                .name("Cramerie")
                 .priceVnd(0)
                 .features("[\"limited_tests\", \"normal_grading\", \"vocabulary\", \"basic_progress\"]")
                 .build();

@@ -400,6 +400,40 @@ const useTestStore = create(
       },
 
       /**
+       * Build auto-save payload for the current test session.
+       * Mirrors the shape expected by useTestSessionStore.saveProgress().
+       * @param {string} skill - 'reading', 'listening', or 'writing'
+       * @returns {object} { answers, essays, timeLeft, currentPart }
+       */
+      getAutoSavePayload: (skill) => {
+        const { answers, essays, timeLeft, displayPartIndex, activeTask } = get();
+
+        if (skill === 'writing') {
+          return {
+            answers: {},
+            essays: { ...essays },
+            timeLeft,
+            currentPart: activeTask,
+          };
+        }
+
+        // Normalize array answers to string, matching submit normalization
+        const normalized = {};
+        if (answers) {
+          Object.entries(answers).forEach(([qId, val]) => {
+            normalized[qId] = Array.isArray(val) ? (val[0] || '') : val;
+          });
+        }
+
+        return {
+          answers: normalized,
+          timeLeft: skill === 'reading' ? timeLeft : null,
+          currentPart: displayPartIndex,
+          essays: undefined,
+        };
+      },
+
+      /**
        * Check if time is running low (under 5 minutes)
        * @returns {boolean}
        */

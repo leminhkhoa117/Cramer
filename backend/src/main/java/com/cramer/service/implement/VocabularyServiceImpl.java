@@ -5,6 +5,9 @@ import com.cramer.dto.VocabularyCreateDTO;
 import com.cramer.dto.VocabularyDTO;
 
 import com.cramer.entity.Vocabulary;
+import com.cramer.exception.QuotaExceededException;
+import com.cramer.exception.ResourceAlreadyExistsException;
+import com.cramer.exception.ResourceNotFoundException;
 
 import com.cramer.repository.VocabularyRepository;
 import com.cramer.service.TranslationBillingService;
@@ -76,7 +79,7 @@ public class VocabularyServiceImpl implements VocabularyService {
     public VocabularyDTO getById(Long id, UUID userId) {
         logger.debug("Fetching vocabulary {} for user: {}", id, userId);
         Vocabulary vocabulary = vocabularyRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new RuntimeException("Vocabulary entry not found or access denied"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vocabulary", "id", id));
         return VocabularyDTO.fromEntity(vocabulary);
     }
 
@@ -88,7 +91,7 @@ public class VocabularyServiceImpl implements VocabularyService {
 
         // Check for duplicates
         if (vocabularyRepository.existsByUserIdAndWordIgnoreCase(userId, createDTO.getWord())) {
-            throw new RuntimeException("Word '" + createDTO.getWord() + "' already exists in your vocabulary");
+            throw new ResourceAlreadyExistsException("Vocabulary", "word", createDTO.getWord());
         }
 
         Vocabulary vocabulary = Vocabulary.builder()
@@ -150,14 +153,14 @@ public class VocabularyServiceImpl implements VocabularyService {
         logger.info("Updating vocabulary {} for user: {}", id, userId);
 
         Vocabulary vocabulary = vocabularyRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new RuntimeException("Vocabulary entry not found or access denied"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vocabulary", "id", id));
 
         // Update fields if provided
         if (updateDTO.getWord() != null) {
             // Check for duplicates if word is changing
             if (!vocabulary.getWord().equalsIgnoreCase(updateDTO.getWord()) &&
                     vocabularyRepository.existsByUserIdAndWordIgnoreCase(userId, updateDTO.getWord())) {
-                throw new RuntimeException("Word '" + updateDTO.getWord() + "' already exists in your vocabulary");
+                throw new ResourceAlreadyExistsException("Vocabulary", "word", updateDTO.getWord());
             }
             vocabulary.setWord(updateDTO.getWord().trim());
         }
@@ -193,7 +196,7 @@ public class VocabularyServiceImpl implements VocabularyService {
         logger.info("Deleting vocabulary {} for user: {}", id, userId);
 
         Vocabulary vocabulary = vocabularyRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new RuntimeException("Vocabulary entry not found or access denied"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vocabulary", "id", id));
 
         vocabularyRepository.delete(Objects.requireNonNull(vocabulary));
         logger.info("Deleted vocabulary entry: {}", id);
@@ -205,7 +208,7 @@ public class VocabularyServiceImpl implements VocabularyService {
         logger.info("Toggling mastered status for vocabulary {} for user: {}", id, userId);
 
         Vocabulary vocabulary = vocabularyRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new RuntimeException("Vocabulary entry not found or access denied"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vocabulary", "id", id));
 
         vocabulary.setIsMastered(!vocabulary.getIsMastered());
         vocabulary.setReviewCount(vocabulary.getReviewCount() + 1);
@@ -226,7 +229,7 @@ public class VocabularyServiceImpl implements VocabularyService {
 
         if (!billingResult.allowed()) {
             logger.warn("❌ Translation blocked for user {}: {}", userId, billingResult.message());
-            throw new RuntimeException(billingResult.message());
+            throw new QuotaExceededException(billingResult.message(), "translation_quota");
         }
 
         if (billingResult.charged()) {
@@ -236,7 +239,7 @@ public class VocabularyServiceImpl implements VocabularyService {
         // Step 2: Resolve API key
         String apiKey = resolveApiKey(userId);
         if (apiKey == null || apiKey.isEmpty()) {
-            throw new RuntimeException("No DeepSeek API key available. " +
+            throw new IllegalStateException("No DeepSeek API key available. " +
                     "Either set DEEPSEEK_API_KEY environment variable on server, " +
                     "or add your personal API key in Profile settings.");
         }

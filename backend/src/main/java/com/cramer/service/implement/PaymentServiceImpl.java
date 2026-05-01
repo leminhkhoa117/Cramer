@@ -343,16 +343,24 @@ public class PaymentServiceImpl implements PaymentService {
                     .userId(order.getUserId())
                     .tier(tier)
                     .status(UserSubscription.Status.ACTIVE)
+                    .attemptsUsed(0)
                     .attemptAisUsed(0)
+                    .chatbotUsed(0)
                     .paymentReference(order.getPaymentLinkId())
                     .autoRenew(false)
                     .build();
         } else {
-            // Upgrade existing subscription
+            // Upgrade/renew existing subscription (typically the auto-created free-tier row,
+            // or the user's current paid sub being upgraded mid-cycle)
             subscription.setTier(tier);
+            subscription.setStatus(UserSubscription.Status.ACTIVE);
             subscription.setPaymentReference(order.getPaymentLinkId());
-            // Reset attempt_ais used for new tier
+            // Reset all usage counters for the new billing cycle
+            subscription.setAttemptsUsed(0);
             subscription.setAttemptAisUsed(0);
+            subscription.setChatbotUsed(0);
+            // Reset cycle start so progress bar reflects the new period correctly
+            subscription.setStartedAt(OffsetDateTime.now());
         }
 
         // Set expiration (1 month from now)

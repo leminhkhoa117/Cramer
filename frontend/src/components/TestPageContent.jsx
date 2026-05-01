@@ -227,6 +227,7 @@ const TestPageContent = ({
 
     const handleSaveAndExit = useCallback(async () => {
         if (!attempt) return;
+        if (isSavingProgress) return; // Auto-save already in progress
 
         try {
             setIsSavingProgress(true);
@@ -245,7 +246,7 @@ const TestPageContent = ({
         } finally {
             setIsSavingProgress(false);
         }
-    }, [attempt, skill, timeLeft, displayPartIndex, answers, navigate, saveProgress, closeExitModal, setIsSavingProgress]);
+    }, [attempt, skill, timeLeft, displayPartIndex, answers, navigate, saveProgress, closeExitModal, setIsSavingProgress, isSavingProgress]);
 
     // --- Render Logic ---
     if (loading && !attempt) return <div className="loading-screen">Loading test...</div>;

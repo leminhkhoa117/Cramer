@@ -14,10 +14,12 @@ const QuotaExceededModal = ({
 }) => {
     if (!isOpen || !billingResult) return null;
 
-    const { blockType, reason, luaCharged } = billingResult;
+    const { blockType, reason, message, luaCharged } = billingResult;
+    // S7 (BUG_AUDIT): backend sends "message", not "reason". Support both for compat.
+    const displayReason = reason || message;
 
     // Determine required Lua from reason (parse "Cần X Lua")
-    const requiredLua = reason?.match(/Cần (\d+) Lua/)?.[1] || '?';
+    const requiredLua = displayReason?.match(/Cần (\d+) Lua/)?.[1] || '?';
 
     const getBlockTypeLabel = () => {
         switch (blockType) {
@@ -56,7 +58,7 @@ const QuotaExceededModal = ({
 
                 {/* Content */}
                 <div className="quota-exceeded-content">
-                    <p className="quota-exceeded-message">{reason}</p>
+                    <p className="quota-exceeded-message">{displayReason}</p>
 
                     <div className="quota-exceeded-info">
                         <div className="info-item">

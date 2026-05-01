@@ -2,6 +2,7 @@ package com.cramer.dto;
 
 import com.cramer.entity.SkillQuota;
 import com.cramer.entity.UserQuota;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,6 +34,10 @@ public class QuotaStatusDTO {
     private Map<String, SkillQuotaInfo> skills = new HashMap<>();
     
     // Premium flag (if true, all limits are unlimited)
+    // @JsonProperty needed because Lombok generates getter `isPremium()` (no `get` prefix
+    // for `boolean is*`), and Jackson defaults to JSON key "premium" — strips the `is`.
+    // Frontend (useQuotaStore.js) reads `quotaStatus?.isPremium`.
+    @JsonProperty("isPremium")
     private boolean isPremium;
     
     // Quota month (for display)

@@ -238,8 +238,33 @@ public class AsyncGradingService {
                         logger.info("📊 Incremented AI grading usage for user {}", userId);
                     }
                 } catch (Exception usageEx) {
-                    logger.error("⚠️ Failed to track AI grading usage for user {}: {}", userId, usageEx.getMessage());
-                    // Don't fail the grading because of usage tracking error
+                    // T7 (BUG_AUDIT_2026-04-23.md): Billing failed AFTER the AI already graded
+                    // successfully. User keeps the visible result — we deliberately do NOT fail
+                    // the grading because the Path A upfront charge in
+                    // QuotaBillingServiceImpl.processAttemptBilling (called earlier in
+                    // WritingSubmissionService.submitForGrading) has already protected revenue.
+                    //
+                    // This Path B counter drift must be reconciled manually by ops. Log a
+                    // structured, grep-able marker with all context needed to replay the
+                    // transaction — there is NO audit row written on a failed spend/increment,
+                    // so these log lines are the ONLY forensic signal.
+                    //
+                    // Alert rule: grep `BILLING_RECONCILIATION_REQUIRED` → ops channel.
+                    logger.error(
+                            "BILLING_RECONCILIATION_REQUIRED event=ai_grading_billing_failed " +
+                                    "userId={} attemptId={} billingMode={} amount={} " +
+                                    "examSource={} testNumber={} errorClass={} errorMsg={}",
+                            userId,
+                            attempt.getId(),
+                            shouldUseLua ? "LUA" : "SUBSCRIPTION",
+                            shouldUseLua ? AI_GRADING_LUA_COST : 1,
+                            attempt.getExamSource(),
+                            attempt.getTestNumber(),
+                            usageEx.getClass().getSimpleName(),
+                            usageEx.getMessage(),
+                            usageEx);
+                    // Intentionally not re-thrown: preserve user-visible grading result.
+                    // Follow-up: durable pending_billing table with retry scheduler.
                 }
             } else {
                 logger.warn("⚠️ Grading incomplete or failed - skipping billing for user {}", userId);

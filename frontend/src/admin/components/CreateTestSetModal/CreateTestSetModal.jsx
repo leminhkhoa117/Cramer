@@ -67,7 +67,7 @@ export default function CreateTestSetModal({ isOpen, onClose, testSet = null }) 
             }
             onClose();
         } catch (err) {
-            toast.error(err.response?.data?.error || "Có lỗi xảy ra");
+            toast.error(err.response?.data?.message || err.response?.data?.error || "Có lỗi xảy ra");
         }
     };
 
