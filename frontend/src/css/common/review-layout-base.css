@@ -9,7 +9,7 @@
     max-height: 100vh;
     background-color: #f8fafc;
     color: #1f2937;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     display: flex;
     flex-direction: column;
     overflow: hidden; /* Prevent page-level scroll */
@@ -87,7 +87,7 @@
     min-height: 100vh;
     font-size: 1.2rem;
     background-color: #f8fafc;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
 }
 
 .review-error {

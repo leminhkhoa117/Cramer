@@ -31,7 +31,7 @@
     padding: 0.5rem 1rem;
     border-radius: 8px;
     cursor: pointer;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.85rem;
     font-weight: 500;
     transition: all 0.25s ease;
@@ -134,7 +134,7 @@
     border-bottom: 3px solid transparent;
     color: #6b7280;
     cursor: pointer;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.9rem;
     font-weight: 500;
     transition: all 0.2s ease;
@@ -175,7 +175,7 @@
     border: 1px solid #bae6fd;
     border-radius: 8px;
     color: #0369a1;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;

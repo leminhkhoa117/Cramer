@@ -181,7 +181,7 @@
 }
 
 .cm-title {
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: 'Quicksand', sans-serif;
   font-size: 1.35rem;
   font-weight: 700;
   color: var(--modal-text);
@@ -302,7 +302,7 @@
   min-width: 100px;
   border: none;
   border-radius: 14px;
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: 'Quicksand', sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
@@ -407,7 +407,7 @@
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 12px;
   color: var(--modal-text);
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: 'Quicksand', sans-serif;
   font-size: 1rem;
   transition: all 0.25s ease;
 }

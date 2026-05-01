@@ -12,7 +12,7 @@
 .course-detail-page {
     min-height: 100vh;
     background-color: var(--detail-bg);
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     padding-bottom: 4rem;
     padding-top: var(--header-clearance);
 }

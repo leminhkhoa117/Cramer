@@ -244,7 +244,7 @@
 /* Step number etched on the back wall */
 .zigzag-card__index {
     position: absolute;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: clamp(5rem, 10vw, 9rem);
     font-weight: 900;
     line-height: 0.85;

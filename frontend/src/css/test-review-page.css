@@ -18,7 +18,7 @@
     flex-direction: column;
     background: var(--review-bg);
     overflow: hidden;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
 }
 
 /* ============================================
@@ -59,7 +59,7 @@
     padding: 0.4rem 0.75rem;
     border-radius: 8px;
     cursor: pointer;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.8rem;
     font-weight: 600;
     transition: all 0.2s ease;
@@ -253,7 +253,7 @@
     border-bottom: 3px solid transparent;
     color: #6b7280;
     cursor: pointer;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.85rem;
     font-weight: 500;
     transition: all 0.2s ease;

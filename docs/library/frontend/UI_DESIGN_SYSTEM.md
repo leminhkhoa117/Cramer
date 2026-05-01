@@ -97,7 +97,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Be Vietnam Pro"', 'sans-serif'],
+        sans: ['"Quicksand"', 'sans-serif'],
       },
     },
   },
@@ -296,11 +296,11 @@ background: linear-gradient(135deg, #22c55e, #16a34a);
 
 ### Font Family
 
-The primary (and only) font is **Be Vietnam Pro**, a modern Vietnamese-friendly sans-serif.
+The primary (and only) font is **Quicksand**, a modern geometric sans-serif.
 
 ```css
 * {
-  font-family: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', 
+  font-family: 'Quicksand', system-ui, -apple-system, 'Segoe UI', 
                Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 ```

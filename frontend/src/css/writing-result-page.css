@@ -1,12 +1,12 @@
 /* Writing Result Page Styles - New Layout */
-/* Font: Be Vietnam Pro (inherited from global styles) */
+/* Font: Quicksand (inherited from global styles) */
 
 .writing-result-page {
     height: 100vh;
     max-height: 100vh;
     background-color: #f8fafc;
     color: #1f2937;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -78,7 +78,7 @@
     padding: 0.4rem 0.75rem;
     border-radius: 8px;
     cursor: pointer;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.8rem;
     font-weight: 600;
     transition: all 0.2s ease;
@@ -264,7 +264,7 @@
     border-bottom: 3px solid transparent;
     color: #6b7280;
     cursor: pointer;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.85rem;
     font-weight: 500;
     transition: all 0.2s ease;
@@ -359,7 +359,7 @@
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     cursor: pointer;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.85rem;
     color: #6b7280;
     transition: all 0.2s ease;
@@ -451,7 +451,7 @@
     padding: 0.6rem 0.75rem;
     background: transparent;
     border: none;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     text-align: left;
     cursor: pointer;
 }
@@ -994,7 +994,7 @@
     background: #f9fafb;
     border: none;
     cursor: pointer;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.9rem;
     font-weight: 500;
     color: #374151;
@@ -1454,7 +1454,7 @@
 .btn-secondary {
     padding: 0.6rem 1.25rem;
     border-radius: 8px;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
@@ -1493,7 +1493,7 @@
     background: linear-gradient(135deg, #0f0a1e 0%, #1a1033 30%, #0d1b2a 100%);
     position: relative;
     overflow: hidden;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
 }
 
 /* Background Effects */
@@ -2526,7 +2526,7 @@
     color: #fff;
     padding: 0.6rem 1.25rem;
     border-radius: 6px;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
@@ -2593,7 +2593,7 @@
     color: #6b7280;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
 }
 
 .view-mode-btn:hover {
@@ -2625,7 +2625,7 @@
     color: #6b7280;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
 }
 
 .comparison-toggle-btn:hover {
@@ -2712,7 +2712,7 @@
     color: #6b7280;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
 }
 
 .comparison-controls .control-btn:hover {

@@ -1,5 +1,5 @@
 /* Writing Test Page Styles - Light Mode (matching TestPage) */
-/* Font: Be Vietnam Pro (inherited from global styles) */
+/* Font: Quicksand (inherited from global styles) */
 
 /* ============================================
    Writing Test Wrapper - adjust grid for no tabs
@@ -55,7 +55,7 @@
     background: linear-gradient(135deg, #eff6ff, #f5f3ff);
     border-radius: 8px;
     border-left: 4px solid #7c3aed;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.9rem;
     color: #4b5563;
 } */
@@ -69,7 +69,7 @@
    Prompt Text Styling
    ============================================ */
 .prompt-text {
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 1rem;
     line-height: 1.75;
     color: #374151;
@@ -121,7 +121,7 @@
 }
 
 .editor-header h3 {
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 1.1rem;
     font-weight: 600;
     color: #1f2937;
@@ -137,7 +137,7 @@
     gap: 0.25rem;
     padding: 0.4rem 0.75rem;
     border-radius: 20px;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.85rem;
     font-weight: 500;
     transition: all 0.2s ease;
@@ -185,7 +185,7 @@
     padding: 1rem;
     border: 1px solid #d1d5db;
     border-radius: 8px;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 1rem;
     line-height: 1.8;
     color: #1f2937;
@@ -223,7 +223,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 0.95rem;
     padding: 0.625rem 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -386,7 +386,7 @@
     height: 100vh;
     background-color: #f8fafc;
     color: #dc2626;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 1.25rem;
     text-align: center;
     padding: 2rem;

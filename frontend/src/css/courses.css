@@ -79,7 +79,7 @@
 
 .new-courses-page {
   background-color: var(--course-bg);
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: 'Quicksand', sans-serif;
   color: var(--course-text-primary);
   min-height: 100vh;
   /* Remove horizontal padding to allow banner to be full width */
@@ -137,7 +137,7 @@
   border-radius: 12px;
   border: 1px solid #e2e8f0; /* Solid border for better definition */
   background-color: #ffffff; /* Solid white background for high contrast */
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: 'Quicksand', sans-serif;
   font-size: 1rem;
   color: var(--course-text-primary);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
