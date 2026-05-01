@@ -4,6 +4,7 @@
    maintainability. Import order matters.
    ============================================ */
 @import './home-base.css';
+@import './home-zigzag.css';
 @import './home-hero.css';
 @import './home-features.css';
 @import './home-guide.css';

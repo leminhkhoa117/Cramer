@@ -14,6 +14,8 @@
     --color-primary-light: #a78bfa;
     --color-secondary: #6366f1;
     --color-accent: #8b5cf6;
+    --color-teal: #22d3ee;
+    --color-coral: #fb923c;
 
     --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
     --gradient-purple-pink: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
@@ -81,103 +83,9 @@
     scroll-behavior: smooth;
 }
 
-/* ============================================
-   PARALLAX DIVIDERS
-   ============================================ */
-.parallax-divider {
-    position: relative;
-    height: 40px;
-    overflow: visible;
-    pointer-events: none;
-    z-index: 0;
-}
-
-.parallax-orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(100px);
-    opacity: 0.07;
-    will-change: transform;
-}
-
-.parallax-divider--1 .parallax-orb--1 {
-    width: 300px;
-    height: 300px;
-    background: var(--gradient-purple-pink);
-    left: 10%;
-    top: -100px;
-    transform: translateY(calc(var(--scroll, 0px) * 0.08));
-}
-
-.parallax-divider--1 .parallax-orb--2 {
-    width: 200px;
-    height: 200px;
-    background: var(--gradient-blue);
-    right: 15%;
-    top: -60px;
-    transform: translateY(calc(var(--scroll, 0px) * -0.05));
-}
-
-.parallax-divider--2 .parallax-orb--1 {
-    width: 250px;
-    height: 250px;
-    background: var(--gradient-teal);
-    right: 10%;
-    top: -80px;
-    transform: translateY(calc(var(--scroll, 0px) * 0.06));
-}
-
-.parallax-divider--2 .parallax-orb--2 {
-    width: 180px;
-    height: 180px;
-    background: var(--gradient-orange);
-    left: 20%;
-    top: -50px;
-    transform: translateY(calc(var(--scroll, 0px) * -0.04));
-}
-
-.parallax-divider--3 .parallax-orb--1 {
-    width: 280px;
-    height: 280px;
-    background: var(--gradient-primary);
-    left: 30%;
-    top: -90px;
-    transform: translateY(calc(var(--scroll, 0px) * 0.07));
-}
-
-.parallax-divider--3 .parallax-orb--2 {
-    width: 220px;
-    height: 220px;
-    background: var(--gradient-purple-pink);
-    right: 5%;
-    top: -70px;
-    transform: translateY(calc(var(--scroll, 0px) * -0.06));
-}
-
-/* ============================================
-   SELECTIVE SCROLL-SNAP (Desktop only)
-   ============================================ */
-@media (min-width: 768px) {
-    .home-page {
-        scroll-snap-type: y proximity;
-    }
-
-    .home-page.home-page--no-snap {
-        scroll-snap-type: none;
-    }
-
-    .hero-section {
-        scroll-snap-align: start;
-    }
-
-    .demo-section {
-        scroll-snap-align: start;
-    }
-
-    .signup-section {
-        scroll-snap-align: start;
-    }
-}
+/* Old parallax-orb dividers removed; replaced by WaveDivider component
+   defined in home-3d.css. Section anchors no longer use scroll-snap to
+   keep the new R3F scenes visible while user scrolls. */
 
 /* ============================================
    SHARED KEYFRAMES

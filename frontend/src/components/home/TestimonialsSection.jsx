@@ -1,93 +1,80 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FaQuoteLeft, FaChevronLeft, FaChevronRight, FaStar } from 'react-icons/fa';
+import React, { useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { FaQuoteLeft, FaStar } from 'react-icons/fa';
+import { TESTIMONIALS } from '../../constants/home';
+import { useReducedMotion } from './hooks/useReducedMotion';
+
+/**
+ * TestimonialsSection — infinite marquee.
+ *
+ * Two horizontal rows scrolling in opposite directions. Each row repeats
+ * the testimonials twice so the loop is seamless. Hovering pauses the
+ * row under the cursor. Respects prefers-reduced-motion.
+ */
+
+const getInitials = (name) =>
+    name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+
+const TestimonialCard = ({ item, idx }) => (
+    <article
+        className="t-card"
+        style={{
+            // CSS variable used by the tilt + accent border colour
+            '--t-accent': item.accent,
+        }}
+        aria-label={`Đánh giá của ${item.author}`}
+    >
+        <FaQuoteLeft className="t-card__quote-mark" aria-hidden="true" />
+        <p className="t-card__quote">{item.quote}</p>
+
+        <div className="t-card__rating" aria-label="5 trên 5 sao">
+            {Array.from({ length: 5 }).map((_, i) => (
+                <FaStar key={i} className="t-card__star" />
+            ))}
+        </div>
+
+        <div className="t-card__footer">
+            <div className="t-card__avatar" aria-hidden="true">
+                <span>{getInitials(item.author)}</span>
+            </div>
+            <div className="t-card__person">
+                <strong className="t-card__name">{item.author}</strong>
+                <span className="t-card__role">{item.role}</span>
+            </div>
+            <div className="t-card__band" title="Band điểm đạt được">
+                <span className="t-card__band-num">{item.band}</span>
+                <span className="t-card__band-label">band</span>
+            </div>
+        </div>
+
+        <span className="t-card__decor t-card__decor--a" aria-hidden="true" />
+        <span className="t-card__decor t-card__decor--b" aria-hidden="true" />
+    </article>
+);
 
 const TestimonialsSection = () => {
-    const sectionRef = useRef(null);
-    const [activeIndex, setActiveIndex] = useState(0);
-    const [autoPlay, setAutoPlay] = useState(true);
+    const reduced = useReducedMotion();
 
-    // Auto-play carousel
-    useEffect(() => {
-        if (!autoPlay) return;
-
-        const interval = setInterval(() => {
-            setActiveIndex((prev) => (prev + 1) % testimonials.length);
-        }, 5000);
-
-        return () => clearInterval(interval);
-    }, [autoPlay]);
-
-    const testimonials = [
-        {
-            quote: "Đây là một trong những web vippro nhất mà mình từng được thử qua với nhiều dạng đề, thật sự là rất yêu founder của trang này!",
-            author: "Chí Phong",
-            role: "Học viên IELTS",
-            avatar: "https://scontent.fcxr1-1.fna.fbcdn.net/v/t39.30808-6/472721511_1380192343154381_7028061101838486876_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=a5f93a&_nc_ohc=yrhtnUVylgQQ7kNvwFEcxcq&_nc_oc=AdmHUUD-WoCd4bfPaHbrkiyLe7F9GFGSs1GSJ7zUmWvLhOC-LqhNxlUeiD0LlBWEDeZx79J9O7FNKU2AYEBluYKT&_nc_zt=23&_nc_ht=scontent.fcxr1-1.fna&_nc_gid=zfWcC7ZyvnrBOUH1SZ95ZA&oh=00_AfkCJjRrZh09CkdZCkEFgSqCefuY8EBy0qzB6ClZuptOOA&oe=694092C7",
-            rating: 5,
-        },
-        {
-            quote: "Mình thích nhất là tính năng AI writing, nó vô cùng hữu ích vì chỉ ra được điểm mạnh/yếu rõ ràng, mà điểm còn chính xác",
-            author: "Song Vũ",
-            role: "Học viên IELTS",
-            avatar: null,
-            rating: 5,
-        },
-        {
-            quote: "Thật sự ấn tượng với tính năng AI speaking lắm luôn. Bình thường thi thử speaking rất tốn kém, nay có Cramer thì chi phí phải chăng hơn rất nhiều mà còn giống với thi thật nữa",
-            author: "Hồng Em",
-            role: "Học viên IELTS",
-            avatar: null,
-            rating: 5,
-        },
-        {
-            quote: "Có rất nhiều tính năng miễn phí, nhưng vì những tính năng trả phí hay ho quá nên mình đã quyết định xuống tiền và thật sự là mình không hề hối hận",
-            author: "Minh Anh",
-            role: "Học viên IELTS",
-            avatar: null,
-            rating: 5,
-        },
-    ];
-
-    const handlePrev = () => {
-        setAutoPlay(false);
-        setActiveIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-    };
-
-    const handleNext = () => {
-        setAutoPlay(false);
-        setActiveIndex((prev) => (prev + 1) % testimonials.length);
-    };
-
-    const handleDotClick = (index) => {
-        setAutoPlay(false);
-        setActiveIndex(index);
-    };
-
-    const currentTestimonial = testimonials[activeIndex];
-
-    // Generate initials for avatar placeholder
-    const getInitials = (name) => {
-        return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-    };
+    // Duplicate each row so CSS marquee can loop seamlessly
+    const rowA = useMemo(() => [...TESTIMONIALS, ...TESTIMONIALS], []);
+    const rowB = useMemo(() => [...TESTIMONIALS.slice().reverse(), ...TESTIMONIALS.slice().reverse()], []);
 
     return (
-        <section ref={sectionRef} className="testimonials-section">
+        <section className="testimonials-section testimonials-section--marquee">
             <div className="testimonials-container">
-                {/* Header — framer-motion whileInView */}
                 <motion.div
-                    className="testimonials-header in-view"
-                    initial={{ opacity: 0, y: 40 }}
+                    className="testimonials-header"
+                    initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.3 }}
                     transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                 >
                     <motion.span
                         className="testimonials-label"
-                        initial={{ opacity: 0, scale: 0.8 }}
+                        initial={{ opacity: 0, scale: 0.85 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
-                        transition={{ type: 'spring', stiffness: 120, damping: 14, delay: 0.1 }}
+                        transition={{ type: 'spring', stiffness: 140, damping: 14, delay: 0.1 }}
                     >
                         Đánh giá từ học viên
                     </motion.span>
@@ -96,72 +83,31 @@ const TestimonialsSection = () => {
                         <br />
                         <span className="text-gradient">Cramer</span>
                     </h2>
+                    <p className="testimonials-subtitle">
+                        Hơn 10.000 học viên đã đồng hành cùng Cramer trên hành trình chinh phục band điểm mong muốn.
+                    </p>
                 </motion.div>
+            </div>
 
-                {/* Testimonial Carousel */}
-                <div className="testimonial-carousel">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={activeIndex}
-                            className="testimonial-card"
-                            initial={{ opacity: 0, x: 50, scale: 0.95 }}
-                            animate={{ opacity: 1, x: 0, scale: 1 }}
-                            exit={{ opacity: 0, x: -50, scale: 0.95 }}
-                            transition={{ duration: 0.4, ease: "easeOut" }}
-                        >
-                            {/* Quote icon */}
-                            <div className="testimonial-quote-icon">
-                                <FaQuoteLeft />
-                            </div>
-
-                            {/* Quote text */}
-                            <p className="testimonial-quote">"{currentTestimonial.quote}"</p>
-
-                            {/* Rating */}
-                            <div className="testimonial-rating">
-                                {[...Array(currentTestimonial.rating)].map((_, i) => (
-                                    <FaStar key={i} className="star-icon" />
-                                ))}
-                            </div>
-
-                            {/* Author info */}
-                            <div className="testimonial-author">
-                                <div className="testimonial-avatar">
-                                    {currentTestimonial.avatar ? (
-                                        <img src={currentTestimonial.avatar} alt={currentTestimonial.author} />
-                                    ) : (
-                                        <span className="avatar-initials">
-                                            {getInitials(currentTestimonial.author)}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="testimonial-author-info">
-                                    <span className="testimonial-author-name">{currentTestimonial.author}</span>
-                                    <span className="testimonial-author-role">{currentTestimonial.role}</span>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </AnimatePresence>
-
-                    {/* Navigation arrows */}
-                    <button className="testimonial-nav testimonial-nav--prev" onClick={handlePrev}>
-                        <FaChevronLeft />
-                    </button>
-                    <button className="testimonial-nav testimonial-nav--next" onClick={handleNext}>
-                        <FaChevronRight />
-                    </button>
+            <div className={`marquee ${reduced ? 'marquee--paused' : ''}`}>
+                <div className="marquee__row marquee__row--a">
+                    <div className="marquee__track">
+                        {rowA.map((item, i) => (
+                            <TestimonialCard key={`a-${i}`} item={item} idx={i} />
+                        ))}
+                    </div>
+                </div>
+                <div className="marquee__row marquee__row--b">
+                    <div className="marquee__track">
+                        {rowB.map((item, i) => (
+                            <TestimonialCard key={`b-${i}`} item={item} idx={i} />
+                        ))}
+                    </div>
                 </div>
 
-                {/* Dots indicator */}
-                <div className="testimonial-dots">
-                    {testimonials.map((_, index) => (
-                        <button
-                            key={index}
-                            className={`testimonial-dot ${index === activeIndex ? 'active' : ''}`}
-                            onClick={() => handleDotClick(index)}
-                        />
-                    ))}
-                </div>
+                {/* Edge fade masks */}
+                <div className="marquee__fade marquee__fade--left" aria-hidden="true" />
+                <div className="marquee__fade marquee__fade--right" aria-hidden="true" />
             </div>
         </section>
     );
