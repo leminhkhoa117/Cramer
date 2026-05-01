@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "2.0",
+  "overallBand": 6.5,
+  "gradingMode": "multimodal",
+  "degradedReason": null,
+  "criteria": {
+    "fluencyCoherence": {
+      "band": 7.0,
+      "feedback": "Thí sinh nói khá trôi chảy...",
+      "hesitations": {"totalCount": 5, "perPart": [{"partNumber": 1, "count": 3, "questionsCausingPauses": []}], "locationCategories": ["middle_of_speech"]},
+      "repetitions": [{"idea": "I think that", "count": 2, "verbatim": true}],
+      "selfCorrections": {"total": 2, "byCategory": {"verbTense": 1, "pronunciation": 0, "grammar": 1}, "examples": []},
+      "topicDevelopment": {"coherence": "Tốt", "appropriateness": "Phù hợp", "relevance": "Liên quan"}
+    },
+    "lexicalResource": {
+      "band": 6.5,
+      "feedback": "Vốn từ khá đa dạng...",
+      "decentlyUsed": ["important", "significant"],
+      "weakOrImprovable": [{"phrase": "good", "alternativeBetter": "beneficial"}],
+      "inaccurate": [],
+      "idiomatic": []
+    },
+    "grammaticalRangeAccuracy": {
+      "band": 6.0,
+      "feedback": "Ngữ pháp cơ bản tốt...",
+      "inaccurateStructures": [],
+      "problematicSentences": []
+    },
+    "pronunciation": {
+      "band": 6.5,
+      "feedback": "Phát âm khá rõ ràng...",
+      "confidence": "medium",
+      "inaccurateStresses": [],
+      "inaccurateIntonations": [],
+      "inaccuratePronunciations": [],
+      "connectedSpeech": "Khá tốt",
+      "intelligibility": {"qualitative": "Dễ hiểu", "accentEffect": "minor"}
+    }
+  },
+  "perPartFeedback": [{"partNumber": 1, "feedback": "Part 1 tốt"}],
+  "perTurnFeedback": [{"turnIndex": 1, "partNumber": 1, "shortNote": "Câu trả lời tốt", "sampleAnswer": null}],
+  "improvementTips": ["Luyện thêm từ vựng", "Tập trung vào phát âm", "Mở rộng cấu trúc câu"]
+}

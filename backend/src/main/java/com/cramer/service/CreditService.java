@@ -104,6 +104,20 @@ public interface CreditService {
     UserFullStatsDTO getUserStats(UUID userId);
 
     /**
+     * Refund credits (add to balance). Idempotent by referenceId.
+     *
+     * @param userId      the user's UUID
+     * @param amount      the amount to refund (positive)
+     * @param category    the refund category
+     * @param description description of the transaction
+     * @param referenceId external reference for idempotency
+     * @return the transaction DTO
+     */
+    CreditTransactionDTO refundCredits(UUID userId, int amount,
+                                       CreditTransaction.Category category,
+                                       String description, String referenceId);
+
+    /**
      * Initialize credits for a new user.
      *
      * @param userId        the user's UUID

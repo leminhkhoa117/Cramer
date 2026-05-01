@@ -154,6 +154,22 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- WireMock standalone for HTTP stubbing (Phase 11 tests) -->
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <version>3.12.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Awaitility for async test assertions -->
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>4.2.2</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- ==================== WEBSOCKET DEPENDENCIES ==================== -->
         <!-- Spring WebSocket for real-time communication -->
         <dependency>

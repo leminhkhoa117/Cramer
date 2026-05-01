@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -144,6 +145,46 @@ public class CreditServiceImpl implements CreditService {
 
         transaction = Objects.requireNonNull(transactionRepository.save(transaction));
         logger.info("✅ Spent {} Lúa for user {}. New balance: {}", amount, userId, credit.getBalance());
+
+        return CreditTransactionDTO.fromEntity(transaction);
+    }
+
+    @Override
+    @SuppressWarnings("null")
+    public CreditTransactionDTO refundCredits(UUID userId, int amount,
+            CreditTransaction.Category category, String description,
+            String referenceId) {
+        logger.info("↩️ Refunding {} Lúa for user {} - {}", amount, userId, category);
+
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+
+        Optional<CreditTransaction> existing = transactionRepository
+                .findFirstByUserIdAndReferenceIdAndCategory(userId, referenceId, category);
+        if (existing.isPresent()) {
+            logger.info("⚠️ Refund already processed for referenceId: {}", referenceId);
+            return CreditTransactionDTO.fromEntity(existing.get());
+        }
+
+        UserCredit credit = creditRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("No credit record for user: " + userId));
+
+        credit.setBalance(credit.getBalance() + amount);
+        credit = creditRepository.save(credit);
+
+        CreditTransaction transaction = CreditTransaction.builder()
+                .userId(userId)
+                .amount(amount)
+                .balanceAfter(credit.getBalance())
+                .type(CreditTransaction.Type.REFUND)
+                .category(category)
+                .description(description)
+                .referenceId(referenceId)
+                .build();
+
+        transaction = Objects.requireNonNull(transactionRepository.save(transaction));
+        logger.info("✅ Refunded {} Lúa for user {}. New balance: {}", amount, userId, credit.getBalance());
 
         return CreditTransactionDTO.fromEntity(transaction);
     }

@@ -1,0 +1,471 @@
+{
+  "type": "json_schema",
+  "json_schema": {
+    "name": "speaking_grading_v2",
+    "strict": true,
+    "schema": {
+      "type": "object",
+      "description": "IELTS Speaking grading schema v2.0 for AI evaluation via structured output",
+      "properties": {
+        "schemaVersion": {
+          "type": "string",
+          "const": "2.0"
+        },
+        "overallBand": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 9
+        },
+        "gradingMode": {
+          "type": "string",
+          "enum": ["multimodal", "text_only"]
+        },
+        "degradedReason": {
+          "type": ["string", "null"],
+          "enum": ["multimodal_failed", "payload_too_large"]
+        },
+        "criteria": {
+          "type": "object",
+          "properties": {
+            "fluencyCoherence": {
+              "type": "object",
+              "properties": {
+                "band": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 9
+                },
+                "feedback": {
+                  "type": "string"
+                },
+                "hesitations": {
+                  "type": "object",
+                  "properties": {
+                    "totalCount": {
+                      "type": "integer"
+                    },
+                    "perPart": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "partNumber": {
+                            "type": "integer"
+                          },
+                          "count": {
+                            "type": "integer"
+                          },
+                          "questionsCausingPauses": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "required": ["partNumber", "count", "questionsCausingPauses"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "locationCategories": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "middle_of_speech",
+                          "start_of_new_idea",
+                          "end_of_idea",
+                          "between_clauses",
+                          "filler_hesitation",
+                          "other"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["totalCount", "perPart", "locationCategories"],
+                  "additionalProperties": false
+                },
+                "repetitions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "idea": {
+                        "type": "string"
+                      },
+                      "count": {
+                        "type": "integer"
+                      },
+                      "verbatim": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": ["idea", "count", "verbatim"],
+                    "additionalProperties": false
+                  }
+                },
+                "selfCorrections": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "integer"
+                    },
+                    "byCategory": {
+                      "type": "object",
+                      "properties": {
+                        "verbTense": {
+                          "type": "integer"
+                        },
+                        "pronunciation": {
+                          "type": "integer"
+                        },
+                        "grammar": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["verbTense", "pronunciation", "grammar"],
+                      "additionalProperties": false
+                    },
+                    "examples": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "turnIndex": {
+                            "type": "integer"
+                          },
+                          "excerpt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["turnIndex", "excerpt"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["total", "byCategory", "examples"],
+                  "additionalProperties": false
+                },
+                "topicDevelopment": {
+                  "type": "object",
+                  "properties": {
+                    "coherence": {
+                      "type": "string"
+                    },
+                    "appropriateness": {
+                      "type": "string"
+                    },
+                    "relevance": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["coherence", "appropriateness", "relevance"],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "band",
+                "feedback",
+                "hesitations",
+                "repetitions",
+                "selfCorrections",
+                "topicDevelopment"
+              ],
+              "additionalProperties": false
+            },
+            "lexicalResource": {
+              "type": "object",
+              "properties": {
+                "band": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 9
+                },
+                "feedback": {
+                  "type": "string"
+                },
+                "decentlyUsed": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "weakOrImprovable": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "phrase": {
+                        "type": "string"
+                      },
+                      "alternative": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["phrase", "alternative"],
+                    "additionalProperties": false
+                  }
+                },
+                "inaccurate": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "phrase": {
+                        "type": "string"
+                      },
+                      "issue": {
+                        "type": "string"
+                      },
+                      "correction": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["phrase", "issue", "correction"],
+                    "additionalProperties": false
+                  }
+                },
+                "idiomatic": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "phrase": {
+                        "type": "string"
+                      },
+                      "alternativeBetter": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["phrase", "alternativeBetter"],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "band",
+                "feedback",
+                "decentlyUsed",
+                "weakOrImprovable",
+                "inaccurate",
+                "idiomatic"
+              ],
+              "additionalProperties": false
+            },
+            "grammaticalRangeAccuracy": {
+              "type": "object",
+              "properties": {
+                "band": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 9
+                },
+                "feedback": {
+                  "type": "string"
+                },
+                "inaccurateStructures": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "original": {
+                        "type": "string"
+                      },
+                      "improved": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["original", "improved"],
+                    "additionalProperties": false
+                  }
+                },
+                "problematicSentences": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "sentence": {
+                        "type": "string"
+                      },
+                      "errorTypes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": ["sentence", "errorTypes"],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "band",
+                "feedback",
+                "inaccurateStructures",
+                "problematicSentences"
+              ],
+              "additionalProperties": false
+            },
+            "pronunciation": {
+              "type": "object",
+              "properties": {
+                "band": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 9
+                },
+                "feedback": {
+                  "type": "string"
+                },
+                "confidence": {
+                  "type": "string",
+                  "enum": ["high", "medium", "low"]
+                },
+                "inaccurateStresses": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "word": {
+                        "type": "string"
+                      },
+                      "correctStress": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["word", "correctStress"],
+                    "additionalProperties": false
+                  }
+                },
+                "inaccurateIntonations": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "sentence": {
+                        "type": "string"
+                      },
+                      "note": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["sentence", "note"],
+                    "additionalProperties": false
+                  }
+                },
+                "inaccuratePronunciations": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "word": {
+                        "type": "string"
+                      },
+                      "note": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["word", "note"],
+                    "additionalProperties": false
+                  }
+                },
+                "connectedSpeech": {
+                  "type": "string"
+                },
+                "intelligibility": {
+                  "type": "object",
+                  "properties": {
+                    "qualitative": {
+                      "type": "string"
+                    },
+                    "accentEffect": {
+                      "type": "string",
+                      "enum": ["none", "minor", "moderate", "significant"]
+                    }
+                  },
+                  "required": ["qualitative", "accentEffect"],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "band",
+                "feedback",
+                "confidence",
+                "inaccurateStresses",
+                "inaccurateIntonations",
+                "inaccuratePronunciations",
+                "connectedSpeech",
+                "intelligibility"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "fluencyCoherence",
+            "lexicalResource",
+            "grammaticalRangeAccuracy",
+            "pronunciation"
+          ],
+          "additionalProperties": false
+        },
+        "perPartFeedback": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "partNumber": {
+                "type": "integer"
+              },
+              "feedback": {
+                "type": "string"
+              }
+            },
+            "required": ["partNumber", "feedback"],
+            "additionalProperties": false
+          }
+        },
+        "perTurnFeedback": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "turnIndex": {
+                "type": "integer"
+              },
+              "partNumber": {
+                "type": "integer"
+              },
+              "shortNote": {
+                "type": "string"
+              },
+              "sampleAnswer": {
+                "type": ["string", "null"]
+              }
+            },
+            "required": ["turnIndex", "partNumber", "shortNote", "sampleAnswer"],
+            "additionalProperties": false
+          }
+        },
+        "improvementTips": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 5,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "overallBand",
+        "gradingMode",
+        "degradedReason",
+        "criteria",
+        "perPartFeedback",
+        "perTurnFeedback",
+        "improvementTips"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

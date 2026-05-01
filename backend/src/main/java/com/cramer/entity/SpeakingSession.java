@@ -104,6 +104,13 @@ public class SpeakingSession {
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
+    @Column(name = "grading_attempts")
+    @Builder.Default
+    private Integer gradingAttempts = 0;
+
+    @Column(name = "last_grading_error", columnDefinition = "text")
+    private String lastGradingError;
+
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;

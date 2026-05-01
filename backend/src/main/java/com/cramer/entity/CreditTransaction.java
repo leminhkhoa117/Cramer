@@ -52,6 +52,7 @@ public class CreditTransaction {
         ESSAY_FEEDBACK,         // Custom essay feedback
         CHAT_EXTENSION,         // Extra AI chat messages
         SPEAKING_SESSION,       // Speaking practice session
+        SPEAKING_REFUND,        // Refund for speaking evaluation
         OTHER
     }
 

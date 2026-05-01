@@ -4,6 +4,7 @@ import com.cramer.config.SpeakingSessionProperties;
 import com.cramer.dto.CreateSpeakingSessionDTO;
 import com.cramer.dto.PageDTO;
 import com.cramer.dto.SaveSpeakingTranscriptDTO;
+import com.cramer.dto.SpeakingGradingResultV2DTO;
 import com.cramer.dto.SpeakingGradingStatusDTO;
 import com.cramer.dto.SpeakingHistoryItemDTO;
 import com.cramer.dto.SpeakingResultDTO;
@@ -23,6 +24,7 @@ import com.cramer.service.SpeakingContentService;
 import com.cramer.service.SpeakingEvaluationDispatchService;
 import com.cramer.service.SpeakingSessionService;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -185,6 +187,7 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 
         OffsetDateTime now = OffsetDateTime.now();
         session.setIsFinalized(true);
+        SpeakingSessionStatusTransitioner.transitionTo(session.getStatus(), "completed");
         session.setStatus("completed");
         session.setCompletedAt(now);
         session.setTotalDurationSeconds(calculateDurationSeconds(session, now));
@@ -218,6 +221,7 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
 
         OffsetDateTime now = OffsetDateTime.now();
         session.setIsFinalized(true);
+        SpeakingSessionStatusTransitioner.transitionTo(session.getStatus(), "abandoned");
         session.setStatus("abandoned");
         session.setCompletedAt(now);
         session.setTotalDurationSeconds(calculateDurationSeconds(session, now));
@@ -254,6 +258,18 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
             throw new IllegalStateException("Speaking results are not available until grading is complete.");
         }
 
+        SpeakingGradingResultV2DTO gradingResultV2 = null;
+        if (session.getGradingResult() != null && session.getGradingResult().has("schemaVersion")
+                && "2.0".equals(session.getGradingResult().get("schemaVersion").asText())) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            try {
+                gradingResultV2 = objectMapper.treeToValue(session.getGradingResult(), SpeakingGradingResultV2DTO.class);
+            } catch (Exception e) {
+                logger.warn("Failed to parse gradingResult as SpeakingGradingResultV2DTO for session {}: {}",
+                        sessionId, e.getMessage());
+            }
+        }
+
         return SpeakingResultDTO.builder()
                 .sessionId(session.getId())
                 .sessionMode(session.getSessionMode())
@@ -265,6 +281,8 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
                 .grammarBand(session.getGrammarBand())
                 .pronunciationBand(session.getPronunciationBand())
                 .gradingResult(copyJson(session.getGradingResult()))
+                .gradingResultV2(gradingResultV2)
+                .gradingStatus(session.getStatus())
                 .gradedAt(session.getGradedAt())
                 .build();
     }
@@ -507,8 +525,8 @@ public class SpeakingSessionServiceImpl implements SpeakingSessionService {
             throw new IllegalArgumentException("sessionMode is required");
         }
         String normalized = sessionMode.trim().toUpperCase(Locale.ROOT);
-        if (!List.of("FULL", "PART_1", "PART_2", "PART_3").contains(normalized)) {
-            throw new IllegalArgumentException("sessionMode must be one of FULL, PART_1, PART_2, PART_3");
+        if (!List.of("FULL", "PART_1", "PART_2", "PART_3", "PART_2_AND_3").contains(normalized)) {
+            throw new IllegalArgumentException("sessionMode must be one of FULL, PART_1, PART_2, PART_3, PART_2_AND_3");
         }
         return normalized;
     }
