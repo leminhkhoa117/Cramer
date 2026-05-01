@@ -75,7 +75,7 @@ public class CreditTransaction {
     private Type type;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "category", nullable = false, length = 50)
+    @Column(name = "category", length = 50)
     private Category category;
 
     @Column(name = "description", length = 500)
@@ -85,6 +85,6 @@ public class CreditTransaction {
     private String referenceId; // External reference (order ID, achievement ID, etc.)
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 }

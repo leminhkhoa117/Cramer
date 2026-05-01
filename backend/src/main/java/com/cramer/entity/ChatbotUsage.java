@@ -30,7 +30,7 @@ public class ChatbotUsage {
     @Column(name = "usage_date", nullable = false)
     private LocalDate usageDate;
 
-    @Column(name = "messages_used", nullable = false)
+    @Column(name = "messages_used")
     @Builder.Default
     private Integer messagesUsed = 0;
 

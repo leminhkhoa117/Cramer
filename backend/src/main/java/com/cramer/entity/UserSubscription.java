@@ -46,7 +46,7 @@ public class UserSubscription {
     private OffsetDateTime expiresAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(name = "status", length = 20)
     @Builder.Default
     private Status status = Status.ACTIVE;
 

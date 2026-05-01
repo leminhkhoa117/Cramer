@@ -28,20 +28,20 @@ public class UserCredit {
     @Column(name = "user_id", nullable = false, unique = true)
     private UUID userId;
 
-    @Column(name = "balance", nullable = false)
+    @Column(name = "balance")
     @Builder.Default
     private Integer balance = 0;
 
-    @Column(name = "lifetime_earned", nullable = false)
+    @Column(name = "lifetime_earned")
     @Builder.Default
     private Integer lifetimeEarned = 0;
 
-    @Column(name = "lifetime_spent", nullable = false)
+    @Column(name = "lifetime_spent")
     @Builder.Default
     private Integer lifetimeSpent = 0;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 
     @UpdateTimestamp

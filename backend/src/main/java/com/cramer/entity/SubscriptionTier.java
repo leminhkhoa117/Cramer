@@ -31,7 +31,7 @@ public class SubscriptionTier {
     @Column(name = "code", nullable = false, unique = true, length = 50)
     private String code; // cramerie, cramerich
 
-    @Column(name = "name", nullable = false, length = 100)
+    @Column(name = "name", length = 100)
     private String name;
 
     @Column(name = "price_vnd", nullable = false)
@@ -72,13 +72,13 @@ public class SubscriptionTier {
     // ==================== LEGACY AI GRADINGS (kept for compatibility)
     // ====================
 
-    @Column(name = "included_ai_gradings", nullable = false)
+    @Column(name = "included_ai_gradings")
     @Builder.Default
     private Integer includedAiGradings = 0;
 
     // ==================== CHATBOT & TRANSLATION LIMITS ====================
 
-    @Column(name = "daily_chat_limit", nullable = false)
+    @Column(name = "daily_chat_limit")
     @Builder.Default
     private Integer dailyChatLimit = 20; // -1 for unlimited (deprecated, use chatbotMonthlyLimit)
 
@@ -112,7 +112,7 @@ public class SubscriptionTier {
 
     // ==================== LÚA BONUSES ====================
 
-    @Column(name = "monthly_lua_bonus", nullable = false)
+    @Column(name = "monthly_lua_bonus")
     @Builder.Default
     private Integer monthlyLuaBonus = 0;
 
@@ -125,7 +125,7 @@ public class SubscriptionTier {
     @Column(name = "features", columnDefinition = "jsonb")
     private String features; // JSON array of feature keys
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "is_active")
     @Builder.Default
     private Boolean isActive = true;
 

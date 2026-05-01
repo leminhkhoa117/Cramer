@@ -45,7 +45,7 @@ public class ChatMessage {
     private Integer tokensUsed = 0;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 
     // Role constants
