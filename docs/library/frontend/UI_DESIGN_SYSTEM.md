@@ -1,8 +1,9 @@
 # Cramer UI Design System Documentation
 
-> **Version:** 2.0
-> **Last Updated:** May 2026
+> **Version:** 3.0
+> **Last Updated:** 10/05/2026 (CSS Standardization refactored)
 > **Platform:** React + Vite
+> **Branch:** `refactor/css-standardization`
 
 This is the **authoritative source** for implementing consistent UI across Cramer. Every page must follow these conventions.
 
@@ -21,6 +22,7 @@ This is the **authoritative source** for implementing consistent UI across Crame
 9. [Animation Patterns](#9-animation-patterns)
 10. [CSS Naming Conventions](#10-css-naming-conventions)
 11. [Page-Specific Guidelines](#11-page-specific-guidelines)
+12. [Admin CSS](#12-admin-css)
 
 ---
 
@@ -30,66 +32,117 @@ This is the **authoritative source** for implementing consistent UI across Crame
 
 ```
 frontend/src/
-├── styles.css                        # Global styles, Tailwind directives, reset, CSS variables
+├── styles.css                        # Global entry: imports tokens.css, Tailwind, animations
 └── css/
-    ├── common/                       # SHARED — reuse across all pages
-    │   ├── sidebar-layout.css        # .sl-page, .sl-sidebar, .sl-layout, .sl-card, .sl-btn
-    │   ├── modal.css                 # .cm-backdrop, .cm-content, .cm-header, .cm-title, .cm-body, .cm-footer
-    │   ├── faq.css                   # .faq-section, .faq-list, .faq-item
-    │   ├── testimonials.css           # .testimonial-card
-    │   ├── grading-loader.css
-    │   ├── passage-preview.css
-    │   ├── panel-resize-handle.css
-    │   ├── review-layout-base.css
-    │   └── test-layout-base.css
+    ├── tokens.css                    # ★ SINGLE SOURCE OF TRUTH — all :root variables
     │
-    └── page-specific/                # One file per page — namespaced with page prefix
-        ├── header.css                # .header, .header--scrolled, .header--hidden
-        ├── footer.css
-        ├── dashboard.css             # .dash-mobile-header, .dash-hamburger, .dash-sidebar-overlay
-        ├── pricing.css               # .pricing-hero, .pricing-tiers, .tier-card
-        ├── courses.css               # .courses-hero, .courses-grid, .cr-card
-        ├── vocabulary.css            # .vocab-page, .vocab-card, .vocab-controls
-        ├── profile.css               # .profile-layout, .profile-card, .profile-sidebar
+    ├── shared/                       # Reusable across ALL pages
+    │   ├── layout.css               # .sl-page, .sl-sidebar, .sl-layout, .sl-card, .sl-btn (sidebar system)
+    │   └── animations.css           # ALL @keyframes in one place (77 total)
+    │
+    ├── common/                       # Shared UI components (stay in place)
+    │   ├── modal.css                # .cm-backdrop, .cm-content, .cm-header, .cm-btn (glass modal)
+    │   ├── faq.css                  # .faq-section, .faq-list, .faq-item
+    │   ├── testimonials.css          # .testimonial-card
+    │   ├── grading-loader.css       # AI grading waiting screen
+    │   └── passage-preview.css      # Dark-themed passage display
+    │
+    ├── components/                   # One CSS per non-shared component
+    │   ├── header.css               # .header, .header--scrolled, .header--hidden
+    │   ├── footer.css
+    │   ├── pagination.css
+    │   ├── full-page-loader.css
+    │   ├── floating-assistant.css
+    │   ├── progress-chart.css
+    │   ├── skill-analysis.css
+    │   ├── quota-display.css
+    │   ├── quota-exceeded-modal.css
+    │   ├── grading-quota-info.css
+    │   ├── attempt-history-dropdown.css
+    │   ├── change-password-modal.css
+    │   ├── upload-image-modal.css
+    │   ├── course-list.css
+    │   └── ...
+    │
+    ├── test/                         # ★ All test-taking UI CSS (consolidated from 22 files → 8)
+    │   ├── test-base.css            # Grid layout, passage container, questions column, resize handle
+    │   ├── test-header-footer.css   # Header bar, timer, footer nav, question buttons
+    │   ├── test-question.css        # Question renderer + question group styles
+    │   ├── test-reading.css         # Reading-specific: highlight popup, submit info
+    │   ├── test-listening.css       # Listening-specific: audio players, toggle switch, visual content
+    │   ├── test-writing.css         # Writing-specific: prompt panel, editor panel, word counter
+    │   ├── test-review.css          # Review page: merged 8 review CSS files into 1
+    │   └── writing-result.css       # Writing result page (de-duplicated)
+    │
+    └── pages/                        # Page-specific overrides
+        ├── home.css                 # Merged 10 home section files into 1
         ├── about.css
+        ├── pricing.css
+        ├── courses.css
+        ├── course-detail.css
+        ├── dashboard.css
+        ├── profile.css
+        ├── vocabulary.css
         ├── subscription.css
-        ├── login.css
-        └── ...
+        ├── payment.css
+        └── login.css
 ```
 
 ### Import Strategy
 
+**styles.css** — global entry point:
 ```css
-/* styles.css — Global entry */
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap');
-
+@import './css/tokens.css';          /* Design tokens — MUST be first */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import './css/shared/animations.css'; /* @keyframes — load last */
 ```
 
+**JSX per-page imports** — import ONLY what the page needs:
 ```jsx
-// Per-page imports in JSX
-import '../css/page-specific/courses.css';
+// Pages with sidebar layout
+import '../css/shared/layout.css';    // sl-* classes
+import '../css/pages/dashboard.css';  // page-specific
+
+// Test pages
+import '../css/test/test-base.css';
+import '../css/test/test-header-footer.css';
+import '../css/test/test-reading.css';
 ```
+
+### Import Rules
+- `styles.css` + `tokens.css` are loaded globally via `main.jsx` — NEVER import them per-page
+- Sidebar pages (Dashboard, Profile, Courses, Subscription) MUST import `shared/layout.css`
+- Test pages MUST import their specific `test/*.css` files in dependency order
+- Admin has its own separate `admin/css/tokens.css` with dark theme variables
 
 ---
 
 ## 2. Design Tokens
 
-### Global CSS Variables (in `:root` via `styles.css`)
+### Single Source of Truth: `css/tokens.css`
+
+ALL CSS custom properties are defined in ONE file: `frontend/src/css/tokens.css`. Pages and components reference these via `var(--cr-*)` or legacy aliases.
+
+### Canonical Tokens (use `--cr-*` for new code)
 
 ```css
 :root {
   /* Layout */
-  --header-clearance: 58px;
+  --cr-header-height: 58px;
+  --cr-sidebar-width: 300px;
 
-  /* Primary Brand */
+  /* Brand */
   --cr-primary: #7c3aed;
   --cr-primary-hover: #6d28d9;
   --cr-primary-light: #6366f1;
   --cr-primary-lighter: #8b5cf6;
+  --cr-primary-rgb: 124, 58, 237;
   --cr-primary-gradient: linear-gradient(135deg, #7c3aed, #6366f1);
+  --cr-hero-gradient: linear-gradient(135deg, #4c1d95, #5b21b6, #7c3aed);
+  --cr-gold-gradient: linear-gradient(135deg, #f59e0b, #d97706);
+  --cr-cyan: #27afdb;
 
   /* Text */
   --cr-text: #1f2937;
@@ -108,29 +161,50 @@ import '../css/page-specific/courses.css';
   --cr-success: #10b981;
   --cr-warning: #f59e0b;
   --cr-danger: #ef4444;
-  --cr-cyan: #27afdb;
 
   /* Glass */
+  --cr-glass-bg: rgba(255, 255, 255, 0.96);
+  --cr-glass-border: rgba(124, 58, 237, 0.1);
   --cr-glass-blur: blur(16px);
   --cr-overlay-bg: rgba(18, 10, 53, 0.25);
 
+  /* Modal */
+  --cr-modal-backdrop: rgba(18, 10, 53, 0.65);
+  --cr-modal-glass: rgba(124, 120, 226, 0.88);
+
   /* Radius */
   --cr-radius-sm: 8px;
-  --cr-radius-md: 12px;
+  --cr-radius-md: 10px;
   --cr-radius-lg: 16px;
   --cr-radius-xl: 20px;
   --cr-radius-2xl: 24px;
   --cr-radius-full: 9999px;
+
+  /* Z-Index */
+  --cr-z-content: 1;
+  --cr-z-dropdown: 100;
+  --cr-z-drawer: 200;
+  --cr-z-header: 1020;
+  --cr-z-modal-backdrop: 1000;
+  --cr-z-modal-content: 1010;
+  --cr-z-loader: 9999;
 }
 ```
 
-### Component Tokens (per-page, scoped)
+### Legacy Aliases (for backward compatibility)
 
-Pages define their own `:root` / page-scoped CSS variables using the page prefix:
+Old variable names still work — they chain to `--cr-*` tokens:
+- `--sl-primary` → `var(--cr-primary)`, `--sl-*` → `var(--cr-*)`
+- `--modal-glass-bg` → `var(--cr-modal-glass)`
+- `--header-clearance` → `var(--cr-header-height)`
+- `--primary-accent` → `var(--cr-primary)`
+- All page-specific prefixes (`--pricing-*`, `--vocab-*`, `--dash-*`, `--about-*`, etc.) are preserved as aliases
 
+### Page-Scoped Tokens
+
+Pages may define scoped CSS variables on class selectors (NOT `:root`):
 ```css
-/* courses.css */
-.cr-courses { --courses-card-width: 320px; }
+.cr-courses__card { --mouse-x: 50%; --mouse-y: 50%; }
 ```
 
 ---
@@ -427,17 +501,26 @@ Every page gets its own prefix. No page CSS should leak into another page.
 
 ### Prefix reference
 
-| Prefix | Page/System |
-|--------|-------------|
-| `header-`, `.header` | Navigation header |
-| `sl-` | Shared sidebar layout (Dashboard, Profile) |
-| `cm-` | Shared modal system |
-| `dash-` | Dashboard-specific |
-| `pricing-` | Pricing page |
-| `courses-`, `cr-` | Courses page |
-| `vocab-` | Vocabulary page |
-| `profile-` | Profile page |
-| `about-` | About page |
+| Prefix | Page/System | CSS File |
+|--------|-------------|----------|
+| `header-`, `.header` | Navigation header | `components/header.css` |
+| `sl-` | Shared sidebar layout | `shared/layout.css` |
+| `cm-` | Shared modal system | `common/modal.css` |
+| `dash-` | Dashboard-specific | `pages/dashboard.css` |
+| `cr-courses-` | Courses page | `pages/courses.css` |
+| `course-detail-` | Course detail page | `pages/course-detail.css` |
+| `dash-course-` | Course list items | `components/course-list.css` |
+| `pricing-` | Pricing page | `pages/pricing.css` |
+| `vocab-` | Vocabulary page | `pages/vocabulary.css` |
+| `profile-` | Profile page | `pages/profile.css` |
+| `about-` | About page | `pages/about.css` |
+| `sub-` | Subscription page | `pages/subscription.css` |
+| `auth-` | Login page | `pages/login.css` |
+| `test-` | Test UI (all skills) | `test/*.css` |
+| `review-` | Review UI | `test/test-review.css` |
+| `writing-` | Writing test UI | `test/test-writing.css` |
+| `fa-` | Floating assistant | `components/floating-assistant.css` |
+| `grading-quota-` | Grading quota | `components/grading-quota-info.css` |
 
 ### Examples
 
@@ -446,9 +529,14 @@ Every page gets its own prefix. No page CSS should leak into another page.
 .cr-courses__card          /* Course card */
 .pricing-hero__title       /* Pricing hero title */
 .vocab-page__controls      /* Vocabulary controls bar */
-.vocab-card__word          /* Vocabulary card word */
 .profile-sidebar__cover    /* Profile sidebar cover image */
+.test-page-wrapper         /* Test page grid container */
+.review-page               /* Review page full-screen layout */
 ```
+
+### Golden Rule
+
+**NEVER rename a class selector** unless you also update ALL JSX files that use it. Class names are the contract between CSS and components.
 
 ---
 
@@ -554,4 +642,47 @@ Every page gets its own prefix. No page CSS should leak into another page.
 
 ---
 
-*Last updated: May 2026. For implementation questions, reference the actual source CSS files and existing pages for patterns.*
+## 12. Admin CSS
+
+Admin uses a **separate dark theme** with its own token system at `admin/css/tokens.css`.
+
+### Admin Structure
+
+```
+frontend/src/admin/
+├── css/
+│   ├── tokens.css                  # Dark-theme design tokens (--admin-*)
+│   ├── admin.css                   # Main admin stylesheet
+│   ├── common/
+│   │   ├── modal.css              # Admin modal system
+│   │   └── passage-preview.css    # Admin passage preview
+│   ├── components/
+│   │   └── admin-preview.css      # Dark-mode overrides for test UI preview
+│   └── pages/
+│       ├── content/               # Content management pages
+│       ├── finance/               # Finance pages
+│       ├── users/                 # User management pages
+│       └── activity/              # Activity timeline
+└── components/
+    ├── abts/                      # AI Studio (co-located CSS)
+    ├── common/                    # AdminModal.css
+    ├── DataTable/
+    ├── MetricCard/
+    ├── StatusBadge/
+    └── Toast/
+```
+
+### Admin Tokens
+
+Admin dark theme tokens (`--admin-*`) are isolated from user-facing tokens:
+- `--admin-primary: #8B5CF6` (slightly different purple)
+- `--admin-bg-primary: #0F0F23` (dark backgrounds)
+- `--admin-text-primary: #F8FAFC` (light text on dark)
+
+### Admin Component Co-location
+
+Some admin components have CSS co-located in their component directory (e.g., `admin/components/abts/AIStudio.css`). These stay IN PLACE — do NOT move them.
+
+---
+
+*Last updated: 10/05/2026. CSS structure refactored under branch `refactor/css-standardization`.*

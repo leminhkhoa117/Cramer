@@ -73,10 +73,26 @@ http://localhost:8080/swagger-ui.html (requires JWT token via Authorize button)
 - `pages/` - Public user-facing pages
 - `admin/` - Admin dashboard module
   - `admin/pages/` - Admin pages (ContentListPage, AIGenerationPage, etc.)
-  - `admin/components/` - Admin UI components
+  - `admin/components/` - Admin UI components (some with co-located CSS)
+  - `admin/css/` - Admin stylesheets (dark theme, separate tokens)
   - `admin/stores/useABTSStore.js` - ABTS frontend state
 - `components/` - Shared React components
-- `css/` - Stylesheets
+- `css/` - Stylesheets (refactored May 2026)
+  - `tokens.css` - **Single source of truth** for ALL CSS custom properties
+  - `shared/` - Reusable: `layout.css` (sl-* sidebar), `animations.css` (all @keyframes)
+  - `common/` - Shared UI: `modal.css`, `faq.css`, `testimonials.css`, `grading-loader.css`
+  - `components/` - Per-component CSS (header, footer, pagination, etc.)
+  - `test/` - **Consolidated test UI** (8 files from original 22): `test-base.css`, `test-header-footer.css`, `test-question.css`, `test-reading.css`, `test-listening.css`, `test-writing.css`, `test-review.css`, `writing-result.css`
+  - `pages/` - Page-specific overrides (home, about, pricing, courses, etc.)
+
+### CSS Import Patterns
+
+```
+styles.css  →  tokens.css  (global, via main.jsx)
+pages       →  shared/layout.css + pages/{page}.css
+test pages  →  test/test-base.css + test/test-header-footer.css + test/{skill}.css + test/test-question.css
+admin       →  admin/css/admin.css → admin/css/tokens.css
+```
 
 ### Database Schema (Supabase)
 
@@ -138,6 +154,7 @@ Frontend `.env`:
 - `docs/backend/supabase-backend.md` - Schema and operational guidance
 - `docs/CRAMER_ABTS_SPECS.md` - ABTS specification
 - `docs/CRAMER_CMS_ADMIN_SPECS.md` - Admin panel specs
+- `docs/library/frontend/UI_DESIGN_SYSTEM.md` - UI design system, tokens, naming conventions
 - `backend/BUILD_INSTRUCTIONS.md` - Detailed build troubleshooting
 
 ## Google Workspace Sync Protocol
