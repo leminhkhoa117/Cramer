@@ -256,3 +256,10 @@
     --container-padding: 1rem;
   }
 }
+
+/* Header height adapts to breakpoint */
+@media (max-width: 576px) {
+  :root {
+    --cr-header-height: 51px;
+  }
+}

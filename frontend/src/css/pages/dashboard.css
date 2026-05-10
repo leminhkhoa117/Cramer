@@ -65,10 +65,10 @@
 }
 
 /* === Mobile Sidebar Drawer Overlay === */
-/* Overlay sits inside .sl-content, positioned absolute to cover only content area.
-   The sidebar (z-index: var(--dash-drawer-z)) is always above. */
+/* Fixed full-viewport overlay. Sidebar (z-index: 210) and header (z: 1020) are always above.
+   Uses left (not transform) on sidebar to avoid stacking context conflicts. */
 .dash-sidebar-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: rgba(18, 10, 53, 0.35);
   z-index: 5;
@@ -219,16 +219,16 @@
 
   /* Overlay now rendered inside .sl-content, conditionally visible */
 
-  /* Override shared/layout.css: make sidebar a fixed drawer */
+  /* Override shared/layout.css: make sidebar a fixed drawer, below header */
   .sl-layout > .sl-sidebar {
     position: fixed;
-    top: 0;
+    top: var(--cr-header-height, 58px);
     left: -100%;
     bottom: 0;
     width: var(--dash-drawer-width);
     min-width: var(--dash-drawer-width);
     max-width: 85vw;
-    height: 100vh;
+    height: calc(100vh - var(--cr-header-height, 58px));
     z-index: var(--dash-drawer-z);
     border-radius: 0 20px 20px 0;
     transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);

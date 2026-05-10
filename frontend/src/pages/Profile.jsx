@@ -25,8 +25,8 @@ import {
   FiMenu
 } from 'react-icons/fi';
 import { FaGoogle, FaFacebook } from 'react-icons/fa';
-import '../css/common/sidebar-layout.css';
-import '../css/profile-page.css';
+import '../css/pages/profile.css';
+import '../css/shared/layout.css';
 import FullPageLoader from '../components/FullPageLoader';
 import { supabase } from '../api/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
@@ -397,7 +397,7 @@ const ProfilePage = () => {
 
   return (
     <div
-      className="sl-page profile-page"
+      className={`sl-page profile-page${profileData?.pageBackgroundUrl ? ' sl-page--has-bg' : ''}`}
       style={profileData?.pageBackgroundUrl ? {
         backgroundImage: `url(${profileData.pageBackgroundUrl})`,
         backgroundSize: 'cover',
@@ -408,12 +408,6 @@ const ProfilePage = () => {
       {profileData?.pageBackgroundUrl && (
         <div className="sl-page__overlay" />
       )}
-
-      <div
-        className={`profile-sidebar-overlay ${isSidebarOpen ? 'profile-sidebar-overlay--visible' : ''}`}
-        onClick={closeSidebar}
-        aria-hidden="true"
-      />
 
       <UploadImageModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onConfirm={handleImageUpdate} />
       <ChangePasswordModal isOpen={isChangePasswordModalOpen} onClose={() => setIsChangePasswordModalOpen(false)} />
@@ -509,6 +503,15 @@ const ProfilePage = () => {
               <FiMenu />
             </button>
           </div>
+
+          {/* Mobile sidebar drawer overlay — inside content, absolute positioned, never covers sidebar */}
+          {isSidebarOpen && (
+            <div
+              className="profile-sidebar-overlay profile-sidebar-overlay--visible"
+              onClick={closeSidebar}
+              aria-hidden="true"
+            />
+          )}
 
           <AnimatePresence mode="wait">
             {activeTab === 'personal' && (
