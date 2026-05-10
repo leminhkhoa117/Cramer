@@ -21,6 +21,7 @@ public class CourseProgressDTO {
     private double completionRate; // 0-1
     private String status;
     private Double bandScore;
+    private String coverImageUrl;
     private java.util.List<AttemptHistoryDTO> history;
 
     public CourseProgressDTO() {
@@ -30,6 +31,7 @@ public class CourseProgressDTO {
             String setName, String testName,
             int totalQuestions, int answersAttempted, int correctAnswers,
             OffsetDateTime lastAttempt, double completionRate, String status, Double bandScore,
+            String coverImageUrl,
             java.util.List<AttemptHistoryDTO> history) {
         this.attemptId = attemptId;
         this.examSource = examSource;
@@ -44,6 +46,7 @@ public class CourseProgressDTO {
         this.completionRate = completionRate;
         this.status = status;
         this.bandScore = bandScore;
+        this.coverImageUrl = coverImageUrl;
         this.history = history;
     }
 
@@ -149,6 +152,14 @@ public class CourseProgressDTO {
 
     public void setBandScore(Double bandScore) {
         this.bandScore = bandScore;
+    }
+
+    public String getCoverImageUrl() {
+        return coverImageUrl;
+    }
+
+    public void setCoverImageUrl(String coverImageUrl) {
+        this.coverImageUrl = coverImageUrl;
     }
 
     public java.util.List<AttemptHistoryDTO> getHistory() {

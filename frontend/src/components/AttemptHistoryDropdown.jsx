@@ -17,9 +17,9 @@ const formatDate = (dateString) => {
     });
 };
 
-const AttemptHistoryDropdown = ({ history, examSource, testNumber, skill, onAttemptDeleted }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [visibleCount, setVisibleCount] = useState(5);
+const AttemptHistoryDropdown = ({ history, examSource, testNumber, skill, onAttemptDeleted, alwaysOpen = false }) => {
+    const [isOpen, setIsOpen] = useState(alwaysOpen);
+    const [visibleCount, setVisibleCount] = useState(alwaysOpen ? history?.length ?? 5 : 5);
     const [loadingAttemptId, setLoadingAttemptId] = useState(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [attemptToDelete, setAttemptToDelete] = useState(null);
@@ -72,23 +72,25 @@ const AttemptHistoryDropdown = ({ history, examSource, testNumber, skill, onAtte
     const hasMore = history.length > visibleCount;
 
     return (
-        <div className="attempt-history-dropdown">
-            <button
-                className="attempt-history-dropdown__toggle"
-                onClick={() => setIsOpen(!isOpen)}
-                aria-expanded={isOpen}
-            >
-                <span>Lịch sử làm bài ({history.length})</span>
-                <svg
-                    className={`attempt-history-dropdown__icon ${isOpen ? 'rotated' : ''}`}
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
+        <div className={`attempt-history-dropdown ${alwaysOpen ? 'attempt-history-dropdown--inline' : ''}`}>
+            {!alwaysOpen && (
+                <button
+                    className="attempt-history-dropdown__toggle"
+                    onClick={() => setIsOpen(!isOpen)}
+                    aria-expanded={isOpen}
                 >
-                    <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-            </button>
+                    <span>Lịch sử làm bài ({history.length})</span>
+                    <svg
+                        className={`attempt-history-dropdown__icon ${isOpen ? 'rotated' : ''}`}
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                    >
+                        <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                </button>
+            )}
 
             <AnimatePresence>
                 {isOpen && (

@@ -218,9 +218,11 @@ public class DashboardService {
             // Resolve human-readable names
             String setName = null;
             String testName = null;
+            String coverImageUrl = null;
             TestSet ts = setsByCode.get(latestAttempt.getExamSource());
             if (ts != null) {
                 setName = ts.getName();
+                coverImageUrl = ts.getCoverImageUrl();
                 String lookupKey = ts.getCode() + "_" + parseTestNumber(latestAttempt.getTestNumber());
                 testName = testNameLookup.get(lookupKey);
             }
@@ -246,6 +248,7 @@ public class DashboardService {
                     completionRate,
                     latestAttempt.getStatus(), // Use actual status
                     score,
+                    coverImageUrl,
                     history));
         }
 
