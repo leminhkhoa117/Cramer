@@ -1,60 +1,62 @@
-/* Frontend/src/css/Header.css */
-
 /* ============================================
-   FLOATING NAVBAR - Dynamic Glassmorphism
-   Default: Semi-transparent purple glass
-   Scrolled: Solid white with purple accents
+   HEADER - Edge-to-edge sticky with scroll-aware hide/show
+   Default: translucent purple glass at top
+   Scrolled: solid white with purple accents
+   Hidden: slides up off-screen when scrolling down
    ============================================ */
-.navbar {
+
+.header {
   position: fixed !important;
-  top: 1rem !important;
-  left: 50% !important;
-  transform: translateX(-50%);
-  width: calc(100% - 4rem);
-  max-width: 1100px;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
   z-index: 1020;
   padding: 0.5rem 1.25rem;
-  /* Semi-transparent purple glass - visible but not overwhelming */
-  background: rgba(124, 58, 237, 0.75) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 
-    0 4px 24px rgba(124, 58, 237, 0.25),
-    0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 56px;
+  /* translucent purple glass */
+  background: rgba(124, 58, 237, 0.85) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 20px rgba(124, 58, 237, 0.15);
+  transform: translateY(0);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.4s ease,
+              box-shadow 0.4s ease;
 }
 
-/* When scrolled - white background with purple accents */
-.navbar.scrolled {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border: 1px solid rgba(124, 58, 237, 0.12);
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    0 2px 8px rgba(124, 58, 237, 0.06);
+.header--hidden {
+  transform: translateY(-100%);
+}
+
+/* Scrolled — white glass */
+.header--scrolled {
+  background: rgba(255, 255, 255, 0.97) !important;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
 }
 
 /* ============================================
-   FIX: Ensure navbar items show on desktop
-   Override Tailwind base styles that may hide them
+   DESKTOP — ensure nav items visible
    ============================================ */
 @media (min-width: 992px) {
-  .navbar .navbar-collapse {
+  .header .navbar-collapse {
     display: flex !important;
     flex-basis: auto !important;
     visibility: visible !important;
     opacity: 1 !important;
   }
-  
-  .navbar .navbar-nav {
+
+  .header-nav {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
   }
-  
-  .navbar .nav-link,
-  .navbar .header-nav-link {
+
+  .header-nav-link {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
@@ -62,39 +64,38 @@
 }
 
 /* ============================================
-   NAV LINKS - White on purple, dark on white
+   NAV LINKS
    ============================================ */
 .header-nav-link {
   color: rgba(255, 255, 255, 0.95) !important;
   font-weight: 500;
   font-size: 0.9rem;
   margin-right: 1.25rem;
-  transition: all 0.3s ease-in-out;
+  padding: 0.35rem 0 !important;
+  transition: all 0.25s ease;
 }
 
 .header-nav-link:hover {
   color: #ffffff !important;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
-/* Active nav link */
 .header-nav-link.active {
   color: #ffffff !important;
   font-weight: 600;
 }
 
-/* Scrolled state - dark text on white bg */
-.navbar.scrolled .header-nav-link {
+.header--scrolled .header-nav-link {
   color: #1f2937 !important;
 }
 
-.navbar.scrolled .header-nav-link:hover,
-.navbar.scrolled .header-nav-link.active {
+.header--scrolled .header-nav-link:hover,
+.header--scrolled .header-nav-link.active {
   color: #7c3aed !important;
 }
 
 /* ============================================
-   BRAND/LOGO - Dynamic colors
+   BRAND / LOGO
    ============================================ */
 .header-container {
   padding-left: 1rem;
@@ -110,72 +111,64 @@
 .header-logo {
   height: 32px;
   object-fit: contain;
-  transition: filter 0.3s ease, transform 0.3s ease;
+  filter: brightness(0) invert(1);
+  opacity: 0.95;
+  transition: filter 0.4s ease, transform 0.3s ease;
 }
 
 .header-logo:hover {
   transform: scale(1.05);
 }
 
-.navbar .navbar-brand {
-  color: #ffffff !important;
-}
-
-/* Logo white on purple bg */
-.navbar .navbar-brand img,
-.header-logo {
-  filter: brightness(0) invert(1);
-  opacity: 0.95;
-  transition: filter 0.3s ease;
-}
-
-/* Scrolled state - purple logo */
-.navbar.scrolled .navbar-brand img,
-.navbar.scrolled .header-logo {
+.header--scrolled .header-logo {
   filter: brightness(0) saturate(100%) invert(24%) sepia(94%) saturate(2388%) hue-rotate(253deg) brightness(93%) contrast(93%);
   opacity: 1;
+}
+
+.header .navbar-brand {
+  color: #ffffff !important;
 }
 
 /* ============================================
    MOBILE TOGGLER
    ============================================ */
-.navbar .navbar-toggler {
+.header .navbar-toggler {
   border-color: rgba(255, 255, 255, 0.3) !important;
   padding: 0.35rem 0.5rem;
   border-radius: 0.5rem;
 }
 
-.navbar .navbar-toggler-icon {
+.header .navbar-toggler-icon {
   filter: invert(1);
   opacity: 0.9;
   width: 1.25em;
   height: 1.25em;
 }
 
-.navbar.scrolled .navbar-toggler {
+.header--scrolled .navbar-toggler {
   border-color: rgba(124, 58, 237, 0.3) !important;
 }
 
-.navbar.scrolled .navbar-toggler-icon {
+.header--scrolled .navbar-toggler-icon {
   filter: none;
   opacity: 0.8;
 }
 
-.navbar .navbar-toggler:focus {
+.header .navbar-toggler:focus {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
 }
 
-.navbar.scrolled .navbar-toggler:focus {
+.header--scrolled .navbar-toggler:focus {
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
 }
 
 /* ============================================
-   USER DROPDOWN - Dynamic colors
+   USER DROPDOWN
    ============================================ */
 .header-user-dropdown {
   color: rgba(255, 255, 255, 0.95) !important;
-  background: rgba(255, 255, 255, 0.15) !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
   border-radius: 9999px !important;
   padding: 0.35rem 0.875rem !important;
   font-weight: 600;
@@ -189,21 +182,20 @@
 
 .header-user-dropdown:hover,
 .header-user-dropdown:focus {
-  background: rgba(255, 255, 255, 0.25) !important;
+  background: rgba(255, 255, 255, 0.22) !important;
   color: #ffffff !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Scrolled state */
-.navbar.scrolled .header-user-dropdown {
+.header--scrolled .header-user-dropdown {
   color: #1f2937 !important;
-  background: rgba(124, 58, 237, 0.1) !important;
+  background: rgba(124, 58, 237, 0.08) !important;
   border: 1px solid rgba(124, 58, 237, 0.2) !important;
 }
 
-.navbar.scrolled .header-user-dropdown:hover,
-.navbar.scrolled .header-user-dropdown:focus {
-  background: rgba(124, 58, 237, 0.15) !important;
+.header--scrolled .header-user-dropdown:hover,
+.header--scrolled .header-user-dropdown:focus {
+  background: rgba(124, 58, 237, 0.14) !important;
   color: #7c3aed !important;
   box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
 }
@@ -214,11 +206,10 @@
   transition: border-color 0.3s ease;
 }
 
-.navbar.scrolled .header-user-dropdown::after {
+.header--scrolled .header-user-dropdown::after {
   border-top-color: #7c3aed;
 }
 
-/* Avatar in dropdown */
 .header-avatar {
   width: 24px;
   height: 24px;
@@ -228,11 +219,13 @@
   transition: border-color 0.3s ease;
 }
 
-.navbar.scrolled .header-avatar {
+.header--scrolled .header-avatar {
   border: 2px solid rgba(124, 58, 237, 0.3);
 }
 
-/* Login button - white on purple bg */
+/* ============================================
+   LOGIN BUTTON
+   ============================================ */
 .header-login-btn {
   background: rgba(255, 255, 255, 0.95) !important;
   color: #7c3aed !important;
@@ -251,19 +244,35 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
-/* Scrolled state - purple button */
-.navbar.scrolled .header-login-btn {
+.header--scrolled .header-login-btn {
   background: #7c3aed !important;
   color: #ffffff !important;
 }
 
-.navbar.scrolled .header-login-btn:hover {
+.header--scrolled .header-login-btn:hover {
   background: #6d28d9 !important;
   box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
 }
 
-/* Dropdown menu styling */
-.navbar .dropdown-menu {
+/* ============================================
+   ADMIN LINK
+   ============================================ */
+.header-admin-link {
+  color: #8B5CF6 !important;
+  font-weight: 500 !important;
+  display: flex !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.header-admin-icon {
+  font-size: 14px;
+}
+
+/* ============================================
+   DROPDOWN MENU — bridge gap to prevent flicker
+   ============================================ */
+.header .dropdown-menu {
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -271,7 +280,27 @@
   border-radius: 1rem;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
   padding: 0.5rem;
-  margin-top: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+/* Bridge the gap between toggle and dropdown to prevent flicker */
+.header .dropdown-toggle::after {
+  pointer-events: none;
+}
+
+/* Keep dropdown open while hovering the invisible bridge */
+.header .dropdown-toggle::before {
+  display: none;
+}
+
+.header .dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: -0.5rem;
+  left: 0;
+  right: 0;
+  height: 0.5rem;
+  background: transparent;
 }
 
 .dropdown-item {
@@ -296,30 +325,27 @@
    MOBILE RESPONSIVE
    ============================================ */
 
-/* Tablet breakpoint */
 @media (max-width: 991px) {
-  .navbar {
-    width: calc(100% - 2rem);
-    top: 0.75rem !important;
-    border-radius: 1.25rem;
-    padding: 0.5rem 0.875rem;
+  .header {
+    padding: 0.5rem 1rem;
+    min-height: 52px;
   }
-  
+
   .header-container {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
   }
-  
+
   .header-logo {
     height: 28px;
   }
-  
+
   .header-nav-link {
     margin-right: 0;
   }
-  
-  /* Mobile menu dropdown */
-  .navbar .navbar-collapse {
+
+  /* Collapsed menu panel */
+  .header .navbar-collapse {
     position: absolute;
     top: 100%;
     left: 0;
@@ -327,37 +353,34 @@
     background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-radius: 1rem;
-    margin-top: 0.5rem;
-    padding: 0.75rem;
-    border: 1px solid rgba(124, 58, 237, 0.1);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+    margin-top: 0;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(124, 58, 237, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   }
-  
-  .navbar .navbar-collapse .nav-link {
+
+  .header .navbar-collapse .nav-link {
     color: #1f2937 !important;
     padding: 0.65rem 1rem;
     border-radius: 0.5rem;
     font-size: 0.9rem;
   }
-  
-  .navbar .navbar-collapse .nav-link:hover,
-  .navbar .navbar-collapse .nav-link.active {
+
+  .header .navbar-collapse .nav-link:hover,
+  .header .navbar-collapse .nav-link.active {
     background: rgba(124, 58, 237, 0.1);
     color: #7c3aed !important;
   }
-  
-  /* User dropdown in mobile */
-  .navbar .navbar-collapse .header-user-dropdown {
+
+  .header .navbar-collapse .header-user-dropdown {
     margin-top: 0.5rem;
     justify-content: center;
     background: rgba(124, 58, 237, 0.1) !important;
     color: #7c3aed !important;
     border-color: rgba(124, 58, 237, 0.2) !important;
   }
-  
-  /* Login button in mobile */
-  .navbar .navbar-collapse .header-login-btn {
+
+  .header .navbar-collapse .header-login-btn {
     margin-top: 0.5rem;
     width: 100%;
     justify-content: center;
@@ -366,33 +389,30 @@
   }
 }
 
-/* Small mobile breakpoint */
 @media (max-width: 576px) {
-  .navbar {
-    width: calc(100% - 1.5rem);
-    top: 0.5rem !important;
-    padding: 0.4rem 0.75rem;
-    border-radius: 1rem;
+  .header {
+    padding: 0.35rem 0.75rem;
+    min-height: 48px;
   }
-  
+
   .header-logo {
     height: 24px;
   }
-  
-  .navbar .navbar-toggler {
+
+  .header .navbar-toggler {
     padding: 0.25rem 0.4rem;
   }
-  
-  .navbar .navbar-toggler-icon {
+
+  .header .navbar-toggler-icon {
     width: 1.1em;
     height: 1.1em;
   }
-  
-  .navbar .navbar-collapse {
-    padding: 0.5rem;
+
+  .header .navbar-collapse {
+    padding: 0.5rem 0.75rem;
   }
-  
-  .navbar .navbar-collapse .nav-link {
+
+  .header .navbar-collapse .nav-link {
     padding: 0.5rem 0.75rem;
     font-size: 0.85rem;
   }

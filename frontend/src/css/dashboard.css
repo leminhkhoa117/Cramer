@@ -14,6 +14,21 @@
   --dash-overlay-z: 190;
 }
 
+/* === Mobile Header Strip (visible on tablet/mobile) === */
+.dash-mobile-header {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  margin-bottom: 0.75rem;
+}
+
+.dash-mobile-header__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--sl-text);
+}
+
 /* === Mobile Hamburger Toggle === */
 .dash-hamburger {
   display: none;
@@ -28,6 +43,7 @@
   font-size: 1.25rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .dash-hamburger:hover {
@@ -179,6 +195,10 @@
 
 /* Tablet: sidebar becomes slide-out drawer */
 @media (max-width: 992px) {
+  .dash-mobile-header {
+    display: flex;
+  }
+
   .dash-hamburger {
     display: flex;
   }
@@ -282,9 +302,14 @@
     max-width: 100%;
   }
 
-  .dash-hamburger {
-    order: 2;
-    margin-left: auto;
+  /* Search takes full width, filter button stays compact */
+  .sl-card__controls .sl-search-container {
+    flex: 1;
+    max-width: none;
+  }
+
+  .sl-card__controls .sl-btn--secondary {
+    flex-shrink: 0;
   }
 }
 

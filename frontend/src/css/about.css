@@ -20,7 +20,7 @@
 .about-page {
   min-height: 100vh;
   background: var(--about-bg);
-  padding-top: var(--header-clearance, 90px);
+  padding-top: 0;
   color: var(--about-ink);
   -webkit-font-smoothing: antialiased;
 }

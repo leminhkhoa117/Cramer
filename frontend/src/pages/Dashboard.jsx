@@ -404,6 +404,21 @@ export default function Dashboard() {
 
             {/* Right Content Area */}
             <main className="sl-content">
+              {/* Mobile header strip — hamburger visible on all tabs */}
+              <div className="dash-mobile-header">
+                <span className="dash-mobile-header__title">
+                  {dashboardTabs.find(t => t.id === activeView)?.label || 'Bảng điều khiển'}
+                </span>
+                <button
+                  type="button"
+                  className="dash-hamburger"
+                  onClick={() => setIsSidebarOpen(true)}
+                  aria-label="Mở menu"
+                >
+                  <FiMenu />
+                </button>
+              </div>
+
               <AnimatePresence mode="wait">
                 {activeView === 'courses' && (
                   <motion.div
@@ -431,16 +446,8 @@ export default function Dashboard() {
                               className="sl-search-input"
                             />
                           </div>
-                          <button type="button" className="sl-btn sl-btn--secondary" onClick={() => setIsFilterModalOpen(true)}>Lọc</button>
+                          <button type="button" className="sl-btn sl-btn--secondary sl-btn--small" onClick={() => setIsFilterModalOpen(true)}>Lọc</button>
                         </div>
-                        <button
-                          type="button"
-                          className="dash-hamburger"
-                          onClick={() => setIsSidebarOpen(true)}
-                          aria-label="Mở menu"
-                        >
-                          <FiMenu />
-                        </button>
                       </div>
 
                       <div className="dashboard-course-list">

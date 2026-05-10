@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Navbar, Nav, Container, Button, Dropdown } from 'react-bootstrap';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore, useProfileStore } from '../stores';
@@ -12,39 +12,41 @@ export default function Header() {
   const profile = useProfileStore(state => state.profile);
   const profileLoading = useProfileStore(state => state.loading);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
+  const lastScrollY = useRef(0);
+
+  const handleScroll = useCallback(() => {
+    const currentY = window.scrollY;
+    setIsScrolled(currentY > 10);
+    if (currentY > 80 && currentY > lastScrollY.current) {
+      setIsHidden(true);
+    } else {
+      setIsHidden(false);
+    }
+    lastScrollY.current = currentY;
+  }, []);
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-
-    // Cleanup function to remove the event listener
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
   };
 
-  // Display name priority: fullName > username > email prefix
   const displayName = profileLoading
     ? 'Loading...'
     : profile?.fullName || profile?.full_name || profile?.username || user?.email?.split('@')[0] || 'User';
 
-  // Avatar URL from profile
   const avatarUrl = profile?.avatarUrl || profile?.avatar_url;
 
   return (
-    <Navbar expand="lg" className={`w-100 ${isScrolled ? 'scrolled' : ''}`}>
+    <Navbar
+      expand="lg"
+      className={`header ${isScrolled ? 'header--scrolled' : ''} ${isHidden ? 'header--hidden' : ''}`}
+    >
       <Container fluid className="header-container">
         <Navbar.Brand as={Link} to="/" className="header-brand">
           <img
@@ -53,9 +55,9 @@ export default function Header() {
             className="header-logo"
           />
         </Navbar.Brand>
-        <Navbar.Toggle aria-controls="basic-navbar-nav" className="header-toggler" />
-        <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="ms-auto">
+        <Navbar.Toggle aria-controls="header-nav" className="header-toggler" />
+        <Navbar.Collapse id="header-nav">
+          <Nav className="ms-auto header-nav">
             <Nav.Link as={NavLink} end to="/" className="header-nav-link">Trang chủ</Nav.Link>
             <Nav.Link as={NavLink} to="/courses" className="header-nav-link">Khóa học</Nav.Link>
             <Nav.Link as={NavLink} to="/pricing" className="header-nav-link">Gói Cramer</Nav.Link>
@@ -69,11 +71,7 @@ export default function Header() {
                   className="header-user-dropdown"
                 >
                   {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt="Avatar"
-                      className="header-avatar"
-                    />
+                    <img src={avatarUrl} alt="Avatar" className="header-avatar" />
                   ) : (
                     <FaUserCircle size={20} />
                   )}
@@ -94,18 +92,11 @@ export default function Header() {
                     Hồ sơ
                   </Dropdown.Item>
                   <Dropdown.Divider />
-                  {/* Admin Panel Link - DEV: shown for all users, PROD: check admin role */}
                   <Dropdown.Item
                     onClick={() => navigate('/admin')}
-                    style={{
-                      color: '#8B5CF6',
-                      fontWeight: 500,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
+                    className="header-admin-link"
                   >
-                    <span style={{ fontSize: '14px' }}>⚙️</span>
+                    <span className="header-admin-icon">⚙️</span>
                     Quản trị Admin
                   </Dropdown.Item>
                   <Dropdown.Divider />

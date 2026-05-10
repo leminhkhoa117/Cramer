@@ -5,7 +5,7 @@
 
 .payment-page {
   min-height: 100vh;
-  padding-top: calc(var(--header-clearance, 90px) + 2rem);
+  padding-top: 2rem;
   padding-bottom: 3rem;
   display: flex;
   align-items: center;

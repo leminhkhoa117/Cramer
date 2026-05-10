@@ -1257,20 +1257,106 @@
   margin-bottom: 0.2rem;
 }
 
+/* ============================================
+   MOBILE DRAWER — hamburger + slide-out sidebar
+   ============================================ */
+
+.profile-mobile-header {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  margin-bottom: 0.75rem;
+}
+
+.profile-mobile-header__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.profile-hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  background: rgba(255, 255, 255, 0.96);
+  color: #7c3aed;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.profile-hamburger:hover {
+  background: rgba(124, 58, 237, 0.08);
+  border-color: #7c3aed;
+}
+
+.profile-sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 10, 53, 0.45);
+  z-index: 190;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.profile-sidebar-overlay--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* === Responsive Design === */
 
 /* Tablet */
 @media (max-width: 992px) {
+  .profile-mobile-header {
+    display: flex;
+  }
+
+  .profile-hamburger {
+    display: flex;
+  }
+
+  .profile-sidebar-overlay {
+    display: block;
+  }
+
+  /* Sidebar becomes fixed slide-out drawer */
+  .profile-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 300px;
+    min-width: 300px;
+    max-width: 85vw;
+    height: 100vh;
+    z-index: 200;
+    border-radius: 0 20px 20px 0;
+    transform: translateX(-100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    box-shadow: 4px 0 30px rgba(124, 58, 237, 0.15);
+    margin: 0;
+  }
+
+  .profile-sidebar--drawer-open {
+    transform: translateX(0);
+  }
+}
+
+/* Tablet (continued) — keep old layout overrides within the same breakpoint */
+@media (max-width: 992px) {
   .profile-layout {
     flex-direction: column;
     gap: 1.5rem;
-  }
-
-  .profile-sidebar {
-    width: 100%;
-    min-width: 100%;
-    position: relative;
-    top: 0;
   }
 
   .profile-content {

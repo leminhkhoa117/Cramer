@@ -41,7 +41,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: calc(var(--header-clearance, 90px) + 4rem) 2rem 8rem;
+  padding: 4rem 2rem 8rem;
   background: var(--pricing-gradient);
   text-align: center;
   overflow: hidden;

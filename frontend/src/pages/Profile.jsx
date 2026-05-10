@@ -21,7 +21,8 @@ import {
   FiLogOut,
   FiGlobe,
   FiClock,
-  FiLink
+  FiLink,
+  FiMenu
 } from 'react-icons/fi';
 import { FaGoogle, FaFacebook } from 'react-icons/fa';
 import '../css/common/sidebar-layout.css';
@@ -59,6 +60,8 @@ const ProfilePage = () => {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [deleteImageModal, setDeleteImageModal] = useState({ isOpen: false, type: null });
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const closeSidebar = () => setIsSidebarOpen(false);
 
 
 
@@ -467,6 +470,13 @@ const ProfilePage = () => {
         <div className="profile-page__overlay" />
       )}
 
+      {/* Mobile Sidebar Drawer Overlay */}
+      <div
+        className={`profile-sidebar-overlay ${isSidebarOpen ? 'profile-sidebar-overlay--visible' : ''}`}
+        onClick={closeSidebar}
+        aria-hidden="true"
+      />
+
       <UploadImageModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onConfirm={handleImageUpdate} />
       <ChangePasswordModal isOpen={isChangePasswordModalOpen} onClose={() => setIsChangePasswordModalOpen(false)} />
 
@@ -489,7 +499,7 @@ const ProfilePage = () => {
       {/* Main Layout: Sidebar + Content */}
       <div className="profile-layout container">
         {/* Left Sidebar */}
-        <aside className="profile-sidebar">
+        <aside className={`profile-sidebar ${isSidebarOpen ? 'profile-sidebar--drawer-open' : ''}`}>
           {/* Cover Image Banner */}
           <div className="profile-sidebar__cover">
             {profileData?.heroBackgroundUrl ? (
@@ -555,8 +565,23 @@ const ProfilePage = () => {
 
         {/* Right Content Area */}
         <main className="profile-content">
+          {/* Mobile header strip */}
+          <div className="profile-mobile-header">
+            <span className="profile-mobile-header__title">
+              {tabs.find(t => t.id === activeTab)?.label || 'Hồ sơ'}
+            </span>
+            <button
+              type="button"
+              className="profile-hamburger"
+              onClick={() => setIsSidebarOpen(true)}
+              aria-label="Mở menu"
+            >
+              <FiMenu />
+            </button>
+          </div>
+
           <AnimatePresence mode="wait">
-            {activeTab === 'personal' && (
+              {activeTab === 'personal' && (
               <motion.div
                 key="personal"
                 className="profile-tab-panel"
@@ -565,6 +590,49 @@ const ProfilePage = () => {
                 animate="visible"
                 exit="exit"
               >
+                {/* Page Background Section — above personal info */}
+                <div className="profile-card">
+                  <div className="profile-card__header">
+                    <div className="profile-card__header-left">
+                      <h3 className="profile-card__title">
+                        <FiGlobe />
+                        Hình nền trang
+                      </h3>
+                      <p className="profile-card__description">Hình nền cho toàn bộ trang hồ sơ</p>
+                    </div>
+                    <div className="profile-card__actions">
+                      <button
+                        className="profile-btn profile-btn--secondary profile-btn--small"
+                        onClick={() => setIsModalOpen(true)}
+                      >
+                        <FiEdit3 /> Thay đổi
+                      </button>
+                      {profileData?.pageBackgroundUrl && (
+                        <button
+                          className="profile-btn profile-btn--danger profile-btn--small"
+                          onClick={() => openDeleteModal('page')}
+                        >
+                          <FiTrash2 /> Xoá
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="appearance-preview appearance-preview--background">
+                    {profileData?.pageBackgroundUrl ? (
+                      <img
+                        src={profileData.pageBackgroundUrl}
+                        alt="Hình nền trang"
+                        className="appearance-preview__background-img"
+                      />
+                    ) : (
+                      <div className="appearance-preview__background-placeholder">
+                        <FiGlobe />
+                        <span>Chưa có hình nền trang</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Personal Info Card */}
                 <div className="profile-card">
                   <div className="profile-card__header">
@@ -658,49 +726,6 @@ const ProfilePage = () => {
                       </div>
                     </div>
                   )}
-                </div>
-
-                {/* Page Background Section */}
-                <div className="profile-card">
-                  <div className="profile-card__header">
-                    <div className="profile-card__header-left">
-                      <h3 className="profile-card__title">
-                        <FiGlobe />
-                        Hình nền trang
-                      </h3>
-                      <p className="profile-card__description">Hình nền cho toàn bộ trang hồ sơ</p>
-                    </div>
-                    <div className="profile-card__actions">
-                      <button
-                        className="profile-btn profile-btn--secondary profile-btn--small"
-                        onClick={() => setIsModalOpen(true)}
-                      >
-                        <FiEdit3 /> Thay đổi
-                      </button>
-                      {profileData?.pageBackgroundUrl && (
-                        <button
-                          className="profile-btn profile-btn--danger profile-btn--small"
-                          onClick={() => openDeleteModal('page')}
-                        >
-                          <FiTrash2 /> Xoá
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="appearance-preview appearance-preview--background">
-                    {profileData?.pageBackgroundUrl ? (
-                      <img
-                        src={profileData.pageBackgroundUrl}
-                        alt="Hình nền trang"
-                        className="appearance-preview__background-img"
-                      />
-                    ) : (
-                      <div className="appearance-preview__background-placeholder">
-                        <FiGlobe />
-                        <span>Chưa có hình nền trang</span>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </motion.div>
             )}

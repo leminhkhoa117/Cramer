@@ -84,7 +84,6 @@
   min-height: 100vh;
   /* Remove horizontal padding to allow banner to be full width */
   padding: 0 0 3rem;
-  padding-top: var(--header-clearance);
 }
 
 /* Utility class to make hero/banner sections absorb parent padding */

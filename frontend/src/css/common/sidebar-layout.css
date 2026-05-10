@@ -42,8 +42,7 @@
   background: var(--sl-page-bg);
   min-height: 100vh;
   position: relative;
-  padding: 0 0 2rem 0; /* Keep bottom padding, zero out others */
-  padding-top: calc(var(--header-clearance, 90px) + 1.5rem);
+  padding: 1.5rem 0 2rem 0;
   font-family: 'Quicksand', sans-serif;
   color: var(--sl-text);
 }

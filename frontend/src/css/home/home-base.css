@@ -79,7 +79,7 @@
 .home-page {
     width: 100%;
     background: var(--bg-gradient);
-    padding-top: var(--header-clearance, 90px);
+    padding-top: 0;
     scroll-behavior: smooth;
 }
 

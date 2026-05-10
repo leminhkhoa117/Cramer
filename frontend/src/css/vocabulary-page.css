@@ -76,8 +76,7 @@
   z-index: 1;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
-  padding-top: calc(var(--header-clearance, 90px) + 1rem);
+  padding: 1rem 2rem 2rem;
 }
 
 /* === Header Section === */

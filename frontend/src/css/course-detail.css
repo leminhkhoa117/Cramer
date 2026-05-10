@@ -14,7 +14,7 @@
     background-color: var(--detail-bg);
     font-family: 'Quicksand', sans-serif;
     padding-bottom: 4rem;
-    padding-top: var(--header-clearance);
+    padding-top: 0;
 }
 
 /* Banner Section */
