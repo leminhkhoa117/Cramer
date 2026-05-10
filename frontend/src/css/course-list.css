@@ -328,6 +328,15 @@
   50% { opacity: 0.5; }
 }
 
+/* === History Loading State === */
+.dash-course-item__history-loading {
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--sl-text-muted);
+  border-top: 1px solid rgba(124, 58, 237, 0.08);
+}
+
 /* === Inline History (AttemptHistoryDropdown alwaysOpen mode) === */
 .attempt-history-dropdown--inline {
   border-top: 1px solid rgba(124, 58, 237, 0.08);

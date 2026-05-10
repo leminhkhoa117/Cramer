@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { FiChevronDown, FiBookOpen, FiHeadphones, FiEdit2, FiMic } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import AttemptHistoryDropdown from './AttemptHistoryDropdown';
+import { dashboardApi } from '../api/backendApi';
 import '../css/course-list.css';
 
 const formatDate = (dateString) => {
@@ -49,8 +50,29 @@ const skillColorMap = {
 
 const CourseListItem = React.memo(({ course, onAttemptDeleted }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [history, setHistory] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const completion = Math.min(100, Math.max(0, Math.round((course.completionRate ?? 0) * 100)));
   const skillColors = skillColorMap[course.skill?.toLowerCase()] || skillColorMap.reading;
+
+  const loadHistory = useCallback(async () => {
+    if (history !== null || historyLoading) return;
+    setHistoryLoading(true);
+    try {
+      const res = await dashboardApi.getCourseHistory(course.examSource, course.testNumber, course.skill);
+      setHistory(res.data || []);
+    } catch {
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [course.examSource, course.testNumber, course.skill, history, historyLoading]);
+
+  const toggleExpand = useCallback(() => {
+    const next = !isExpanded;
+    setIsExpanded(next);
+    if (next) loadHistory();
+  }, [isExpanded, loadHistory]);
 
   const metaItems = useMemo(() => [
     { label: 'Kỹ năng', value: formatSkillName(course.skill) },
@@ -60,8 +82,6 @@ const CourseListItem = React.memo(({ course, onAttemptDeleted }) => {
     { label: 'Lần cuối', value: formatDate(course.lastAttempt) },
     { label: 'Hoàn thành', value: `${completion}%` },
   ], [course, completion]);
-
-  const toggleExpand = () => setIsExpanded(prev => !prev);
 
   return (
     <motion.div
@@ -196,14 +216,18 @@ const CourseListItem = React.memo(({ course, onAttemptDeleted }) => {
                 )}
               </div>
 
-              <AttemptHistoryDropdown
-                history={course.history}
-                examSource={course.examSource}
-                testNumber={course.testNumber}
-                skill={course.skill}
-                onAttemptDeleted={onAttemptDeleted}
-                alwaysOpen
-              />
+              {historyLoading ? (
+                <div className="dash-course-item__history-loading">Đang tải lịch sử...</div>
+              ) : (
+                <AttemptHistoryDropdown
+                  history={history}
+                  examSource={course.examSource}
+                  testNumber={course.testNumber}
+                  skill={course.skill}
+                  onAttemptDeleted={onAttemptDeleted}
+                  alwaysOpen
+                />
+              )}
             </div>
           </motion.div>
         )}

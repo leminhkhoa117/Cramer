@@ -241,6 +241,8 @@ export const dashboardApi = {
     });
   },
   saveTarget: (targetData) => apiClient.post('/dashboard/target', targetData),
+  getCourseHistory: (examSource, testNumber, skill) =>
+    apiClient.get('/dashboard/course-history', { params: { examSource, testNumber, skill } }),
 };
 
 // ============================================

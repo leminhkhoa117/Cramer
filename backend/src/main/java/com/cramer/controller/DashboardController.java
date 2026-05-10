@@ -1,5 +1,6 @@
 package com.cramer.controller;
 
+import com.cramer.dto.AttemptHistoryDTO;
 import com.cramer.dto.DashboardSummaryDTO;
 import com.cramer.dto.TargetDTO;
 import com.cramer.service.DashboardService;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -33,6 +35,17 @@ public class DashboardController extends BaseController {
         // Cap size to prevent abuse
         int cappedSize = Math.min(size, 50);
         return ResponseEntity.ok(dashboardService.buildDashboardSummary(userId, page, cappedSize, search));
+    }
+
+    @GetMapping("/course-history")
+    public ResponseEntity<List<AttemptHistoryDTO>> getCourseHistory(
+            @RequestParam String examSource,
+            @RequestParam Integer testNumber,
+            @RequestParam String skill,
+            Authentication authentication
+    ) {
+        UUID userId = getCurrentUserId(authentication);
+        return ResponseEntity.ok(dashboardService.getCourseHistory(userId, examSource, testNumber, skill));
     }
 
     @PostMapping("/target")

@@ -139,7 +139,8 @@ const useDashboardStore = create(
         },
       }),
       {
-        name: 'dashboard-storage',
+        name: 'dashboard-storage-v2',
+        version: 2,
         storage: {
           getItem: (name) => {
             const str = sessionStorage.getItem(name);
@@ -155,8 +156,6 @@ const useDashboardStore = create(
         partialize: (state) => ({
           summary: state.summary,
           lastFetchedAt: state.lastFetchedAt,
-          currentPage: state.currentPage,
-          pageSize: state.pageSize,
           totalPages: state.totalPages,
           searchQuery: state.searchQuery,
           debouncedSearchQuery: state.debouncedSearchQuery,

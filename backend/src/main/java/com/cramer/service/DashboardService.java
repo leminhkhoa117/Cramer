@@ -255,10 +255,42 @@ public class DashboardService {
                     latestAttempt.getStatus(),
                     score,
                     coverImageUrl,
-                    history));
+                    List.of()));
         }
 
         return new PageDTO<>(pageContent, page, size, totalElements, totalPages);
+    }
+
+    public List<AttemptHistoryDTO> getCourseHistory(UUID userId, String examSource, Integer testNumber, String skill) {
+        String testNumberStr = String.valueOf(testNumber);
+        List<TestAttempt> attempts = testAttemptRepository
+                .findByUserIdAndExamSourceAndTestNumberAndSkillOrderByStartedAtDesc(userId, examSource, testNumberStr, skill);
+
+        if (attempts == null || attempts.isEmpty()) {
+            return List.of();
+        }
+
+        List<UserAnswer> allAnswers = userAnswerRepository.findByAttempt_UserId(userId);
+        Map<Long, List<UserAnswer>> answersByAttemptId = allAnswers.stream()
+                .collect(Collectors.groupingBy(a -> a.getAttempt().getId()));
+
+        return attempts.stream()
+                .filter(a -> !"CANCELLED".equals(a.getStatus()))
+                .map(a -> {
+                    int correct = (int) answersByAttemptId.getOrDefault(a.getId(), Collections.emptyList()).stream()
+                            .filter(ans -> Boolean.TRUE.equals(ans.getCorrect()))
+                            .count();
+                    Double band = null;
+                    if ("COMPLETED".equals(a.getStatus())) {
+                        if ("reading".equalsIgnoreCase(a.getSkill()) || "listening".equalsIgnoreCase(a.getSkill())) {
+                            band = IeltsScoreConverter.convertToBand(a.getScore() != null ? a.getScore() : correct);
+                        } else if ("writing".equalsIgnoreCase(a.getSkill())) {
+                            band = getWritingAttemptBand(a.getId());
+                        }
+                    }
+                    return new AttemptHistoryDTO(a.getId(), a.getCompletedAt(), a.getScore(), a.getStatus(), band);
+                })
+                .collect(Collectors.toList());
     }
 
     private List<SkillSummaryDTO> aggregateSkillSummaries(List<UserAnswer> answers) {
