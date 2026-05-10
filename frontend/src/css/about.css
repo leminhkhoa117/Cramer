@@ -1336,6 +1336,29 @@
   .cta-actions { gap: 1rem; flex-direction: column; }
 }
 
+@media (max-width: 480px) {
+  .about-page .container { padding: 0 1rem; }
+  .about-hero { padding: 2rem 1rem 3rem; }
+  .about-hero__title { font-size: 1.75rem; }
+  .about-vision__grid { gap: 1.5rem; }
+  .about-vision__stat-number { font-size: 1.5rem; }
+  .about-section { padding: 3rem 0; }
+  .about-section__title { font-size: 1.35rem; }
+  .about-section__subtitle { font-size: 0.9rem; }
+  .founder-card { padding: 1.25rem; }
+  .founder-card__name { font-size: 1rem; }
+  .founder-card__avatar { width: 64px; height: 64px; }
+  .value-card { padding: 1.25rem; }
+  .timeline-item { padding: 0.75rem 0.75rem 0.75rem 2.5rem; }
+  .timeline-item__title { font-size: 0.95rem; }
+  .about-manifesto__card,
+  .about-letter__card { padding: 1.5rem; border-radius: 20px; }
+  .about-manifesto__quote { font-size: 1.15rem; }
+  .about-letter__body { font-size: 0.9rem; }
+  .about-cta__title { font-size: 1.35rem; }
+  .marquee-testimonial__quote { font-size: 0.85rem; }
+}
+
 /* ==========================================================================
    REDUCED MOTION
    ========================================================================== */

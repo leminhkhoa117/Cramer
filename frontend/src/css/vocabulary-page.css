@@ -1307,8 +1307,15 @@
     grid-template-columns: 1fr;
   }
 
+  .vocabulary-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
   .vocabulary-modal {
     max-height: 85vh;
+    border-radius: 24px 24px 0 0;
+    max-width: 100%;
   }
 
   .vocabulary-modal__row {
@@ -1319,4 +1326,19 @@
   .vocabulary-modal__input-group {
     flex-direction: column;
   }
+}
+
+@media (max-width: 480px) {
+  .vocabulary-page__container { padding: 0.75rem; }
+  .vocabulary-page__title { font-size: 1.3rem; }
+  .vocabulary-page__icon { width: 40px; height: 40px; font-size: 1.1rem; }
+  .vocabulary-page__stats { gap: 0.75rem; }
+  .vocabulary-page__stat-value { font-size: 1rem; }
+  .vocabulary-page__stat-label { font-size: 0.7rem; }
+  .vocabulary-page__controls { gap: 0.5rem; }
+  .vocabulary-page__filter { font-size: 0.78rem; padding: 0.35rem 0.65rem; }
+  .vocabulary-card { padding: 0.75rem 1rem; }
+  .vocabulary-card__word { font-size: 1rem; }
+  .vocabulary-card__translation { font-size: 0.85rem; }
+  .vocabulary-modal { padding: 1.25rem; }
 }

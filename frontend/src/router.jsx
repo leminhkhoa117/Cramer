@@ -9,6 +9,7 @@ import Footer from './components/Footer';
 import FloatingAssistant from './components/FloatingAssistant';
 import PageWrapper from './components/PageWrapper';
 import ProtectedRoute from './components/ProtectedRoute';
+import SmallViewportWarning from './components/SmallViewportWarning';
 
 function lazyRoute(importFn) {
   return {
@@ -114,6 +115,7 @@ function RootLayout() {
       <main className={showHeader ? 'with-fixed-header' : ''}>
         <AnimatedOutlet />
       </main>
+      {(isTestPage) && <SmallViewportWarning minWidth={768} />}
       {!isTestPage && !isReviewPage && !isAdminPage && <Footer />}
       {!isTestPage && !isAdminPage && <FloatingAssistant />}
     </>
