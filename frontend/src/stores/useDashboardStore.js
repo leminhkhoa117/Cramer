@@ -16,7 +16,7 @@ const useDashboardStore = create(
 
         // Pagination State
         currentPage: 0,
-        pageSize: 8, // 8 items — compact list layout
+        pageSize: 10, // 10 items — compact list layout
         totalPages: 0,
         searchQuery: '',
         debouncedSearchQuery: '',
@@ -120,7 +120,7 @@ const useDashboardStore = create(
         resetPagination: () => {
           set({
             currentPage: 0,
-            pageSize: 8,
+            pageSize: 10,
             totalPages: 0,
             searchQuery: '',
             debouncedSearchQuery: '',

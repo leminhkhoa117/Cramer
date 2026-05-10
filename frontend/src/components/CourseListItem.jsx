@@ -68,6 +68,11 @@ const CourseListItem = React.memo(({ course, onAttemptDeleted }) => {
       className={`dash-course-item ${isExpanded ? 'dash-course-item--expanded' : ''}`}
       layout
       transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+      onMouseMove={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+        e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+      }}
     >
       <div className="dash-course-item__header" onClick={toggleExpand} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleExpand(); }}>
         <div className="dash-course-item__thumbnail">

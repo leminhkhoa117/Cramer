@@ -111,31 +111,70 @@ public class DashboardService {
         return EntityMapper.toDTO(savedTarget);
     }
 
+    private record CourseGroup(TestKey key, List<TestAttempt> attempts, TestAttempt latestAttempt) {}
+
     private PageDTO<CourseProgressDTO> aggregateCourseProgress(List<TestAttempt> attempts, List<UserAnswer> allAnswers,
             int page, int size, String search) {
         if (attempts == null || attempts.isEmpty()) {
             return new PageDTO<>(List.of(), page, size, 0, 0);
         }
 
-        // 1. Group attempts by TestKey (Source + TestNum + Skill)
+        // 1. Group attempts by TestKey (Source + TestNum + Skill) — fast in-memory
         Map<TestKey, List<TestAttempt>> attemptsByTest = attempts.stream()
                 .collect(Collectors.groupingBy(
                         a -> new TestKey(a.getExamSource(), parseTestNumber(a.getTestNumber()), a.getSkill())));
 
-        // 2. Convert groups to CourseProgressDTO (with history)
+        // 2. Build lightweight group metadata (find latest non-cancelled, sort internally, apply search)
+        List<CourseGroup> groups = new ArrayList<>();
+        for (Map.Entry<TestKey, List<TestAttempt>> entry : attemptsByTest.entrySet()) {
+            List<TestAttempt> testAttempts = entry.getValue();
+            testAttempts.sort(
+                    Comparator.comparing(TestAttempt::getStartedAt, Comparator.nullsLast(Comparator.reverseOrder())));
+
+            TestAttempt latestAttempt = testAttempts.stream()
+                    .filter(a -> !"CANCELLED".equals(a.getStatus()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (latestAttempt == null) continue;
+
+            if (search != null && !search.trim().isEmpty()) {
+                String lowerSearch = search.toLowerCase().trim();
+                boolean matches = (latestAttempt.getExamSource() != null
+                        && latestAttempt.getExamSource().toLowerCase().contains(lowerSearch)) ||
+                        (latestAttempt.getSkill() != null
+                                && latestAttempt.getSkill().toLowerCase().contains(lowerSearch));
+                if (!matches) continue;
+            }
+
+            groups.add(new CourseGroup(entry.getKey(), testAttempts, latestAttempt));
+        }
+
+        // 3. Sort groups by latest attempt time
+        groups.sort(Comparator.comparing(g -> g.latestAttempt.getStartedAt(),
+                Comparator.nullsLast(Comparator.reverseOrder())));
+
+        // 4. Pagination metadata
+        int totalElements = groups.size();
+        int totalPages = totalElements > 0 ? (int) Math.ceil((double) totalElements / size) : 0;
+        int start = page * size;
+        int end = Math.min(start + size, totalElements);
+
+        if (start >= totalElements) {
+            return new PageDTO<>(List.of(), page, size, totalElements, totalPages);
+        }
+
+        // 5. Build caches only once
         Map<Long, List<UserAnswer>> answersByAttemptId = allAnswers == null ? Collections.emptyMap()
                 : allAnswers.stream().collect(Collectors.groupingBy(a -> a.getAttempt().getId()));
         Map<TestKey, Integer> totalQuestionsCache = new HashMap<>();
 
-        // 3. Build name resolution cache for examSource -> setName, testNumber ->
-        // testName
         Set<String> examSources = attempts.stream().map(TestAttempt::getExamSource).collect(Collectors.toSet());
         Map<String, TestSet> setsByCode = examSources.stream()
                 .map(code -> testSetRepository.findByCode(code).orElse(null))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(TestSet::getCode, Function.identity()));
 
-        // Build testName lookup: "examSource_testNumber" -> testName
         Map<String, String> testNameLookup = new HashMap<>();
         for (TestSet ts : setsByCode.values()) {
             List<IeltsTest> tests = ieltsTestRepository.findByTestSetIdOrderByTestNumberAsc(ts.getId());
@@ -144,38 +183,15 @@ public class DashboardService {
             }
         }
 
-        List<CourseProgressDTO> courseProgressList = new ArrayList<>();
+        // 6. Build DTOs ONLY for the paginated slice
+        List<CourseGroup> pageGroups = groups.subList(start, end);
+        List<CourseProgressDTO> pageContent = new ArrayList<>(pageGroups.size());
 
-        for (Map.Entry<TestKey, List<TestAttempt>> entry : attemptsByTest.entrySet()) {
-            // Process each group
-            List<TestAttempt> testAttempts = entry.getValue();
+        for (CourseGroup group : pageGroups) {
+            TestAttempt latestAttempt = group.latestAttempt;
+            List<TestAttempt> testAttempts = group.attempts;
 
-            // Sort attempts by startedAt desc (latest first)
-            testAttempts.sort(
-                    Comparator.comparing(TestAttempt::getStartedAt, Comparator.nullsLast(Comparator.reverseOrder())));
-
-            // Find the latest non-CANCELLED attempt for display
-            TestAttempt latestAttempt = testAttempts.stream()
-                    .filter(a -> !"CANCELLED".equals(a.getStatus()))
-                    .findFirst()
-                    .orElse(null);
-
-            // Skip this test if all attempts are cancelled
-            if (latestAttempt == null)
-                continue;
-
-            // Filter by search if needed
-            if (search != null && !search.trim().isEmpty()) {
-                String lowerSearch = search.toLowerCase().trim();
-                boolean matches = (latestAttempt.getExamSource() != null
-                        && latestAttempt.getExamSource().toLowerCase().contains(lowerSearch)) ||
-                        (latestAttempt.getSkill() != null
-                                && latestAttempt.getSkill().toLowerCase().contains(lowerSearch));
-                if (!matches)
-                    continue;
-            }
-
-            // Build History - exclude CANCELLED attempts (they have no value to show)
+            // Build History
             List<AttemptHistoryDTO> history = testAttempts.stream()
                     .filter(a -> !"CANCELLED".equals(a.getStatus()))
                     .map(a -> {
@@ -188,7 +204,6 @@ public class DashboardService {
                                     || "listening".equalsIgnoreCase(a.getSkill())) {
                                 band = IeltsScoreConverter.convertToBand(a.getScore() != null ? a.getScore() : correct);
                             } else if ("writing".equalsIgnoreCase(a.getSkill())) {
-                                // For writing, get band from writing_submissions
                                 band = getWritingAttemptBand(a.getId());
                             }
                         }
@@ -196,17 +211,14 @@ public class DashboardService {
                     })
                     .collect(Collectors.toList());
 
-            // Build Main DTO from Latest Attempt
             int totalQuestions = resolveTotalQuestions(latestAttempt, totalQuestionsCache);
             List<UserAnswer> attemptAnswers = answersByAttemptId.getOrDefault(latestAttempt.getId(),
                     Collections.emptyList());
             int answersAttempted = attemptAnswers.size();
             int correctCount = (int) attemptAnswers.stream().filter(a -> Boolean.TRUE.equals(a.getCorrect())).count();
 
-            // Calculate score based on skill type
             double score;
             if ("writing".equalsIgnoreCase(latestAttempt.getSkill())) {
-                // For writing, get band from writing_submissions
                 Double writingBand = getWritingAttemptBand(latestAttempt.getId());
                 score = writingBand != null ? writingBand : 0.0;
             } else {
@@ -215,7 +227,6 @@ public class DashboardService {
 
             double completionRate = totalQuestions > 0 ? (double) answersAttempted / totalQuestions : 0.0;
 
-            // Resolve human-readable names
             String setName = null;
             String testName = null;
             String coverImageUrl = null;
@@ -226,15 +237,10 @@ public class DashboardService {
                 String lookupKey = ts.getCode() + "_" + parseTestNumber(latestAttempt.getTestNumber());
                 testName = testNameLookup.get(lookupKey);
             }
-            // Fallback to formatted exam source if no set found
-            if (setName == null) {
-                setName = latestAttempt.getExamSource();
-            }
-            if (testName == null) {
-                testName = "Test " + latestAttempt.getTestNumber();
-            }
+            if (setName == null) setName = latestAttempt.getExamSource();
+            if (testName == null) testName = "Test " + latestAttempt.getTestNumber();
 
-            courseProgressList.add(new CourseProgressDTO(
+            pageContent.add(new CourseProgressDTO(
                     latestAttempt.getId(),
                     latestAttempt.getExamSource(),
                     parseTestNumber(latestAttempt.getTestNumber()),
@@ -244,29 +250,13 @@ public class DashboardService {
                     totalQuestions,
                     answersAttempted,
                     correctCount,
-                    latestAttempt.getCompletedAt(), // Or startedAt if completedAt is null?
+                    latestAttempt.getCompletedAt(),
                     completionRate,
-                    latestAttempt.getStatus(), // Use actual status
+                    latestAttempt.getStatus(),
                     score,
                     coverImageUrl,
                     history));
         }
-
-        // 3. Sort by latest attempt time
-        courseProgressList.sort(Comparator.comparing(CourseProgressDTO::getLastAttempt,
-                Comparator.nullsLast(Comparator.reverseOrder())));
-
-        // 4. Pagination
-        int totalElements = courseProgressList.size();
-        int totalPages = (int) Math.ceil((double) totalElements / size);
-        int start = page * size;
-        int end = Math.min(start + size, totalElements);
-
-        if (start >= totalElements) {
-            return new PageDTO<>(List.of(), page, size, totalElements, totalPages);
-        }
-
-        List<CourseProgressDTO> pageContent = courseProgressList.subList(start, end);
 
         return new PageDTO<>(pageContent, page, size, totalElements, totalPages);
     }

@@ -17,6 +17,28 @@
   border-radius: 16px;
   overflow: hidden;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  isolation: isolate;
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+}
+
+.dash-course-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(400px circle at var(--mouse-x) var(--mouse-y),
+      rgba(124, 58, 237, 0.08),
+      transparent 50%);
+  opacity: 0;
+  z-index: 0;
+  transition: opacity 0.4s ease;
+}
+
+.dash-course-item > * {
+  position: relative;
+  z-index: 1;
 }
 
 .dash-course-item:hover {
@@ -24,9 +46,17 @@
   box-shadow: 0 4px 16px rgba(124, 58, 237, 0.08);
 }
 
+.dash-course-item:hover::before {
+  opacity: 1;
+}
+
 .dash-course-item--expanded {
   border-color: rgba(124, 58, 237, 0.3);
   box-shadow: 0 8px 24px rgba(124, 58, 237, 0.12);
+}
+
+.dash-course-item--expanded::before {
+  opacity: 0.6;
 }
 
 /* === Header Row (collapsed visible area) === */
