@@ -34,7 +34,6 @@ import UploadImageModal from '../components/UploadImageModal';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 
-// Animation variants
 const tabContentVariants = {
   hidden: { opacity: 0, y: 10 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
@@ -42,13 +41,11 @@ const tabContentVariants = {
 };
 
 const ProfilePage = () => {
-  // Zustand store selectors
   const user = useAuthStore(state => state.user);
   const profile = useProfileStore(state => state.profile);
   const updateProfile = useProfileStore(state => state.updateProfile);
   const profileLoading = useProfileStore(state => state.loading);
 
-  // State
   const [activeTab, setActiveTab] = useState('personal');
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState(null);
@@ -63,9 +60,6 @@ const ProfilePage = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const closeSidebar = () => setIsSidebarOpen(false);
 
-
-
-  // Security states (mock data for now - will be replaced with API calls)
   const [sessions, setSessions] = useState([
     {
       id: '1',
@@ -90,26 +84,22 @@ const ProfilePage = () => {
     { id: '3', device: 'Firefox / MacOS', ip: '103.21.45.67', time: '2 ngày trước', success: false }
   ]);
 
-  // Refs
-  const avatarFileRef = useRef(null);
   const hasFetchedRef = useRef(false);
 
-  // Fetch profile on mount
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user?.id || hasFetchedRef.current) return;
       hasFetchedRef.current = true;
-      
+
       try {
         setLoading(true);
         const response = await profileApi.getById(user.id);
-        console.log('✅ Profile response:', response.data);
         const fullProfile = { ...response.data, email: user.email };
         setProfileData(fullProfile);
         setEditedProfile(fullProfile);
         setError(null);
       } catch (err) {
-        console.error('❌ Profile fetch error:', err);
+        console.error('Profile fetch error:', err);
         setError('Không thể tải thông tin cá nhân.');
         showErrorToast('Lỗi khi tải thông tin cá nhân.');
       } finally {
@@ -119,7 +109,6 @@ const ProfilePage = () => {
     fetchProfile();
   }, [user?.id]);
 
-  // Handlers - memoized for performance
   const handleEditToggle = useCallback(() => {
     if (!isEditing) {
       setEditedProfile({ ...profileData });
@@ -133,22 +122,15 @@ const ProfilePage = () => {
   }, []);
 
   const handleSave = useCallback(async (extraData = {}) => {
-    // Determine what to save:
-    // - If extraData contains image URLs (avatar, hero, page background), only send those fields
-    // - Otherwise, send the full editedProfile merged with extraData
     const imageFields = ['avatarUrl', 'heroBackgroundUrl', 'pageBackgroundUrl'];
     const isImageUpdate = Object.keys(extraData).some(key => imageFields.includes(key));
-
-    // For image updates, only send the specific field to avoid overwriting other data
     const profileToSave = isImageUpdate ? extraData : { ...editedProfile, ...extraData };
 
     try {
       const response = await profileApi.update(user.id, profileToSave);
       const updatedProfile = { ...response.data, email: user.email };
       setProfileData(updatedProfile);
-      // Also update editedProfile to keep it in sync
       setEditedProfile(prev => ({ ...prev, ...updatedProfile }));
-      // Update the profile in Zustand store
       await updateProfile(profileToSave);
       showSuccessToast('Cập nhật thông tin thành công!');
       setIsEditing(false);
@@ -183,11 +165,7 @@ const ProfilePage = () => {
     if (profileData?.avatarUrl) {
       const oldImage = parseSupabaseUrl(profileData.avatarUrl);
       if (oldImage) {
-        try {
-          await supabase.storage.from('userImages').remove([oldImage.path]);
-        } catch (error) {
-          console.error('Failed to delete old avatar:', error);
-        }
+        try { await supabase.storage.from('userImages').remove([oldImage.path]); } catch (error) { console.error('Failed to delete old avatar:', error); }
       }
     }
 
@@ -198,15 +176,9 @@ const ProfilePage = () => {
         const canvas = document.createElement('canvas');
         let { width, height } = img;
         if (width > height) {
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
+          if (width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; }
         } else {
-          if (height > maxHeight) {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
+          if (height > maxHeight) { width = Math.round((width * maxHeight) / height); height = maxHeight; }
         }
         canvas.width = width;
         canvas.height = height;
@@ -214,11 +186,7 @@ const ProfilePage = () => {
         ctx.drawImage(img, 0, 0, width, height);
         canvas.toBlob((blob) => {
           if (blob) {
-            const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-              type: 'image/jpeg',
-              lastModified: Date.now()
-            });
-            resolve(newFile);
+            resolve(new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), { type: 'image/jpeg', lastModified: Date.now() }));
           } else {
             reject(new Error('Canvas to Blob conversion failed'));
           }
@@ -237,12 +205,10 @@ const ProfilePage = () => {
         cacheControl: '3600',
         upsert: false
       });
-
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage.from('userImages').getPublicUrl(filePath);
       if (!data.publicUrl) throw new Error('Could not get public URL for avatar.');
-
       await handleSave({ avatarUrl: data.publicUrl });
     } catch (error) {
       console.error('Avatar upload error:', error);
@@ -258,11 +224,7 @@ const ProfilePage = () => {
     if (profileData?.heroBackgroundUrl) {
       const oldImage = parseSupabaseUrl(profileData.heroBackgroundUrl);
       if (oldImage) {
-        try {
-          await supabase.storage.from('userImages').remove([oldImage.path]);
-        } catch (error) {
-          console.error('Failed to delete old hero background:', error);
-        }
+        try { await supabase.storage.from('userImages').remove([oldImage.path]); } catch (error) { console.error('Failed to delete old hero background:', error); }
       }
     }
 
@@ -279,7 +241,6 @@ const ProfilePage = () => {
 
       const { data } = supabase.storage.from('userImages').getPublicUrl(filePath);
       if (!data.publicUrl) throw new Error('Could not get public URL.');
-
       await handleSave({ heroBackgroundUrl: data.publicUrl });
     } catch (error) {
       console.error('Hero background upload error:', error);
@@ -295,11 +256,7 @@ const ProfilePage = () => {
     if (profileData?.pageBackgroundUrl) {
       const oldImage = parseSupabaseUrl(profileData.pageBackgroundUrl);
       if (oldImage) {
-        try {
-          await supabase.storage.from('userImages').remove([oldImage.path]);
-        } catch (error) {
-          console.error('Failed to delete old page background:', error);
-        }
+        try { await supabase.storage.from('userImages').remove([oldImage.path]); } catch (error) { console.error('Failed to delete old page background:', error); }
       }
     }
 
@@ -316,7 +273,6 @@ const ProfilePage = () => {
 
       const { data } = supabase.storage.from('userImages').getPublicUrl(filePath);
       if (!data.publicUrl) throw new Error('Could not get public URL.');
-
       await handleSave({ pageBackgroundUrl: data.publicUrl });
     } catch (error) {
       console.error('Page background upload error:', error);
@@ -334,17 +290,14 @@ const ProfilePage = () => {
     }
   };
 
-  // Open delete confirmation modal - memoized
   const openDeleteModal = useCallback((type) => {
     setDeleteImageModal({ isOpen: true, type });
   }, []);
 
-  // Close delete confirmation modal - memoized
   const closeDeleteModal = useCallback(() => {
     setDeleteImageModal({ isOpen: false, type: null });
   }, []);
 
-  // Actually delete the image
   const handleDeleteImage = async () => {
     const type = deleteImageModal.type;
     if (!type) return;
@@ -374,30 +327,18 @@ const ProfilePage = () => {
           return;
       }
 
-      // Delete from storage if exists
       if (oldUrl) {
         const oldImage = parseSupabaseUrl(oldUrl);
         if (oldImage) {
-          try {
-            await supabase.storage.from('userImages').remove([oldImage.path]);
-            console.log('Deleted from storage:', oldImage.path);
-          } catch (storageError) {
-            console.error('Failed to delete from storage:', storageError);
-          }
+          try { await supabase.storage.from('userImages').remove([oldImage.path]); } catch (storageError) { console.error('Failed to delete from storage:', storageError); }
         }
       }
 
-      // Update profile in database
       const response = await profileApi.update(user.id, updateData);
       console.log('Profile updated:', response);
-
-      // Update local state
       setProfileData(prev => ({ ...prev, ...updateData }));
       setEditedProfile(prev => ({ ...prev, ...updateData }));
-
-      // Update the profile in Zustand store
       await updateProfile(updateData);
-
       showSuccessToast('Đã xoá ảnh thành công.');
       closeDeleteModal();
     } catch (error) {
@@ -418,8 +359,6 @@ const ProfilePage = () => {
     showSuccessToast('Đã đăng xuất tất cả các phiên khác.');
   }, []);
 
-
-
   const getInitials = useCallback((name) => {
     if (!name) return '';
     const nameParts = name.split(' ');
@@ -429,7 +368,6 @@ const ProfilePage = () => {
     return name.substring(0, 2).toUpperCase();
   }, []);
 
-  // Memoized computed values
   const displayInitials = useMemo(() =>
     getInitials(profileData?.fullName || user?.email),
     [getInitials, profileData?.fullName, user?.email]
@@ -440,16 +378,18 @@ const ProfilePage = () => {
     [profileData?.fullName]
   );
 
-  // Loading and error states
   if (loading || profileLoading) {
     return <FullPageLoader message="Đang tải trang cá nhân..." />;
   }
 
   if (error) {
-    return <div className="dash-error container">{error}</div>;
+    return (
+      <div className="sl-page">
+        <div className="sl-error">{error}</div>
+      </div>
+    );
   }
 
-  // Tab definitions
   const tabs = [
     { id: 'personal', label: 'Thông tin chung', icon: FiUser },
     { id: 'security', label: 'Bảo mật', icon: FiShield }
@@ -465,12 +405,10 @@ const ProfilePage = () => {
         backgroundAttachment: 'fixed'
       } : undefined}
     >
-      {/* Overlay for readability when background image is set */}
       {profileData?.pageBackgroundUrl && (
-        <div className="profile-page__overlay" />
+        <div className="sl-page__overlay" />
       )}
 
-      {/* Mobile Sidebar Drawer Overlay */}
       <div
         className={`profile-sidebar-overlay ${isSidebarOpen ? 'profile-sidebar-overlay--visible' : ''}`}
         onClick={closeSidebar}
@@ -480,7 +418,6 @@ const ProfilePage = () => {
       <UploadImageModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onConfirm={handleImageUpdate} />
       <ChangePasswordModal isOpen={isChangePasswordModalOpen} onClose={() => setIsChangePasswordModalOpen(false)} />
 
-      {/* Delete Image Confirmation Modal */}
       <ConfirmationModal
         isOpen={deleteImageModal.isOpen}
         onClose={closeDeleteModal}
@@ -496,25 +433,22 @@ const ProfilePage = () => {
         </p>
       </ConfirmationModal>
 
-      {/* Main Layout: Sidebar + Content */}
-      <div className="profile-layout container">
-        {/* Left Sidebar */}
-        <aside className={`profile-sidebar ${isSidebarOpen ? 'profile-sidebar--drawer-open' : ''}`}>
-          {/* Cover Image Banner */}
-          <div className="profile-sidebar__cover">
+      <div className="sl-layout container">
+        <aside className={`sl-sidebar ${isSidebarOpen ? 'sl-sidebar--drawer-open' : ''}`}>
+          <div className="sl-sidebar__cover">
             {profileData?.heroBackgroundUrl ? (
               <img
                 src={profileData.heroBackgroundUrl}
                 alt="Ảnh bìa"
-                className="profile-sidebar__cover-img"
+                className="sl-sidebar__cover-img"
               />
             ) : (
-              <div className="profile-sidebar__cover-placeholder">
+              <div className="sl-sidebar__cover-placeholder">
                 <FiMonitor />
               </div>
             )}
             <button
-              className="profile-sidebar__cover-edit"
+              className="sl-sidebar__cover-edit"
               onClick={() => setIsModalOpen(true)}
               aria-label="Thay đổi ảnh bìa"
             >
@@ -522,8 +456,7 @@ const ProfilePage = () => {
             </button>
           </div>
 
-          {/* Sidebar Header with Avatar */}
-          <div className="profile-sidebar__header">
+          <div className="sl-sidebar__header sl-sidebar__header--centered">
             <div className="profile-sidebar__avatar-container">
               {isUploading ? (
                 <div className="profile-sidebar__avatar-uploading" />
@@ -539,33 +472,30 @@ const ProfilePage = () => {
                 </div>
               )}
             </div>
-            <h2 className="profile-sidebar__name">{displayName}</h2>
-            <p className="profile-sidebar__email">{profileData?.email}</p>
+            <h2 className="sl-sidebar__title">{displayName}</h2>
+            <p className="sl-sidebar__subtitle">{profileData?.email}</p>
           </div>
 
-          {/* Sidebar Navigation */}
-          <nav className="profile-sidebar__nav">
+          <nav className="sl-sidebar__nav">
             {tabs.map(tab => {
               const IconComponent = tab.icon;
               return (
                 <button
                   key={tab.id}
                   type="button"
-                  className={`profile-sidebar__nav-btn ${activeTab === tab.id ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab.id)}
+                  className={`sl-sidebar__nav-btn ${activeTab === tab.id ? 'active' : ''}`}
+                  onClick={() => { setActiveTab(tab.id); closeSidebar(); }}
                 >
                   <IconComponent />
                   <span>{tab.label}</span>
-                  <FiChevronRight className="profile-sidebar__nav-arrow" />
+                  <FiChevronRight className="sl-sidebar__nav-arrow" />
                 </button>
               );
             })}
           </nav>
         </aside>
 
-        {/* Right Content Area */}
-        <main className="profile-content">
-          {/* Mobile header strip */}
+        <main className="sl-content">
           <div className="profile-mobile-header">
             <span className="profile-mobile-header__title">
               {tabs.find(t => t.id === activeTab)?.label || 'Hồ sơ'}
@@ -581,35 +511,34 @@ const ProfilePage = () => {
           </div>
 
           <AnimatePresence mode="wait">
-              {activeTab === 'personal' && (
+            {activeTab === 'personal' && (
               <motion.div
                 key="personal"
-                className="profile-tab-panel"
+                className="sl-tab-panel"
                 variants={tabContentVariants}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
               >
-                {/* Page Background Section — above personal info */}
-                <div className="profile-card">
-                  <div className="profile-card__header">
-                    <div className="profile-card__header-left">
-                      <h3 className="profile-card__title">
+                <div className="sl-card">
+                  <div className="sl-card__header">
+                    <div className="sl-card__header-left">
+                      <h3 className="sl-card__title">
                         <FiGlobe />
                         Hình nền trang
                       </h3>
-                      <p className="profile-card__description">Hình nền cho toàn bộ trang hồ sơ</p>
+                      <p className="sl-card__description">Hình nền cho toàn bộ trang hồ sơ</p>
                     </div>
-                    <div className="profile-card__actions">
+                    <div className="sl-card__actions">
                       <button
-                        className="profile-btn profile-btn--secondary profile-btn--small"
+                        className="sl-btn sl-btn--secondary sl-btn--small"
                         onClick={() => setIsModalOpen(true)}
                       >
                         <FiEdit3 /> Thay đổi
                       </button>
                       {profileData?.pageBackgroundUrl && (
                         <button
-                          className="profile-btn profile-btn--danger profile-btn--small"
+                          className="sl-btn sl-btn--danger sl-btn--small"
                           onClick={() => openDeleteModal('page')}
                         >
                           <FiTrash2 /> Xoá
@@ -633,94 +562,93 @@ const ProfilePage = () => {
                   </div>
                 </div>
 
-                {/* Personal Info Card */}
-                <div className="profile-card">
-                  <div className="profile-card__header">
-                    <h3 className="profile-card__title">
+                <div className="sl-card">
+                  <div className="sl-card__header">
+                    <h3 className="sl-card__title">
                       <FiUser />
                       Thông tin cá nhân
                     </h3>
-                    <button className="profile-btn profile-btn--secondary profile-btn--small" onClick={handleEditToggle}>
+                    <button className="sl-btn sl-btn--secondary sl-btn--small" onClick={handleEditToggle}>
                       {isEditing ? <><FiX /> Hủy</> : <><FiEdit3 /> Chỉnh sửa</>}
                     </button>
                   </div>
 
                   {isEditing ? (
                     <>
-                      <div className="profile-form-grid">
-                        <div className="profile-form-group">
-                          <label className="profile-form-label">Họ và Tên</label>
+                      <div className="sl-form-grid">
+                        <div className="sl-form-group">
+                          <label className="sl-form-label">Họ và Tên</label>
                           <input
                             type="text"
                             name="fullName"
-                            className="profile-form-input"
+                            className="sl-form-input"
                             value={editedProfile.fullName || ''}
                             onChange={handleInputChange}
                             placeholder="Nhập họ và tên"
                           />
                         </div>
-                        <div className="profile-form-group">
-                          <label className="profile-form-label">Email</label>
+                        <div className="sl-form-group">
+                          <label className="sl-form-label">Email</label>
                           <input
                             type="email"
-                            className="profile-form-input"
+                            className="sl-form-input"
                             value={editedProfile.email || ''}
                             disabled
                           />
                         </div>
-                        <div className="profile-form-group">
-                          <label className="profile-form-label">Số điện thoại</label>
+                        <div className="sl-form-group">
+                          <label className="sl-form-label">Số điện thoại</label>
                           <input
                             type="text"
                             name="phoneNumber"
-                            className="profile-form-input"
+                            className="sl-form-input"
                             value={editedProfile.phoneNumber || ''}
                             onChange={handleInputChange}
                             placeholder="Nhập số điện thoại"
                           />
                         </div>
-                        <div className="profile-form-group">
-                          <label className="profile-form-label">Địa chỉ</label>
+                        <div className="sl-form-group">
+                          <label className="sl-form-label">Địa chỉ</label>
                           <input
                             type="text"
                             name="address"
-                            className="profile-form-input"
+                            className="sl-form-input"
                             value={editedProfile.address || ''}
                             onChange={handleInputChange}
                             placeholder="Nhập địa chỉ"
                           />
                         </div>
                       </div>
-                      <div className="profile-actions">
-                        <button className="profile-btn profile-btn--secondary" onClick={() => setIsEditing(false)}>
+                      <div className="sl-form-actions">
+                        <button className="sl-btn sl-btn--secondary" onClick={() => setIsEditing(false)}>
                           <FiX /> Hủy
                         </button>
-                        <button className="profile-btn profile-btn--primary" onClick={() => handleSave()}>
+                        <button className="sl-btn sl-btn--primary" onClick={() => handleSave()}>
                           <FiSave /> Lưu thay đổi
                         </button>
                       </div>
                     </>
                   ) : (
-                    <div className="profile-form-grid">
-                      <div className="profile-form-group">
-                        <label className="profile-form-label">Họ và Tên</label>
-                        <p className={`profile-form-value ${!profileData?.fullName ? 'not-set' : ''}`}>
+                    <div className="sl-form-grid">
+                      <div className="sl-form-group">
+                        <label className="sl-form-label">Họ và Tên</label>
+                        <p className={`sl-form-value ${!profileData?.fullName ? 'sl-form-value--muted' : ''}`}>
                           {profileData?.fullName || 'Chưa cập nhật'}
                         </p>
                       </div>
-                      <div className="profile-form-group">
-                        <label className="profile-form-label">Email</label>
-                        <p className="profile-form-value">{profileData?.email}</p>
+                      <div className="sl-form-group">
+                        <label className="sl-form-label">Email</label>
+                        <p className="sl-form-value">{profileData?.email}</p>
                       </div>
-                      <div className="profile-form-group">
-                        <label className="profile-form-label">Số điện thoại</label>
-                        <p className={`profile-form-value ${!profileData?.phoneNumber ? 'not-set' : ''}`}>
+                      <div className="sl-form-group">
+                        <label className="sl-form-label">Số điện thoại</label>
+                        <p className={`sl-form-value ${!profileData?.phoneNumber ? 'sl-form-value--muted' : ''}`}>
                           {profileData?.phoneNumber || 'Chưa cập nhật'}
                         </p>
                       </div>
-                      <div className="profile-form-group">
-                        <label className="profile-form-label">Địa chỉ</label>
-                        <p className={`profile-form-value ${!profileData?.address ? 'not-set' : ''}`}>
+                      <div className="sl-form-group">
+                        <label className="sl-form-label">Địa chỉ</label>
+                        <p className={`sl-form-value ${!profileData?.address ? 'sl-form-value--muted' : ''}`}>
                           {profileData?.address || 'Chưa cập nhật'}
                         </p>
                       </div>
@@ -730,66 +658,61 @@ const ProfilePage = () => {
               </motion.div>
             )}
 
-
             {activeTab === 'security' && (
               <motion.div
                 key="security"
-                className="profile-tab-panel"
+                className="sl-tab-panel"
                 variants={tabContentVariants}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
               >
-                {/* Authentication Section */}
-                <div className="profile-card">
-                  <div className="profile-card__header">
-                    <h3 className="profile-card__title">
+                <div className="sl-card">
+                  <div className="sl-card__header">
+                    <h3 className="sl-card__title">
                       <FiLock />
                       Xác thực
                     </h3>
                   </div>
 
-                  <div className="security-item" onClick={() => setIsChangePasswordModalOpen(true)}>
-                    <div className="security-item__info">
-                      <div className="security-item__icon">
+                  <div className="sl-list-item sl-list-item--clickable" onClick={() => setIsChangePasswordModalOpen(true)}>
+                    <div className="sl-list-item__info">
+                      <div className="sl-list-item__icon">
                         <FiKey />
                       </div>
-                      <div className="security-item__text">
+                      <div className="sl-list-item__text">
                         <h4>Đổi mật khẩu</h4>
                         <p>Thay đổi mật khẩu đăng nhập của bạn</p>
                       </div>
                     </div>
-                    <FiChevronRight style={{ color: 'var(--text-muted)' }} />
+                    <FiChevronRight style={{ color: 'var(--sl-text-muted)' }} />
                   </div>
 
-                  <div className="security-item" style={{ opacity: 0.6, cursor: 'not-allowed' }}>
-                    <div className="security-item__info">
-                      <div className="security-item__icon">
+                  <div className="sl-list-item profile-security-item--disabled">
+                    <div className="sl-list-item__info">
+                      <div className="sl-list-item__icon">
                         <FiShield />
                       </div>
-                      <div className="security-item__text">
+                      <div className="sl-list-item__text">
                         <h4>Xác thực hai yếu tố (2FA)</h4>
                         <p>Tính năng đang được phát triển</p>
                       </div>
                     </div>
-                    <div className="security-item__status">
-                      <span className="security-badge security-badge--disabled">
-                        Sắp ra mắt
-                      </span>
-                    </div>
+                    <span className="profile-security-badge profile-security-badge--disabled">
+                      Sắp ra mắt
+                    </span>
                   </div>
                 </div>
 
-                {/* Active Sessions */}
-                <div className="profile-card">
-                  <div className="profile-card__header">
-                    <h3 className="profile-card__title">
+                <div className="sl-card">
+                  <div className="sl-card__header">
+                    <h3 className="sl-card__title">
                       <FiMonitor />
                       Phiên đăng nhập
                     </h3>
                     {sessions.length > 1 && (
                       <button
-                        className="profile-btn profile-btn--secondary profile-btn--small"
+                        className="sl-btn sl-btn--secondary sl-btn--small"
                         onClick={handleRevokeAllSessions}
                       >
                         <FiLogOut /> Đăng xuất tất cả
@@ -797,29 +720,29 @@ const ProfilePage = () => {
                     )}
                   </div>
 
-                  <div className="sessions-list">
+                  <div>
                     {sessions.map(session => (
-                      <div key={session.id} className={`session-item ${session.isCurrent ? 'current' : ''}`}>
-                        <div className="session-item__info">
-                          <div className="session-item__icon">
+                      <div key={session.id} className={`sl-list-item ${session.isCurrent ? 'profile-list-item--current' : ''}`}>
+                        <div className="sl-list-item__info">
+                          <div className="sl-list-item__icon">
                             <session.icon />
                           </div>
-                          <div className="session-item__details">
+                          <div className="sl-list-item__text">
                             <h4>
                               {session.device}
                               {session.isCurrent && (
-                                <span className="session-item__current-badge">
+                                <span className="profile-session__current-badge">
                                   <FiCheck /> Phiên hiện tại
                                 </span>
                               )}
                             </h4>
-                            <p>{session.location} • {session.lastActive}</p>
+                            <p>{session.location} &bull; {session.lastActive}</p>
                           </div>
                         </div>
                         {!session.isCurrent && (
-                          <div className="session-item__actions">
+                          <div className="sl-list-item__actions">
                             <button
-                              className="profile-btn profile-btn--danger profile-btn--small"
+                              className="sl-btn sl-btn--danger sl-btn--small"
                               onClick={() => handleRevokeSession(session.id)}
                             >
                               <FiLogOut /> Đăng xuất
@@ -831,96 +754,91 @@ const ProfilePage = () => {
                   </div>
                 </div>
 
-                {/* Login History */}
-                <div className="profile-card">
-                  <div className="profile-card__header">
-                    <h3 className="profile-card__title">
+                <div className="sl-card">
+                  <div className="sl-card__header">
+                    <h3 className="sl-card__title">
                       <FiClock />
                       Lịch sử đăng nhập
                     </h3>
                   </div>
 
-                  <div className="login-history">
+                  <div className="profile-login-history">
                     {loginHistory.map(item => (
-                      <div key={item.id} className="login-history-item">
-                        <div className="login-history-item__info">
-                          <div className={`login-history-item__icon ${item.success ? 'success' : 'failed'}`}>
+                      <div key={item.id} className="profile-login-history__item">
+                        <div className="profile-login-history__info">
+                          <div className={`profile-login-history__icon ${item.success ? 'profile-login-history__icon--success' : 'profile-login-history__icon--failed'}`}>
                             {item.success ? <FiCheck /> : <FiX />}
                           </div>
-                          <div className="login-history-item__details">
+                          <div className="profile-login-history__details">
                             <h4>{item.device}</h4>
                             <p>IP: {item.ip}</p>
                           </div>
                         </div>
-                        <span className="login-history-item__time">{item.time}</span>
+                        <span className="profile-login-history__time">{item.time}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Linked Accounts */}
-                <div className="profile-card">
-                  <div className="profile-card__header">
-                    <h3 className="profile-card__title">
+                <div className="sl-card">
+                  <div className="sl-card__header">
+                    <h3 className="sl-card__title">
                       <FiLink />
                       Tài khoản liên kết
                     </h3>
                   </div>
 
-                  <div className="linked-account">
-                    <div className="linked-account__info">
-                      <div className="linked-account__icon google">
+                  <div className="sl-list-item">
+                    <div className="sl-list-item__info">
+                      <div className="sl-list-item__icon profile-linked-account__icon--google">
                         <FaGoogle />
                       </div>
-                      <div className="linked-account__text">
+                      <div className="sl-list-item__text">
                         <h4>Google</h4>
                         <p>Chưa liên kết</p>
                       </div>
                     </div>
-                    <button className="profile-btn profile-btn--secondary profile-btn--small">
+                    <button className="sl-btn sl-btn--secondary sl-btn--small">
                       Liên kết
                     </button>
                   </div>
 
-                  <div className="linked-account">
-                    <div className="linked-account__info">
-                      <div className="linked-account__icon facebook">
+                  <div className="sl-list-item">
+                    <div className="sl-list-item__info">
+                      <div className="sl-list-item__icon profile-linked-account__icon--facebook">
                         <FaFacebook />
                       </div>
-                      <div className="linked-account__text">
+                      <div className="sl-list-item__text">
                         <h4>Facebook</h4>
                         <p>Chưa liên kết</p>
                       </div>
                     </div>
-                    <button className="profile-btn profile-btn--secondary profile-btn--small">
+                    <button className="sl-btn sl-btn--secondary sl-btn--small">
                       Liên kết
                     </button>
                   </div>
                 </div>
 
-                {/* Danger Zone */}
-                <div className="profile-card danger-zone">
-                  <div className="profile-card__header">
-                    <h3 className="profile-card__title">
+                <div className="sl-card profile-danger-zone">
+                  <div className="sl-card__header">
+                    <h3 className="sl-card__title">
                       <FiAlertTriangle />
                       Vùng nguy hiểm
                     </h3>
                   </div>
 
-                  <div className="danger-zone__content">
-                    <div className="danger-zone__text">
+                  <div className="profile-danger-zone__content">
+                    <div className="profile-danger-zone__text">
                       <h4>Xóa tài khoản</h4>
                       <p>Sau khi xóa, tất cả dữ liệu của bạn sẽ bị mất vĩnh viễn.</p>
                     </div>
-                    <button className="profile-btn profile-btn--danger">
+                    <button className="sl-btn sl-btn--danger">
                       <FiTrash2 /> Xóa tài khoản
                     </button>
                   </div>
                 </div>
               </motion.div>
             )}
-
-
           </AnimatePresence>
         </main>
       </div>
@@ -929,4 +847,3 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
-

@@ -1,25 +1,26 @@
 # Cramer UI Design System Documentation
 
-> **Version:** 1.0  
-> **Last Updated:** January 2026  
-> **Platform:** React + Vite + Tailwind CSS
+> **Version:** 2.0
+> **Last Updated:** May 2026
+> **Platform:** React + Vite
 
-This document provides a comprehensive reference of the Cramer IELTS platform's design system, CSS architecture, and styling patterns. Use this as the authoritative source for implementing consistent UI across the application.
+This is the **authoritative source** for implementing consistent UI across Cramer. Every page must follow these conventions.
 
 ---
 
 ## Table of Contents
 
 1. [CSS Architecture](#1-css-architecture)
-2. [Tailwind Configuration](#2-tailwind-configuration)
-3. [Design Tokens](#3-design-tokens)
-4. [Color Palette](#4-color-palette)
-5. [Typography System](#5-typography-system)
-6. [Glassmorphism Effects](#6-glassmorphism-effects)
-7. [Component Styling Patterns](#7-component-styling-patterns)
+2. [Design Tokens](#2-design-tokens)
+3. [Page Layout Pattern](#3-page-layout-pattern)
+4. [Shared Component Library](#4-shared-component-library)
+5. [Color Palette](#5-color-palette)
+6. [Typography System](#6-typography-system)
+7. [Glassmorphism Effects](#7-glassmorphism-effects)
 8. [Responsive Design](#8-responsive-design)
 9. [Animation Patterns](#9-animation-patterns)
 10. [CSS Naming Conventions](#10-css-naming-conventions)
+11. [Page-Specific Guidelines](#11-page-specific-guidelines)
 
 ---
 
@@ -27,603 +28,354 @@ This document provides a comprehensive reference of the Cramer IELTS platform's 
 
 ### File Organization
 
-The CSS is organized in a **component-based architecture** under `frontend/src/css/`:
-
 ```
 frontend/src/
-├── styles.css              # Global styles, Tailwind directives, base resets
+├── styles.css                        # Global styles, Tailwind directives, reset, CSS variables
 └── css/
-    ├── common/             # Shared reusable styles
-    │   ├── faq.css
+    ├── common/                       # SHARED — reuse across all pages
+    │   ├── sidebar-layout.css        # .sl-page, .sl-sidebar, .sl-layout, .sl-card, .sl-btn
+    │   ├── modal.css                 # .cm-backdrop, .cm-content, .cm-header, .cm-title, .cm-body, .cm-footer
+    │   ├── faq.css                   # .faq-section, .faq-list, .faq-item
+    │   ├── testimonials.css           # .testimonial-card
     │   ├── grading-loader.css
-    │   ├── modal.css           # Unified modal system
-    │   ├── panel-resize-handle.css
     │   ├── passage-preview.css
+    │   ├── panel-resize-handle.css
     │   ├── review-layout-base.css
-    │   ├── sidebar-layout.css  # Shared sidebar patterns
-    │   ├── test-layout-base.css
-    │   └── testimonials.css
+    │   └── test-layout-base.css
     │
-    ├── # Page-specific styles (43+ files)
-    ├── about.css
-    ├── audio-player.css
-    ├── courses.css
-    ├── dashboard.css
-    ├── floating-assistant.css
-    ├── footer.css
-    ├── header.css
-    ├── home.css            # Homepage (4000+ lines)
-    ├── login.css
-    ├── pricing-page.css
-    ├── profile-page.css
-    ├── subscription-page.css
-    ├── test-page.css
-    ├── writing-test-page.css
-    └── ... (40+ more component files)
+    └── page-specific/                # One file per page — namespaced with page prefix
+        ├── header.css                # .header, .header--scrolled, .header--hidden
+        ├── footer.css
+        ├── dashboard.css             # .dash-mobile-header, .dash-hamburger, .dash-sidebar-overlay
+        ├── pricing.css               # .pricing-hero, .pricing-tiers, .tier-card
+        ├── courses.css               # .courses-hero, .courses-grid, .cr-card
+        ├── vocabulary.css            # .vocab-page, .vocab-card, .vocab-controls
+        ├── profile.css               # .profile-layout, .profile-card, .profile-sidebar
+        ├── about.css
+        ├── subscription.css
+        ├── login.css
+        └── ...
 ```
 
-**Total CSS Files:** 52 files (9 in `common/`, 43 page/component-specific)
-
-### CSS Import Strategy
+### Import Strategy
 
 ```css
-/* styles.css - Entry point */
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
+/* styles.css — Global entry */
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+```
 
-/* Component CSS files import shared modules */
-/* Example: test-page.css */
-@import './common/test-layout-base.css';
+```jsx
+// Per-page imports in JSX
+import '../css/page-specific/courses.css';
 ```
 
 ---
 
-## 2. Tailwind Configuration
+## 2. Design Tokens
 
-The project uses a **minimal Tailwind configuration**, relying primarily on custom CSS for complex styling.
-
-### tailwind.config.js
-
-```javascript
-/** @type {import('tailwindcss').Config} */
-export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: {
-    extend: {
-      fontFamily: {
-        sans: ['"Quicksand"', 'sans-serif'],
-      },
-    },
-  },
-  plugins: [],
-}
-```
-
-### PostCSS Configuration
-
-```javascript
-// postcss.config.js
-import tailwindcss from '@tailwindcss/postcss';
-import autoprefixer from 'autoprefixer';
-
-export default {
-  plugins: [tailwindcss(), autoprefixer()],
-};
-```
-
-### Key Tailwind Usage
-
-The project uses Tailwind for:
-- **Utility classes** in JSX (flex, grid, padding, margin)
-- **Responsive prefixes** (`md:`, `lg:`)
-- **Custom utilities** defined in `@layer utilities`
-
-```css
-/* Custom Tailwind utility */
-@layer utilities {
-  .all-\[unset\] {
-    all: unset;
-  }
-}
-```
-
----
-
-## 3. Design Tokens
-
-### CSS Custom Properties (Root Variables)
-
-The design system uses CSS custom properties for consistent theming:
+### Global CSS Variables (in `:root` via `styles.css`)
 
 ```css
 :root {
-  /* === Page Layout === */
-  --header-clearance: 90px;
+  /* Layout */
+  --header-clearance: 58px;
 
-  /* === Primary Colors === */
-  --primary-accent: #7c3aed;
-  --primary-accent-hover: #6d28d9;
-  --primary-gradient: linear-gradient(135deg, #7c3aed, #6366f1);
-  --primary-color: #7c3aed;
-  --primary-rgb: 124, 58, 237;
+  /* Primary Brand */
+  --cr-primary: #7c3aed;
+  --cr-primary-hover: #6d28d9;
+  --cr-primary-light: #6366f1;
+  --cr-primary-lighter: #8b5cf6;
+  --cr-primary-gradient: linear-gradient(135deg, #7c3aed, #6366f1);
 
-  /* === Text Colors === */
-  --text-primary: #1f2937;
-  --text-secondary: #4b5563;
-  --text-light: #ffffff;
+  /* Text */
+  --cr-text: #1f2937;
+  --cr-text-secondary: #4b5563;
+  --cr-text-muted: #6b7280;
+  --cr-text-light: #ffffff;
 
-  /* === Glassmorphism Tokens === */
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  /* Surfaces */
+  --cr-page-bg: #f8f5ff;
+  --cr-card-bg: rgba(255, 255, 255, 0.96);
+  --cr-card-border: rgba(124, 58, 237, 0.1);
+  --cr-card-shadow: 0 4px 20px rgba(124, 58, 237, 0.06);
+  --cr-card-shadow-hover: 0 15px 35px rgba(124, 58, 237, 0.1);
 
-  /* === Liquid Glass Tokens === */
-  --liquid-glass-bg: rgba(255, 255, 255, 0.1);
-  --liquid-glass-border: rgba(255, 255, 255, 0.2);
-  --liquid-glass-highlight: rgba(255, 255, 255, 0.3);
-  --liquid-glass-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  /* Status */
+  --cr-success: #10b981;
+  --cr-warning: #f59e0b;
+  --cr-danger: #ef4444;
+  --cr-cyan: #27afdb;
+
+  /* Glass */
+  --cr-glass-blur: blur(16px);
+  --cr-overlay-bg: rgba(18, 10, 53, 0.25);
+
+  /* Radius */
+  --cr-radius-sm: 8px;
+  --cr-radius-md: 12px;
+  --cr-radius-lg: 16px;
+  --cr-radius-xl: 20px;
+  --cr-radius-2xl: 24px;
+  --cr-radius-full: 9999px;
 }
 ```
 
-### Component-Specific Tokens
+### Component Tokens (per-page, scoped)
 
-Different components define their own CSS variables for scoped theming:
+Pages define their own `:root` / page-scoped CSS variables using the page prefix:
 
-#### Sidebar Layout (`sidebar-layout.css`)
 ```css
-:root {
-  --sl-primary: #7c3aed;
-  --sl-primary-hover: #6d28d9;
-  --sl-primary-light: #6366f1;
-  --sl-cyan: #27afdb;
-  --sl-text: #1f2937;
-  --sl-text-muted: #6b7280;
-  --sl-glass-bg: rgba(255, 255, 255, 0.96);
-  --sl-glass-border: rgba(124, 58, 237, 0.1);
-  --sl-glass-shadow: 0 4px 20px rgba(124, 58, 237, 0.06);
-  --sl-page-bg: #f8f5ff;
-  --sl-success: #10b981;
-  --sl-warning: #f59e0b;
-  --sl-danger: #ef4444;
-}
-```
-
-#### Modal System (`modal.css`)
-```css
-:root {
-  --modal-backdrop-bg: rgba(18, 10, 53, 0.65);
-  --modal-glass-bg: rgba(124, 120, 226, 0.88);
-  --modal-glass-border: rgba(255, 255, 255, 0.18);
-  --modal-text: #ffffff;
-  --modal-shadow: 0 25px 50px rgba(15, 23, 42, 0.35);
-  --modal-border-radius: 28px;
-  --modal-padding: 2rem;
-  --modal-max-width-sm: 400px;
-  --modal-max-width-md: 480px;
-  --modal-max-width-lg: 560px;
-  --modal-backdrop-z: 1000;
-  --modal-content-z: 1010;
-}
-```
-
-#### Floating Assistant (`floating-assistant.css`)
-```css
-:root {
-  --fa-primary: #7c3aed;
-  --fa-gradient: linear-gradient(135deg, #7c3aed, #6366f1);
-  --fa-glass-bg: rgba(255, 255, 255, 0.95);
-  --fa-glass-bg-dark: rgba(18, 10, 53, 0.85);
-  --fa-glass-shadow: 0 25px 50px rgba(124, 58, 237, 0.25);
-  --fa-user-bubble: linear-gradient(135deg, #7c3aed, #6366f1);
-  --fa-width: 360px;
-  --fa-border-radius: 16px;
-}
+/* courses.css */
+.cr-courses { --courses-card-width: 320px; }
 ```
 
 ---
 
-## 4. Color Palette
+## 3. Page Layout Pattern
 
-### Primary Brand Colors
+### Every page MUST use this structure:
 
-| Role | Hex | RGB | Usage |
-|------|-----|-----|-------|
-| **Primary** | `#7c3aed` | `124, 58, 237` | Buttons, links, accents |
-| **Primary Hover** | `#6d28d9` | `109, 40, 217` | Hover states |
-| **Primary Light** | `#6366f1` | `99, 102, 241` | Gradients, secondary |
-| **Primary Lighter** | `#8b5cf6` | `139, 92, 246` | Highlights |
-| **Accent Cyan** | `#27afdb` | `39, 175, 219` | Dashboard accents |
+```jsx
+<div className="{page-prefix}-page">
+  {/* Fixed decorative background — optional, pointer-events: none */}
+  <div className="{page-prefix}-page__bg">
+    <div className="{page-prefix}-page__orb {page-prefix}-page__orb--1" />
+  </div>
 
-### Gradient Palette
+  {/* Main container */}
+  <div className="{page-prefix}-page__container">
+    {/* Hero / Header section */}
+    <section className="{page-prefix}-hero">...</section>
 
-```css
-/* Primary Gradient */
-background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
-
-/* Purple-Pink Gradient */
-background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-
-/* Blue Gradient */
-background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
-
-/* Teal Gradient */
-background: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);
-
-/* Gold Gradient (Pricing) */
-background: linear-gradient(135deg, #f59e0b, #d97706);
-
-/* Green Gradient */
-background: linear-gradient(135deg, #22c55e, #16a34a);
+    {/* Content */}
+    <section className="{page-prefix}-content">...</section>
+  </div>
+</div>
 ```
 
-### Text Colors
-
-| Role | Value | Usage |
-|------|-------|-------|
-| **Primary Dark** | `#1f2937` | Headings, main text on light bg |
-| **Secondary** | `#4b5563` | Body text, paragraphs |
-| **Muted** | `#6b7280` | Labels, metadata |
-| **Light** | `#9ca3af` | Disabled, placeholder |
-| **White** | `#ffffff` | Text on dark/gradient backgrounds |
-
-### Status Colors
-
-| Status | Color | Background |
-|--------|-------|------------|
-| **Success** | `#10b981` | `rgba(34, 197, 94, 0.12)` |
-| **Warning** | `#f59e0b` | `rgba(245, 158, 11, 0.12)` |
-| **Danger** | `#ef4444` | `rgba(239, 68, 68, 0.12)` |
-| **Error Text** | `#b42318` | `rgba(255, 235, 230, 0.95)` |
-
-### Background Colors
-
-| Surface | Value | Usage |
-|---------|-------|-------|
-| **Page Background** | `#f8f5ff` / `#f5f0ff` | Light purple tinted background |
-| **Card Background** | `rgba(255, 255, 255, 0.96)` | Glass cards |
-| **Modal Backdrop** | `rgba(18, 10, 53, 0.65)` | Dark overlay |
-| **Footer** | `linear-gradient(135deg, #120a35, #111827)` | Dark gradient |
+### Key rules:
+- Page root div gets `min-height: 100vh`, `background: var(--cr-page-bg)`, `font-family: 'Quicksand', sans-serif`
+- Pages with sidebar layout use the shared `sl-` classes (Dashboard, Profile)
+- Hero sections that absorb parent padding use `absorb-parent-padding` utility
+- All pages get header clearance from `main.with-fixed-header` (58px)
 
 ---
 
-## 5. Typography System
+## 4. Shared Component Library
 
-### Font Family
-
-The primary (and only) font is **Quicksand**, a modern geometric sans-serif.
+### 4.1 Cards (`sl-card` / custom card)
 
 ```css
-* {
-  font-family: 'Quicksand', system-ui, -apple-system, 'Segoe UI', 
-               Roboto, 'Helvetica Neue', Arial, sans-serif;
-}
-```
-
-### Type Scale
-
-| Element | Size | Weight | Line Height |
-|---------|------|--------|-------------|
-| **Hero Title** | `3.5rem` (56px) | 700-800 | 1.2 |
-| **H1 / Page Title** | `2.5rem` (40px) | 700 | 1.2 |
-| **H2 / Section Title** | `1.8rem` (28.8px) | 700 | 1.3 |
-| **H3 / Card Title** | `1.25rem` (20px) | 600-700 | 1.3 |
-| **Body** | `1rem` (16px) | 400 | 1.6 |
-| **Body Medium** | `1rem` (16px) | 500 | 1.6 |
-| **Small / Meta** | `0.875rem` (14px) | 400 | 1.5 |
-| **Label** | `0.75rem` (12px) | 600-700 | 1.4 |
-
-### Typography CSS
-
-```css
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  color: #1f2937;
-}
-
-p {
-  line-height: 1.6;
-  color: #4b5563;
-}
-
-a {
-  color: #7c3aed;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-a:hover {
-  color: #6366f1;
-}
-```
-
----
-
-## 6. Glassmorphism Effects
-
-Glassmorphism is the **primary visual style** of Cramer. It creates depth through blurred, semi-transparent backgrounds.
-
-### Standard Glass Effect
-
-```css
-.glass-liquid {
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-}
-```
-
-### Glass Variations
-
-#### Light Glass (Cards)
-```css
-.sl-card {
-  background: rgba(255, 255, 255, 0.96);
+.card, .sl-card {
+  background: var(--cr-card-bg);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(124, 58, 237, 0.1);
-  border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.06);
+  border: 1px solid var(--cr-card-border);
+  border-radius: var(--cr-radius-xl); /* 20px */
+  padding: 1.75rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--cr-card-shadow);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
-```
-
-#### Modal Glass (Dark)
-```css
-.cm-content {
-  background: rgba(124, 120, 226, 0.88);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 28px;
-  box-shadow: 0 25px 50px rgba(15, 23, 42, 0.35);
-}
-```
-
-#### Floating Navbar (Purple Glass)
-```css
-.navbar {
-  background: rgba(124, 58, 237, 0.75);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 
-    0 4px 24px rgba(124, 58, 237, 0.25),
-    0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* Scrolled state - transitions to white */
-.navbar.scrolled {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(124, 58, 237, 0.12);
-}
-```
-
-### Backdrop Blur Values
-
-| Effect | Blur Amount | Usage |
-|--------|-------------|-------|
-| Light | `blur(8px)` | Subtle overlay |
-| Medium | `blur(10-16px)` | Standard cards |
-| Strong | `blur(20px)` | Modals, header |
-
----
-
-## 7. Component Styling Patterns
-
-### Buttons
-
-#### Primary Button
-```css
-.btn-primary,
-.sl-btn--primary {
-  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  padding: 0.65rem 1.25rem;
-  font-weight: 600;
-  box-shadow: 0 8px 18px rgba(124, 58, 237, 0.28);
-  transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 25px rgba(124, 58, 237, 0.35);
-}
-```
-
-#### Secondary Button
-```css
-.sl-btn--secondary {
-  background: rgba(124, 58, 237, 0.08);
-  color: var(--sl-text);
-  border: 1px solid rgba(124, 58, 237, 0.1);
-}
-
-.sl-btn--secondary:hover {
-  background: rgba(124, 58, 237, 0.15);
-  border-color: #7c3aed;
-  color: #7c3aed;
-}
-```
-
-#### Danger Button
-```css
-.sl-btn--danger {
-  background: linear-gradient(135deg, #fee2e2, #fecaca);
-  color: #dc2626;
-  border: 1px solid rgba(220, 38, 38, 0.2);
-}
-```
-
-### Cards
-
-```css
-.card,
-.sl-card {
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(124, 58, 237, 0.1);
-  border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.06);
-  transition: all 0.3s ease;
-}
-
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 15px 35px rgba(124, 58, 237, 0.1);
+.sl-card:hover {
   border-color: rgba(124, 58, 237, 0.2);
+  box-shadow: var(--cr-card-shadow-hover);
 }
 ```
 
-### Form Inputs
+### 4.2 Buttons
+
+| Class | Use |
+|-------|-----|
+| `.sl-btn--primary` | Main action (purple gradient, white text) |
+| `.sl-btn--secondary` | Secondary action (light purple bg) |
+| `.sl-btn--danger` | Destructive action (red bg) |
+| `.sl-btn--small` | Compact variant |
 
 ```css
-.form-control {
-  border-radius: 8px;
-  border: 2px solid #e5e7eb;
-  padding: 0.8rem;
-  transition: border-color 0.3s ease;
-}
-
-.form-control:focus {
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 0.2rem rgba(124, 58, 237, 0.15);
-  outline: none;
-}
-```
-
-### Toggle Switch
-
-```css
-.toggle-switch-slider {
-  background-color: #d1d5db;
-  border-radius: 22px;
-  transition: background-color 0.2s ease;
-}
-
-.toggle-switch-slider::before {
-  width: 16px;
-  height: 16px;
-  background-color: white;
-  border-radius: 50%;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.toggle-switch-checkbox:checked + .toggle-switch-slider {
-  background-color: #7c3aed;
-}
-```
-
-### Modal Structure
-
-```css
-/* Backdrop */
-.cm-backdrop {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(18, 10, 53, 0.65);
-  backdrop-filter: blur(10px);
-  display: flex;
+.sl-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  gap: 0.4rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  text-decoration: none;
 }
-
-/* Content */
-.cm-content {
-  background: rgba(124, 120, 226, 0.88);
-  backdrop-filter: blur(20px);
-  border-radius: 28px;
-  padding: 2rem;
-  max-width: 480px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-/* Size variants */
-.cm-content--sm { max-width: 400px; }
-.cm-content--lg { max-width: 560px; }
 ```
+
+### 4.3 Form Inputs
+
+```css
+.sl-form-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: #fff;
+  border: 1px solid rgba(124, 58, 237, 0.15);
+  border-radius: 10px;
+  color: var(--cr-text);
+  font-size: 0.95rem;
+  font-family: 'Quicksand', sans-serif;
+  transition: all 0.3s ease;
+}
+.sl-form-input:focus {
+  outline: none;
+  border-color: var(--cr-primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+```
+
+### 4.4 Search Bar
+
+```css
+.sl-search-container {
+  position: relative;
+  flex-grow: 1;
+  max-width: 300px;
+}
+.sl-search-input {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--cr-card-border);
+  background: #fff;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+}
+```
+
+### 4.5 Modals
+
+Use `BaseModal` from `components/common/BaseModal.jsx`:
+
+```jsx
+import BaseModal from './common/BaseModal';
+
+<BaseModal isOpen={open} onClose={handleClose} title="Title" size="md" footer={...}>
+  {/* content */}
+</BaseModal>
+```
+
+- On mobile (≤640px): bottom-sheet with `border-radius: 24px 24px 0 0`
+- All modal content uses `cm-*` prefixed classes
+
+### 4.6 Pagination
+
+```jsx
+import Pagination from '../components/Pagination';
+<Pagination currentPage={page} totalPages={total} onPageChange={setPage} />
+```
+
+### 4.7 Empty / Loading / Error States
+
+```css
+.sl-empty { /* Dashed border, centered text, muted */ }
+.sl-loading-overlay { /* Absolute overlay with spinner */ }
+.sl-error { /* Red card, centered */ }
+```
+
+---
+
+## 5. Color Palette
+
+| Role | Hex | Usage |
+|------|-----|-------|
+| Primary | `#7c3aed` | Buttons, links, accents |
+| Primary Hover | `#6d28d9` | Hover states |
+| Page BG | `#f8f5ff` | Default page background |
+| Card BG | `rgba(255, 255, 255, 0.96)` | Glass cards |
+| Text Primary | `#1f2937` | Headings, body |
+| Text Secondary | `#4b5563` | Paragraphs |
+| Text Muted | `#6b7280` | Labels, metadata |
+| Success | `#10b981` | Check marks, mastered |
+| Warning | `#f59e0b` | Badges, alerts |
+| Danger | `#ef4444` | Delete, errors |
+
+### Gradients
+
+```css
+--cr-primary-gradient: linear-gradient(135deg, #7c3aed, #6366f1);
+--cr-hero-gradient: linear-gradient(135deg, #4c1d95, #5b21b6, #7c3aed);
+--cr-gold-gradient: linear-gradient(135deg, #f59e0b, #d97706);
+```
+
+---
+
+## 6. Typography System
+
+Font: **Quicksand** (single font family across the entire app)
+
+| Element | Size | Weight | Usage |
+|---------|------|--------|-------|
+| Hero Title | `2.5-3rem` | 700-800 | Page hero |
+| H1 | `1.75-2.25rem` | 700 | Section headers |
+| H2 | `1.35-1.5rem` | 700 | Card titles |
+| H3 | `1.1-1.25rem` | 600-700 | Sub-titles |
+| Body | `0.95-1rem` | 400-500 | Content |
+| Small | `0.8-0.85rem` | 400-500 | Metadata, labels |
+| Label | `0.7-0.75rem` | 600-700 | Uppercase labels |
+
+---
+
+## 7. Glassmorphism Effects
+
+Three tiers:
+
+| Tier | Blur | Opacity | Use |
+|------|------|---------|-----|
+| Light | `blur(8px)` | `0.08` | Subtle hover states |
+| Medium | `blur(10-16px)` | `0.96` | Cards, sidebars |
+| Strong | `blur(20px)` | `0.88-0.95` | Modals, header |
 
 ---
 
 ## 8. Responsive Design
 
-### Breakpoints
+### Breakpoints (mobile-first)
 
-| Name | Media Query | Target Devices |
-|------|-------------|----------------|
-| **Desktop (Base)** | `> 1200px` | Large monitors |
-| **Laptop** | `max-width: 992px` | Small laptops, tablets landscape |
-| **Tablet** | `max-width: 768px` | Tablets portrait |
-| **Mobile** | `max-width: 640px` | Smartphones |
-| **Small Mobile** | `max-width: 480px` | Small phones |
+| Name | Width | Target |
+|------|-------|--------|
+| Desktop base | `> 992px` | Laptops, desktops |
+| Tablet | `≤ 992px` | Tablets, small laptops |
+| Mobile | `≤ 640px` | Phones |
+| Small phone | `≤ 480px` | Small phones |
 
-### Responsive Pattern Examples
+### Mobile patterns every page must follow:
+
+1. **Cards**: single column at ≤640px
+2. **Modals**: bottom-sheet at ≤640px (`border-radius: 24px 24px 0 0`)
+3. **Sidebars**: slide-out drawer with overlay at ≤992px
+4. **Buttons**: full width at ≤480px
+5. **Grids**: `repeat(auto-fill, minmax(280px, 1fr))` or explicit single-column at ≤640px
+6. **Font sizes**: reduce hero/section titles by ~20% at ≤640px
+7. **Padding**: reduce container padding to `1rem` at ≤640px, `0.75rem` at ≤480px
+8. **Mobile header strip**: `.{page}-mobile-header` with hamburger for pages with sidebars
+9. **Touch targets**: minimum 40×40px for interactive elements
+10. **No horizontal overflow** — ALL pages must pass `overflow-x: hidden` check
+
+### Responsive CSS template:
 
 ```css
-/* Base (Desktop) */
-.dashboard-course-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-}
+/* Desktop — base styles */
 
-/* Tablet */
 @media (max-width: 992px) {
-  .dashboard-course-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .sl-layout {
-    flex-direction: column;
-  }
-  
-  .sl-sidebar {
-    width: 100%;
-    position: relative;
-    top: 0;
-  }
+  /* Tablet: grid → 2 columns, sidebar → top, font reductions */
 }
 
-/* Mobile */
 @media (max-width: 640px) {
-  .sl-page .container {
-    padding: 0 1rem;
-  }
-  
-  .hero-section {
-    padding: 2rem 1rem;
-  }
-}
-```
-
-### Header Clearance
-
-All pages account for the fixed floating header:
-
-```css
-:root {
-  --header-clearance: 90px;
+  /* Mobile: grid → 1 column, bottom-sheet modals, full-width buttons */
 }
 
-.sl-page {
-  padding-top: calc(var(--header-clearance) + 1.5rem);
-}
-
-.login-page {
-  padding-top: calc(var(--header-clearance) + 5rem);
+@media (max-width: 480px) {
+  /* Small phone: further padding/font reductions, stack all actions */
 }
 ```
 
@@ -631,199 +383,140 @@ All pages account for the fixed floating header:
 
 ## 9. Animation Patterns
 
-### Standard Transitions
-
+### Standard transitions
 ```css
-/* Default timing */
 transition: all 0.3s ease;
-transition: all 0.3s ease-in-out;
-
-/* Quick interactions */
-transition: all 0.2s ease;
-
-/* Smooth movements */
 transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-
-/* 3D card transitions */
-transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 ```
 
-### Keyframe Animations
+### Keyframe animations
+- `float`: background orbs, 8-12s infinite
+- `fadeIn` / `slideUp`: modals and page elements
+- `spin`: loading spinners
 
-#### Float Animation (Background Orbs)
-```css
-@keyframes float {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-30px) scale(1.05); }
-}
-
-.pricing-hero__orb--1 {
-  animation: float 8s ease-in-out infinite;
-}
+### Framer Motion variants (React)
+```js
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
+};
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: { y: 0, opacity: 1, transition: { duration: 0.3 } }
+};
 ```
 
-#### Fade In/Out
-```css
-@keyframes cm-fadeIn {
-  from { opacity: 0; backdrop-filter: blur(0px); }
-  to { opacity: 1; backdrop-filter: blur(10px); }
-}
-
-@keyframes sl-fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-```
-
-#### Glitch Effect (Modals)
-```css
-@keyframes cm-glitchIn {
-  0% {
-    opacity: 0;
-    transform: translateY(-20px);
-    filter: blur(10px) hue-rotate(60deg);
-    clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
-  }
-  50% {
-    opacity: 0.8;
-    transform: translateY(-5px);
-    filter: blur(2px) hue-rotate(-20deg);
-    clip-path: polygon(0 0, 100% 0, 100% 70%, 0 65%);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0px) hue-rotate(0deg);
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-  }
-}
-```
-
-#### Spinning Loader
-```css
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loader {
-  animation: spin 1s linear infinite;
-}
-```
-
-#### Scroll Reveal
-```css
-.animated-item {
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-}
-
-.animated-item.in-view {
-  opacity: 1;
-  transform: translateY(0);
-}
-```
-
-### Hover Effects
-
-#### Lift Effect
-```css
-.card:hover,
-.dash-course-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(124, 58, 237, 0.25);
-}
-```
-
-#### Button Lift
-```css
-.btn-primary:hover,
-.cta-button:hover {
-  transform: translateY(-4px) scale(1.05);
-  box-shadow: 0 15px 30px rgba(124, 58, 237, 0.4);
-}
-```
-
-#### 3D Card Tilt (JavaScript-driven)
-```javascript
-// Mouse tracking for 3D parallax cards
-const lerpFactor = 0.15;
-const maxRotation = 15; // degrees
-
-// Smooth interpolation between current and target rotation
-const smoothRotateX = currentRotation.x + (targetRotateX - currentRotation.x) * lerpFactor;
-const smoothRotateY = currentRotation.y + (targetRotateY - currentRotation.y) * lerpFactor;
-
-element.style.transform = `perspective(1000px) rotateX(${smoothRotateX}deg) rotateY(${smoothRotateY}deg)`;
-```
+### Hover effects
+- Card lift: `transform: translateY(-4px)` + shadow increase
+- Button lift: `transform: translateY(-2px)` + shadow
+- 3D card tilt: mouse-tracking via `--mouse-x`/`--mouse-y` CSS custom properties
 
 ---
 
 ## 10. CSS Naming Conventions
 
-### BEM-like Naming
+### BEM with page-level prefix
 
-The project follows a **modified BEM convention**:
+Every page gets its own prefix. No page CSS should leak into another page.
 
 ```
-.component-name
-.component-name__element
-.component-name__element--modifier
-.component-name--modifier
+.{page}__{element}
+.{page}__{element}--{modifier}
+.{page}--{modifier}
 ```
+
+### Prefix reference
+
+| Prefix | Page/System |
+|--------|-------------|
+| `header-`, `.header` | Navigation header |
+| `sl-` | Shared sidebar layout (Dashboard, Profile) |
+| `cm-` | Shared modal system |
+| `dash-` | Dashboard-specific |
+| `pricing-` | Pricing page |
+| `courses-`, `cr-` | Courses page |
+| `vocab-` | Vocabulary page |
+| `profile-` | Profile page |
+| `about-` | About page |
 
 ### Examples
 
 ```css
-/* Modal system */
-.cm-backdrop          /* Component: cramer-modal backdrop */
-.cm-content           /* Content container */
-.cm-content--sm       /* Size modifier */
-.cm-header            /* Element: header */
-.cm-title             /* Element: title */
-.cm-close-btn         /* Element: close button */
-
-/* Sidebar layout */
-.sl-page              /* Component: sidebar-layout page */
-.sl-sidebar           /* Element: sidebar */
-.sl-sidebar__cover    /* Sub-element: cover */
-.sl-sidebar__nav-btn  /* Sub-element: nav button */
-.sl-content           /* Element: content area */
-.sl-card              /* Reusable card */
-.sl-btn--primary      /* Button modifier */
-
-/* Dashboard */
-.dashboard-course-grid
-.dash-course-card
-.dash-course-card__image-container
-.dashboard-goal-meta__item
+.cr-courses__grid          /* Courses page grid */
+.cr-courses__card          /* Course card */
+.pricing-hero__title       /* Pricing hero title */
+.vocab-page__controls      /* Vocabulary controls bar */
+.vocab-card__word          /* Vocabulary card word */
+.profile-sidebar__cover    /* Profile sidebar cover image */
 ```
 
-### Prefix Conventions
+---
 
-| Prefix | Meaning | Example |
-|--------|---------|---------|
-| `cm-` | Cramer Modal | `.cm-backdrop` |
-| `sl-` | Sidebar Layout | `.sl-sidebar` |
-| `fa-` | Floating Assistant | `.fa-widget` |
-| `dash-` | Dashboard-specific | `.dash-course-card` |
+## 11. Page-Specific Guidelines
 
-### Utility Classes
+### 11.1 Courses (`/courses`)
 
-Global utility classes follow simpler naming:
+**Purpose**: Browse all test sets (Cambridge IELTS books, etc.) with search and filter.
 
-```css
-.glass-liquid          /* Glassmorphism effect */
-.btn                   /* Base button */
-.btn-primary           /* Primary button */
-.btn-light             /* Light button */
-.card                  /* Base card */
-.rounded-lg            /* Border radius */
-.shadow-lg             /* Box shadow */
-.text-center           /* Text alignment */
-.animated-item         /* Scroll animation target */
-.highlighted-text      /* Text highlighting */
-```
+**Layout**: Hero banner → Search bar + filter button → Card grid
+
+**Key interactions**:
+- Search/filter test sets by name/code
+- Each card shows: cover image, name, description
+- "Xem các bài test" button → navigates to `/courses/:code`
+
+**Mobile**: Cards single column, hero text compact, filter button stays compact alongside search bar.
+
+**BEM prefix**: `cr-courses-*`
+
+### 11.2 Pricing (`/pricing`)
+
+**Purpose**: Tier comparison, AI grading demo, FAQ. **Must reuse** the grading demo from the homepage (`InteractiveGradingDemo` component).
+
+**Layout**: Hero → Tier cards (2 cols) → Interactive demo → How it works (4 steps) → Feature comparison table → FAQ → CTA banner → Support link
+
+**Key interactions**:
+- Tier cards with "Phổ biến nhất" badge on paid tier
+- CTA links to `/login` (unauth) or `/subscription` (auth)
+
+**Mobile**: Tier cards single column (popular first), demo single column, comparison table horizontal scroll, FAQ stacked, CTA edge-to-edge.
+
+**BEM prefix**: `pricing-*`
+
+### 11.3 Vocabulary (`/vocabulary`)
+
+**Purpose**: Personal word collection with CRUD, mastery tracking, search, filter, grid/list toggle.
+
+**Layout**: Header with stats → Controls (search + filter tabs + view toggle) → Grid/List of cards → Pagination → Add/Edit modal
+
+**Key interactions**:
+- Add word (opens modal)
+- Edit/Delete word
+- Toggle mastered (star)
+- Search with 500ms debounce
+- Filter: All / Unmastered / Mastered tabs
+- Grid/List view toggle
+- Pagination
+
+**Mobile**: Controls stack vertically, cards full-width single column, modal bottom-sheet, "Thêm từ mới" button full-width.
+
+**BEM prefix**: `vocab-*`
+
+### 11.4 Profile (`/profile`)
+
+**Purpose**: User profile management — personal info, page background, avatar/hero upload, security, sessions, login history.
+
+**Layout**: Sidebar + Content using shared `sl-*` classes. Sidebar: Cover image → Avatar + Name → Nav tabs (Thông tin chung, Bảo mật). Content: Cards per tab.
+
+**Key tabs**:
+- **Thông tin chung**: Page Background card FIRST → Personal Info card (editable: name, phone, address). Upload modal for images.
+- **Bảo mật**: Change password → 2FA (coming soon) → Active sessions → Login history → Linked accounts → Danger zone (delete account)
+
+**Must be consistent with Dashboard** — same sidebar layout, same card styles, same mobile drawer pattern.
+
+**Mobile**: Sidebar becomes slide-out drawer (same as Dashboard), hamburger in mobile header strip, cards full-width.
+
+**BEM prefix**: `profile-*`
 
 ---
 
@@ -831,37 +524,34 @@ Global utility classes follow simpler naming:
 
 ### Shadow Scale
 
-| Level | Value | Usage |
-|-------|-------|-------|
-| **sm** | `0 4px 15px rgba(0, 0, 0, 0.1)` | Buttons |
-| **md** | `0 10px 25px rgba(0, 0, 0, 0.1)` | Cards default |
-| **lg** | `0 15px 30px rgba(0, 0, 0, 0.15)` | Cards hover |
-| **xl** | `0 25px 50px rgba(15, 23, 42, 0.28)` | Glass elements |
+| Level | Value |
+|-------|-------|
+| Card | `0 4px 20px rgba(124, 58, 237, 0.06)` |
+| Card hover | `0 15px 35px rgba(124, 58, 237, 0.1)` |
+| Modal | `0 25px 50px rgba(15, 23, 42, 0.35)` |
+| Header | `0 4px 24px rgba(0, 0, 0, 0.06)` |
 
 ### Z-Index Scale
 
 | Value | Usage |
 |-------|-------|
-| `1` | Base elements |
-| `10` | Content, cards |
-| `50` | Fixed header |
-| `100` | Dropdowns, popovers |
-| `999` | Sticky banners |
-| `1000` | Modal backdrop |
-| `1010` | Modal content |
-| `1020` | Floating header (highest) |
+| 1-10 | Content, cards |
+| 150-200 | Mobile hamburger, drawer, overlay |
+| 1000 | Modal backdrop |
+| 1010 | Modal content |
+| 1020 | Header |
 
 ### Border Radius Scale
 
 | Size | Value | Usage |
 |------|-------|-------|
-| **sm** | `4px` | Small elements |
-| **md** | `8px` | Inputs, buttons |
-| **lg** | `12-16px` | Cards |
-| **xl** | `20-24px` | Large cards, modals |
-| **2xl** | `28px` | Modals |
-| **full** | `9999px` | Pills, navbar |
+| sm | `8px` | Small elements |
+| md | `10-12px` | Inputs, buttons |
+| lg | `16px` | Cards, sidebars |
+| xl | `20px` | Large cards |
+| 2xl | `24-28px` | Modals |
+| full | `9999px` | Pills, user dropdown |
 
 ---
 
-*This documentation is auto-generated from the Cramer codebase. For updates, see the source CSS files in `frontend/src/css/`.*
+*Last updated: May 2026. For implementation questions, reference the actual source CSS files and existing pages for patterns.*

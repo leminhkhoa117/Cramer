@@ -50,7 +50,7 @@ const fadeInUp = {
 };
 
 // =============================================================================
-// FAQ Data (Updated with new terminology)
+// FAQ Data
 // =============================================================================
 
 const FAQ_ITEMS = [
@@ -93,9 +93,8 @@ export default function PricingPage() {
 
   return (
     <div className="pricing-page">
-      {/* ===================== HERO SECTION ===================== */}
+      {/* ===================== HERO ===================== */}
       <section className="pricing-hero">
-        {/* Decorative orbs */}
         <div className="pricing-hero__orb pricing-hero__orb--1" />
         <div className="pricing-hero__orb pricing-hero__orb--2" />
         <div className="pricing-hero__orb pricing-hero__orb--3" />
@@ -125,7 +124,8 @@ export default function PricingPage() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            Nâng cấp lên <span className="text-highlight-gold">Cramerich</span> để
+            Nâng cấp lên{' '}
+            <span className="pricing-hero__highlight">Cramerich</span> để
             truy cập toàn bộ kho đề thi Cambridge và tính năng chấm bài AI cá nhân hóa
           </motion.p>
 
@@ -155,7 +155,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* ===================== TIER COMPARISON (2 columns) ===================== */}
+      {/* ===================== TIER CARDS ===================== */}
       <section className="pricing-tiers">
         <div className="pricing-container">
           <motion.div
@@ -164,12 +164,9 @@ export default function PricingPage() {
             initial="hidden"
             animate="visible"
           >
-            {/* Cramerie (Free) */}
             <motion.div variants={itemVariants}>
               <TierCard tierCode={TIERS.CRAMERIE} />
             </motion.div>
-
-            {/* Cramerich (Paid) - Popular */}
             <motion.div variants={itemVariants}>
               <TierCard tierCode={TIERS.CRAMERICH} isPopular />
             </motion.div>
@@ -177,11 +174,11 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* ===================== DEMO COMPARISON ===================== */}
+      {/* ===================== AI GRADING DEMO ===================== */}
       <InteractiveGradingDemo />
 
       {/* ===================== HOW IT WORKS ===================== */}
-      <section className="how-it-works">
+      <section className="pricing-how">
         <div className="pricing-container">
           <motion.div
             className="pricing-section__header"
@@ -197,83 +194,79 @@ export default function PricingPage() {
           </motion.div>
 
           <motion.div
-            className="how-it-works__grid"
+            className="pricing-how__grid"
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}
           >
-            {/* Card 1: Lượt chấm thường */}
-            <motion.div className="how-card" variants={itemVariants}>
-              <div className="how-card__icon how-card__icon--green">
+            <motion.div className="pricing-how__card" variants={itemVariants}>
+              <div className="pricing-how__card-icon pricing-how__card-icon--green">
                 <FiBook />
               </div>
-              <h3 className="how-card__title">{TERMINOLOGY.ATTEMPT}</h3>
-              <p className="how-card__description">
+              <h3 className="pricing-how__card-title">{TERMINOLOGY.ATTEMPT}</h3>
+              <p className="pricing-how__card-desc">
                 Làm bài Reading hoặc Listening với chấm điểm tự động.
                 Nhận điểm số và xem đáp án đúng ngay lập tức.
               </p>
-              <div className="how-card__limit">
-                <span className="how-card__limit-label">Cramerie:</span>
-                <span className="how-card__limit-value">{LIMITS.cramerie.monthlyAttempts}/tháng</span>
+              <div className="pricing-how__card-limit">
+                <span className="pricing-how__card-limit-label">Cramerie:</span>
+                <span className="pricing-how__card-limit-value">{LIMITS.cramerie.monthlyAttempts}/tháng</span>
               </div>
-              <div className="how-card__limit">
-                <span className="how-card__limit-label">Cramerich:</span>
-                <span className="how-card__limit-value">{LIMITS.cramerich.monthlyAttempts}/tháng</span>
+              <div className="pricing-how__card-limit">
+                <span className="pricing-how__card-limit-label">Cramerich:</span>
+                <span className="pricing-how__card-limit-value">{LIMITS.cramerich.monthlyAttempts}/tháng</span>
               </div>
             </motion.div>
 
-            {/* Card 2: Lượt chấm nâng cao */}
-            <motion.div className="how-card" variants={itemVariants}>
-              <div className="how-card__icon how-card__icon--gold">
+            <motion.div className="pricing-how__card" variants={itemVariants}>
+              <div className="pricing-how__card-icon pricing-how__card-icon--gold">
                 <FiCpu />
               </div>
-              <h3 className="how-card__title">{TERMINOLOGY.ATTEMPT_AI}</h3>
-              <p className="how-card__description">
+              <h3 className="pricing-how__card-title">{TERMINOLOGY.ATTEMPT_AI}</h3>
+              <p className="pricing-how__card-desc">
                 Làm bài Writing và nhận phản hồi chi tiết từ AI.
                 Điểm số theo 4 tiêu chí + nhận xét cá nhân hóa.
               </p>
-              <div className="how-card__limit">
-                <span className="how-card__limit-label">Cramerie:</span>
-                <span className="how-card__limit-value">{LIMITS.cramerie.monthlyAttemptAis}/tháng</span>
+              <div className="pricing-how__card-limit">
+                <span className="pricing-how__card-limit-label">Cramerie:</span>
+                <span className="pricing-how__card-limit-value">{LIMITS.cramerie.monthlyAttemptAis}/tháng</span>
               </div>
-              <div className="how-card__limit">
-                <span className="how-card__limit-label">Cramerich:</span>
-                <span className="how-card__limit-value">{LIMITS.cramerich.monthlyAttemptAis}/tháng</span>
+              <div className="pricing-how__card-limit">
+                <span className="pricing-how__card-limit-label">Cramerich:</span>
+                <span className="pricing-how__card-limit-value">{LIMITS.cramerich.monthlyAttemptAis}/tháng</span>
               </div>
             </motion.div>
 
-            {/* Card 3: Lúa */}
-            <motion.div className="how-card" variants={itemVariants}>
-              <div className="how-card__icon how-card__icon--purple">
+            <motion.div className="pricing-how__card" variants={itemVariants}>
+              <div className="pricing-how__card-icon pricing-how__card-icon--purple">
                 🌾
               </div>
-              <h3 className="how-card__title">Tiền ảo Lúa</h3>
-              <p className="how-card__description">
+              <h3 className="pricing-how__card-title">Tiền ảo Lúa</h3>
+              <p className="pricing-how__card-desc">
                 Vượt hạn mức? Dùng Lúa để mua thêm lượt chấm.
                 Lúa không hết hạn và có thể mua thêm bất cứ lúc nào.
               </p>
-              <div className="how-card__limit">
-                <span className="how-card__limit-label">Chi phí:</span>
-                <span className="how-card__limit-value">
+              <div className="pricing-how__card-limit">
+                <span className="pricing-how__card-limit-label">Chi phí:</span>
+                <span className="pricing-how__card-limit-value">
                   {ATTEMPT_COSTS.ATTEMPT} Lúa/lượt thường, {ATTEMPT_COSTS.ATTEMPT_AI} Lúa/lượt nâng cao
                 </span>
               </div>
             </motion.div>
 
-            {/* Card 4: Monthly Reset */}
-            <motion.div className="how-card" variants={itemVariants}>
-              <div className="how-card__icon how-card__icon--blue">
+            <motion.div className="pricing-how__card" variants={itemVariants}>
+              <div className="pricing-how__card-icon pricing-how__card-icon--blue">
                 <FiZap />
               </div>
-              <h3 className="how-card__title">Reset hàng tháng</h3>
-              <p className="how-card__description">
+              <h3 className="pricing-how__card-title">Reset hàng tháng</h3>
+              <p className="pricing-how__card-desc">
                 Mỗi tháng, hạn mức của bạn sẽ được reset về mức ban đầu.
                 Cramerich còn nhận thêm 20 Lúa thưởng mỗi tháng!
               </p>
-              <div className="how-card__limit">
-                <span className="how-card__limit-label">Chu kỳ:</span>
-                <span className="how-card__limit-value">Reset vào ngày đầu tháng</span>
+              <div className="pricing-how__card-limit">
+                <span className="pricing-how__card-limit-label">Chu kỳ:</span>
+                <span className="pricing-how__card-limit-value">Reset vào ngày đầu tháng</span>
               </div>
             </motion.div>
           </motion.div>
@@ -281,7 +274,7 @@ export default function PricingPage() {
       </section>
 
       {/* ===================== FEATURE COMPARISON TABLE ===================== */}
-      <section className="comparison-section">
+      <section className="pricing-compare">
         <div className="pricing-container">
           <motion.div
             className="pricing-section__header"
@@ -297,28 +290,28 @@ export default function PricingPage() {
           </motion.div>
 
           <motion.div
-            className="comparison-table-wrapper"
+            className="pricing-compare__wrapper"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <table className="comparison-table">
+            <table className="pricing-compare__table">
               <thead>
                 <tr>
                   <th>Tính năng</th>
                   <th>
-                    <div className="comparison-table__tier-header">
-                      <span className="comparison-table__tier-emoji">🌾</span>
+                    <div className="pricing-compare__tier-header">
+                      <span className="pricing-compare__tier-emoji">🌾</span>
                       <span>Cramerie</span>
-                      <span className="comparison-table__tier-price">Miễn phí</span>
+                      <span className="pricing-compare__tier-price">Miễn phí</span>
                     </div>
                   </th>
-                  <th className="comparison-table__popular">
-                    <div className="comparison-table__tier-header">
-                      <span className="comparison-table__tier-emoji">🌻</span>
+                  <th className="pricing-compare__popular">
+                    <div className="pricing-compare__tier-header">
+                      <span className="pricing-compare__tier-emoji">🌻</span>
                       <span>Cramerich</span>
-                      <span className="comparison-table__tier-price">{formatVnd(69000)}/tháng</span>
+                      <span className="pricing-compare__tier-price">{formatVnd(69000)}/tháng</span>
                     </div>
                   </th>
                 </tr>
@@ -326,21 +319,21 @@ export default function PricingPage() {
               <tbody>
                 {FEATURE_CATEGORIES.map((category, catIndex) => (
                   <React.Fragment key={catIndex}>
-                    <tr className="comparison-table__category">
+                    <tr className="pricing-compare__category">
                       <td colSpan={3}>{category.name}</td>
                     </tr>
                     {category.features.map((feature, featIndex) => (
                       <tr key={`${catIndex}-${featIndex}`}>
-                        <td className="comparison-table__feature-name">
+                        <td className="pricing-compare__feature-name">
                           {feature.name}
                           {feature.tooltip && (
-                            <span className="comparison-table__tooltip" title={feature.tooltip}>
+                            <span className="pricing-compare__tooltip" title={feature.tooltip}>
                               <FiInfo size={14} />
                             </span>
                           )}
                         </td>
                         <td>{renderFeatureValue(feature.cramerie)}</td>
-                        <td className="comparison-table__popular">{renderFeatureValue(feature.cramerich)}</td>
+                        <td className="pricing-compare__popular">{renderFeatureValue(feature.cramerich)}</td>
                       </tr>
                     ))}
                   </React.Fragment>
@@ -351,7 +344,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* ===================== FAQ SECTION ===================== */}
+      {/* ===================== FAQ ===================== */}
       <FAQ
         items={FAQ_ITEMS}
         label="Câu hỏi thường gặp"
@@ -397,7 +390,7 @@ export default function PricingPage() {
         </motion.div>
       </section>
 
-      {/* ===================== CONTACT SUPPORT ===================== */}
+      {/* ===================== SUPPORT ===================== */}
       <section className="pricing-support">
         <div className="pricing-container">
           <p className="pricing-support__text">
@@ -414,22 +407,19 @@ export default function PricingPage() {
 }
 
 // =============================================================================
-// Helper Components
+// Helpers
 // =============================================================================
 
 function renderFeatureValue(value) {
   if (value === '✅' || value === '✓') {
-    return <FiCheck className="comparison-table__check" />;
+    return <FiCheck className="pricing-compare__check" />;
   }
   if (value === '❌' || value === '✗' || value === '—') {
-    return <FiX className="comparison-table__x" />;
+    return <FiX className="pricing-compare__x" />;
   }
-  return <span className="comparison-table__text">{value}</span>;
+  return <span className="pricing-compare__text">{value}</span>;
 }
 
-/**
- * TierCard - Marketing tier card component (no payment logic)
- */
 function TierCard({ tierCode, isPopular }) {
   const tier = TIER_INFO[tierCode];
   const limits = LIMITS[tierCode];
@@ -454,7 +444,6 @@ function TierCard({ tierCode, isPopular }) {
     `${limits.initialLua} Lúa ban đầu`,
   ];
 
-  // Determine CTA link and text
   const isFree = tier.priceVnd === 0;
   const ctaLink = user
     ? (isFree ? '/courses' : '/subscription?upgrade=cramerich')
@@ -464,31 +453,31 @@ function TierCard({ tierCode, isPopular }) {
     : (isFree ? 'Bắt đầu miễn phí' : 'Đăng ký & Nâng cấp');
 
   return (
-    <div className={`tier-card ${isPopular ? 'tier-card--popular' : ''}`}>
-      {isPopular && <div className="tier-card__badge">Phổ biến nhất</div>}
+    <div className={`pricing-card ${isPopular ? 'pricing-card--popular' : ''}`}>
+      {isPopular && <div className="pricing-card__badge">Phổ biến nhất</div>}
 
-      <div className="tier-card__header">
-        <span className="tier-card__emoji">{tier.emoji}</span>
-        <h3 className="tier-card__name">{tier.name}</h3>
-        <p className="tier-card__description">{tier.description}</p>
+      <div className="pricing-card__header">
+        <span className="pricing-card__emoji">{tier.emoji}</span>
+        <h3 className="pricing-card__name">{tier.name}</h3>
+        <p className="pricing-card__desc">{tier.description}</p>
       </div>
 
-      <div className="tier-card__price">
-        <span className="tier-card__price-amount">
+      <div className="pricing-card__price">
+        <span className="pricing-card__price-amount">
           {tier.priceVnd === 0 ? 'Miễn phí' : formatVnd(tier.priceVnd)}
         </span>
-        {tier.priceVnd > 0 && <span className="tier-card__price-period">/tháng</span>}
+        {tier.priceVnd > 0 && <span className="pricing-card__price-period">/tháng</span>}
       </div>
 
-      <ul className="tier-card__features">
+      <ul className="pricing-card__features">
         {features.map((feature, index) => {
           const isExcluded = feature.startsWith('Không có');
           return (
-            <li key={index} className={`tier-card__feature ${isExcluded ? 'tier-card__feature--excluded' : ''}`}>
+            <li key={index} className={`pricing-card__feature ${isExcluded ? 'pricing-card__feature--excluded' : ''}`}>
               {isExcluded ? (
-                <FiX className="tier-card__feature-icon tier-card__feature-icon--x" />
+                <FiX className="pricing-card__feature-icon pricing-card__feature-icon--x" />
               ) : (
-                <FiCheck className="tier-card__feature-icon tier-card__feature-icon--check" />
+                <FiCheck className="pricing-card__feature-icon pricing-card__feature-icon--check" />
               )}
               <span>{feature}</span>
             </li>
@@ -496,9 +485,9 @@ function TierCard({ tierCode, isPopular }) {
         })}
       </ul>
 
-      <Link to={ctaLink} className="tier-card__action">
+      <Link to={ctaLink} className="pricing-card__action">
         <button
-          className={`tier-card__btn ${isPopular ? 'tier-card__btn--popular' : 'tier-card__btn--upgrade'}`}
+          className={`pricing-card__btn ${isPopular ? 'pricing-card__btn--primary' : 'pricing-card__btn--secondary'}`}
         >
           {ctaText}
           <FiArrowRight />

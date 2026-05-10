@@ -1,175 +1,215 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCourseStore } from '../stores';
 import FilterModal from '../components/FilterModal';
-import './../css/courses.css';
+import FullPageLoader from '../components/FullPageLoader';
+import '../css/courses.css';
 
 import { FaSearch } from 'react-icons/fa';
-import FullPageLoader from '../components/FullPageLoader';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06 },
+  },
+};
+
+const cardVariants = {
+  hidden: { y: 24, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: { duration: 0.35, ease: 'easeOut' },
+  },
+};
 
 export default function Courses() {
-    // Zustand store state
-    const {
-        courses,
-        loading,
-        error,
-        searchQuery,
-        fetchCoursesV2,
-        setSearchQuery,
-    } = useCourseStore();
+  const {
+    courses,
+    loading,
+    error,
+    searchQuery,
+    fetchCoursesV2,
+    setSearchQuery,
+  } = useCourseStore();
 
-    // Local UI state (doesn't need to persist)
-    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-    const [activeFilters, setActiveFilters] = useState({});
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState({});
 
-    // Fetch courses on mount using V2 API
-    useEffect(() => {
-        fetchCoursesV2();
-    }, [fetchCoursesV2]);
+  useEffect(() => {
+    fetchCoursesV2();
+  }, [fetchCoursesV2]);
 
-    const availableFilters = useMemo(() => {
-        const examSources = courses.map(course => ({
-            value: course.code,
-            label: course.name || course.code
-        }));
-        return {
-            source: { label: 'Bộ đề', options: examSources },
-        };
-    }, [courses]);
-
-    const filteredCourses = useMemo(() => {
-        let filtered = [...courses];
-
-        // Client-side search filtering
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(course =>
-                (course.name && course.name.toLowerCase().includes(query)) ||
-                (course.code && course.code.toLowerCase().includes(query)) ||
-                (course.description && course.description.toLowerCase().includes(query))
-            );
-        }
-
-        // Filter by source if selected
-        if (activeFilters.source && activeFilters.source.length > 0) {
-            filtered = filtered.filter(course => activeFilters.source.includes(course.code));
-        }
-
-        return filtered;
-    }, [courses, searchQuery, activeFilters]);
-
-    const handleMouseMove = (e) => {
-        const card = e.currentTarget;
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        card.style.setProperty('--mouse-x', `${x}px`);
-        card.style.setProperty('--mouse-y', `${y}px`);
+  const availableFilters = useMemo(() => {
+    const examSources = courses.map((course) => ({
+      value: course.code,
+      label: course.name || course.code,
+    }));
+    return {
+      source: { label: 'Bộ đề', options: examSources },
     };
+  }, [courses]);
 
-    const showLoader = loading && !error && courses.length === 0;
+  const filteredCourses = useMemo(() => {
+    let filtered = [...courses];
 
-    return (
-        <>
-            <AnimatePresence>
-                {showLoader && (
-                    <FullPageLoader
-                        key="loader"
-                        message="Đang tải danh sách bộ đề..."
-                        subMessage="Vui lòng chờ trong giây lát, chúng tôi đang tải các bộ đề IELTS khả dụng."
-                    />
-                )}
-            </AnimatePresence>
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (course) =>
+          (course.name && course.name.toLowerCase().includes(query)) ||
+          (course.code && course.code.toLowerCase().includes(query)) ||
+          (course.description &&
+            course.description.toLowerCase().includes(query))
+      );
+    }
 
-            <div className="new-courses-page">
-                <div
-                    className="courses-main-banner absorb-parent-padding"
-                    style={{
-                        backgroundImage: 'url("https://thumbs.dreamstime.com/b/diverse-group-adult-students-having-conversations-english-speaking-club-diverse-group-people-talking-to-each-other-251584879.jpg")',
-                    }}
-                >
-                    <div className="courses-main-banner__overlay" />
-                    <div className="container">
-                        <h1 className="courses-main-banner__title">Khám phá các bộ đề IELTS</h1>
-                        <p className="courses-main-banner__description">Nâng cao kỹ năng của bạn với các bài thi chất lượng cao từ Cambridge và các nguồn chính thống khác.</p>
-                    </div>
-                </div>
-                <div className="new-courses-container">
-                    <div className="courses-controls">
-                        <div className="courses-search-container">
-                            <FaSearch className="courses-search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Tìm kiếm theo tên bộ đề..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="courses-search-input"
-                            />
-                        </div>
-                        <button type="button" className="btn-filter" onClick={() => setIsFilterModalOpen(true)}>Lọc</button>
-                    </div>
+    if (activeFilters.source && activeFilters.source.length > 0) {
+      filtered = filtered.filter((course) =>
+        activeFilters.source.includes(course.code)
+      );
+    }
 
-                    <div className="courses-header">
-                        <h1 className="new-courses-title">Các bộ đề hiện có</h1>
-                    </div>
+    return filtered;
+  }, [courses, searchQuery, activeFilters]);
 
-                    {loading && !showLoader && <p>Đang tải...</p>}
-                    {error && <p className="courses-no-results">{error}</p>}
+  const handleMouseMove = (e) => {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    card.style.setProperty('--mouse-x', `${x}px`);
+    card.style.setProperty('--mouse-y', `${y}px`);
+  };
 
-                    {!loading && !error && (
-                        <>
-                            <div className="new-courses-grid">
-                                {filteredCourses.map(course => (
-                                    <div
-                                        className="new-course-card"
-                                        key={course.code}
-                                        onMouseMove={handleMouseMove}
-                                    >
-                                        <div className="new-course-card__image-container">
-                                            {course.coverImageUrl ? (
-                                                <img
-                                                    src={course.coverImageUrl}
-                                                    alt={course.name}
-                                                    className="new-course-card__image"
-                                                />
-                                            ) : (
-                                                <div className="new-course-card__image-placeholder" />
-                                            )}
-                                        </div>
-                                        <div className="new-course-card__content">
-                                            <div className="new-course-card__header">
-                                                <span className="new-course-card__title">{course.name || course.code}</span>
-                                            </div>
-                                            <div className="new-course-card__meta">
-                                                <p>{course.description || `Bộ đề ${course.name || course.code}`}</p>
-                                            </div>
-                                            <div className="new-course-card__footer">
-                                                <Link to={`/courses/${course.code}`} className="new-course-card__details-button">
-                                                    Xem các bài test
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+  const showLoader = loading && !error && courses.length === 0;
 
-                            {filteredCourses.length === 0 && (
-                                <p className="courses-no-results">Không tìm thấy bộ đề nào phù hợp.</p>
-                            )}
-                        </>
-                    )}
-                </div>
+  return (
+    <>
+      <AnimatePresence>
+        {showLoader && (
+          <FullPageLoader
+            key="loader"
+            message="Đang tải danh sách bộ đề..."
+            subMessage="Vui lòng chờ trong giây lát, chúng tôi đang tải các bộ đề IELTS khả dụng."
+          />
+        )}
+      </AnimatePresence>
 
-                <FilterModal
-                    isOpen={isFilterModalOpen}
-                    onClose={() => setIsFilterModalOpen(false)}
-                    onApply={setActiveFilters}
-                    availableFilters={availableFilters}
-                    currentFilters={activeFilters}
-                />
+      <div className="cr-courses-page">
+        <section className="cr-courses-hero">
+          <div className="cr-courses-hero__overlay" />
+          <div className="container">
+            <h1 className="cr-courses-hero__title">
+              Khám phá các bộ đề IELTS
+            </h1>
+            <p className="cr-courses-hero__description">
+              Nâng cao kỹ năng của bạn với các bài thi chất lượng cao từ
+              Cambridge và các nguồn chính thống khác.
+            </p>
+          </div>
+        </section>
+
+        <div className="cr-courses__container">
+          <div className="cr-courses-controls">
+            <div className="sl-search-container">
+              <FaSearch className="cr-courses-controls__search-icon" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm theo tên bộ đề..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="sl-search-input"
+              />
             </div>
-        </>
-    );
-}
+            <button
+              type="button"
+              className="sl-btn sl-btn--primary cr-courses-controls__filter-btn"
+              onClick={() => setIsFilterModalOpen(true)}
+            >
+              Lọc
+            </button>
+          </div>
 
+          {error && (
+            <div className="sl-error cr-courses__error">
+              {error}
+            </div>
+          )}
+
+          {!loading && !error && (
+            <>
+              {filteredCourses.length > 0 ? (
+                <motion.div
+                  className="cr-courses__grid"
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
+                  key={searchQuery + JSON.stringify(activeFilters)}
+                >
+                  {filteredCourses.map((course) => (
+                    <motion.div
+                      className="cr-courses__card"
+                      key={course.code}
+                      variants={cardVariants}
+                      onMouseMove={handleMouseMove}
+                    >
+                      <div className="cr-courses__card-image-container">
+                        {course.coverImageUrl ? (
+                          <img
+                            src={course.coverImageUrl}
+                            alt={course.name || course.code}
+                            className="cr-courses__card-image"
+                          />
+                        ) : (
+                          <div className="cr-courses__card-image-placeholder" />
+                        )}
+                      </div>
+                      <div className="cr-courses__card-content">
+                        <h3 className="cr-courses__card-title">
+                          {course.name || course.code}
+                        </h3>
+                        <p className="cr-courses__card-description">
+                          {course.description ||
+                            `Bộ đề ${course.name || course.code}`}
+                        </p>
+                        <div className="cr-courses__card-footer">
+                          <Link
+                            to={`/courses/${course.code}`}
+                            className="cr-courses__card-btn"
+                          >
+                            Xem các bài test
+                          </Link>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              ) : (
+                <div className="sl-empty cr-courses__empty">
+                  Không tìm thấy bộ đề nào phù hợp.
+                </div>
+              )}
+
+              {loading && !showLoader && (
+                <div className="cr-courses__loading-more">
+                  Đang tải...
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <FilterModal
+          isOpen={isFilterModalOpen}
+          onClose={() => setIsFilterModalOpen(false)}
+          onApply={setActiveFilters}
+          availableFilters={availableFilters}
+          currentFilters={activeFilters}
+        />
+      </div>
+    </>
+  );
+}
