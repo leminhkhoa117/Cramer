@@ -47,3 +47,11 @@ Deliver consistent UX and UI improvements across user and admin screens.
 - Keep admin and user UX consistent while respecting context differences
 - Test UI (under `css/test/`) is fragile — class name changes WILL break the test-taking experience
 - All `@keyframes` live in `css/shared/animations.css` — add new ones there
+
+### Mobile Drawer / Overlay Pattern (learned from Dashboard bugs)
+- **Do NOT use `transform: translateX()` for slide-in drawers** — it creates a stacking context that traps `z-index`. Use `left`/`right` properties instead.
+- **Do NOT use `position: fixed` overlay as sibling of `position: relative` parents** — stacking context conflicts. Render overlay INSIDE the content area with `position: absolute` instead.
+- **Do NOT hide overlays with `display: none`** — combine `opacity: 0; pointer-events: none` so transitions work. When conditionally rendered in JSX, `display` is unnecessary.
+- **z-index hierarchy**: sidebar-drawer > content-overlay > content. Numbers must reflect actual DOM + stacking context, not just higher values.
+- **Text contrast on dynamic backgrounds**: pages with user-set background images need `.sl-page--has-bg` class + CSS overrides for light text + text-shadow on overlay-adjacent elements.
+- **Mobile button layout**: `.sl-btn { width: 100% }` in shared CSS breaks inline flex layouts — always scope `width: auto` on specific button variants within flex containers.

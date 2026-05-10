@@ -7,13 +7,13 @@ import GoalModal from '../components/GoalModal';
 import FilterModal from '../components/FilterModal';
 import CourseListItem from '../components/CourseListItem';
 
-import '../css/common/sidebar-layout.css';
-import '../css/dashboard.css';
-import '../css/course-list.css';
+import '../css/pages/dashboard.css';
+import '../css/shared/layout.css';
+import '../css/components/course-list.css';
 import ProgressChart from '../components/ProgressChart';
 import SkillAnalysis from '../components/SkillAnalysis';
-import '../css/progress-chart.css';
-import '../css/skill-analysis.css';
+import '../css/components/progress-chart.css';
+import '../css/components/skill-analysis.css';
 import FullPageLoader from '../components/FullPageLoader';
 import Pagination from '../components/Pagination';
 
@@ -275,7 +275,7 @@ export default function Dashboard() {
       </AnimatePresence>
       {summary && (
         <div
-          className="sl-page dashboard-page"
+          className={`sl-page dashboard-page${profile?.pageBackgroundUrl ? ' sl-page--has-bg' : ''}`}
           style={profile?.pageBackgroundUrl ? {
             backgroundImage: `url(${profile.pageBackgroundUrl})`,
             backgroundSize: 'cover',
@@ -287,13 +287,6 @@ export default function Dashboard() {
           {profile?.pageBackgroundUrl && (
             <div className="sl-page__overlay" />
           )}
-
-          {/* Mobile Sidebar Drawer Overlay */}
-          <div
-            className={`dash-sidebar-overlay ${isSidebarOpen ? 'dash-sidebar-overlay--visible' : ''}`}
-            onClick={closeSidebar}
-            aria-hidden="true"
-          />
 
           {/* Main Layout: Sidebar + Content */}
           <div className="sl-layout container">
@@ -418,6 +411,15 @@ export default function Dashboard() {
                   <FiMenu />
                 </button>
               </div>
+
+              {/* Mobile sidebar drawer overlay — inside content, absolute positioned, never covers sidebar */}
+              {isSidebarOpen && (
+                <div
+                  className="dash-sidebar-overlay dash-sidebar-overlay--visible"
+                  onClick={closeSidebar}
+                  aria-hidden="true"
+                />
+              )}
 
               <AnimatePresence mode="wait">
                 {activeView === 'courses' && (

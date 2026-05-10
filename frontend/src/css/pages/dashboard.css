@@ -1,0 +1,357 @@
+/* ===================================
+   DASHBOARD PAGE STYLES - Cramer
+   
+   Dashboard-specific styles.
+   Shared patterns use sl-* from shared/layout.css.
+   =================================== */
+
+/* === Mobile Header Strip (visible on tablet/mobile) === */
+.dash-mobile-header {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  margin-bottom: 0.75rem;
+}
+
+.dash-mobile-header__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--sl-text);
+}
+
+/* Contrast fix: light text when page has dark background image */
+.sl-page--has-bg .dash-mobile-header__title {
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.sl-page--has-bg .dash-mobile-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.sl-page--has-bg .dash-hamburger {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.sl-page--has-bg .dash-hamburger:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* === Mobile Hamburger Toggle === */
+.dash-hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--sl-glass-border);
+  background: var(--sl-glass-bg);
+  color: var(--sl-primary);
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.dash-hamburger:hover {
+  background: rgba(124, 58, 237, 0.08);
+  border-color: var(--sl-primary);
+}
+
+/* === Mobile Sidebar Drawer Overlay === */
+/* Overlay sits inside .sl-content, positioned absolute to cover only content area.
+   The sidebar (z-index: var(--dash-drawer-z)) is always above. */
+.dash-sidebar-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(18, 10, 53, 0.35);
+  z-index: 5;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.dash-sidebar-overlay--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* === Goals Section (Dashboard-specific) === */
+.dashboard-goals__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dashboard-goals__empty {
+  padding: 1rem;
+  font-size: 0.85rem;
+}
+
+/* Goal Meta (Exam info) */
+.dashboard-goal-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dashboard-goal-meta__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.875rem;
+  background: rgba(124, 58, 237, 0.05);
+  border-radius: 10px;
+  border: 1px solid var(--sl-glass-border);
+}
+
+.dashboard-goal-meta__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--sl-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.dashboard-goal-meta__value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--sl-text);
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Overall Target */
+.dashboard-goal-overall {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(99, 102, 241, 0.1) 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  text-align: center;
+}
+
+.dashboard-goal-overall__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--sl-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.dashboard-goal-overall__value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--sl-primary);
+  line-height: 1;
+}
+
+/* Skill Targets - 2x2 Grid */
+.dashboard-goal-skills {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.dashboard-goal-skill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 0.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  border: 1px solid var(--sl-glass-border);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.dashboard-goal-skill:hover {
+  background: rgba(124, 58, 237, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
+}
+
+.dashboard-goal-skill__label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--sl-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.15rem;
+}
+
+.dashboard-goal-skill__value {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--sl-text);
+}
+
+/* === Course List === */
+.dashboard-course-list {
+  position: relative;
+  min-height: 200px;
+}
+
+/* === Dashboard-specific Responsive === */
+
+/* Tablet: sidebar becomes slide-out drawer */
+@media (max-width: 992px) {
+  .dash-mobile-header {
+    display: flex;
+  }
+
+  .dash-hamburger {
+    display: flex;
+  }
+
+  /* Overlay now rendered inside .sl-content, conditionally visible */
+
+  /* Override shared/layout.css: make sidebar a fixed drawer */
+  .sl-layout > .sl-sidebar {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    bottom: 0;
+    width: var(--dash-drawer-width);
+    min-width: var(--dash-drawer-width);
+    max-width: 85vw;
+    height: 100vh;
+    z-index: var(--dash-drawer-z);
+    border-radius: 0 20px 20px 0;
+    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    box-shadow: 4px 0 30px rgba(124, 58, 237, 0.15);
+    margin: 0;
+  }
+
+  .sl-layout > .sl-sidebar--drawer-open {
+    left: 0;
+  }
+
+  /* Restore inner sidebar elements for drawer mode */
+  .sl-sidebar__cover {
+    height: 100px;
+  }
+
+  .sl-sidebar__header {
+    padding: 1rem 1.25rem;
+  }
+
+  .sl-sidebar__nav {
+    flex-direction: column;
+    padding: 0.75rem 1rem 0.5rem;
+  }
+
+  .sl-sidebar__nav-btn {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    padding: 0.8rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .sl-sidebar__nav-btn span {
+    flex: 1;
+  }
+
+  .sl-sidebar__nav-arrow {
+    display: block;
+  }
+
+  .sl-layout {
+    flex-direction: column;
+  }
+
+  .sl-content {
+    width: 100%;
+  }
+
+  /* Header row for mobile: hamburger on the right */
+  .sl-card__header {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .sl-card__controls {
+    max-width: 100%;
+    width: auto;
+    flex: 1;
+  }
+
+  .sl-search-container {
+    max-width: 100%;
+    flex: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-goal-skills {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .sl-card__header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .sl-card__controls {
+    order: 3;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .sl-card__controls .sl-search-container {
+    flex: 1;
+    max-width: none;
+  }
+
+  .sl-card__controls .sl-btn--secondary {
+    flex-shrink: 0;
+    width: auto;
+  }
+}
+
+/* Extra-narrow: stack search + filter vertically */
+@media (max-width: 400px) {
+  .sl-card__controls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .sl-card__controls .sl-search-container {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .sl-card__controls .sl-btn--secondary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-goal-overall__value {
+    font-size: 1.75rem;
+  }
+
+  .dashboard-goal-skill__value {
+    font-size: 1rem;
+  }
+
+  .btn-action-dashboard {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+}
