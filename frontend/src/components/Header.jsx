@@ -50,84 +50,89 @@ export default function Header() {
     navigate('/login');
   };
 
+  const closeMenu = () => setExpanded(false);
+
   const displayName = profileLoading
     ? 'Loading...'
     : profile?.fullName || profile?.full_name || profile?.username || user?.email?.split('@')[0] || 'User';
 
   const avatarUrl = profile?.avatarUrl || profile?.avatar_url;
 
+  const navLinks = (
+    <Nav className="ms-auto header-nav">
+      <Nav.Link as={NavLink} end to="/" className="header-nav-link" onClick={closeMenu}>Trang chủ</Nav.Link>
+      <Nav.Link as={NavLink} to="/courses" className="header-nav-link" onClick={closeMenu}>Khóa học</Nav.Link>
+      <Nav.Link as={NavLink} to="/pricing" className="header-nav-link" onClick={closeMenu}>Gói Cramer</Nav.Link>
+      <Nav.Link as={NavLink} to="/about" className="header-nav-link" onClick={closeMenu}>Về chúng tôi</Nav.Link>
+    </Nav>
+  );
+
+  const userSection = user ? (
+    <Dropdown align="end">
+      <Dropdown.Toggle variant="link" id="dropdown-user" className="header-user-dropdown">
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="Avatar" className="header-avatar" />
+        ) : (
+          <FaUserCircle size={20} />
+        )}
+        {displayName}
+      </Dropdown.Toggle>
+      <Dropdown.Menu>
+        <Dropdown.Item onClick={() => { closeMenu(); navigate('/dashboard'); }}>Bảng điều khiển</Dropdown.Item>
+        <Dropdown.Item onClick={() => { closeMenu(); navigate('/subscription'); }}>Gói đăng ký</Dropdown.Item>
+        <Dropdown.Item onClick={() => { closeMenu(); navigate('/vocabulary'); }}>Sổ tay Từ vựng</Dropdown.Item>
+        <Dropdown.Item onClick={() => { closeMenu(); navigate('/profile'); }}>Hồ sơ</Dropdown.Item>
+        <Dropdown.Divider />
+        <Dropdown.Item onClick={() => { closeMenu(); navigate('/admin'); }} className="header-admin-link">
+          <span className="header-admin-icon">⚙️</span> Quản trị Admin
+        </Dropdown.Item>
+        <Dropdown.Divider />
+        <Dropdown.Item onClick={() => { closeMenu(); handleLogout(); }}>Đăng xuất</Dropdown.Item>
+      </Dropdown.Menu>
+    </Dropdown>
+  ) : (
+    <Button onClick={() => navigate('/login')} className="header-login-btn">Đăng nhập</Button>
+  );
+
   return (
     <Navbar
       expand="lg"
-      expanded={isMobile ? expanded : undefined}
-      onToggle={isMobile ? setExpanded : undefined}
+      expanded={!isMobile ? undefined : expanded}
+      onToggle={!isMobile ? undefined : setExpanded}
       className={`header ${isScrolled ? 'header--scrolled' : ''} ${isHidden ? 'header--hidden' : ''}`}
     >
       <Container fluid className="header-container">
         <Navbar.Brand as={Link} to="/" className="header-brand">
-          <img
-            src="/pictures/logo/Icon.png"
-            alt="Cramer Logo"
-            className="header-logo"
-          />
+          <img src="/pictures/logo/Icon.png" alt="Cramer Logo" className="header-logo" />
         </Navbar.Brand>
-        <Navbar.Toggle aria-controls="header-nav" className="header-toggler" />
-        <Navbar.Collapse id="header-nav">
-          <Nav className="ms-auto header-nav">
-            <Nav.Link as={NavLink} end to="/" className="header-nav-link">Trang chủ</Nav.Link>
-            <Nav.Link as={NavLink} to="/courses" className="header-nav-link">Khóa học</Nav.Link>
-            <Nav.Link as={NavLink} to="/pricing" className="header-nav-link">Gói Cramer</Nav.Link>
-            <Nav.Link as={NavLink} to="/about" className="header-nav-link">Về chúng tôi</Nav.Link>
 
-            {user ? (
-              <Dropdown align="end">
-                <Dropdown.Toggle
-                  variant="link"
-                  id="dropdown-user"
-                  className="header-user-dropdown"
-                >
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="Avatar" className="header-avatar" />
-                  ) : (
-                    <FaUserCircle size={20} />
-                  )}
-                  {displayName}
-                </Dropdown.Toggle>
-
-                <Dropdown.Menu>
-                  <Dropdown.Item onClick={() => navigate('/dashboard')}>
-                    Bảng điều khiển
-                  </Dropdown.Item>
-                  <Dropdown.Item onClick={() => navigate('/subscription')}>
-                    Gói đăng ký
-                  </Dropdown.Item>
-                  <Dropdown.Item onClick={() => navigate('/vocabulary')}>
-                    Sổ tay Từ vựng
-                  </Dropdown.Item>
-                  <Dropdown.Item onClick={() => navigate('/profile')}>
-                    Hồ sơ
-                  </Dropdown.Item>
-                  <Dropdown.Divider />
-                  <Dropdown.Item
-                    onClick={() => navigate('/admin')}
-                    className="header-admin-link"
-                  >
-                    <span className="header-admin-icon">⚙️</span>
-                    Quản trị Admin
-                  </Dropdown.Item>
-                  <Dropdown.Divider />
-                  <Dropdown.Item onClick={handleLogout}>
-                    Đăng xuất
-                  </Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown>
-            ) : (
-              <Button onClick={() => navigate('/login')} className="header-login-btn">
-                Đăng nhập
-              </Button>
+        {/* Mobile: manual toggle + plain div collapse */}
+        {isMobile ? (
+          <>
+            <button
+              type="button"
+              className="header-toggler navbar-toggler"
+              aria-label="Toggle navigation"
+              onClick={() => setExpanded(v => !v)}
+            >
+              <span className="navbar-toggler-icon" />
+            </button>
+            {expanded && (
+              <div className="navbar-collapse header-mobile-menu">
+                {navLinks}
+                {userSection}
+              </div>
             )}
-          </Nav>
-        </Navbar.Collapse>
+          </>
+        ) : (
+          <>
+            <Navbar.Toggle aria-controls="header-nav" className="header-toggler" />
+            <Navbar.Collapse id="header-nav">
+              {navLinks}
+              {userSection}
+            </Navbar.Collapse>
+          </>
+        )}
       </Container>
     </Navbar>
   );
