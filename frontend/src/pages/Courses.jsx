@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCourseStore } from '../stores';
 import FilterModal from '../components/FilterModal';
 import FullPageLoader from '../components/FullPageLoader';
+import '../css/common/sidebar-layout.css';
 import '../css/courses.css';
 
 import { FaSearch } from 'react-icons/fa';

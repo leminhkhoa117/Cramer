@@ -13,23 +13,37 @@ export default function Header() {
   const profileLoading = useProfileStore(state => state.loading);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
   const lastScrollY = useRef(0);
+  const scrollTicking = useRef(false);
 
   const handleScroll = useCallback(() => {
-    const currentY = window.scrollY;
-    setIsScrolled(currentY > 10);
-    if (currentY > 80 && currentY > lastScrollY.current) {
-      setIsHidden(true);
-    } else {
-      setIsHidden(false);
-    }
-    lastScrollY.current = currentY;
+    if (scrollTicking.current) return;
+    scrollTicking.current = true;
+    requestAnimationFrame(() => {
+      const currentY = window.scrollY;
+      setIsScrolled(currentY > 10);
+      if (currentY > 80 && currentY > lastScrollY.current) {
+        setIsHidden(true);
+      } else {
+        setIsHidden(false);
+      }
+      lastScrollY.current = currentY;
+      scrollTicking.current = false;
+    });
   }, []);
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 992);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const handleLogout = async () => {
     await signOut();
@@ -45,6 +59,8 @@ export default function Header() {
   return (
     <Navbar
       expand="lg"
+      expanded={isMobile ? expanded : undefined}
+      onToggle={isMobile ? setExpanded : undefined}
       className={`header ${isScrolled ? 'header--scrolled' : ''} ${isHidden ? 'header--hidden' : ''}`}
     >
       <Container fluid className="header-container">
