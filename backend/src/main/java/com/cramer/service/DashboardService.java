@@ -169,17 +169,21 @@ public class DashboardService {
                 : allAnswers.stream().collect(Collectors.groupingBy(a -> a.getAttempt().getId()));
         Map<TestKey, Integer> totalQuestionsCache = new HashMap<>();
 
-        Set<String> examSources = attempts.stream().map(TestAttempt::getExamSource).collect(Collectors.toSet());
-        Map<String, TestSet> setsByCode = examSources.stream()
-                .map(code -> testSetRepository.findByCode(code).orElse(null))
-                .filter(Objects::nonNull)
+        // Batch-load TestSets and IeltsTests — 2 queries instead of N+M
+        List<String> examSources = attempts.stream().map(TestAttempt::getExamSource).distinct().toList();
+        Map<String, TestSet> setsByCode = testSetRepository.findByCodeIn(examSources).stream()
                 .collect(Collectors.toMap(TestSet::getCode, Function.identity()));
 
         Map<String, String> testNameLookup = new HashMap<>();
-        for (TestSet ts : setsByCode.values()) {
-            List<IeltsTest> tests = ieltsTestRepository.findByTestSetIdOrderByTestNumberAsc(ts.getId());
-            for (IeltsTest t : tests) {
-                testNameLookup.put(ts.getCode() + "_" + t.getTestNumber(), t.getName());
+        if (!setsByCode.isEmpty()) {
+            List<Long> setIds = setsByCode.values().stream().map(TestSet::getId).toList();
+            List<IeltsTest> allTests = ieltsTestRepository.findByTestSetIdInOrderByTestNumberAsc(setIds);
+            for (IeltsTest t : allTests) {
+                TestSet ts = setsByCode.values().stream()
+                        .filter(s -> s.getId().equals(t.getTestSet().getId())).findFirst().orElse(null);
+                if (ts != null) {
+                    testNameLookup.put(ts.getCode() + "_" + t.getTestNumber(), t.getName());
+                }
             }
         }
 

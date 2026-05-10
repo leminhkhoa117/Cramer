@@ -25,6 +25,8 @@ public interface TestSetRepository extends JpaRepository<TestSet, Long> {
      */
     Optional<TestSet> findByCode(String code);
 
+    List<TestSet> findByCodeIn(List<String> codes);
+
     /**
      * Check if a test set exists with the given code.
      * 
