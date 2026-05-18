@@ -1,0 +1,171 @@
+@startuml User_Journey_Admin_Content
+!theme blueprint
+title Cramer CMS - Admin Content Creation Journey\n(From AI Generation to Published Test)
+
+skinparam {
+    BackgroundColor #1a1a2e
+    TitleFontColor #ffffff
+    TitleFontSize 18
+    DefaultFontColor #e8e8e8
+    ArrowColor #64b5f6
+    NoteBackgroundColor #424242
+    NoteFontColor #ffffff
+    ActivityBackgroundColor #37474f
+    ActivityBorderColor #78909c
+}
+
+|#2c3e50|Content Planning|
+start
+:Admin wants to create new Reading test;
+note right
+  **Content Goal:**
+  - Target: IELTS Academic
+  - Topic: Climate Change
+  - 3 passages, 40 questions
+  - Mix of question types
+end note
+
+:Logs into Admin panel (/admin);
+:Reviews existing content;
+:Identifies gap: No climate-focused tests;
+
+|#34495e|Test Set Setup|
+:Navigates to Content > Sets;
+:Creates new Test Set;
+:Name: "Cramer Original - Climate";
+:Saves test set;
+
+:Opens Set Detail page;
+:No tests yet - empty state;
+:Clicks "Tao bai moi";
+
+:Creates Test #1;
+
+|#9b59b6|AI Content Generation|
+:Opens AI Studio (/admin/content/generate);
+:Selects skill: Reading;
+:Chooses parts: 1, 2, 3;
+
+:Configures Part 1:
+- Topic: "Global Warming Effects"
+- Question types: TRUE/FALSE/NOT GIVEN
+- 13 questions;
+
+:Configures Part 2:
+- Topic: "Renewable Energy Solutions"
+- Question types: MATCHING_HEADINGS
+- 13 questions;
+
+:Configures Part 3:
+- Topic: "Carbon Capture Technology"
+- Question types: MULTIPLE_CHOICE
+- 14 questions;
+
+:Selects AI model: DeepSeek V3;
+:Enables reasoning tokens;
+:Clicks "Bat dau tao";
+
+|#3498db|Generation Process|
+:Watches SSE streaming;
+note right
+  **Real-time Display:**
+  - AI reasoning steps visible
+  - Passage generating...
+  - Questions generating...
+  - Progress bar: 0% -> 100%
+end note
+
+:Part 1 complete (2 minutes);
+:Part 2 complete (2 minutes);
+:Part 3 complete (2 minutes);
+:Total generation: ~6 minutes;
+
+|#f39c12|Quality Review|
+:Views generated content in Preview;
+:Checks passages for:
+- Accuracy
+- Appropriate difficulty
+- Paragraph structure;
+
+:Checks questions for:
+- Correct numbering (1-40)
+- Answer validity
+- Option clarity;
+
+:Sees validation issues:
+- Q12 answer not in passage
+- Q27 missing option;
+
+|#e74c3c|Refinement|
+:Selects issues to fix;
+:Clicks "Sua loi voi AI";
+:Agent 2 generates patches;
+:Applies automatic fixes;
+
+:Re-validates content;
+:All issues resolved!;
+
+|#27ae60|Save & Edit|
+:Clicks "Luu vao he thong";
+:Selects target test set;
+:Selects target test;
+:Saves to database;
+
+:Opens Test Editor;
+:Fine-tunes manually:
+- Adjusts passage wording
+- Fixes typo in Q15
+- Updates answer explanation;
+
+|#1abc9c|Audio Recording (Listening)|
+partition "If Listening Test" {
+  :Opens Audio section;
+  :Uploads pre-recorded audio files;
+  :Maps audio to sections;
+  :Sets transcript text;
+}
+
+|#9b59b6|Final Review|
+:Enables Admin Preview;
+:Takes test as student would;
+:Checks timer behavior;
+:Verifies answer checking;
+
+:All looks good!;
+
+|#27ae60|Publishing|
+:Changes status to "Published";
+:Confirms publish action;
+:Test now visible to students!;
+
+note right
+  **Published Test:**
+  - Appears in course list
+  - Students can attempt
+  - Analytics tracking begins
+end note
+
+|#34495e|Monitoring|
+:Returns to Admin Dashboard;
+:Watches test metrics:
+- First attempts coming in
+- Average scores: 28/40
+- Completion rate: 85%;
+
+:Content creation successful!;
+stop
+
+legend right
+  **Admin Journey Metrics:**
+  |= Phase |= Time |
+  | Planning | 5 min |
+  | Setup | 3 min |
+  | AI Generation | 6 min |
+  | Review | 10 min |
+  | Refinement | 3 min |
+  | Manual Editing | 15 min |
+  | Final Review | 10 min |
+  | **Total** | **~52 min** |
+endlegend
+
+@enduml

@@ -1,0 +1,152 @@
+@startuml User_Journey_Regular_Practice
+!theme blueprint
+title Cramer CMS - Regular Practice Journey\n(Weekly Study Routine)
+
+skinparam {
+    BackgroundColor #1a1a2e
+    TitleFontColor #ffffff
+    TitleFontSize 18
+    DefaultFontColor #e8e8e8
+    ArrowColor #64b5f6
+    NoteBackgroundColor #424242
+    NoteFontColor #ffffff
+    ActivityBackgroundColor #37474f
+    ActivityBorderColor #78909c
+}
+
+|#2c3e50|Weekly Study Plan|
+start
+:Student has IELTS exam in 6 weeks;
+note right
+  **Study Goal:**
+  - 3 full tests per week
+  - Focus on weak skills
+  - Target: Band 7.0+
+end note
+
+:Opens Cramer on Monday evening;
+:Logs in (remembered session);
+
+|#34495e|Dashboard Review|
+:Lands on Dashboard;
+:Checks progress chart;
+note right
+  **Current Stats:**
+  - Reading: 7.0 avg
+  - Listening: 6.5 avg
+  - Writing: 6.0 avg (needs work)
+  - 15 tests completed
+end note
+
+:Reviews recent attempts;
+:Sees skill analysis breakdown;
+:Identifies: Listening needs focus;
+
+|#3498db|Day 1: Listening Focus|
+:Navigates to Courses;
+:Selects Cambridge 15 (new);
+:Starts Listening Test 2;
+
+:Puts on headphones;
+:Enables Autoplay toggle;
+:Listens to Part 1 audio;
+:Answers 10 questions;
+
+:Moves through Parts 2, 3, 4;
+:40 questions in 30 minutes;
+:Submits test;
+
+:Reviews results: 34/40 (Band 7.5);
+:Checks wrong answers in Part 3;
+:Realizes: Matching questions are weak;
+
+|#9b59b6|Day 2: Reading Practice|
+:Returns next day;
+:Dashboard shows yesterday's attempt;
+:Starts Reading Test 3;
+
+:Uses text highlighting feature;
+:Highlights key paragraphs;
+:Answers question groups;
+
+:Clicks word, sees popup;
+:Adds "ubiquitous" to vocabulary;
+:Continues test;
+
+:Submits: 36/40 (Band 8.0);
+:Satisfied with progress;
+
+|#f39c12|Day 3: Writing with AI|
+:Selects Writing test;
+:Has 2 AI gradings left;
+:Decides to use one today;
+
+:Completes Task 1 and Task 2;
+:Submits for AI grading;
+:Reviews detailed feedback;
+
+:Band 6.5 overall;
+note right
+  **Improvement Noted:**
+  - Up from 6.0 last week
+  - Grammar improved
+  - Still needs vocabulary work
+end note
+
+:Saves sample essay for reference;
+
+|#27ae60|End of Week: Progress Check|
+:Opens Dashboard on Sunday;
+:Views weekly summary;
+
+:Progress Chart shows:
+- Listening: 6.5 -> 7.5
+- Reading: stable at 7.5
+- Writing: 6.0 -> 6.5;
+
+:Checks quota usage:
+- 14/20 Reading used
+- 12/20 Listening used
+- 3/5 AI gradings used;
+
+:Plans next week:
+- More Writing practice
+- Focus on Task 2 structure;
+
+|#1abc9c|Vocabulary Building|
+:Navigates to Vocabulary page;
+:Reviews 23 saved words;
+:Toggles cards to study;
+:Marks 5 as "Mastered";
+
+:Uses AI translation for new word;
+:Costs 1 Lua for translation;
+:Gets phonetic + examples;
+
+|#e74c3c|Approaching Exam|
+if (4 weeks to exam?) then (yes)
+  :Increases intensity;
+  :2 tests per day;
+  :Running low on quota;
+  :Upgrades to Cramerous;
+else (no)
+  :Maintains routine;
+  :Steady improvement;
+endif
+
+:Continues weekly cycle;
+stop
+
+legend right
+  **Weekly Routine:**
+  |= Day |= Activity |= Time |
+  | Monday | Listening | 45 min |
+  | Tuesday | Reading | 60 min |
+  | Wednesday | Writing | 90 min |
+  | Thursday | Listening | 45 min |
+  | Friday | Reading | 60 min |
+  | Saturday | Writing | 90 min |
+  | Sunday | Review | 30 min |
+endlegend
+
+@enduml

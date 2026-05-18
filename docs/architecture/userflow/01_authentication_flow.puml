@@ -1,0 +1,89 @@
+@startuml Authentication_Flow
+!theme blueprint
+title Cramer CMS - Authentication Flow
+
+skinparam {
+    BackgroundColor #1a1a2e
+    TitleFontColor #ffffff
+    TitleFontSize 20
+    DefaultFontColor #e8e8e8
+    ArrowColor #64b5f6
+    ActorBackgroundColor #4caf50
+    RectangleBackgroundColor #37474f
+    RectangleBorderColor #78909c
+    NoteBackgroundColor #424242
+    NoteFontColor #ffffff
+}
+
+actor "Guest User" as Guest #lightblue
+actor "Authenticated User" as User #lightgreen
+
+cloud "External Auth" {
+    [Supabase Auth] as SupaAuth
+    [Google OAuth] as Google
+    [Facebook OAuth] as Facebook
+}
+
+rectangle "Frontend" {
+    rectangle "Login Page\n[/login]" as Login {
+        (Email/Password Form)
+        (Google OAuth Button)
+        (Facebook OAuth Button)
+        (Forgot Password)
+    }
+    
+    rectangle "OTP Verification" as OTP {
+        (6-Digit Code Input)
+        (Resend Timer)
+    }
+    
+    [useAuthStore] as AuthStore
+    [useProfileStore] as ProfileStore
+    
+    rectangle "Dashboard\n[/dashboard]" as Dashboard
+}
+
+rectangle "Backend" {
+    [AuthController] as AuthCtrl
+    database "profiles" as DB
+}
+
+' Authentication Flows
+Guest --> Login : Visit /login
+
+Login --> SupaAuth : Email/Password
+Login --> Google : OAuth Flow
+Login --> Facebook : OAuth Flow
+
+SupaAuth --> OTP : New User (requires verification)
+OTP --> SupaAuth : Verify OTP Code
+
+SupaAuth --> AuthStore : JWT Token
+Google --> SupaAuth : OAuth Callback
+Facebook --> SupaAuth : OAuth Callback
+
+AuthStore --> ProfileStore : Auto-Sync Profile
+AuthStore --> Dashboard : Redirect on Success
+
+ProfileStore --> DB : Create/Update Profile
+
+note right of AuthStore
+  **useAuthStore Actions:**
+  - signUp(email, password, username)
+  - signIn(email, password)
+  - signInWithGoogle()
+  - signInWithFacebook()
+  - verifyOtp(email, otpCode)
+  - resendOtp(email)
+  - signOut()
+  - initializeAuth()
+end note
+
+note bottom of Login
+  **Session Storage:**
+  - pendingUsername
+  - pendingUserId
+  (for OTP flow)
+end note
+
+@enduml

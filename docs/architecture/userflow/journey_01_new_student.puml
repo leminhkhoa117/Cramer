@@ -1,0 +1,136 @@
+@startuml User_Journey_New_Student
+!theme blueprint
+title Cramer CMS - New Student Journey\n(Discovery to First Test Completion)
+
+skinparam {
+    BackgroundColor #1a1a2e
+    TitleFontColor #ffffff
+    TitleFontSize 18
+    DefaultFontColor #e8e8e8
+    ArrowColor #64b5f6
+    NoteBackgroundColor #424242
+    NoteFontColor #ffffff
+    ActivityBackgroundColor #37474f
+    ActivityBorderColor #78909c
+}
+
+|#2c3e50|Discovery|
+start
+:User searches "IELTS practice online"
+or sees social media ad;
+note right
+  **Touchpoints:**
+  - Google Search
+  - Facebook/TikTok ads
+  - Word of mouth
+  - IELTS forums
+end note
+
+:Lands on **Home Page** (/);
+:Sees hero: "Luyen thi IELTS
+cung AI thong minh";
+
+|#34495e|Exploration|
+:Scrolls through features;
+note right
+  **Key Value Props:**
+  - Authentic Cambridge tests
+  - AI Writing grading
+  - Progress tracking
+  - Affordable pricing
+end note
+
+:Views **Pricing Page** (/pricing);
+:Compares tiers:
+- Cramerie (Free)
+- Cramerich (79K/mo)
+- Cramerous (149K/mo);
+
+|#1abc9c|Registration|
+:Clicks "Bat dau mien phi";
+:Redirects to **Login Page** (/login);
+
+if (Has account?) then (yes)
+  :Signs in;
+else (no)
+  :Enters email, password, username;
+  :Receives OTP email;
+  :Enters 6-digit code;
+  :Account created!;
+  note right
+    **First-time bonus:**
+    50 Lua credits
+  end note
+endif
+
+|#3498db|Onboarding|
+:Redirects to **Dashboard** (/dashboard);
+:Sees empty state: "Chua co lich su lam bai";
+:Prompted to set target band score;
+:Sets goal: Band 7.0;
+
+|#9b59b6|First Test Experience|
+:Clicks "Bat dau luyen tap";
+:Navigates to **Courses** (/courses);
+:Browses test sets (Cambridge 15, 16, 17...);
+:Selects "Cambridge 17";
+:Sees 4 tests available;
+
+:Clicks "Reading Test 1";
+:Sees **Start Test Modal**:
+- 60 minutes allowed
+- 40 questions
+- Auto-save enabled;
+:Clicks "Bat dau bai thi";
+
+|#e74c3c|Test Taking|
+:Timer starts (60:00);
+:Reads passage, answers questions;
+:Uses highlighting feature;
+:Navigates between 3 parts;
+
+fork
+  :Auto-saves every 5 min;
+fork again
+  :Can exit and resume later;
+end fork
+
+:Completes all 40 questions;
+:Clicks "Nop bai";
+:Confirms submission;
+
+|#f39c12|Results & Feedback|
+:Redirects to **Review Page**;
+:Sees score: 32/40 (Band 7.0);
+note right
+  **Aha Moment!**
+  User sees their actual level
+end note
+
+:Reviews wrong answers;
+:Sees correct answers with explanations;
+:Can retake test anytime;
+
+|#27ae60|Retention|
+:Returns to Dashboard;
+:Sees first attempt in history;
+:Progress chart shows first data point;
+
+:Motivated to try more tests;
+:Tries Listening test next;
+:Considers Writing test (needs AI grading);
+
+stop
+
+legend right
+  **Journey Metrics:**
+  |= Stage |= Avg Time |
+  | Discovery | 30 sec |
+  | Exploration | 2-3 min |
+  | Registration | 1-2 min |
+  | Onboarding | 1 min |
+  | First Test | 45-60 min |
+  | Results | 5-10 min |
+endlegend
+
+@enduml
