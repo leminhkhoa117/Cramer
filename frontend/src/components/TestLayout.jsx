@@ -1,7 +1,9 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { Group, Panel, Separator } from 'react-resizable-panels';
 
-const MIN_LEFT_PANEL_SIZE = 30;
+const MIN_LEFT_PANEL_SIZE = '30%';
+const DEFAULT_LEFT_PANEL_SIZE = '50%';
+const COLLAPSED_LEFT_PANEL_SIZE = '0%';
 
 const TestLayout = ({ showLeftPanel, leftPanelContent, children, highlightContainerRef }) => { // Add highlightContainerRef
     const leftPanelRef = useRef(null);
@@ -10,7 +12,7 @@ const TestLayout = ({ showLeftPanel, leftPanelContent, children, highlightContai
         if (!showLeftPanel) return;
         const panel = leftPanelRef.current;
         if (panel) {
-            setTimeout(() => panel.expand(MIN_LEFT_PANEL_SIZE), 0);
+            setTimeout(() => panel.resize(MIN_LEFT_PANEL_SIZE), 0);
         }
     }, [showLeftPanel]);
 
@@ -21,8 +23,9 @@ const TestLayout = ({ showLeftPanel, leftPanelContent, children, highlightContai
         if (panel) {
             if (showLeftPanel) {
                 if (panel.isCollapsed()) {
-                    panel.expand(MIN_LEFT_PANEL_SIZE);
+                    panel.expand();
                 }
+                panel.resize(MIN_LEFT_PANEL_SIZE);
             } else {
                 if (!panel.isCollapsed()) {
                     panel.collapse();
@@ -33,12 +36,13 @@ const TestLayout = ({ showLeftPanel, leftPanelContent, children, highlightContai
 
     return (
         <div className="test-page-container" ref={highlightContainerRef}> {/* Attach ref to a div */}
-            <PanelGroup direction="horizontal" className="panel-group-inner"> {/* PanelGroup can be inside */}
+            <Group orientation="horizontal" className="panel-group-inner">
                 <Panel
-                    ref={leftPanelRef}
+                    panelRef={leftPanelRef}
                     collapsible={true}
                     order={1}
-                    defaultSize={showLeftPanel ? 50 : 0}
+                    collapsedSize={COLLAPSED_LEFT_PANEL_SIZE}
+                    defaultSize={showLeftPanel ? DEFAULT_LEFT_PANEL_SIZE : COLLAPSED_LEFT_PANEL_SIZE}
                     minSize={MIN_LEFT_PANEL_SIZE}
                     onCollapse={handleLeftPanelCollapse}
                 >
@@ -47,16 +51,16 @@ const TestLayout = ({ showLeftPanel, leftPanelContent, children, highlightContai
                     </div>
                 </Panel>
                 
-                <PanelResizeHandle className={`resize-handle ${!showLeftPanel ? 'hidden' : ''}`}>
+                <Separator className={`resize-handle ${!showLeftPanel ? 'hidden' : ''}`}>
                     <div className="resize-handle-icon-container">
                         <span className="resize-handle-icon">↔</span>
                     </div>
-                </PanelResizeHandle>
+                </Separator>
 
-                <Panel minSize={30} order={2}>
+                <Panel minSize="30%" order={2}>
                     {children}
                 </Panel>
-            </PanelGroup>
+            </Group>
         </div>
     );
 };

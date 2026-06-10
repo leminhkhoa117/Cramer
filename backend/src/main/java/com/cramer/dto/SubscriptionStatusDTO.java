@@ -1,6 +1,7 @@
 package com.cramer.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import java.time.OffsetDateTime;
@@ -73,6 +74,11 @@ public class SubscriptionStatusDTO {
         // Frontend (SubscriptionPage.jsx, useSubscriptionStore.js) reads `isFree`/`isPremium`.
         @JsonProperty("isFree")
         private boolean isFree;
+
+        @JsonIgnore
+        public boolean isFree() {
+            return isFree;
+        }
     }
 
     /**

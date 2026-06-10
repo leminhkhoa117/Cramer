@@ -1,0 +1,566 @@
+/* Stage Progress Container */
+.stage-progress-container {
+    margin-bottom: 1.5rem;
+    padding: 0 0.5rem;
+}
+
+.stage-progress-track {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.stage-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.stage-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.4s ease;
+}
+
+.stage-item.completed .stage-icon-wrapper {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: #22c55e;
+    color: #22c55e;
+}
+
+.stage-item.active .stage-icon-wrapper {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: #8b5cf6;
+    color: #8b5cf6;
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+}
+
+.stage-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(139, 92, 246, 0.3);
+    border-top-color: #8b5cf6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* @keyframes spin moved to animations.css */
+
+.stage-number {
+    font-size: 0.8rem;
+}
+
+.stage-label {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 500;
+    text-align: center;
+    max-width: 60px;
+}
+
+.stage-item.active .stage-label {
+    color: #a78bfa;
+}
+
+.stage-item.completed .stage-label {
+    color: #4ade80;
+}
+
+.stage-connector {
+    flex: 1;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 0.25rem;
+    margin-bottom: 1.2rem;
+    border-radius: 1px;
+    overflow: hidden;
+    position: relative;
+}
+
+.connector-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #22c55e, #4ade80);
+    border-radius: 1px;
+    transition: width 0.5s ease;
+}
+
+/* Segmented Progress Bar */
+.segmented-progress-container {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.progress-label {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.progress-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #a78bfa, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.segmented-progress-bar {
+    margin-bottom: 0.5rem;
+}
+
+.progress-segments {
+    display: flex;
+    gap: 4px;
+    height: 12px;
+}
+
+.segment {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+}
+
+.segment-fill {
+    height: 100%;
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    transition: width 0.3s ease;
+}
+
+.segment-1 .segment-fill {
+    background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+}
+
+.segment-2 .segment-fill {
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+}
+
+.segment-3 .segment-fill {
+    background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.segment-4 .segment-fill {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.segment-wave {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: waveSlide 1.5s ease-in-out infinite;
+}
+
+@keyframes waveSlide {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.segment-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 0.05em;
+}
+
+.segment.filled .segment-label,
+.segment.filling .segment-label {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.segment-legend {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 0.5rem;
+}
+
+.segment-legend strong {
+    color: rgba(255, 255, 255, 0.6);
+    margin-right: 2px;
+}
+
+/* Carousels Container */
+.carousels-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.carousel-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 0.75rem;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+}
+
+.carousel-action {
+    border-color: rgba(139, 92, 246, 0.3);
+    background: rgba(139, 92, 246, 0.08);
+}
+
+.carousel-tips {
+    border-color: rgba(52, 211, 153, 0.3);
+    background: rgba(52, 211, 153, 0.08);
+}
+
+.carousel-stats {
+    border-color: rgba(59, 130, 246, 0.3);
+    background: rgba(59, 130, 246, 0.08);
+}
+
+.carousel-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+}
+
+.carousel-icon {
+    color: #a78bfa;
+}
+
+.carousel-emoji {
+    font-size: 1rem;
+}
+
+.carousel-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.carousel-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+.carousel-text {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.carousel-text.slide-in {
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.carousel-indicators {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+.carousel-indicators .indicator {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.carousel-indicators .indicator.active {
+    background: rgba(255, 255, 255, 0.8);
+    width: 12px;
+    border-radius: 2px;
+}
+
+/* Loading Notice */
+.loading-notice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.loading-notice svg {
+    color: #a78bfa;
+    flex-shrink: 0;
+}
+
+/* Back Button */
+.back-to-dashboard-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.back-to-dashboard-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .grading-animation-card {
+        padding: 1.5rem;
+    }
+
+    .grading-title-new {
+        font-size: 1.25rem;
+    }
+
+    .carousels-container {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .carousel-card {
+        min-height: 70px;
+    }
+
+    .stage-progress-track {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .stage-connector {
+        display: none;
+    }
+
+    .stage-item {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+
+    .stage-label {
+        max-width: none;
+    }
+}
+
+/* ============================================
+   Error State
+   ============================================ */
+.writing-result-error {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8fafc;
+}
+
+.error-content {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    max-width: 400px;
+    padding: 2.5rem;
+    text-align: center;
+}
+
+.error-content .error-icon {
+    color: #dc2626;
+    margin-bottom: 1.25rem;
+}
+
+.error-content h2 {
+    color: #1f2937;
+    font-size: 1.25rem;
+    margin-bottom: 0.6rem;
+}
+
+.error-content p {
+    color: #6b7280;
+    margin-bottom: 1.25rem;
+}
+
+.error-content button {
+    background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+    border: none;
+    color: #fff;
+    padding: 0.6rem 1.25rem;
+    border-radius: 6px;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.error-content button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+}
+
+/* ============================================
+   Scrollbar Styling
+   ============================================ */
+.column-content::-webkit-scrollbar,
+.sample-content::-webkit-scrollbar {
+    width: 5px;
+}
+
+.column-content::-webkit-scrollbar-track,
+.sample-content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.column-content::-webkit-scrollbar-thumb,
+.sample-content::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.column-content::-webkit-scrollbar-thumb:hover,
+.sample-content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ============================================
+   Essay Column Header Right Section
+   ============================================ */
+.essay-column .column-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* View Mode Toggle Buttons */
+.view-mode-toggle {
+    display: flex;
+    background: #f3f4f6;
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+}
+
+.view-mode-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.65rem;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Quicksand', sans-serif;
+}
+
+.view-mode-btn:hover {
+    color: #4b5563;
+    background: rgba(124, 58, 237, 0.08);
+}
+
+.view-mode-btn.active {
+    background: #ffffff;
+    color: #7c3aed;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.view-mode-btn svg {
+    flex-shrink: 0;
+}
+
+/* Single Toggle Button for Comparison View */
+.comparison-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.7rem;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Quicksand', sans-serif;
+}
+
+.comparison-toggle-btn:hover {
+    background: #ede9fe;
+    border-color: #c4b5fd;
+    color: #7c3aed;
+}
+
+.comparison-toggle-btn.active {
+    background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+    border-color: #7c3aed;
+    color: white;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+}
+
+.comparison-toggle-btn svg {
+    flex-shrink: 0;
+}
+

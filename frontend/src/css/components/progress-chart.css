@@ -1,0 +1,236 @@
+/* frontend/src/css/ProgressChart.css */
+/* ===================================
+   PROGRESS CHART STYLES - Glassmorphic Design
+   Following UI_GUIDELINES.md
+   =================================== */
+
+/* === Chart Container with Glassmorphism === */
+.progress-chart-container {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 1.5rem;
+  border-radius: 20px;
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(124, 58, 237, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-top: 1rem;
+  transition: all 0.3s ease;
+}
+
+.progress-chart-container:hover {
+  box-shadow: 
+    0 12px 40px rgba(124, 58, 237, 0.12),
+    0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* === Custom Tooltip === */
+.progress-chart-tooltip {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(124, 58, 237, 0.15);
+  border-radius: 12px;
+  padding: 0.875rem 1rem;
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
+  min-width: 160px;
+}
+
+.progress-chart-tooltip .tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+}
+
+.progress-chart-tooltip .tooltip-icon {
+  color: #7c3aed;
+  font-size: 0.875rem;
+}
+
+.progress-chart-tooltip .tooltip-date {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: #1f2937;
+}
+
+.progress-chart-tooltip .tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.progress-chart-tooltip .tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.progress-chart-tooltip .tooltip-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.progress-chart-tooltip .tooltip-skill {
+  font-size: 0.8rem;
+  color: #64748b;
+  flex: 1;
+}
+
+.progress-chart-tooltip .tooltip-value {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #1f2937;
+}
+
+/* === Custom Legend === */
+.progress-chart-legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(124, 58, 237, 0.08);
+}
+
+.progress-chart-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.progress-chart-legend .legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.progress-chart-legend .legend-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* === Empty State === */
+.progress-chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.08);
+  margin-top: 1rem;
+}
+
+.progress-chart-empty .empty-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+  border-radius: 50%;
+  margin-bottom: 1.25rem;
+}
+
+.progress-chart-empty .empty-icon svg {
+  width: 28px;
+  height: 28px;
+  color: #7c3aed;
+}
+
+.progress-chart-empty h4 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 0.5rem 0;
+}
+
+.progress-chart-empty p {
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.6;
+  max-width: 360px;
+  margin: 0;
+}
+
+/* === Legacy chart-placeholder (fallback) === */
+.chart-placeholder {
+  padding: 3rem 2rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+  margin-top: 1rem;
+}
+
+.chart-placeholder h4 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.chart-placeholder p {
+  font-size: 0.9rem;
+  color: #64748b;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+/* === Recharts overrides === */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: rgba(124, 58, 237, 0.08);
+}
+
+.recharts-legend-wrapper {
+  padding-top: 0 !important;
+}
+
+/* === Responsive === */
+@media (max-width: 640px) {
+  .progress-chart-container {
+    padding: 1rem;
+    border-radius: 16px;
+  }
+
+  .progress-chart-legend {
+    gap: 0.75rem;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .progress-chart-legend .legend-item {
+    justify-content: center;
+    min-width: 100px;
+  }
+
+  .progress-chart-empty {
+    padding: 2rem 1.5rem;
+  }
+
+  .progress-chart-empty .empty-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .progress-chart-empty h4 {
+    font-size: 1.1rem;
+  }
+}

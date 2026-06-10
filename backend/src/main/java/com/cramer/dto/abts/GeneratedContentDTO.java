@@ -2,6 +2,7 @@ package com.cramer.dto.abts;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
+import java.util.Map;
 
 /**
  * DTO for AI-generated IELTS content.
@@ -78,6 +79,13 @@ public class GeneratedContentDTO {
         private String wordCountMessage;
         private JsonNode sectionLayout; // For Listening blocks
         private Integer partNumber;
+        // Writing 3-phase outputs (Phase 2 sample answer, Phase 3 band breakdown)
+        private String sampleAnswerContent;
+        private Integer sampleAnswerWordCount;
+        private Double sampleAnswerBandScore;
+        private Map<String, Object> bandBreakdown;
+        private List<String> keyPhrases;
+        private String gradingNotes;
 
         public String getPassageText() {
             return passageText;
@@ -133,6 +141,54 @@ public class GeneratedContentDTO {
 
         public void setPartNumber(Integer partNumber) {
             this.partNumber = partNumber;
+        }
+
+        public String getSampleAnswerContent() {
+            return sampleAnswerContent;
+        }
+
+        public void setSampleAnswerContent(String sampleAnswerContent) {
+            this.sampleAnswerContent = sampleAnswerContent;
+        }
+
+        public Integer getSampleAnswerWordCount() {
+            return sampleAnswerWordCount;
+        }
+
+        public void setSampleAnswerWordCount(Integer sampleAnswerWordCount) {
+            this.sampleAnswerWordCount = sampleAnswerWordCount;
+        }
+
+        public Double getSampleAnswerBandScore() {
+            return sampleAnswerBandScore;
+        }
+
+        public void setSampleAnswerBandScore(Double sampleAnswerBandScore) {
+            this.sampleAnswerBandScore = sampleAnswerBandScore;
+        }
+
+        public Map<String, Object> getBandBreakdown() {
+            return bandBreakdown;
+        }
+
+        public void setBandBreakdown(Map<String, Object> bandBreakdown) {
+            this.bandBreakdown = bandBreakdown;
+        }
+
+        public List<String> getKeyPhrases() {
+            return keyPhrases;
+        }
+
+        public void setKeyPhrases(List<String> keyPhrases) {
+            this.keyPhrases = keyPhrases;
+        }
+
+        public String getGradingNotes() {
+            return gradingNotes;
+        }
+
+        public void setGradingNotes(String gradingNotes) {
+            this.gradingNotes = gradingNotes;
         }
     }
 

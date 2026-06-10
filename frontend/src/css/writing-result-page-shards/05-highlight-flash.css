@@ -1,0 +1,17 @@
+/* Highlight Flash Animation */
+@keyframes highlightFlash {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 2px #7c3aed;
+    }
+
+    50% {
+        box-shadow: 0 0 0 4px #a78bfa;
+    }
+}
+
+.highlight-flash {
+    animation: highlightFlash 0.5s ease 3;
+}
+

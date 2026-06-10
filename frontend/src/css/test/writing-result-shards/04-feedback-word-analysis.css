@@ -1,0 +1,583 @@
+/* ============================================
+   Analysis Column - Expandable Sections
+   ============================================ */
+.feedback-summary-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.feedback-card {
+    padding: 0.65rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.feedback-card h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.feedback-card h4 svg {
+    flex-shrink: 0;
+}
+
+.feedback-card.strengths {
+    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+    border-color: #bbf7d0;
+}
+
+.feedback-card.strengths h4 {
+    color: #15803d;
+}
+
+.feedback-card.weaknesses {
+    background: linear-gradient(135deg, #fef2f2, #fff1f2);
+    border-color: #fecaca;
+}
+
+.feedback-card.weaknesses h4 {
+    color: #dc2626;
+}
+
+.feedback-card.approach {
+    background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+    border-color: #bfdbfe;
+}
+
+.feedback-card.approach h4 {
+    color: #1d4ed8;
+}
+
+.feedback-card.tips {
+    background: linear-gradient(135deg, #faf5ff, #f5f3ff);
+    border-color: #ddd6fe;
+}
+
+.feedback-card.tips h4 {
+    color: #7c3aed;
+}
+
+.feedback-card ul {
+    margin: 0;
+    padding-left: 0.85rem;
+    font-size: 0.85rem;
+    color: #374151;
+    line-height: 1.5;
+}
+
+.feedback-card li {
+    margin-bottom: 0.2rem;
+}
+
+.feedback-card p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #374151;
+    line-height: 1.5;
+}
+
+/* Grammar Patterns Card */
+.feedback-card.grammar-patterns {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border-color: #7dd3fc;
+}
+
+.feedback-card.grammar-patterns h4 {
+    color: #0369a1;
+}
+
+.pattern-section {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: 6px;
+}
+
+.pattern-section strong {
+    font-size: 0.8rem;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.pattern-section.strong {
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.pattern-section.strong strong {
+    color: #16a34a;
+}
+
+.pattern-section.weak {
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.pattern-section.weak strong {
+    color: #d97706;
+}
+
+.pattern-section.missing {
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.pattern-section.missing strong {
+    color: #4f46e5;
+}
+
+.pattern-section ul {
+    margin: 0;
+    padding-left: 1rem;
+    font-size: 0.8rem;
+}
+
+.pattern-section li {
+    margin-bottom: 0.15rem;
+}
+
+/* Expandable Section */
+.expandable-section {
+    margin-bottom: 0.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.section-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.85rem;
+    background: #f9fafb;
+    border: none;
+    cursor: pointer;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+    transition: all 0.2s ease;
+}
+
+.section-toggle:hover {
+    background: #f3f4f6;
+}
+
+.expandable-section.open .section-toggle {
+    background: #ede9fe;
+    color: #7c3aed;
+}
+
+.section-toggle.sample-toggle {
+    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+    color: #15803d;
+}
+
+.section-toggle.sample-toggle.band-9 {
+    background: linear-gradient(135deg, #fef9c3, #fef3c7);
+    color: #a16207;
+}
+
+.section-toggle .section-icon {
+    flex-shrink: 0;
+    color: inherit;
+}
+
+.dropdown-title {
+    flex: 1;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.toggle-arrow {
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+}
+
+.section-content {
+    padding: 1rem;
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* Correction Item */
+.correction-item {
+    background: #f9fafb;
+    border-radius: 6px;
+    padding: 0.75rem 0.85rem;
+    margin-bottom: 0.6rem;
+    border-left: 3px solid #6b7280;
+    transition: all 0.2s ease;
+}
+
+.correction-item:last-child {
+    margin-bottom: 0;
+}
+
+.correction-item.selected {
+    box-shadow: 0 0 0 2px #7c3aed;
+    background: #faf5ff;
+}
+
+.correction-header {
+    margin-bottom: 0.5rem;
+}
+
+.error-type-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 4px;
+}
+
+.correction-original,
+.correction-fixed {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+    font-size: 0.9rem;
+}
+
+.correction-original .label,
+.correction-fixed .label {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding-top: 2px;
+}
+
+.correction-original .label {
+    color: #dc2626;
+}
+
+.correction-fixed .label {
+    color: #16a34a;
+}
+
+.correction-original .text {
+    color: #dc2626;
+    text-decoration: line-through;
+}
+
+.correction-fixed .text {
+    color: #16a34a;
+    font-weight: 500;
+}
+
+.correction-explanation {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.65rem;
+    background: #eff6ff;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    color: #1e40af;
+    line-height: 1.5;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+}
+
+.correction-explanation svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+/* Error Analysis Summary - NEW */
+.error-analysis-summary {
+    margin-bottom: 1rem;
+    padding: 0.85rem 1rem;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.error-counts {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.6rem;
+}
+
+.error-count {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    min-width: 80px;
+}
+
+.error-count.major {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    border: 1px solid #fecaca;
+}
+
+.error-count.minor {
+    background: linear-gradient(135deg, #fefce8, #fef3c7);
+    border: 1px solid #fde68a;
+}
+
+.error-count .count {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.error-count.major .count {
+    color: #dc2626;
+}
+
+.error-count.minor .count {
+    color: #ca8a04;
+}
+
+.error-count .label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.error-summary-text {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #4b5563;
+    line-height: 1.5;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 6px;
+    border-left: 3px solid #7c3aed;
+}
+
+/* Paragraph Item */
+.paragraph-item {
+    background: #f9fafb;
+    border-radius: 6px;
+    padding: 0.75rem 0.85rem;
+    margin-bottom: 0.6rem;
+    border-left: 3px solid #10b981;
+    transition: all 0.2s ease;
+}
+
+.paragraph-item:last-child {
+    margin-bottom: 0;
+}
+
+.paragraph-item.selected {
+    box-shadow: 0 0 0 2px #7c3aed;
+    background: #faf5ff;
+}
+
+.para-header {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #374151;
+    margin-bottom: 0.6rem;
+}
+
+.para-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 0.35rem;
+}
+
+.para-label svg {
+    flex-shrink: 0;
+}
+
+.original-para p,
+.improved-para p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+.original-para {
+    margin-bottom: 0.75rem;
+}
+
+.original-para p {
+    background: #fee2e2;
+    color: #7f1d1d;
+}
+
+.improved-para p {
+    background: #dcfce7;
+    color: #14532d;
+}
+
+.improvements-made {
+    margin-top: 0.75rem;
+}
+
+.improvements-made ul {
+    margin: 0.25rem 0 0 1rem;
+    padding: 0;
+    font-size: 0.9rem;
+    color: #4b5563;
+}
+
+.improvements-made li {
+    margin-bottom: 0.2rem;
+}
+
+/* Sample Essay Content */
+.sample-content {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.sample-content.band-9 {
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+}
+
+.sample-description {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed #e5e7eb;
+}
+
+.sample-essay-text {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: #374151;
+}
+
+.sample-essay-text p {
+    margin-bottom: 0.75rem;
+}
+
+/* Word Analysis */
+.word-analysis-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.word-item {
+    padding: 0.6rem 0.75rem;
+    background: #f9fafb;
+    border-radius: 6px;
+    border-left: 3px solid #10b981;
+}
+
+.word-item.usage-good {
+    border-left-color: #10b981;
+    background: linear-gradient(135deg, #f0fdf4, #ffffff);
+}
+
+.word-item.usage-acceptable {
+    border-left-color: #f59e0b;
+    background: linear-gradient(135deg, #fffbeb, #ffffff);
+}
+
+.word-item.usage-incorrect {
+    border-left-color: #ef4444;
+    background: linear-gradient(135deg, #fef2f2, #ffffff);
+}
+
+.word-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+}
+
+.word-text {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 1rem;
+}
+
+.usage-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+}
+
+.usage-badge.good {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.usage-badge.acceptable {
+    background: #fef3c7;
+    color: #a16207;
+}
+
+.usage-badge.incorrect {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.word-definition {
+    font-size: 0.9rem;
+    color: #374151;
+    margin-bottom: 0.35rem;
+    line-height: 1.5;
+}
+
+.word-context {
+    font-size: 0.85rem;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.context-label {
+    font-style: normal;
+    font-weight: 500;
+}
+
+/* Word Title with Correction and Type */
+.word-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.word-correction {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.correction-arrow {
+    color: #10b981;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.correction-text {
+    font-weight: 600;
+    color: #10b981;
+    font-size: 0.95rem;
+}
+
+.word-type {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-weight: 400;
+    font-style: italic;
+}
+
+.word-item.selected {
+    box-shadow: 0 0 0 2px #7c3aed;
+}
+

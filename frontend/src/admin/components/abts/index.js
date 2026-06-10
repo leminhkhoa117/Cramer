@@ -8,6 +8,9 @@
 // Studio Components (New)
 export { default as StudioModal } from './StudioModal';
 export { default as StudioConfigView } from './StudioConfigView';
+export { default as AIStudioTopBar } from './AIStudioTopBar';
+export { default as AIStudioIssueRail } from './AIStudioIssueRail';
+export * from './aiStudioStatus';
 
 // Steps (Legacy/Shared)
 export { default as StepPreview } from './StepPreview';

@@ -1,0 +1,170 @@
+/**
+ * AIStudioBase.css - Studio tokens, root layout, transient states, and scrollbars.
+ */
+
+/* ==========================================================================
+   CSS VARIABLES (extending admin-variables)
+   ========================================================================== */
+.ai-studio {
+    /* Studio-specific tokens that extend admin theme */
+    --studio-bg-primary: var(--admin-bg-primary, #0F0F23);
+    --studio-bg-card: rgba(255, 255, 255, 0.03);
+    --studio-bg-card-hover: rgba(255, 255, 255, 0.05);
+    --studio-bg-input: rgba(0, 0, 0, 0.25);
+    --studio-bg-input-focus: rgba(0, 0, 0, 0.35);
+
+    --studio-border: rgba(255, 255, 255, 0.08);
+    --studio-border-hover: rgba(255, 255, 255, 0.12);
+    --studio-border-focus: var(--admin-primary, #8B5CF6);
+
+    --studio-text-primary: var(--admin-text-primary, #F8FAFC);
+    --studio-text-secondary: var(--admin-text-secondary, #94A3B8);
+    --studio-text-muted: var(--admin-text-muted, #64748B);
+
+    --studio-accent: var(--admin-primary, #8B5CF6);
+    --studio-accent-light: rgba(139, 92, 246, 0.15);
+    --studio-accent-glow: rgba(139, 92, 246, 0.25);
+
+    --studio-success: var(--admin-success, #10B981);
+    --studio-danger: var(--admin-danger, #EF4444);
+    --studio-warning: var(--admin-warning, #F59E0B);
+
+    --studio-radius-sm: 6px;
+    --studio-radius-md: 8px;
+    --studio-radius-lg: 12px;
+
+    --studio-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    font-family: 'Quicksand', 'Inter', system-ui, sans-serif;
+    color: var(--studio-text-primary);
+}
+
+/* ==========================================================================
+   LAYOUT: FULL-WIDTH PAGE WRAPPER
+   ========================================================================== */
+.ai-studio {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: calc(100vh - var(--admin-header-height, 64px));
+    background: var(--studio-bg-primary);
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
+/* ==========================================================================
+   LOADING / STREAMING STATE
+   ========================================================================== */
+.studio-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 16px;
+    text-align: center;
+    padding: 40px;
+}
+
+.studio-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--studio-border);
+    border-top-color: var(--studio-accent);
+    border-radius: 50%;
+    animation: studio-spin 1s linear infinite;
+}
+
+@keyframes studio-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ==========================================================================
+   EMPTY STATE
+   ========================================================================== */
+.studio-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    padding: 40px;
+}
+
+.studio-empty__icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    opacity: 0.4;
+}
+
+.studio-empty__title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--studio-text-primary);
+    margin: 0 0 8px 0;
+}
+
+.studio-empty__text {
+    font-size: 0.85rem;
+    color: var(--studio-text-muted);
+    margin: 0 0 20px 0;
+}
+
+/* ==========================================================================
+   MODAL OVERLAY
+   ========================================================================== */
+.studio-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.studio-overlay__content {
+    background: var(--studio-bg-primary);
+    border: 1px solid var(--studio-border);
+    border-radius: var(--studio-radius-lg);
+    padding: 24px;
+    text-align: center;
+    max-width: 400px;
+}
+
+/* ==========================================================================
+   SCROLLBAR STYLING
+   ========================================================================== */
+.studio-config::-webkit-scrollbar,
+.studio-panel__content::-webkit-scrollbar,
+.studio-facts::-webkit-scrollbar,
+.studio-json-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.studio-config::-webkit-scrollbar-track,
+.studio-panel__content::-webkit-scrollbar-track,
+.studio-facts::-webkit-scrollbar-track,
+.studio-json-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.studio-config::-webkit-scrollbar-thumb,
+.studio-panel__content::-webkit-scrollbar-thumb,
+.studio-facts::-webkit-scrollbar-thumb,
+.studio-json-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.studio-config::-webkit-scrollbar-thumb:hover,
+.studio-panel__content::-webkit-scrollbar-thumb:hover,
+.studio-facts::-webkit-scrollbar-thumb:hover,
+.studio-json-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}

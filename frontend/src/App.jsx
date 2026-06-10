@@ -57,11 +57,7 @@ function AuthInitializer({ children }) {
 export default function App() {
   return (
     <AuthInitializer>
-      <RouterProvider router={router} fallbackElement={
-        <div className="min-h-screen flex items-center justify-center bg-gray-100">
-          <div className="text-xl font-semibold text-gray-700">Đang tải...</div>
-        </div>
-      } />
+      <RouterProvider router={router} />
     </AuthInitializer>
   );
 }

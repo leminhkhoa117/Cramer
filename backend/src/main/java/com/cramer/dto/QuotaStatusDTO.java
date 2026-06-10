@@ -2,6 +2,7 @@ package com.cramer.dto;
 
 import com.cramer.entity.SkillQuota;
 import com.cramer.entity.UserQuota;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -39,6 +40,11 @@ public class QuotaStatusDTO {
     // Frontend (useQuotaStore.js) reads `quotaStatus?.isPremium`.
     @JsonProperty("isPremium")
     private boolean isPremium;
+
+    @JsonIgnore
+    public boolean isPremium() {
+        return isPremium;
+    }
     
     // Quota month (for display)
     private String quotaMonth;

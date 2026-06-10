@@ -3,6 +3,7 @@
    ========================================================================== */
 
 @import './admin-variables.css';
+@import './shared-controls.css';
 
 /* ==========================================================================
    GLOBAL OVERRIDES FOR ADMIN PAGES
@@ -32,6 +33,14 @@ body:has(.admin-root) {
   height: 100vh;
   background: var(--admin-bg-primary);
   color: var(--admin-text-primary);
+  --primary: var(--admin-primary);
+  --danger: var(--admin-danger);
+  --surface-card: var(--admin-bg-card);
+  --surface-elevated: var(--admin-bg-secondary);
+  --border-color: var(--admin-border-primary);
+  --text-primary: var(--admin-text-primary);
+  --text-secondary: var(--admin-text-secondary);
+  --radius-md: var(--admin-radius-md);
   display: flex;
   overflow: hidden;
   overscroll-behavior: none;
@@ -145,8 +154,18 @@ body:has(.admin-root) {
   scrollbar-gutter: stable;
 }
 
+.admin-sidebar--collapsed .admin-sidebar__nav {
+  padding: var(--admin-spacing-sm) 0;
+  scrollbar-gutter: auto;
+}
+
 .admin-sidebar__section {
   margin-bottom: var(--admin-spacing-lg);
+}
+
+.admin-sidebar--collapsed .admin-sidebar__section {
+  width: 100%;
+  margin-bottom: var(--admin-spacing-md);
 }
 
 .admin-sidebar__section-title {
@@ -171,6 +190,13 @@ body:has(.admin-root) {
 
 .admin-sidebar__menu-item {
   margin-bottom: 2px;
+}
+
+.admin-sidebar--collapsed .admin-sidebar__menu-item {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: var(--admin-spacing-xs);
 }
 
 .admin-sidebar__menu-link {
@@ -219,14 +245,34 @@ body:has(.admin-root) {
 }
 
 .admin-sidebar--collapsed .admin-sidebar__menu-link {
+  width: 40px;
+  height: 40px;
   justify-content: center;
-  padding: var(--admin-spacing-md);
+  gap: 0;
+  padding: 0;
+  margin: 0 auto;
+  border-radius: var(--admin-radius-md);
 }
 
 /* Sidebar Footer */
 .admin-sidebar__footer {
   padding: var(--admin-spacing-md);
   border-top: 1px solid var(--admin-border-primary);
+}
+
+.admin-sidebar--collapsed .admin-sidebar__footer {
+  display: grid;
+  justify-items: center;
+  gap: var(--admin-spacing-sm);
+  padding: var(--admin-spacing-sm) 0;
+}
+
+.admin-sidebar__back-link {
+  margin-bottom: var(--admin-spacing-sm);
+}
+
+.admin-sidebar--collapsed .admin-sidebar__back-link {
+  margin-bottom: 0;
 }
 
 .admin-sidebar__collapse-btn {
@@ -241,6 +287,12 @@ body:has(.admin-root) {
   color: var(--admin-text-secondary);
   cursor: pointer;
   transition: all var(--admin-transition-fast);
+}
+
+.admin-sidebar--collapsed .admin-sidebar__collapse-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
 }
 
 .admin-sidebar__collapse-btn:hover {
@@ -556,6 +608,68 @@ body:has(.admin-root) {
   background: #D97706;
 }
 
+/* Bootstrap-compatible buttons used by admin modals */
+.admin-root .btn.btn-primary,
+.admin-root .btn.btn-secondary,
+.admin-root .btn.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-spacing-xs);
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: var(--admin-radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-decoration: none;
+  box-shadow: none;
+  cursor: pointer;
+  transition: all var(--admin-transition-fast);
+}
+
+.admin-root .btn.btn-primary {
+  background: var(--admin-primary);
+  border: 1px solid var(--admin-primary);
+  color: white;
+}
+
+.admin-root .btn.btn-primary:hover,
+.admin-root .btn.btn-primary:focus-visible {
+  background: var(--admin-primary-hover);
+  border-color: var(--admin-primary-hover);
+  color: white;
+}
+
+.admin-root .btn.btn-secondary,
+.admin-root .btn.btn-ghost {
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border-primary);
+  color: var(--admin-text-secondary);
+}
+
+.admin-root .btn.btn-secondary:hover,
+.admin-root .btn.btn-secondary:focus-visible,
+.admin-root .btn.btn-ghost:hover,
+.admin-root .btn.btn-ghost:focus-visible {
+  background: var(--admin-bg-card-hover);
+  border-color: var(--admin-border-primary);
+  color: var(--admin-text-primary);
+}
+
+.admin-root .btn.btn-sm {
+  min-height: 30px;
+  padding: 5px 10px;
+  font-size: 0.8125rem;
+}
+
+.admin-root .btn:disabled,
+.admin-root .btn.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Small spinner variant */
 .spinner.small {
   width: 14px;
@@ -771,11 +885,13 @@ body:has(.admin-root) {
   }
 
   .admin-main {
-    margin-left: 0;
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0 !important;
   }
 
   .admin-main--collapsed {
-    margin-left: 0;
+    margin-left: 0 !important;
   }
 
   /* Show hamburger menu on tablet/mobile */
@@ -843,6 +959,14 @@ body:has(.admin-root) {
   }
 }
 
+@media (max-width: 1024px) {
+  .admin-root .admin-main {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+  }
+}
+
 /* ==========================================================================
    UTILITIES & ANIMATIONS
    ========================================================================== */
@@ -883,46 +1007,6 @@ body:has(.admin-root) {
   border-radius: 50%;
   animation: adminSpin 1s linear infinite;
   margin-right: var(--admin-spacing-sm);
-}
-
-/* Form styles */
-.form-group {
-  margin-bottom: var(--admin-spacing-md);
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: var(--admin-spacing-xs);
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--admin-text-secondary);
-}
-
-.form-input {
-  width: 100%;
-  padding: var(--admin-spacing-sm) var(--admin-spacing-md);
-  background: var(--admin-bg-input);
-  border: 1px solid var(--admin-border-primary);
-  border-radius: var(--admin-radius-md);
-  color: var(--admin-text-primary);
-  font-size: 0.9375rem;
-  transition: all 0.2s ease;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--admin-primary);
-  box-shadow: 0 0 0 3px rgba(var(--admin-primary-rgb), 0.15);
-}
-
-.form-input::placeholder {
-  color: var(--admin-text-disabled);
-}
-
-.form-hint {
-  margin-top: var(--admin-spacing-xs);
-  font-size: 0.8125rem;
-  color: var(--admin-text-muted);
 }
 
 /* ==========================================================================

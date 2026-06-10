@@ -1,9 +1,9 @@
 /**
- * Export Utilities - Xuất file Excel với định dạng đẹp
+ * Export Utilities - Xuất file bảng tính với định dạng cơ bản
  * 
- * Sử dụng SheetJS (xlsx) để tạo file Excel.
+ * Tạo file .xls tương thích Excel mà không cần dependency xử lý spreadsheet phía client.
  */
-import * as XLSX from 'xlsx';
+import { downloadExcelTable } from './spreadsheetExport';
 
 /**
  * Export danh sách users ra file Excel
@@ -41,33 +41,14 @@ export function exportUsersToExcel(users) {
         createdAt: formatDateTime(user.createdAt),
     }));
 
-    // Create worksheet
-    const ws = XLSX.utils.json_to_sheet(data, {
-        header: columns.map(c => c.key)
-    });
-
-    // Style header - replace default headers with Vietnamese
-    columns.forEach((col, index) => {
-        const cellRef = XLSX.utils.encode_cell({ r: 0, c: index });
-        if (ws[cellRef]) {
-            ws[cellRef].v = col.header;
-        }
-    });
-
-    // Set column widths
-    ws['!cols'] = columns.map(col => ({ wch: col.width }));
-
-    // Create workbook
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Danh sách người dùng');
-
-    // Generate filename with date
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
-    const filename = `Cramer_Users_${dateStr}.xlsx`;
-
-    // Download file
-    XLSX.writeFile(wb, filename);
+    downloadExcelTable({
+        rows: data,
+        columns,
+        sheetName: 'Danh sách người dùng',
+        filename: `Cramer_Users_${dateStr}`,
+    });
 }
 
 /**
@@ -149,25 +130,12 @@ export function exportTransactionsToExcel(transactions) {
         createdAt: formatDateTime(tx.createdAt),
     }));
 
-    const ws = XLSX.utils.json_to_sheet(data, {
-        header: columns.map(c => c.key)
-    });
-
-    columns.forEach((col, index) => {
-        const cellRef = XLSX.utils.encode_cell({ r: 0, c: index });
-        if (ws[cellRef]) {
-            ws[cellRef].v = col.header;
-        }
-    });
-
-    ws['!cols'] = columns.map(col => ({ wch: col.width }));
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Giao dịch');
-
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
-    const filename = `Cramer_Transactions_${dateStr}.xlsx`;
-
-    XLSX.writeFile(wb, filename);
+    downloadExcelTable({
+        rows: data,
+        columns,
+        sheetName: 'Giao dịch',
+        filename: `Cramer_Transactions_${dateStr}`,
+    });
 }

@@ -1,0 +1,125 @@
+/**
+ * HunkDiffView.css - Dark-theme per-hunk diff cards.
+ * Reuses existing --studio-* tokens only (defined on .ai-studio).
+ */
+
+.hunk-diff {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.hunk-diff__empty {
+    padding: 12px;
+    font-size: 12px;
+    color: var(--studio-text-muted);
+    text-align: center;
+}
+
+.hunk-diff__card {
+    border: 1px solid var(--studio-border);
+    border-radius: var(--studio-radius-md);
+    background: var(--studio-bg-card);
+    padding: 10px;
+    transition: var(--studio-transition);
+}
+
+.hunk-diff__card--rejected {
+    opacity: 0.55;
+}
+
+.hunk-diff__card--accepted {
+    border-color: var(--studio-border-hover);
+}
+
+.hunk-diff__head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.hunk-diff__op {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 6px;
+    border-radius: var(--studio-radius-sm);
+    background: var(--studio-accent-light);
+    color: var(--studio-text-primary);
+}
+
+.hunk-diff__op--remove { background: rgba(239, 68, 68, 0.15); }
+.hunk-diff__op--add { background: rgba(16, 185, 129, 0.15); }
+
+.hunk-diff__path {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 11px;
+    color: var(--studio-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hunk-diff__sev {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: capitalize;
+    color: var(--studio-text-muted);
+}
+
+.hunk-diff__sev--error { color: var(--studio-danger); }
+.hunk-diff__sev--warning { color: var(--studio-warning); }
+
+.hunk-diff__summary {
+    margin: 6px 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--studio-text-secondary);
+}
+
+.hunk-diff__body {
+    margin: 6px 0;
+    border-radius: var(--studio-radius-sm);
+    background: var(--studio-bg-input);
+    padding: 6px 0;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    overflow-x: auto;
+}
+
+.hunk-diff__line {
+    display: block;
+    padding: 0 8px;
+    white-space: pre;
+}
+
+.hunk-diff__gutter {
+    display: inline-block;
+    width: 12px;
+    color: var(--studio-text-muted);
+    user-select: none;
+}
+
+.hunk-diff__line--del {
+    color: var(--studio-danger);
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.hunk-diff__line--add {
+    color: var(--studio-success);
+    background: rgba(16, 185, 129, 0.08);
+}
+
+.hunk-diff__actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.hunk-diff__actions .studio-btn {
+    flex: 1 1 0;
+}

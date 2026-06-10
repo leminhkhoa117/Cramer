@@ -1,5 +1,7 @@
 package com.cramer.config;
 
+import com.cramer.entity.Profile;
+import com.cramer.repository.ProfileRepository;
 import com.cramer.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,6 +35,9 @@ class JwtAuthFilterTest {
 
     @Mock
     private JwtUtil jwtUtil;
+
+    @Mock
+    private ProfileRepository profileRepository;
 
     @Mock
     private HttpServletRequest request;
@@ -123,6 +128,62 @@ class JwtAuthFilterTest {
                     .extracting("authority")
                     .containsExactly("ROLE_USER");
         }
+
+                @Test
+                @DisplayName("Should grant admin authority for admin profile on admin path")
+                void doFilterInternal_adminProfileOnAdminPath_grantsAdminAuthority() throws Exception {
+                    // Arrange
+                    UUID adminId = UUID.fromString(testUserId);
+                    Profile adminProfile = new Profile(adminId, "admin-user");
+                    adminProfile.setIsAdmin(true);
+
+                    when(request.getHeader("Authorization")).thenReturn("Bearer " + validToken);
+                    when(request.getRequestURI()).thenReturn("/api/admin/dashboard/stats");
+                    when(request.getContextPath()).thenReturn("");
+                    when(jwtUtil.extractUserId(validToken)).thenReturn(testUserId);
+                    when(jwtUtil.validateToken(validToken)).thenReturn(true);
+                    when(profileRepository.findById(adminId)).thenReturn(java.util.Optional.of(adminProfile));
+
+                    // Act
+                    jwtAuthFilter.doFilterInternal(request, response, filterChain);
+
+                    // Assert
+                    verify(filterChain).doFilter(request, response);
+
+                    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                    assertThat(auth).isNotNull();
+                    assertThat(auth.getAuthorities())
+                        .extracting("authority")
+                            .containsExactlyInAnyOrder("ROLE_USER", "ROLE_ADMIN");
+                }
+
+                @Test
+                @DisplayName("Should not grant admin authority for non-admin profile on admin path")
+                void doFilterInternal_nonAdminProfileOnAdminPath_grantsOnlyUserAuthority() throws Exception {
+                    // Arrange
+                    UUID userUuid = UUID.fromString(testUserId);
+                    Profile profile = new Profile(userUuid, "regular-user");
+                    profile.setIsAdmin(false);
+
+                    when(request.getHeader("Authorization")).thenReturn("Bearer " + validToken);
+                    when(request.getRequestURI()).thenReturn("/api/admin/dashboard/stats");
+                    when(request.getContextPath()).thenReturn("");
+                    when(jwtUtil.extractUserId(validToken)).thenReturn(testUserId);
+                    when(jwtUtil.validateToken(validToken)).thenReturn(true);
+                    when(profileRepository.findById(userUuid)).thenReturn(java.util.Optional.of(profile));
+
+                    // Act
+                    jwtAuthFilter.doFilterInternal(request, response, filterChain);
+
+                    // Assert
+                    verify(filterChain).doFilter(request, response);
+
+                    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                    assertThat(auth).isNotNull();
+                    assertThat(auth.getAuthorities())
+                        .extracting("authority")
+                        .containsExactly("ROLE_USER");
+                }
 
         @Test
         @DisplayName("Should extract Bearer token correctly")

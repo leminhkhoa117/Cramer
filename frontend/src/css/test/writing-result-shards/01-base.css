@@ -1,0 +1,42 @@
+/* Writing Result Page Styles - New Layout */
+/* Font: Quicksand (inherited from global styles) */
+
+.writing-result-page {
+    height: 100vh;
+    max-height: 100vh;
+    background-color: #f8fafc;
+    color: #1f2937;
+    font-family: 'Quicksand', sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* Prevent page-level scroll */
+    overscroll-behavior: none;
+    /* Prevent scroll chaining/bounce */
+    touch-action: pan-x pan-y;
+    /* Control touch scrolling */
+    position: fixed;
+    /* Fixed position to prevent any scroll */
+    inset: 0;
+    /* Fill entire viewport */
+}
+
+/* Custom scrollbar for columns */
+.writing-result-page .column-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.writing-result-page .column-content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.writing-result-page .column-content::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.writing-result-page .column-content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+

@@ -1,0 +1,128 @@
+/**
+ * AIStudioResponsive.css — Responsive overrides + question renderer dark-mode compat.
+ *
+ * Responsive layout for the unified topbar / two-column main:
+ *   - At ≤1180px the right rail stacks above the viewport.
+ *   - At ≤640px the topbar collapses (badge + summary chips hidden).
+ */
+
+@media (max-width: 1180px) {
+    .ai-studio__main {
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .ai-studio__viewport {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .ai-studio__aside {
+        order: -1;
+        width: 100%;
+        border-left: none;
+        border-bottom: 1px solid var(--studio-border);
+        max-height: 220px;
+    }
+
+    .ai-studio-issue-rail {
+        max-height: 220px;
+    }
+
+    .ai-studio-issue-rail--collapsed {
+        height: 40px;
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 6px 12px;
+    }
+
+    .ai-studio-issue-rail--collapsed .ai-studio-issue-rail__counts {
+        grid-template-columns: repeat(2, 30px);
+    }
+}
+
+@media (max-width: 900px) {
+    .ai-studio-topbar {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 10px;
+    }
+
+    .ai-studio-topbar__summary {
+        display: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .ai-studio-topbar {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        padding: 0 10px;
+    }
+
+    .ai-studio-topbar__badge,
+    .ai-studio-topbar__title {
+        display: none;
+    }
+
+    .ai-studio-topbar__steps {
+        gap: 4px;
+    }
+
+    .ai-studio-topbar__step-label {
+        display: none;
+    }
+}
+
+/* ==========================================================================
+   QUESTION RENDERER OVERRIDES (Dark Mode Compat) — unchanged
+   ========================================================================== */
+.studio-question .question-text-interactive {
+    color: var(--studio-text-primary) !important;
+}
+
+.studio-question .question-text-interactive h4,
+.studio-question .question-text-interactive h3 {
+    color: var(--studio-accent) !important;
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+}
+
+.studio-question .question-text-interactive strong {
+    color: var(--studio-text-primary);
+    font-weight: 700;
+}
+
+.studio-question .question-text-interactive ul,
+.studio-question .question-text-interactive ol {
+    padding-left: 0;
+    list-style-type: none;
+    margin-top: 8px;
+    margin-bottom: 16px;
+}
+
+.studio-question .question-text-interactive li {
+    margin-bottom: 8px;
+    line-height: 1.6;
+    color: var(--studio-text-secondary);
+}
+
+.studio-question .question-text-interactive strong:first-child {
+    color: var(--studio-accent);
+}
+
+.studio-question .fill-in-blank-input,
+.studio-question .fill-in-blank-select {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid var(--studio-border) !important;
+    color: var(--studio-text-primary) !important;
+    border-radius: var(--studio-radius-sm) !important;
+    padding: 6px 10px !important;
+}
+
+.studio-question .fill-in-blank-input:focus,
+.studio-question .fill-in-blank-select:focus {
+    outline: none;
+    border-color: var(--studio-primary) !important;
+    box-shadow: 0 0 0 2px var(--studio-accent-glow) !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+}

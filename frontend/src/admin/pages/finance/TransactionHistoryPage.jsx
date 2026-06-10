@@ -103,7 +103,7 @@ export default function TransactionHistoryPage() {
         try {
             const exportData = await adminApi.finance.getExportData();
             if (exportData && exportData.length > 0) {
-                exportToExcel(exportData, 'Giao dịch', 'transactions');
+                exportToExcel(exportData, 'transactions', 'Giao dịch');
             } else {
                 showToast('Không có dữ liệu để xuất', 'warning');
             }

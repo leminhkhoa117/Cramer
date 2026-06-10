@@ -1,0 +1,97 @@
+/* ReasoningControls — capability-driven thinking knobs.
+   Blends with the dark AI Studio theme; reuses studio tokens only. */
+
+.reasoning-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.reasoning-controls__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.reasoning-controls__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--studio-text-secondary);
+    white-space: nowrap;
+}
+
+.reasoning-controls__label strong {
+    color: var(--studio-text-primary);
+    font-weight: 600;
+}
+
+.reasoning-controls__select {
+    max-width: 120px;
+    padding: 4px 8px;
+    font-size: 11px;
+}
+
+.reasoning-controls__budget {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.reasoning-controls__sublabel {
+    margin-left: 6px;
+    color: var(--studio-text-muted);
+    font-weight: 400;
+    font-size: 10.5px;
+}
+
+.reasoning-controls__presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.reasoning-controls__chip {
+    appearance: none;
+    -webkit-appearance: none;
+    height: 22px;
+    padding: 0 10px;
+    border: 1px solid var(--studio-border);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--studio-text-secondary);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.reasoning-controls__chip:hover {
+    color: var(--studio-text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.reasoning-controls__chip.is-active {
+    border-color: var(--studio-accent);
+    background: var(--studio-accent-light);
+    color: var(--studio-text-primary);
+}
+
+.reasoning-controls__hint {
+    margin: 0;
+    font-size: 10.5px;
+    line-height: 1.4;
+    color: var(--studio-text-muted);
+}
+
+.reasoning-controls--muted {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--studio-text-muted);
+}

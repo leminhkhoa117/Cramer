@@ -22,6 +22,7 @@ import {
  * Hiển thị menu với icons và hỗ trợ collapsed state
  */
 export default function AdminSidebar({ collapsed, onToggle, mobileOpen }) {
+    const sidebarWidth = collapsed ? '80px' : '260px';
     const menuSections = [
         {
             title: 'Tổng quan',
@@ -89,7 +90,10 @@ export default function AdminSidebar({ collapsed, onToggle, mobileOpen }) {
     ];
 
     return (
-        <aside className={`admin-sidebar ${collapsed ? 'admin-sidebar--collapsed' : ''} ${mobileOpen ? 'admin-sidebar--open' : ''}`}>
+        <aside
+            className={`admin-sidebar ${collapsed ? 'admin-sidebar--collapsed' : ''} ${mobileOpen ? 'admin-sidebar--open' : ''}`}
+            style={{ width: sidebarWidth }}
+        >
             {/* Logo */}
             <div className="admin-sidebar__logo">
                 <img
@@ -136,8 +140,7 @@ export default function AdminSidebar({ collapsed, onToggle, mobileOpen }) {
             <div className="admin-sidebar__footer">
                 <NavLink
                     to="/"
-                    className="admin-sidebar__menu-link"
-                    style={{ marginBottom: '8px' }}
+                    className="admin-sidebar__menu-link admin-sidebar__back-link"
                 >
                     <span className="admin-sidebar__menu-icon">
                         <FiArrowLeft size={20} />

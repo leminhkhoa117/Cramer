@@ -7,7 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * @since 2026-01-19
  */
-@org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest(AuthController.class)
+@org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest(AuthController.class)
 @org.springframework.context.annotation.Import({SecurityConfig.class, JwtAuthFilter.class})
 @DisplayName("AuthController Unit Tests")
 class AuthControllerTest {
@@ -35,11 +35,11 @@ class AuthControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private SupabaseAdminService supabaseAdminService;
 
     // JwtUtil is required for SecurityConfig which is loaded by @WebMvcTest
-    @MockBean
+    @MockitoBean
     private com.cramer.util.JwtUtil jwtUtil;
 
     private static final String CHECK_EMAIL_URL = "/api/auth/check-email";

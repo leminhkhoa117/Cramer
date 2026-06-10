@@ -1,0 +1,340 @@
+/* ==========================================
+   6. HOW IT WORKS
+   ========================================== */
+
+.pricing-how {
+  padding: 5rem 0;
+}
+
+.pricing-how__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+.pricing-how__card {
+  background: #fff;
+  border: 1px solid var(--pricing-glass-border);
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  transition: all 0.35s ease;
+}
+
+.pricing-how__card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--pricing-glass-shadow-hover);
+  border-color: rgba(124, 58, 237, 0.2);
+}
+
+.pricing-how__card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  font-size: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.pricing-how__card-icon--green {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  color: #16a34a;
+}
+
+.pricing-how__card-icon--gold {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #d97706;
+}
+
+.pricing-how__card-icon--purple {
+  background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+  color: var(--pricing-primary);
+}
+
+.pricing-how__card-icon--blue {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #2563eb;
+}
+
+.pricing-how__card-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.pricing-how__card-desc {
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #6b7280;
+}
+
+.pricing-how__card-limit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.pricing-how__card-limit-label {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pricing-how__card-limit-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--pricing-primary);
+}
+
+/* ==========================================
+   7. FEATURE COMPARISON TABLE
+   ========================================== */
+
+.pricing-compare {
+  padding: 5rem 0;
+  background: #fff;
+}
+
+.pricing-compare__wrapper {
+  overflow-x: auto;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.06);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.pricing-compare__table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.pricing-compare__table th,
+.pricing-compare__table td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.pricing-compare__table thead th {
+  background: linear-gradient(180deg, #faf5ff 0%, #fff 100%);
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.9rem;
+  vertical-align: top;
+}
+
+.pricing-compare__table thead th:first-child {
+  border-top-left-radius: 20px;
+}
+
+.pricing-compare__table thead th:last-child {
+  border-top-right-radius: 20px;
+}
+
+.pricing-compare__tier-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.pricing-compare__tier-emoji {
+  font-size: 1.5rem;
+}
+
+.pricing-compare__tier-price {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.pricing-compare__table tbody td {
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.pricing-compare__table tbody tr:hover {
+  background: rgba(124, 58, 237, 0.02);
+}
+
+.pricing-compare__feature-name {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pricing-compare__check {
+  color: #10b981;
+  font-size: 1.25rem;
+}
+
+.pricing-compare__x {
+  color: #d1d5db;
+  font-size: 1.25rem;
+}
+
+.pricing-compare__text {
+  font-weight: 600;
+  color: var(--pricing-primary);
+}
+
+.pricing-compare__popular {
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.pricing-compare__category td {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(99, 102, 241, 0.05));
+  font-weight: 700;
+  color: #5b21b6;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 2px solid rgba(124, 58, 237, 0.1);
+}
+
+.pricing-compare__tooltip {
+  display: inline-flex;
+  align-items: center;
+  color: #9ca3af;
+  cursor: help;
+}
+
+.pricing-compare__tooltip:hover {
+  color: var(--pricing-primary);
+}
+
+/* ==========================================
+   8. CTA BANNER
+   ========================================== */
+
+.pricing-cta {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--pricing-gradient-hero);
+  border-radius: 24px;
+  margin: 3rem 1rem 4rem;
+}
+
+.pricing-cta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+.pricing-cta__content {
+  position: relative;
+  z-index: 1;
+}
+
+.pricing-cta__icon {
+  font-size: 3rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 1rem;
+}
+
+.pricing-cta__title {
+  margin: 0 0 1rem;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.pricing-cta__text {
+  margin: 0 0 2rem;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pricing-cta__btns {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pricing-cta__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  background: #fff;
+  border: none;
+  border-radius: 12px;
+  color: var(--pricing-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pricing-cta__btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.pricing-cta__btn--secondary {
+  background: transparent;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.pricing-cta__btn--secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* ==========================================
+   9. SUPPORT SECTION
+   ========================================== */
+
+.pricing-support {
+  padding: 2rem 0 4rem;
+  text-align: center;
+}
+
+.pricing-support__text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.pricing-support__link {
+  color: var(--pricing-primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.pricing-support__link:hover {
+  text-decoration: underline;
+}
+
+/* ==========================================
+   10. FAQ OVERRIDES
+   ========================================== */
+
+.pricing-faq {
+  background: #fff;
+}
+

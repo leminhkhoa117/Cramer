@@ -1,0 +1,242 @@
+/* ===========================================
+   PAYMENT PAGE STYLES
+   Glassmorphism design for payment success/cancel pages
+   =========================================== */
+
+.payment-page {
+  min-height: 100vh;
+  padding-top: 2rem;
+  padding-bottom: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, 
+    rgba(124, 58, 237, 0.05) 0%, 
+    rgba(139, 92, 246, 0.08) 50%,
+    rgba(167, 139, 250, 0.05) 100%
+  );
+}
+
+.payment-container {
+  max-width: 500px;
+  width: 100%;
+  padding: 0 1rem;
+}
+
+/* Loading State */
+.payment-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem;
+  color: #6b7280;
+}
+
+.payment-loading__spinner {
+  width: 48px;
+  height: 48px;
+  animation: spin 1s linear infinite;
+  color: #7c3aed;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Payment Card */
+.payment-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 8px 32px rgba(124, 58, 237, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+/* Icon Container */
+.payment-card__icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  font-size: 2.5rem;
+}
+
+.payment-card__icon--success {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: white;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+}
+
+.payment-card__icon--cancel {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  color: white;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+}
+
+.payment-card__icon--error {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: white;
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+}
+
+.payment-card__icon svg {
+  width: 40px;
+  height: 40px;
+}
+
+/* Title */
+.payment-card__title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+/* Message */
+.payment-card__message {
+  font-size: 1.1rem;
+  color: #4b5563;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.payment-card__message strong {
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+/* Details */
+.payment-card__details {
+  background: rgba(124, 58, 237, 0.05);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.payment-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.payment-detail:not(:last-child) {
+  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+}
+
+.payment-detail__label {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.payment-detail__value {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Benefit Message */
+.payment-card__benefit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #10b981;
+  font-weight: 500;
+  margin-bottom: 2rem;
+  padding: 0.75rem;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 8px;
+}
+
+.benefit-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Subtext */
+.payment-card__subtext {
+  font-size: 0.9rem;
+  color: #9ca3af;
+  margin-bottom: 2rem;
+}
+
+/* Actions */
+.payment-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.payment-card__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  width: 100%;
+}
+
+.payment-card__btn--primary {
+  background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+  color: white;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
+}
+
+.payment-card__btn--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+}
+
+.payment-card__btn--secondary {
+  background: rgba(124, 58, 237, 0.1);
+  color: #7c3aed;
+  border: 1px solid rgba(124, 58, 237, 0.2);
+}
+
+.payment-card__btn--secondary:hover {
+  background: rgba(124, 58, 237, 0.15);
+  border-color: rgba(124, 58, 237, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .payment-card {
+    padding: 2rem 1.5rem;
+    border-radius: 20px;
+  }
+
+  .payment-card__icon {
+    width: 64px;
+    height: 64px;
+    font-size: 2rem;
+  }
+
+  .payment-card__icon svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .payment-card__title {
+    font-size: 1.5rem;
+  }
+
+  .payment-card__message {
+    font-size: 1rem;
+  }
+}

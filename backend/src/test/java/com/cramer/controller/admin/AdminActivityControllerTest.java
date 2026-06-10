@@ -12,8 +12,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -47,16 +47,16 @@ class AdminActivityControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private UserActivityService userActivityService;
 
-    @MockBean
+    @MockitoBean
     private AdminAuditService adminAuditService;
 
-    @MockBean
+    @MockitoBean
     private JdbcTemplate jdbcTemplate;
 
-    @MockBean
+    @MockitoBean
     private com.cramer.util.JwtUtil jwtUtil;
 
     private static final String DEFAULT_ADMIN_ID = "550e8400-e29b-41d4-a716-446655440000";

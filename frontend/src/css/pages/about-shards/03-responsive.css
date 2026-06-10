@@ -1,0 +1,98 @@
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+@media (max-width: 992px) {
+  .about-hero { min-height: auto; padding: 5rem 0 4rem; }
+  .about-hero__title { font-size: clamp(2rem, 7vw, 3rem); }
+  .about-hero__lede { font-size: 1.05rem; }
+
+  .vision-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+
+  .founders-grid { grid-template-columns: 1fr; gap: 1.25rem; }
+
+  .values-grid { grid-template-columns: 1fr 1fr; }
+
+  .process-grid { grid-template-columns: 1fr 1fr; }
+
+  .manifesto-card { padding: 3rem 2rem 2.5rem; }
+  .manifesto-card__quote-icon { top: 1.75rem; right: 1.75rem; font-size: 2rem; }
+
+  .letter-card { padding: 3rem 2rem 2.5rem; }
+
+  .timeline::before { left: 16px; }
+  .timeline-item,
+  .timeline-item:nth-child(odd) { flex-direction: column; }
+  .timeline-item .timeline-content,
+  .timeline-item:nth-child(odd) .timeline-content,
+  .timeline-item:nth-child(even) .timeline-content {
+    max-width: 100%;
+    padding-left: 48px;
+    padding-right: 0;
+    text-align: left;
+  }
+  .timeline-dot { left: 16px; top: 6px; }
+}
+
+@media (max-width: 640px) {
+  .about-page .container { padding: 0 1.25rem; }
+
+  .about-hero { padding: 4rem 0 3rem; }
+  .about-hero__byline { padding: 0.55rem 1rem 0.55rem 0.6rem; gap: 0.75rem; }
+  .about-hero__byline-stack img { width: 30px; height: 30px; }
+
+  .about-vision, .about-story, .about-founders, .about-values, .about-testimonials,
+  .about-manifesto, .about-process, .about-letter { padding: 4.5rem 0; }
+
+  .vision-stats { grid-template-columns: 1fr; border-top: 1px solid var(--about-line); }
+  .vision-stats li { border-right: 0; border-bottom: 1px solid var(--about-line); padding: 1.25rem 0; }
+  .vision-stats li:last-child { border-bottom: 0; }
+
+  .values-grid { grid-template-columns: 1fr; }
+  .process-grid { grid-template-columns: 1fr; }
+  .letter-card__sig-row { gap: 1.5rem; }
+
+  .founder-card { padding: 1.5rem; }
+  .founder-card__avatar { width: 60px; height: 60px; }
+  .founder-card__name { font-size: 1.2rem; }
+
+  .testimonials-wrapper { padding: 0 0.5rem; }
+  .about-testimonials .testimonial-card { padding: 2.25rem 1.5rem 2rem; }
+  .about-testimonials .testimonial-content { font-size: 1.08rem; }
+  .testimonial-nav-arrow { width: 36px; height: 36px; }
+  .testimonial-nav-arrow--prev { left: -0.25rem; }
+  .testimonial-nav-arrow--next { right: -0.25rem; }
+
+  .about-cta__card { padding: 3rem 1.5rem; }
+  .cta-actions { gap: 1rem; flex-direction: column; }
+}
+
+@media (max-width: 480px) {
+  .about-page .container { padding: 0 1rem; }
+  .about-hero { padding: 2rem 1rem 3rem; }
+  .about-hero__title { font-size: 1.75rem; }
+  .about-vision__grid { gap: 1.5rem; }
+  .about-vision__stat-number { font-size: 1.5rem; }
+  .about-section { padding: 3rem 0; }
+  .about-section__title { font-size: 1.35rem; }
+  .about-section__subtitle { font-size: 0.9rem; }
+  .founder-card { padding: 1.25rem; }
+  .founder-card__name { font-size: 1rem; }
+  .founder-card__avatar { width: 64px; height: 64px; }
+  .value-card { padding: 1.25rem; }
+  .timeline-item { padding: 0.75rem 0.75rem 0.75rem 2.5rem; }
+  .timeline-item__title { font-size: 0.95rem; }
+  .about-manifesto__card,
+  .about-letter__card { padding: 1.5rem; border-radius: 20px; }
+  .about-manifesto__quote { font-size: 1.15rem; }
+  .about-letter__body { font-size: 0.9rem; }
+  .about-cta__title { font-size: 1.35rem; }
+  .marquee-testimonial__quote { font-size: 0.85rem; }
+}
+
+/* ==========================================================================
+   REDUCED MOTION
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .animated-item { transition: none; opacity: 1; transform: none; }
+  .founder-card, .value-card, .cta-button, .testimonial-nav-arrow { transition: none; }
+}

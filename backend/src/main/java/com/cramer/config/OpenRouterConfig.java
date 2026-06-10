@@ -44,10 +44,10 @@ public class OpenRouterConfig {
 
     /**
      * Default model for full content generation (passage + questions).
-     * Default: mistralai/devstral-2512:free (free tier for testing)
-     * Alternative: deepseek/deepseek-r1 (with reasoning, paid)
+     * Validated at startup against OpenRouter /models; falls back via
+     * AbtsModelCatalogService.validateConfiguredDefaults if not found.
      */
-    private String generationModel = "mistralai/devstral-2512:free";
+    private String generationModel = "deepseek/deepseek-v4-flash";
 
     /**
      * Default model for quick regeneration tasks.
@@ -68,10 +68,32 @@ public class OpenRouterConfig {
     private int timeoutMs = 120000;
 
     /**
+     * SSE emitter timeout in milliseconds for streaming generation endpoints.
+     * Must be longer than a full multi-part generation. Default: 1800000 (30 minutes).
+     * Aligned with the per-request read timeout so the client connection is not
+     * closed before generation completes.
+     */
+    private long emitterTimeoutMs = 1800000L;
+
+    /**
+     * Soft per-part timeout (ms) for multi-part streaming generation. When a single
+     * part (Reading/Listening/Writing) exceeds this budget it is recorded as a failed
+     * part and generation continues with the remaining parts. Default: 600000 (10 min).
+     */
+    private long perPartTimeoutMs = 600000L;
+
+    /**
      * Enable streaming for real-time generation view.
      * Default: true
      */
     private boolean streamingEnabled = true;
+
+    /**
+     * Hard cap on Agent 2 refinement loop iterations. Once a refinement request
+     * arrives with round >= this value, the service refuses to refine again and
+     * returns a failure. Prevents runaway refine loops. Default: 5.
+     */
+    private int maxRefinementRounds = 5;
 
     // Getters and Setters
 
@@ -139,12 +161,36 @@ public class OpenRouterConfig {
         this.timeoutMs = timeoutMs;
     }
 
+    public long getEmitterTimeoutMs() {
+        return emitterTimeoutMs;
+    }
+
+    public void setEmitterTimeoutMs(long emitterTimeoutMs) {
+        this.emitterTimeoutMs = emitterTimeoutMs;
+    }
+
+    public long getPerPartTimeoutMs() {
+        return perPartTimeoutMs;
+    }
+
+    public void setPerPartTimeoutMs(long perPartTimeoutMs) {
+        this.perPartTimeoutMs = perPartTimeoutMs;
+    }
+
     public boolean isStreamingEnabled() {
         return streamingEnabled;
     }
 
     public void setStreamingEnabled(boolean streamingEnabled) {
         this.streamingEnabled = streamingEnabled;
+    }
+
+    public int getMaxRefinementRounds() {
+        return maxRefinementRounds;
+    }
+
+    public void setMaxRefinementRounds(int maxRefinementRounds) {
+        this.maxRefinementRounds = maxRefinementRounds;
     }
 
     /**

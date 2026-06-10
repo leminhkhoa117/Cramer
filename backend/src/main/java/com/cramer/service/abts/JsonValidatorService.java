@@ -27,6 +27,9 @@ public class JsonValidatorService {
     private static final Logger logger = LoggerFactory.getLogger(JsonValidatorService.class);
 
     private final ObjectMapper objectMapper;
+    private final JsonListeningValidator listeningValidator;
+    private final JsonWritingValidator writingValidator;
+    private final GeneratedContentParser contentParser;
 
     // Reading passage word count limits per difficulty (lowered for model
     // compatibility)
@@ -38,13 +41,6 @@ public class JsonValidatorService {
             "INTERMEDIATE", new int[] { 500, 900 },
             "UPPER_INTERMEDIATE", new int[] { 550, 950 },
             "ADVANCED", new int[] { 600, 1000 });
-
-    // Listening transcript word counts per part
-    private static final Map<Integer, int[]> LISTENING_WORD_COUNTS = Map.of(
-            1, new int[] { 850, 1050 },
-            2, new int[] { 950, 1150 },
-            3, new int[] { 1050, 1250 },
-            4, new int[] { 1050, 1250 });
 
     private static final Set<String> READING_QUESTION_TYPES = Set.of(
             "FILL_IN_BLANK",
@@ -69,18 +65,6 @@ public class JsonValidatorService {
             "FLOW_CHART_COMPLETION",
             "DIAGRAM_LABEL_COMPLETION");
 
-    private static final Set<String> LISTENING_QUESTION_TYPES = Set.of(
-            "FILL_IN_BLANK",
-            "MULTIPLE_CHOICE",
-            "MULTIPLE_CHOICE_MULTIPLE_ANSWERS",
-            "MATCHING");
-
-    private static final Set<String> LISTENING_BLOCK_TYPES = Set.of(
-            "NOTE_COMPLETION",
-            "INSTRUCTIONS_ONLY",
-            "MATCHING_FEATURES",
-            "PLAN_MAP_DIAGRAM_LABELING");
-
     private static final Set<String> VALID_WORD_LIMITS = Set.of(
             "ONE WORD ONLY",
             "NO MORE THAN TWO WORDS",
@@ -100,6 +84,9 @@ public class JsonValidatorService {
         this.objectMapper.enable(com.fasterxml.jackson.core.json.JsonReadFeature.ALLOW_SINGLE_QUOTES.mappedFeature());
         this.objectMapper
                 .enable(com.fasterxml.jackson.core.json.JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS.mappedFeature());
+        this.listeningValidator = new JsonListeningValidator(this.objectMapper);
+        this.writingValidator = new JsonWritingValidator(this.objectMapper);
+        this.contentParser = new GeneratedContentParser(this.objectMapper);
     }
 
     /**
@@ -111,6 +98,11 @@ public class JsonValidatorService {
         private List<String> contentErrors;
         private List<String> businessRuleErrors;
         private List<String> warnings;
+        // FIX 3: structured, machine-consumable view of every error/warning.
+        // Each addXxx call appends a ValidationIssue with a stable id so the
+        // frontend + refinement agent can target individual issues instead of
+        // re-parsing free-text strings.
+        private final List<ValidationIssue> issues;
 
         public ValidationResult() {
             this.valid = true;
@@ -118,25 +110,30 @@ public class JsonValidatorService {
             this.contentErrors = new ArrayList<>();
             this.businessRuleErrors = new ArrayList<>();
             this.warnings = new ArrayList<>();
+            this.issues = new ArrayList<>();
         }
 
         public void addSchemaError(String error) {
             schemaErrors.add(error);
+            issues.add(ValidationIssue.of("schema", "error", error));
             valid = false;
         }
 
         public void addContentError(String error) {
             contentErrors.add(error);
+            issues.add(ValidationIssue.of("content", "error", error));
             valid = false;
         }
 
         public void addBusinessRuleError(String error) {
             businessRuleErrors.add(error);
+            issues.add(ValidationIssue.of("business_rule", "error", error));
             valid = false;
         }
 
         public void addWarning(String warning) {
             warnings.add(warning);
+            issues.add(ValidationIssue.of("warning", "warning", warning));
         }
 
         public boolean isValid() {
@@ -159,12 +156,136 @@ public class JsonValidatorService {
             return warnings;
         }
 
+        /** FIX 3: structured issues (stable id, severity, category, paths). */
+        public List<ValidationIssue> getIssues() {
+            return issues;
+        }
+
         public List<String> getAllErrors() {
             List<String> all = new ArrayList<>();
             all.addAll(schemaErrors);
             all.addAll(contentErrors);
             all.addAll(businessRuleErrors);
             return all;
+        }
+    }
+
+    /**
+     * FIX 3: a single structured validation finding.
+     *
+     * <p>{@code id} is a deterministic SHA-1-derived hash of category+message so
+     * the same finding keeps the same id across validation runs (lets the UI
+     * preserve accept/reject selections). {@code affectedPaths} are RFC 6901 JSON
+     * Pointers into the generated content, derived best-effort from the message
+     * text by {@link #deriveAffectedPaths(String)}: a single question reference
+     * maps to {@code /questions/{index}} (0-based), multiple questions map to
+     * {@code /questions}, and transcript/passage mentions map to
+     * {@code /section/transcript} / {@code /section/passage_text}. Messages with
+     * no recognizable anchor yield an empty list.
+     */
+    public static final class ValidationIssue {
+        private final String id;
+        private final String category;   // schema | content | business_rule | warning
+        private final String severity;   // error | warning
+        private final String message;
+        private final List<String> affectedPaths;
+
+        private ValidationIssue(String id, String category, String severity, String message,
+                List<String> affectedPaths) {
+            this.id = id;
+            this.category = category;
+            this.severity = severity;
+            this.message = message;
+            this.affectedPaths = affectedPaths != null ? affectedPaths : new ArrayList<>();
+        }
+
+        static ValidationIssue of(String category, String severity, String message) {
+            return new ValidationIssue(stableId(category, message), category, severity, message,
+                    deriveAffectedPaths(message));
+        }
+
+        /**
+         * Best-effort mapping of a free-text validation message to RFC 6901 JSON
+         * Pointers. A single question reference (e.g. "Question 5", "Q5",
+         * "question_number 5") maps to {@code /questions/{N-1}} (question numbers
+         * are 1-based, the array is 0-based); multiple distinct question numbers
+         * collapse to {@code /questions}; transcript/passage mentions add
+         * {@code /section/transcript} / {@code /section/passage_text}. Returns an
+         * empty list when no anchor is recognizable.
+         */
+        static List<String> deriveAffectedPaths(String message) {
+            List<String> paths = new ArrayList<>();
+            if (message == null || message.isBlank()) {
+                return paths;
+            }
+            String lower = message.toLowerCase();
+
+            java.util.regex.Matcher m = java.util.regex.Pattern
+                    .compile("(?:question(?:[ _]number)?|\\bq)\\s*#?(\\d+)",
+                            java.util.regex.Pattern.CASE_INSENSITIVE)
+                    .matcher(message);
+            java.util.LinkedHashSet<Integer> qNums = new java.util.LinkedHashSet<>();
+            while (m.find()) {
+                try {
+                    qNums.add(Integer.parseInt(m.group(1)));
+                } catch (NumberFormatException ignored) {
+                    // non-parseable capture; skip
+                }
+            }
+
+            if (qNums.size() == 1) {
+                int n = qNums.iterator().next();
+                if (n > 0) {
+                    paths.add("/questions/" + (n - 1));
+                }
+            } else if (qNums.size() > 1) {
+                paths.add("/questions");
+            }
+
+            if (lower.contains("transcript")) {
+                paths.add("/section/transcript");
+            }
+            if (lower.contains("passage")) {
+                paths.add("/section/passage_text");
+            }
+
+            return paths;
+        }
+
+        private static String stableId(String category, String message) {
+            String seed = (category == null ? "" : category) + "|" + (message == null ? "" : message);
+            try {
+                java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
+                byte[] digest = md.digest(seed.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < 6 && i < digest.length; i++) {
+                    sb.append(String.format("%02x", digest[i]));
+                }
+                return "vi-" + sb;
+            } catch (java.security.NoSuchAlgorithmException e) {
+                // SHA-1 is always available on the JVM; fall back to hashCode just in case.
+                return "vi-" + Integer.toHexString(seed.hashCode());
+            }
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public String getCategory() {
+            return category;
+        }
+
+        public String getSeverity() {
+            return severity;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public List<String> getAffectedPaths() {
+            return affectedPaths;
         }
     }
 
@@ -506,549 +627,7 @@ public class JsonValidatorService {
      * Enhanced for Phase 3 with comprehensive checks.
      */
     public ValidationResult validateListeningContent(String jsonContent, GenerationRequestDTO request) {
-        ValidationResult result = new ValidationResult();
-
-        try {
-            JsonNode root = objectMapper.readTree(jsonContent);
-            Integer part = request.getPartNumber() != null ? request.getPartNumber() : 1;
-
-            // 1. Schema validation
-            validateListeningSchema(root, part, result);
-
-            if (!result.isValid()) {
-                return result; // Stop if schema is invalid
-            }
-
-            // 2. Content validation - transcript word count, speaker labels, question count
-            validateListeningTranscript(root, part, result);
-            validateListeningQuestions(root, request, result);
-
-            // 3. Business rule validation
-            validateListeningBusinessRules(root, part, request, result);
-
-        } catch (Exception e) {
-            String snippet = jsonContent.length() > 500 ? jsonContent.substring(0, 500) + "..." : jsonContent;
-            logger.error("Failed to parse Listening JSON for validation: {}. Content snippet: {}", e.getMessage(),
-                    snippet);
-            result.addSchemaError("Invalid JSON: " + e.getMessage());
-        }
-
-        return result;
-    }
-
-    /**
-     * Validate Listening JSON schema structure.
-     */
-    private void validateListeningSchema(JsonNode root, int part, ValidationResult result) {
-        // Check for transcript
-        if (!root.has("transcript")) {
-            result.addSchemaError("Missing required field: transcript");
-        }
-
-        // Check for questions array
-        if (!root.has("questions")) {
-            result.addSchemaError("Missing required field: questions");
-        } else if (!root.get("questions").isArray()) {
-            result.addSchemaError("Field 'questions' must be an array");
-        } else {
-            // Validate each question
-            JsonNode questions = root.get("questions");
-            for (int i = 0; i < questions.size(); i++) {
-                JsonNode question = questions.get(i);
-                validateListeningQuestionSchema(question, i + 1, result);
-            }
-        }
-
-        // Check for section_layout (required for Listening rendering)
-        if (!root.has("section_layout")) {
-            result.addContentError("Missing required field: section_layout");
-        } else {
-            JsonNode blocks = getListeningLayoutBlocks(root);
-            if (blocks == null) {
-                result.addContentError("section_layout must be an object with blocks array");
-            }
-        }
-    }
-
-    /**
-     * Validate Listening question schema.
-     */
-    private void validateListeningQuestionSchema(JsonNode question, int index, ValidationResult result) {
-        List<String> requiredFields = List.of("question_number", "question_type", "question_content", "correct_answer",
-                "explanation");
-
-        for (String field : requiredFields) {
-            if (!question.has(field)) {
-                result.addSchemaError(String.format("Question %d missing required field: %s", index, field));
-            }
-        }
-
-        // Validate correct_answer is an array
-        if (question.has("correct_answer") && !question.get("correct_answer").isArray()) {
-            result.addSchemaError(String.format("Question %d: correct_answer must be an array", index));
-        }
-    }
-
-    /**
-     * Validate Listening transcript content.
-     */
-    private void validateListeningTranscript(JsonNode root, int part, ValidationResult result) {
-        if (!root.has("transcript"))
-            return;
-
-        String transcript = root.get("transcript").asText();
-        int wordCount = countWords(transcript);
-
-        // Check word count
-        int[] expectedRange = LISTENING_WORD_COUNTS.getOrDefault(part, new int[] { 500, 700 });
-        if (wordCount < expectedRange[0]) {
-            result.addContentError(String.format(
-                    "Transcript word count (%d) is below minimum (%d) for Part %d",
-                    wordCount, expectedRange[0], part));
-        } else if (wordCount > expectedRange[1]) {
-            result.addContentError(String.format(
-                    "Transcript word count (%d) exceeds maximum (%d) for Part %d",
-                    wordCount, expectedRange[1], part));
-        }
-
-        // Check for speaker labels
-        validateSpeakerLabels(transcript, part, result);
-    }
-
-    /**
-     * Validate speaker labels in transcript.
-     */
-    private void validateSpeakerLabels(String transcript, int part, ValidationResult result) {
-        // Check for speaker label pattern (e.g., "SPEAKER:", "AGENT:", "RECEPTIONIST:")
-        boolean hasLabels = transcript.matches("(?s).*[A-Z][A-Z\\s]+:.*");
-
-        if (!hasLabels) {
-            result.addContentError("Transcript missing speaker labels (e.g., SPEAKER:, AGENT:)");
-            return;
-        }
-
-        // Count unique speakers
-        Set<String> speakers = new HashSet<>();
-        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("([A-Z][A-Z\\s]+):");
-        java.util.regex.Matcher matcher = pattern.matcher(transcript);
-        while (matcher.find()) {
-            speakers.add(matcher.group(1).trim());
-        }
-
-        // Validate speaker count based on part
-        int speakerCount = speakers.size();
-        switch (part) {
-            case 1:
-                if (speakerCount != 2) {
-                    result.addWarning(String.format(
-                            "Part 1 should have 2 speakers, found %d: %s",
-                            speakerCount, speakers));
-                }
-                break;
-            case 2:
-            case 4:
-                if (speakerCount != 1) {
-                    result.addWarning(String.format(
-                            "Part %d (monologue) should have 1 speaker, found %d",
-                            part, speakerCount));
-                }
-                break;
-            case 3:
-                if (speakerCount < 2 || speakerCount > 4) {
-                    result.addWarning(String.format(
-                            "Part 3 should have 2-4 speakers, found %d",
-                            speakerCount));
-                }
-                break;
-        }
-    }
-
-    /**
-     * Validate Listening questions content.
-     */
-    private void validateListeningQuestions(JsonNode root, GenerationRequestDTO request, ValidationResult result) {
-        JsonNode questions = root.get("questions");
-        if (questions == null || !questions.isArray())
-            return;
-
-        int questionCount = questions.size();
-
-        // Check question count (each part has 10 questions)
-        if (questionCount != 10) {
-            result.addContentError(String.format(
-                    "Listening part should have exactly 10 questions, found %d",
-                    questionCount));
-        }
-
-        // Get transcript for answer verification
-        String transcript = root.has("transcript") ? root.get("transcript").asText().toLowerCase() : "";
-
-        // Validate each question
-        Set<Integer> questionNumbers = new HashSet<>();
-        for (JsonNode question : questions) {
-            int num = question.has("question_number") ? question.get("question_number").asInt() : 0;
-
-            // Check for duplicate question numbers
-            if (!questionNumbers.add(num)) {
-                result.addContentError("Duplicate question number: " + num);
-            }
-
-            // Validate question type enum
-            String type = question.has("question_type") ? question.get("question_type").asText().toUpperCase() : "";
-            if (!LISTENING_QUESTION_TYPES.contains(type)) {
-                result.addContentError("Question " + num + " has invalid question_type: " + type);
-            }
-
-            // Check that answer appears in transcript (for completion questions)
-            if (question.has("correct_answer") && question.get("correct_answer").isArray()) {
-                JsonNode answers = question.get("correct_answer");
-                for (JsonNode answer : answers) {
-                    String answerText = answer.asText().toLowerCase();
-                    // Skip if answer is a letter choice (A, B, C, etc.)
-                    if (answerText.length() > 1 && !transcript.contains(answerText)) {
-                        result.addWarning(String.format(
-                                "Question %d answer '%s' may not appear in transcript",
-                                num, answer.asText()));
-                    }
-                }
-            }
-
-            String explanation = extractExplanationText(question.path("explanation"));
-            if (explanation.isEmpty() || explanation.length() < 20) {
-                result.addWarning(String.format(
-                        "Question %d has short explanation (length: %d)",
-                        num, explanation.length()));
-            }
-
-            JsonNode qContent = question.get("question_content");
-            String text = extractQuestionText(qContent);
-
-            if ("FILL_IN_BLANK".equals(type)) {
-                String wordLimit = extractWordLimit(question);
-                if ((wordLimit == null || wordLimit.isBlank()) && (text != null && !text.isBlank())) {
-                    result.addContentError(String.format(
-                            "Question %d: FILL_IN_BLANK requires word_limit",
-                            num));
-                } else if (wordLimit != null && !wordLimit.isBlank()
-                        && !VALID_WORD_LIMITS.contains(wordLimit.toUpperCase())) {
-                    result.addWarning(String.format(
-                            "Question %d: unexpected word_limit value '%s'",
-                            num, wordLimit));
-                }
-
-                // Allow empty text for Master Question Strategy (sub-questions)
-                if (text != null && !text.isBlank()) {
-                    if (!text.contains("____")) {
-                        result.addContentError(String.format(
-                                "Question %d FILL_IN_BLANK text missing blank placeholder",
-                                num));
-                    }
-                    // Note: countPlaceholders check removed or relaxed because Master Question
-                    // might have multiple blanks
-
-                    if (!hasInlineNumber(text)) {
-                        // Only warn if we expect inline numbers (which we do for Master Q)
-                        // But Master Q has multiple numbers, so hasInlineNumber might need to be smart?
-                        // Assuming hasInlineNumber checks for AT LEAST one number.
-                        result.addWarning(String.format(
-                                "Question %d text may be missing inline question number",
-                                num));
-                    }
-                }
-                validateAnswerWordLimit(num, extractAnswers(question), wordLimit, result);
-            } else if ("MULTIPLE_CHOICE".equals(type)) {
-                validateMultipleChoice(num, qContent, question, 3, result);
-            } else if ("MULTIPLE_CHOICE_MULTIPLE_ANSWERS".equals(type)) {
-                validateMultipleChoiceMultiple(num, qContent, question, 5, result);
-            } else if ("MATCHING".equals(type)) {
-                if (text == null || text.isBlank()) {
-                    result.addContentError(String.format(
-                            "Question %d MATCHING requires question_content.text",
-                            num));
-                }
-                List<String> answers = extractAnswers(question);
-                if (answers.size() != 1) {
-                    result.addContentError(String.format(
-                            "Question %d MATCHING should have exactly one correct answer",
-                            num));
-                }
-            }
-
-            // Check explanation language
-            if (request.getExplanationLanguage() == GenerationRequestDTO.ExplanationLanguage.VI) {
-                if (!containsVietnamese(explanation) && !explanation.isEmpty()) {
-                    result.addWarning(String.format(
-                            "Question %d explanation may not be in Vietnamese", num));
-                }
-            }
-        }
-    }
-
-    /**
-     * Validate Listening business rules.
-     */
-    private void validateListeningBusinessRules(JsonNode root, int part, GenerationRequestDTO request,
-            ValidationResult result) {
-        // Check question number range based on part
-        JsonNode questions = root.get("questions");
-        Map<Integer, JsonNode> questionMap = new HashMap<>();
-        Map<String, Integer> typeCounts = new HashMap<>();
-        if (questions != null && questions.isArray()) {
-            int expectedStart = (part - 1) * 10 + 1;
-            int expectedEnd = part * 10;
-
-            for (JsonNode question : questions) {
-                int num = question.has("question_number") ? question.get("question_number").asInt() : 0;
-                String type = question.path("question_type").asText("").toUpperCase();
-                if (!type.isBlank()) {
-                    typeCounts.merge(type, 1, (a, b) -> Objects.requireNonNull(a) + Objects.requireNonNull(b));
-                }
-                questionMap.put(num, question);
-                if (num < expectedStart || num > expectedEnd) {
-                    result.addWarning(String.format(
-                            "Question number %d out of expected range for Part %d (Q%d-Q%d)",
-                            num, part, expectedStart, expectedEnd));
-                }
-            }
-        }
-
-        if (request.getQuestionTypeCounts() != null && !request.getQuestionTypeCounts().isEmpty()) {
-            request.getQuestionTypeCounts().forEach((type, expectedCount) -> {
-                int actual = typeCounts.getOrDefault(type, 0);
-                if (actual != expectedCount) {
-                    result.addWarning(String.format(
-                            "Question type count mismatch for %s: expected %d, got %d",
-                            type, expectedCount, actual));
-                }
-            });
-        }
-
-        if (request.getQuestionTypes() != null && !request.getQuestionTypes().isEmpty()) {
-            for (String type : request.getQuestionTypes()) {
-                if (!typeCounts.containsKey(type)) {
-                    result.addWarning("Requested question type missing: " + type);
-                }
-            }
-        }
-
-        // Check section_layout if present
-        if (root.has("section_layout")) {
-            JsonNode blocks = getListeningLayoutBlocks(root);
-            if (blocks != null && blocks.isArray() && blocks.isEmpty()) {
-                result.addWarning("section_layout.blocks is empty");
-            }
-            if (blocks != null && blocks.isArray()) {
-                Set<Integer> assignedNumbers = new HashSet<>();
-                int blockIndex = 0;
-                for (JsonNode block : blocks) {
-                    if (!block.has("block_type")) {
-                        result.addContentError("section_layout block " + blockIndex + " missing block_type");
-                        blockIndex++;
-                        continue;
-                    }
-
-                    // Get and validate block_type
-                    String rawBlockType = block.get("block_type").asText();
-
-                    // Truncate hallucinated block_type values (AI sometimes outputs garbage)
-                    if (rawBlockType.length() > 50) {
-                        result.addContentError("Block " + blockIndex + " has malformed block_type (truncated): "
-                                + rawBlockType.substring(0, 50) + "...");
-                        blockIndex++;
-                        continue;
-                    }
-
-                    String blockType = rawBlockType.toUpperCase().trim();
-                    if (!LISTENING_BLOCK_TYPES.contains(blockType)) {
-                        result.addContentError("Block " + blockIndex + " has invalid block_type: '" + blockType
-                                + "'. Must be one of: " + LISTENING_BLOCK_TYPES);
-                        blockIndex++;
-                        continue;
-                    }
-
-                    JsonNode numberNode = block.get("question_numbers");
-                    if (numberNode == null || !numberNode.isArray() || numberNode.isEmpty()) {
-                        result.addContentError("Block " + blockIndex + " missing question_numbers array");
-                        blockIndex++;
-                        continue;
-                    }
-
-                    List<JsonNode> blockQuestions = new ArrayList<>();
-                    for (JsonNode n : numberNode) {
-                        int qNum = n.asInt();
-                        if (!assignedNumbers.add(qNum)) {
-                            result.addContentError("Duplicate question number in section_layout: " + qNum);
-                        }
-                        JsonNode q = questionMap.get(qNum);
-                        if (q == null) {
-                            result.addWarning("section_layout references missing question: " + qNum);
-                        } else {
-                            blockQuestions.add(q);
-                        }
-                    }
-
-                    JsonNode content = block.get("content");
-                    String instructions = content != null ? content.path("instructions_text").asText("") : "";
-
-                    switch (blockType) {
-                        case "NOTE_COMPLETION":
-                            if (content == null || content.path("instructions_text").asText("").isBlank()) {
-                                result.addWarning("NOTE_COMPLETION block should include instructions_text");
-                            }
-                            for (JsonNode q : blockQuestions) {
-                                String qType = q.path("question_type").asText("").toUpperCase();
-                                if (!"FILL_IN_BLANK".equals(qType)) {
-                                    result.addContentError(String.format(
-                                            "NOTE_COMPLETION block expects FILL_IN_BLANK (question %d)",
-                                            q.path("question_number").asInt(0)));
-                                }
-                            }
-                            break;
-                        case "MATCHING_FEATURES":
-                            if (content == null || !content.has("options") || !content.get("options").isArray()) {
-                                result.addContentError("MATCHING_FEATURES block requires options array");
-                            }
-                            for (JsonNode q : blockQuestions) {
-                                String qType = q.path("question_type").asText("").toUpperCase();
-                                if (!"MATCHING".equals(qType)) {
-                                    result.addContentError(String.format(
-                                            "MATCHING_FEATURES block expects MATCHING (question %d)",
-                                            q.path("question_number").asInt(0)));
-                                }
-                            }
-                            break;
-                        case "PLAN_MAP_DIAGRAM_LABELING":
-                            if (content == null || content.path("image_url").asText("").isBlank()) {
-                                result.addContentError("PLAN_MAP_DIAGRAM_LABELING block requires image_url");
-                            }
-                            if (content == null || !content.has("options") || !content.get("options").isArray()) {
-                                result.addContentError("PLAN_MAP_DIAGRAM_LABELING block requires options array");
-                            }
-                            for (JsonNode q : blockQuestions) {
-                                String qType = q.path("question_type").asText("").toUpperCase();
-                                if (!"MATCHING".equals(qType)) {
-                                    result.addContentError(String.format(
-                                            "PLAN_MAP_DIAGRAM_LABELING block expects MATCHING (question %d)",
-                                            q.path("question_number").asInt(0)));
-                                }
-                            }
-                            break;
-                        case "INSTRUCTIONS_ONLY":
-                            if (content == null || instructions.isBlank()) {
-                                result.addWarning("INSTRUCTIONS_ONLY block should include instructions_text");
-                            }
-                            for (JsonNode q : blockQuestions) {
-                                String qType = q.path("question_type").asText("").toUpperCase();
-                                if (!Set.of("MULTIPLE_CHOICE", "MULTIPLE_CHOICE_MULTIPLE_ANSWERS", "MATCHING")
-                                        .contains(qType)) {
-                                    result.addWarning(String.format(
-                                            "INSTRUCTIONS_ONLY block has unexpected type %s (question %d)",
-                                            qType, q.path("question_number").asInt(0)));
-                                }
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-
-                    if (!instructions.isBlank() && instructions.toLowerCase().contains("choose two")) {
-                        Map<String, Integer> stemCounts = new HashMap<>();
-                        for (JsonNode q : blockQuestions) {
-                            if ("MULTIPLE_CHOICE_MULTIPLE_ANSWERS".equals(
-                                    q.path("question_type").asText("").toUpperCase())) {
-                                String stem = extractQuestionText(q.get("question_content")).trim();
-                                stemCounts.merge(stem, 1,
-                                        (a, b) -> Objects.requireNonNull(a) + Objects.requireNonNull(b));
-                            }
-                        }
-                        for (Map.Entry<String, Integer> entry : stemCounts.entrySet()) {
-                            if (entry.getValue() != 2) {
-                                result.addWarning("Choose TWO block should duplicate each stem twice");
-                                break;
-                            }
-                        }
-                    }
-
-                    blockIndex++;
-                }
-                if (questionMap.size() > 0 && assignedNumbers.size() != questionMap.size()) {
-                    result.addWarning("Some questions are not assigned to any section_layout block");
-                }
-            }
-        }
-
-        // For Part 2, require figure_description for map/plan labelling
-        if (part == 2) {
-            boolean needsFigure = hasListeningMapOrPlan(root);
-            if (needsFigure && !root.has("figure_description")) {
-                result.addContentError("Part 2 map/plan questions require figure_description");
-            } else if (root.has("figure_description")) {
-                JsonNode figDesc = root.get("figure_description");
-                if (!figDesc.has("title")) {
-                    result.addWarning("figure_description should have a title");
-                }
-                if (!figDesc.has("elements") || !figDesc.get("elements").isArray()) {
-                    result.addWarning("figure_description should have elements array for map locations");
-                }
-            }
-        }
-
-        // Check for audio_placeholder
-        if (!root.has("audio_placeholder")) {
-            result.addContentError("audio_placeholder is required for Listening metadata");
-        } else {
-            JsonNode audio = root.get("audio_placeholder");
-            if (!audio.has("duration_estimate")) {
-                result.addWarning("audio_placeholder should include duration_estimate");
-            }
-            if (!audio.has("speaker_count")) {
-                result.addWarning("audio_placeholder should include speaker_count");
-            }
-            if (!audio.has("accent_recommendation")) {
-                result.addWarning("audio_placeholder should include accent_recommendation");
-            }
-            if (!audio.has("pacing_notes")) {
-                result.addWarning("audio_placeholder should include pacing_notes");
-            }
-            if (!audio.has("background_ambient")) {
-                result.addWarning("audio_placeholder should include background_ambient");
-            }
-        }
-    }
-
-    /**
-     * Extract Listening layout blocks from section_layout (object or array).
-     */
-    private JsonNode getListeningLayoutBlocks(JsonNode root) {
-        JsonNode layout = root.get("section_layout");
-        if (layout == null) {
-            return null;
-        }
-        if (layout.isArray()) {
-            return layout;
-        }
-        if (layout.isObject() && layout.has("blocks") && layout.get("blocks").isArray()) {
-            return layout.get("blocks");
-        }
-        return null;
-    }
-
-    /**
-     * Detect whether Listening content includes map/plan/diagram labeling
-     * questions.
-     */
-    private boolean hasListeningMapOrPlan(JsonNode root) {
-        JsonNode blocks = getListeningLayoutBlocks(root);
-        if (blocks == null || !blocks.isArray()) {
-            return false;
-        }
-        for (JsonNode block : blocks) {
-            String blockType = block.path("block_type").asText("").toUpperCase();
-            if ("PLAN_MAP_DIAGRAM_LABELING".equals(blockType)) {
-                return true;
-            }
-        }
-        return false;
+        return listeningValidator.validateListeningContent(jsonContent, request);
     }
 
     // ==================== WRITING VALIDATION ====================
@@ -1058,328 +637,7 @@ public class JsonValidatorService {
      * Enhanced for Phase 4 with Task 1 and Task 2 specific validation.
      */
     public ValidationResult validateWritingContent(String jsonContent, GenerationRequestDTO request) {
-        ValidationResult result = new ValidationResult();
-
-        try {
-            JsonNode root = objectMapper.readTree(jsonContent);
-
-            // Check for task prompt
-            if (!root.has("task_prompt")) {
-                result.addSchemaError("Missing required field: task_prompt");
-                return result;
-            }
-
-            // Check for task_type
-            if (!root.has("task_type")) {
-                result.addWarning("Missing task_type field");
-            }
-
-            if (!root.has("word_requirement")) {
-                result.addSchemaError("Missing required field: word_requirement");
-                return result;
-            }
-
-            // Determine task number
-            Integer part = request.getPartNumber() != null ? request.getPartNumber() : 1;
-            String testType = request.getTestType() != null ? request.getTestType().name() : "ACADEMIC";
-
-            if (part == 1) {
-                // Task 1 validation
-                if ("GENERAL_TRAINING".equals(testType)) {
-                    // GT Writing Task 1 = Letter
-                    validateLetterContent(root, result);
-                } else {
-                    // Academic Writing Task 1 = Chart/Graph
-                    if (!root.has("chart_data")) {
-                        result.addSchemaError("Academic Task 1 requires chart_data");
-                    } else if (root.has("chart_data")) {
-                        validateChartData(root.get("chart_data"), result);
-                        JsonNode chartData = root.get("chart_data");
-                        if (chartData.has("chart_type")) {
-                            String chartType = chartData.get("chart_type").asText();
-                            if (("process".equals(chartType) || "map".equals(chartType))
-                                    && !root.has("figure_description")) {
-                                result.addContentError("Process/Map chart requires figure_description");
-                            }
-                        }
-                    }
-                }
-            } else {
-                // Task 2 = Essay
-                validateEssayContent(root, request, result);
-            }
-
-            // Validate sample_answer if present
-            if (root.has("sample_answer")) {
-                JsonNode sample = root.get("sample_answer");
-                if (!sample.has("content") || sample.get("content").asText().isEmpty()) {
-                    result.addWarning("sample_answer is present but has no content");
-                } else {
-                    int wordCount = countWords(sample.get("content").asText());
-                    int minWords = (part == 1) ? 150 : 250;
-                    if (wordCount < minWords) {
-                        result.addWarning(String.format(
-                                "sample_answer word count (%d) below minimum (%d)", wordCount, minWords));
-                    }
-                }
-            }
-
-        } catch (Exception e) {
-            result.addSchemaError("Invalid JSON: " + e.getMessage());
-        }
-
-        return result;
-    }
-
-    /**
-     * Validate chart data structure.
-     * Enhanced for Phase 4 with comprehensive validation.
-     */
-    private void validateChartData(JsonNode chartData, ValidationResult result) {
-        // Required fields for all chart types
-        List<String> requiredFields = List.of("chart_type", "title");
-
-        for (String field : requiredFields) {
-            if (!chartData.has(field)) {
-                result.addContentError("Chart data missing required field: " + field);
-            }
-        }
-
-        // Get chart type
-        String chartType = chartData.has("chart_type") ? chartData.get("chart_type").asText() : "";
-
-        // Validate based on chart type
-        if (chartType.isEmpty()) {
-            result.addContentError("chart_type is required");
-            return;
-        }
-
-        // Validate chart types that need axes and series
-        if (chartType.contains("bar") || chartType.contains("line")) {
-            validateAxisChartData(chartData, result);
-        } else if (chartType.equals("pie_standard")) {
-            validatePieChartData(chartData, result);
-        } else if (chartType.equals("table")) {
-            validateTableData(chartData, result);
-        } else if (chartType.equals("process") || chartType.equals("map")) {
-            // These need figure_description instead
-            if (!chartData.has("elements") && !chartData.has("figure_description")) {
-                result.addWarning("Process/Map charts should have elements or figure_description");
-            }
-        }
-
-        // Check for data source
-        if (!chartData.has("source")) {
-            result.addWarning("Chart data should include source attribution");
-        }
-    }
-
-    /**
-     * Validate axis-based chart data (bar, line).
-     */
-    private void validateAxisChartData(JsonNode chartData, ValidationResult result) {
-        // Check for required axis objects
-        if (!chartData.has("x_axis")) {
-            result.addContentError("Bar/Line chart requires x_axis");
-        } else {
-            JsonNode xAxis = chartData.get("x_axis");
-            if (!xAxis.has("values") || !xAxis.get("values").isArray()) {
-                result.addContentError("x_axis must have values array");
-            } else {
-                int xValues = xAxis.get("values").size();
-                if (xValues < 3) {
-                    result.addWarning("x_axis should have at least 3 data points for meaningful comparison");
-                }
-            }
-        }
-
-        if (!chartData.has("y_axis")) {
-            result.addContentError("Bar/Line chart requires y_axis");
-        } else {
-            JsonNode yAxis = chartData.get("y_axis");
-            if (!yAxis.has("label")) {
-                result.addWarning("y_axis should have a label");
-            }
-        }
-
-        // Check series data
-        if (!chartData.has("series") || !chartData.get("series").isArray()) {
-            result.addContentError("Chart requires series array with data");
-        } else {
-            JsonNode series = chartData.get("series");
-            if (series.isEmpty()) {
-                result.addContentError("series array is empty");
-            } else {
-                validateSeriesData(series, chartData, result);
-            }
-        }
-    }
-
-    /**
-     * Validate series data consistency.
-     */
-    private void validateSeriesData(JsonNode series, JsonNode chartData, ValidationResult result) {
-        int expectedLength = 0;
-        if (chartData.has("x_axis") && chartData.get("x_axis").has("values")) {
-            expectedLength = chartData.get("x_axis").get("values").size();
-        }
-
-        for (int i = 0; i < series.size(); i++) {
-            JsonNode s = series.get(i);
-
-            if (!s.has("name")) {
-                result.addContentError("Series " + i + " missing name");
-            }
-
-            if (!s.has("values") || !s.get("values").isArray()) {
-                result.addContentError("Series " + i + " missing values array");
-            } else if (expectedLength > 0 && s.get("values").size() != expectedLength) {
-                result.addContentError("Series " + i + " has " + s.get("values").size() +
-                        " values but x_axis has " + expectedLength + " values");
-            }
-
-            if (!s.has("color")) {
-                result.addWarning("Series " + i + " should have a color for visualization");
-            }
-        }
-    }
-
-    /**
-     * Validate pie chart data.
-     */
-    private void validatePieChartData(JsonNode chartData, ValidationResult result) {
-        if (!chartData.has("series") || !chartData.get("series").isArray()) {
-            result.addContentError("Pie chart requires series array");
-            return;
-        }
-
-        JsonNode series = chartData.get("series");
-        if (series.isEmpty()) {
-            result.addContentError("Pie chart series is empty");
-            return;
-        }
-
-        // Check if values sum approximately to 100
-        double total = 0;
-        for (JsonNode category : series) {
-            if (category.has("values") && category.get("values").isArray() && !category.get("values").isEmpty()) {
-                total += category.get("values").get(0).asDouble();
-            } else if (category.has("value")) {
-                total += category.get("value").asDouble();
-            }
-        }
-
-        if (total > 0 && (total < 95 || total > 105)) {
-            result.addWarning("Pie chart values sum to " + total + "%, expected approximately 100%");
-        }
-    }
-
-    /**
-     * Validate table data.
-     */
-    private void validateTableData(JsonNode chartData, ValidationResult result) {
-        if (!chartData.has("rows") && !chartData.has("data")) {
-            result.addContentError("Table chart requires rows or data field");
-        }
-
-        if (!chartData.has("headers") && !chartData.has("columns")) {
-            result.addWarning("Table should have headers or columns defined");
-        }
-    }
-
-    /**
-     * Validate Task 2 essay content.
-     */
-    private void validateEssayContent(JsonNode root, GenerationRequestDTO request, ValidationResult result) {
-        // Check task prompt exists and has content
-        if (!root.has("task_prompt")) {
-            result.addSchemaError("Missing task_prompt for essay question");
-            return;
-        }
-
-        String taskPrompt = root.get("task_prompt").asText();
-
-        // Check minimum length
-        if (taskPrompt.length() < 50) {
-            result.addContentError("Essay prompt too short (minimum 50 characters)");
-        }
-
-        // Check for essay type indicators
-        boolean hasInstruction = false;
-        String[] instructionPatterns = {
-                "agree or disagree",
-                "discuss both views",
-                "advantages and disadvantages",
-                "problems and solutions",
-                "what are the",
-                "give your opinion",
-                "to what extent"
-        };
-
-        String lowerPrompt = taskPrompt.toLowerCase();
-        for (String pattern : instructionPatterns) {
-            if (lowerPrompt.contains(pattern)) {
-                hasInstruction = true;
-                break;
-            }
-        }
-
-        if (!hasInstruction) {
-            result.addWarning("Essay prompt may be missing clear task instruction (agree/disagree, discuss, etc.)");
-        }
-
-        // Check for word requirement
-        if (!lowerPrompt.contains("250") && !lowerPrompt.contains("word")) {
-            result.addWarning("Essay prompt should mention minimum word count (250 words)");
-        }
-
-        // Essay metadata is required for Task 2
-        if (!root.has("essay_metadata")) {
-            result.addContentError("Task 2 requires essay_metadata");
-            return;
-        }
-
-        JsonNode meta = root.get("essay_metadata");
-        List<String> validEssayTypes = List.of(
-                "opinion", "discussion", "advantages_disadvantages",
-                "problem_solution", "two_part");
-
-        if (meta.has("essay_type")) {
-            String essayType = meta.get("essay_type").asText().toLowerCase();
-            if (!validEssayTypes.contains(essayType)) {
-                result.addWarning("Unknown essay_type: " + essayType);
-            }
-        }
-    }
-
-    /**
-     * Validate General Training letter content.
-     */
-    private void validateLetterContent(JsonNode root, ValidationResult result) {
-        if (!root.has("letter_context")) {
-            result.addContentError("GT Task 1 requires letter_context");
-            return;
-        }
-
-        JsonNode ctx = root.get("letter_context");
-
-        if (!ctx.has("recipient")) {
-            result.addContentError("letter_context should specify recipient");
-        }
-
-        if (!ctx.has("relationship")) {
-            result.addWarning("letter_context should specify relationship (formal/informal/semi-formal)");
-        } else {
-            String relationship = ctx.get("relationship").asText().toLowerCase();
-            if (!relationship.equals("formal") && !relationship.equals("informal")
-                    && !relationship.equals("semi-formal")) {
-                result.addWarning("letter_context relationship should be formal, informal, or semi-formal");
-            }
-        }
-
-        if (!ctx.has("purpose")) {
-            result.addWarning("letter_context should specify purpose");
-        }
+        return writingValidator.validateWritingContent(jsonContent, request);
     }
 
     // ==================== UTILITY METHODS ====================
@@ -1533,62 +791,12 @@ public class JsonValidatorService {
 
     private void validateMultipleChoice(int num, JsonNode qContent, JsonNode question, int expectedOptions,
             ValidationResult result) {
-        JsonNode options = qContent != null ? qContent.get("options") : null;
-        if (options == null || !options.isArray()) {
-            result.addContentError(String.format(
-                    "Question %d: MULTIPLE_CHOICE requires options array",
-                    num));
-            return;
-        }
-        if (options.size() != expectedOptions) {
-            result.addWarning(String.format(
-                    "Question %d: expected %d options, found %d",
-                    num, expectedOptions, options.size()));
-        }
-        Set<String> optionLetters = extractOptionLetters(options);
-        List<String> answers = extractAnswers(question);
-        if (answers.size() != 1) {
-            result.addContentError(String.format(
-                    "Question %d: MULTIPLE_CHOICE should have exactly one correct answer",
-                    num));
-            return;
-        }
-        if (!optionLetters.contains(answers.get(0).toUpperCase())) {
-            result.addContentError(String.format(
-                    "Question %d: correct_answer '%s' not found in options",
-                    num, answers.get(0)));
-        }
+        JsonValidationSupport.validateMultipleChoice(num, qContent, question, expectedOptions, result);
     }
 
     private void validateMultipleChoiceMultiple(int num, JsonNode qContent, JsonNode question, int expectedOptions,
             ValidationResult result) {
-        JsonNode options = qContent != null ? qContent.get("options") : null;
-        if (options == null || !options.isArray()) {
-            result.addContentError(String.format(
-                    "Question %d: MULTIPLE_CHOICE_MULTIPLE_ANSWERS requires options array",
-                    num));
-            return;
-        }
-        if (options.size() < 4) {
-            result.addWarning(String.format(
-                    "Question %d: expected at least 4 options, found %d",
-                    num, options.size()));
-        }
-        List<String> answers = extractAnswers(question);
-        if (answers.size() != 2) {
-            result.addContentError(String.format(
-                    "Question %d: MULTIPLE_CHOICE_MULTIPLE_ANSWERS should have TWO correct answers",
-                    num));
-            return;
-        }
-        Set<String> optionLetters = extractOptionLetters(options);
-        for (String ans : answers) {
-            if (!optionLetters.contains(ans.toUpperCase())) {
-                result.addContentError(String.format(
-                        "Question %d: correct_answer '%s' not found in options",
-                        num, ans));
-            }
-        }
+        JsonValidationSupport.validateMultipleChoiceMultiple(num, qContent, question, expectedOptions, result);
     }
 
     private void validateMatchingOptions(int num, JsonNode qContent, JsonNode question, ValidationResult result) {
@@ -1819,44 +1027,14 @@ public class JsonValidatorService {
     }
 
     private Set<String> extractOptionLetters(JsonNode options) {
-        Set<String> letters = new HashSet<>();
-        if (options == null || !options.isArray()) {
-            return letters;
-        }
-        for (JsonNode opt : options) {
-            if (opt.isTextual()) {
-                String text = opt.asText().trim();
-                if (!text.isEmpty()) {
-                    letters.add(text.substring(0, 1).toUpperCase());
-                }
-            } else if (opt.isObject()) {
-                String letter = opt.path("letter").asText(null);
-                if (letter != null && !letter.isBlank()) {
-                    letters.add(letter.trim().toUpperCase());
-                }
-            }
-        }
-        return letters;
+        return JsonValidationSupport.extractOptionLetters(options);
     }
 
     /**
      * Count words in text (handles HTML).
      */
     public int countWords(String text) {
-        if (text == null || text.isEmpty()) {
-            return 0;
-        }
-
-        // Remove HTML tags
-        String plainText = text.replaceAll("<[^>]+>", " ");
-        // Remove extra whitespace
-        plainText = plainText.replaceAll("\\s+", " ").trim();
-
-        if (plainText.isEmpty()) {
-            return 0;
-        }
-
-        return plainText.split("\\s+").length;
+        return JsonValidationSupport.countWords(text);
     }
 
     /**
@@ -1871,53 +1049,14 @@ public class JsonValidatorService {
      * @return true if the answer (or all its components) appear in the passage
      */
     private boolean answerAppearsInPassage(String answer, String passageLower) {
-        if (answer == null || answer.isBlank()) {
-            return true; // Empty answers are not validated
-        }
-
-        String answerLower = answer.toLowerCase().trim();
-
-        // First, try exact match
-        if (passageLower.contains(answerLower)) {
-            return true;
-        }
-
-        // For multi-word answers, check if ALL significant words appear
-        String[] words = answerLower.split("\\s+");
-        if (words.length > 1) {
-            for (String word : words) {
-                // Skip very short words (articles, prepositions)
-                if (word.length() <= 2) {
-                    continue;
-                }
-                if (!passageLower.contains(word)) {
-                    return false;
-                }
-            }
-            return true; // All significant words found
-        }
-
-        // Single word - exact match already failed
-        return false;
+        return JsonValidationSupport.answerAppearsInPassage(answer, passageLower);
     }
 
     /**
      * Check if text contains Vietnamese characters.
      */
     private boolean containsVietnamese(String text) {
-        if (text == null)
-            return false;
-
-        // Vietnamese diacritic characters
-        String vietnamese = "àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ";
-        String upperVietnamese = vietnamese.toUpperCase();
-
-        for (char c : text.toLowerCase().toCharArray()) {
-            if (vietnamese.indexOf(c) >= 0 || upperVietnamese.indexOf(c) >= 0) {
-                return true;
-            }
-        }
-        return false;
+        return JsonValidationSupport.containsVietnamese(text);
     }
 
     /**
@@ -1925,157 +1064,7 @@ public class JsonValidatorService {
      * Handles Reading, Listening, and Writing content structures.
      */
     public GeneratedContentDTO parseGeneratedContent(String jsonContent) throws Exception {
-        JsonNode root = objectMapper.readTree(jsonContent);
-        GeneratedContentDTO content = new GeneratedContentDTO();
-
-        // Parse section (Reading passage) or create from transcript (Listening)
-        if (root.has("section")) {
-            // Reading format
-            JsonNode sectionNode = root.get("section");
-            GeneratedContentDTO.GeneratedSectionDTO section = new GeneratedContentDTO.GeneratedSectionDTO();
-
-            if (sectionNode.has("passage_text")) {
-                section.setPassageText(sectionNode.get("passage_text").asText());
-                section.setWordCount(countWords(section.getPassageText()));
-            }
-            if (sectionNode.has("word_count_valid")) {
-                section.setWordCountValid(sectionNode.get("word_count_valid").asBoolean());
-            }
-
-            content.setSection(section);
-        } else if (root.has("transcript")) {
-            // Listening format - convert transcript to section
-            GeneratedContentDTO.GeneratedSectionDTO section = new GeneratedContentDTO.GeneratedSectionDTO();
-            section.setPassageText(root.get("transcript").asText());
-            section.setWordCount(countWords(section.getPassageText()));
-
-            // Parse section_layout for Listening
-            if (root.has("section_layout")) {
-                section.setSectionLayout(root.get("section_layout"));
-            }
-
-            content.setSection(section);
-        }
-
-        // Writing format - map task_prompt to section
-        if (root.has("task_prompt")) {
-            GeneratedContentDTO.GeneratedSectionDTO section = content.getSection();
-            if (section == null) {
-                section = new GeneratedContentDTO.GeneratedSectionDTO();
-                content.setSection(section);
-            }
-            String taskPrompt = root.get("task_prompt").asText();
-            section.setTaskText(taskPrompt);
-            if (section.getPassageText() == null || section.getPassageText().isBlank()) {
-                section.setPassageText(taskPrompt);
-                section.setWordCount(countWords(taskPrompt));
-            }
-        }
-
-        // Parse section_layout if present (Listening or hybrid)
-        if (root.has("section_layout") && content.getSection() != null) {
-            content.getSection().setSectionLayout(root.get("section_layout"));
-        }
-
-        // Parse questions
-        if (root.has("questions") && root.get("questions").isArray()) {
-            List<GeneratedContentDTO.GeneratedQuestionDTO> questions = new ArrayList<>();
-
-            for (JsonNode qNode : root.get("questions")) {
-                GeneratedContentDTO.GeneratedQuestionDTO question = new GeneratedContentDTO.GeneratedQuestionDTO();
-
-                if (qNode.has("question_number")) {
-                    question.setQuestionNumber(qNode.get("question_number").asInt());
-                }
-                if (qNode.has("question_type")) {
-                    question.setQuestionType(qNode.get("question_type").asText());
-                }
-                if (qNode.has("question_content")) {
-                    question.setQuestionContent(qNode.get("question_content"));
-                }
-                if (qNode.has("correct_answer") && qNode.get("correct_answer").isArray()) {
-                    List<String> answers = new ArrayList<>();
-                    for (JsonNode ans : qNode.get("correct_answer")) {
-                        answers.add(ans.asText());
-                    }
-                    question.setCorrectAnswer(answers);
-                }
-                if (qNode.has("explanation")) {
-                    question.setExplanation(qNode.get("explanation"));
-                }
-                if (qNode.has("word_limit") && !qNode.get("word_limit").isNull()) {
-                    question.setWordLimit(qNode.get("word_limit").asText());
-                }
-                if (qNode.has("image_url") && !qNode.get("image_url").isNull()) {
-                    question.setImageUrl(qNode.get("image_url").asText());
-                } else if (qNode.has("imageUrl") && !qNode.get("imageUrl").isNull()) {
-                    question.setImageUrl(qNode.get("imageUrl").asText());
-                }
-
-                questions.add(question);
-            }
-
-            content.setQuestions(questions);
-        }
-
-        // Parse chart data if present (Writing Task 1)
-        if (root.has("chart_data")) {
-            content.setChartData(root.get("chart_data"));
-        }
-
-        if (root.has("task_type")) {
-            content.setTaskType(root.get("task_type").asText());
-        }
-        if (root.has("word_requirement")) {
-            content.setWordRequirement(root.get("word_requirement").asInt());
-        }
-        if (root.has("letter_context")) {
-            content.setLetterContext(root.get("letter_context"));
-        }
-        if (root.has("essay_metadata")) {
-            content.setEssayMetadata(root.get("essay_metadata"));
-        }
-
-        // Parse figure description if present (Listening Part 2 maps, Writing diagrams)
-        if (root.has("figure_description")) {
-            content.setFigureDescription(root.get("figure_description"));
-        }
-
-        // Parse audio placeholder if present (Listening)
-        if (root.has("audio_placeholder")) {
-            JsonNode audioNode = root.get("audio_placeholder");
-            GeneratedContentDTO.AudioPlaceholderDTO audio = new GeneratedContentDTO.AudioPlaceholderDTO();
-
-            if (audioNode.has("duration_estimate")) {
-                audio.setDurationEstimate(audioNode.get("duration_estimate").asText());
-            }
-            if (audioNode.has("speaker_count")) {
-                audio.setSpeakerCount(audioNode.get("speaker_count").asInt());
-            }
-            if (audioNode.has("speaker_genders") && audioNode.get("speaker_genders").isArray()) {
-                List<String> genders = new ArrayList<>();
-                for (JsonNode gender : audioNode.get("speaker_genders")) {
-                    genders.add(gender.asText());
-                }
-                audio.setSpeakerGenders(genders);
-            }
-            if (audioNode.has("accent_recommendation")) {
-                audio.setAccentRecommendation(audioNode.get("accent_recommendation").asText());
-            }
-            if (audioNode.has("pacing_notes")) {
-                audio.setPacingNotes(audioNode.get("pacing_notes").asText());
-            }
-            if (audioNode.has("background_ambient")) {
-                audio.setBackgroundAmbient(audioNode.get("background_ambient").asText());
-            }
-            if (audioNode.has("tts_ready")) {
-                audio.setTtsReady(audioNode.get("tts_ready").asBoolean());
-            }
-
-            content.setAudioPlaceholder(audio);
-        }
-
-        return content;
+        return contentParser.parseGeneratedContent(jsonContent);
     }
 
     /**
@@ -2092,42 +1081,6 @@ public class JsonValidatorService {
      * @return The content with renumbered questions
      */
     public GeneratedContentDTO renumberQuestionsForReadingPart(GeneratedContentDTO content, int partNumber) {
-        if (content == null || content.getQuestions() == null || content.getQuestions().isEmpty()) {
-            return content;
-        }
-
-        List<GeneratedContentDTO.GeneratedQuestionDTO> questions = content.getQuestions();
-
-        // Check if renumbering is needed
-        int firstQuestionNumber = questions.get(0).getQuestionNumber();
-
-        int expectedStart;
-        int offset;
-        switch (partNumber) {
-            case 2:
-                expectedStart = 14;
-                offset = 13;
-                break;
-            case 3:
-                expectedStart = 27;
-                offset = 26;
-                break;
-            default:
-                // Part 1 or unknown - no renumbering needed
-                return content;
-        }
-
-        // Only renumber if questions start at 1 (AI didn't follow instructions)
-        if (firstQuestionNumber == 1) {
-            logger.info("Renumbering questions for Part {} - adding offset {}", partNumber, offset);
-            for (GeneratedContentDTO.GeneratedQuestionDTO q : questions) {
-                q.setQuestionNumber(q.getQuestionNumber() + offset);
-            }
-        } else if (firstQuestionNumber != expectedStart) {
-            logger.warn("Part {} questions start at {} (expected {}), not renumbering",
-                    partNumber, firstQuestionNumber, expectedStart);
-        }
-
-        return content;
+        return contentParser.renumberQuestionsForReadingPart(content, partNumber);
     }
 }

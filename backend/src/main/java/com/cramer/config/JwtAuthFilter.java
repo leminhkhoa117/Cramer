@@ -1,10 +1,13 @@
 package com.cramer.config;
 
+import com.cramer.entity.Profile;
+import com.cramer.repository.ProfileRepository;
 import com.cramer.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.lang.Nullable;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -16,16 +19,19 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final ProfileRepository profileRepository;
 
-    public JwtAuthFilter(JwtUtil jwtUtil) {
+    public JwtAuthFilter(JwtUtil jwtUtil, @Nullable ProfileRepository profileRepository) {
         this.jwtUtil = jwtUtil;
+        this.profileRepository = profileRepository;
     }
 
     @Override
@@ -50,8 +56,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 if (jwtUtil.validateToken(jwt)) {
-                    // Grant a default authority to every valid token holder
-                    List<SimpleGrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+                    List<SimpleGrantedAuthority> authorities = buildAuthorities(userId, request);
                     UserDetails userDetails = new User(userId, "", authorities);
 
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
@@ -65,5 +70,44 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private List<SimpleGrantedAuthority> buildAuthorities(String userId, HttpServletRequest request) {
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+
+        if (requiresAdminAuthority(request) && isAdminProfile(userId)) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        }
+
+        return authorities;
+    }
+
+    private boolean requiresAdminAuthority(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        if (uri == null) {
+            return false;
+        }
+        if (contextPath != null && !contextPath.isBlank() && uri.startsWith(contextPath)) {
+            uri = uri.substring(contextPath.length());
+        }
+        return uri.equals("/api/admin") || uri.startsWith("/api/admin/");
+    }
+
+    private boolean isAdminProfile(String userId) {
+        if (profileRepository == null) {
+            return false;
+        }
+
+        try {
+            UUID profileId = UUID.fromString(userId);
+            return profileRepository.findById(profileId)
+                    .map(Profile::getIsAdmin)
+                    .orElse(false);
+        } catch (IllegalArgumentException e) {
+            logger.warn("JWT subject is not a valid UUID for admin authorization: " + userId);
+            return false;
+        }
     }
 }

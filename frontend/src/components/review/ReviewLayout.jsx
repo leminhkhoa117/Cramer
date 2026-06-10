@@ -1,7 +1,12 @@
 import React from 'react';
-import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
+import { Group, Panel, Separator } from 'react-resizable-panels';
 import ReviewColumn from './ReviewColumn';
 import '../../css/common/review-layout-base.css';
+
+const toPanelSize = (size, fallback) => {
+    const value = size ?? fallback;
+    return typeof value === 'number' ? `${value}%` : value;
+};
 
 /**
  * ReviewLayout - Unified resizable multi-panel layout for review pages
@@ -27,13 +32,13 @@ const ReviewLayout = ({ columns, className = '', children }) => {
 
     return (
         <div className={`review-main-content ${className}`}>
-            <PanelGroup direction="horizontal" className="review-panel-group">
+            <Group orientation="horizontal" className="review-panel-group">
                 {columns.map((column, index) => (
                     <React.Fragment key={column.id}>
                         <Panel
-                            defaultSize={column.defaultSize}
-                            minSize={column.minSize || 15}
-                            maxSize={column.maxSize}
+                            defaultSize={toPanelSize(column.defaultSize)}
+                            minSize={toPanelSize(column.minSize, 15)}
+                            maxSize={toPanelSize(column.maxSize)}
                         >
                             <ReviewColumn
                                 id={column.id}
@@ -46,15 +51,15 @@ const ReviewLayout = ({ columns, className = '', children }) => {
 
                         {/* Add resize handle between panels (not after last) */}
                         {index < columns.length - 1 && (
-                            <PanelResizeHandle className="resize-handle">
+                            <Separator className="resize-handle">
                                 <div className="resize-handle-icon-container">
                                     <span className="resize-handle-icon">↔</span>
                                 </div>
-                            </PanelResizeHandle>
+                            </Separator>
                         )}
                     </React.Fragment>
                 ))}
-            </PanelGroup>
+            </Group>
             {children}
         </div>
     );

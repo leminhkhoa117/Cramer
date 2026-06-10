@@ -1,0 +1,122 @@
+/* ============================================
+   Responsive Design
+   ============================================ */
+@media (max-width: 1200px) {
+    .scores-grid {
+        flex-wrap: wrap;
+    }
+
+    .score-criterion {
+        min-width: calc(50% - 0.5rem);
+    }
+
+    .feedback-summary-cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 900px) {
+    .scores-bar {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .scores-grid {
+        width: 100%;
+    }
+
+    .task-band-summary {
+        flex-direction: row;
+        justify-content: space-between;
+        min-width: auto;
+    }
+
+    .result-main-content {
+        flex-direction: column;
+    }
+
+    .result-panel-group {
+        height: auto;
+        min-height: 500px;
+    }
+
+    /* Comparison panels stack vertically on tablet */
+    .comparison-panels {
+        flex-direction: column;
+    }
+
+    .comparison-panel {
+        max-height: 300px;
+    }
+}
+
+@media (max-width: 640px) {
+    .writing-result-page .review-header {
+        padding: 0.5rem 1rem;
+    }
+
+    .writing-result-page .review-header-top {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .writing-result-page .review-header-center {
+        order: 3;
+        width: 100%;
+        justify-content: space-around;
+        padding-top: 0.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .writing-result-page .review-title {
+        font-size: 0.9rem;
+    }
+
+    .score-criterion {
+        min-width: 100%;
+    }
+
+    .grading-animation {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+
+    .brain-emoji {
+        font-size: 3rem;
+    }
+
+    /* View mode toggle responsive */
+    .view-mode-toggle {
+        flex-wrap: wrap;
+    }
+
+    .view-mode-btn span {
+        display: none;
+    }
+
+    .view-mode-btn {
+        padding: 0.4rem 0.5rem;
+    }
+
+    /* Comparison header stacks on mobile */
+    .comparison-header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .comparison-stats {
+        width: 100%;
+        justify-content: space-around;
+    }
+
+    .comparison-controls {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Column header responsive */
+    .essay-column .column-header-right {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+}

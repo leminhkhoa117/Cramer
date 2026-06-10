@@ -398,13 +398,13 @@ const ProfilePage = () => {
   return (
     <div
       className={`sl-page profile-page${profileData?.pageBackgroundUrl ? ' sl-page--has-bg' : ''}`}
-      style={profileData?.pageBackgroundUrl ? {
-        backgroundImage: `url(${profileData.pageBackgroundUrl})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed'
-      } : undefined}
     >
+      {profileData?.pageBackgroundUrl && (
+        <div
+          className="sl-page__bg"
+          style={{ backgroundImage: `url(${profileData.pageBackgroundUrl})` }}
+        />
+      )}
       {profileData?.pageBackgroundUrl && (
         <div className="sl-page__overlay" />
       )}

@@ -12,8 +12,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -44,14 +44,26 @@ class ABTSControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private ABTSService abtsService;
 
-    @MockBean
+    @MockitoBean
     private RefinementService refinementService;
 
-    @MockBean
+    @MockitoBean
+    private com.cramer.service.abts.JsonHunkApplier jsonHunkApplier;
+
+    @MockitoBean
     private com.cramer.util.JwtUtil jwtUtil;
+
+    // Bounded executor bean required by ABTSController constructor (B3). Streaming
+    // endpoints are not exercised by these tests, so a mock is sufficient.
+    @MockitoBean(name = "abtsStreamingExecutor")
+    private java.util.concurrent.Executor abtsStreamingExecutor;
+
+    // OpenRouterConfig required by ABTSController constructor (B5).
+    @MockitoBean
+    private com.cramer.config.OpenRouterConfig openRouterConfig;
 
     private static final String DEFAULT_ADMIN_ID = "550e8400-e29b-41d4-a716-446655440000";
 
@@ -66,6 +78,11 @@ class ABTSControllerTest {
         validReadingRequest.setTopic("Climate change effects on agriculture");
         validReadingRequest.setDifficulty(GenerationRequestDTO.DifficultyLevel.INTERMEDIATE);
         validReadingRequest.setExplanationLanguage(GenerationRequestDTO.ExplanationLanguage.VI);
+
+        // FIX 14: stub streaming timeout getters used by ABTSController when wiring SseEmitters.
+        // lenient() because non-streaming tests never trigger these reads.
+        lenient().when(openRouterConfig.getEmitterTimeoutMs()).thenReturn(1800000L);
+        lenient().when(openRouterConfig.getPerPartTimeoutMs()).thenReturn(600000L);
     }
 
     private ResultActions performPost(String url, Object body) throws Exception {

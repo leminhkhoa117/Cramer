@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { sanitizeHtml } from '../utils/sanitize';
-import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
+import { Group, Panel, Separator } from 'react-resizable-panels';
 import { testAttemptApi } from '../api/backendApi';
 import { IeltsScoreConverter } from '../utils/IeltsScoreConverter';
 import {
@@ -266,10 +266,10 @@ const TestReviewPage = () => {
 
                     {/* Main Content - FLEXIBLE COLUMN LAYOUT */}
                     <main className="review-main-content">
-                        <PanelGroup direction="horizontal" className="review-panel-group">
+                        <Group orientation="horizontal" className="review-panel-group">
                             {/* LISTENING: Column 1 - Transcript (always shown) */}
                             {/* READING: Column 1 - Passage */}
-                            <Panel defaultSize={isListeningTest ? 25 : 30} minSize={15} maxSize={40}>
+                            <Panel defaultSize={isListeningTest ? '25%' : '30%'} minSize="15%" maxSize="40%">
                                 <div className="review-column passage-column">
                                     <div className="column-header">
                                         <h3>
@@ -298,16 +298,16 @@ const TestReviewPage = () => {
                                 </div>
                             </Panel>
 
-                            <PanelResizeHandle className="resize-handle">
+                            <Separator className="resize-handle">
                                 <div className="resize-handle-icon-container">
                                     <span className="resize-handle-icon">↔</span>
                                 </div>
-                            </PanelResizeHandle>
+                            </Separator>
 
                             {/* LISTENING ONLY: Column 2 - Part Image (conditional) */}
                             {isListeningTest && hasImage && (
                                 <>
-                                    <Panel defaultSize={20} minSize={15} maxSize={35}>
+                                    <Panel defaultSize="20%" minSize="15%" maxSize="35%">
                                         <div className="review-column image-column">
                                             <div className="column-header">
                                                 <h3><FiImage size={16} /> Hình ảnh</h3>
@@ -321,16 +321,16 @@ const TestReviewPage = () => {
                                         </div>
                                     </Panel>
 
-                                    <PanelResizeHandle className="resize-handle">
+                                    <Separator className="resize-handle">
                                         <div className="resize-handle-icon-container">
                                             <span className="resize-handle-icon">↔</span>
                                         </div>
-                                    </PanelResizeHandle>
+                                    </Separator>
                                 </>
                             )}
 
                             {/* Column: Answer Field (test-taking style with highlights) */}
-                            <Panel defaultSize={isListeningTest ? (hasImage ? 25 : 35) : 35} minSize={20}>
+                            <Panel defaultSize={isListeningTest ? (hasImage ? '25%' : '35%') : '35%'} minSize="20%">
                                 <div className="review-column answers-column">
                                     <div className="column-header">
                                         <h3><FiEdit3 size={16} /> Bài làm của bạn</h3>
@@ -351,14 +351,14 @@ const TestReviewPage = () => {
                                 </div>
                             </Panel>
 
-                            <PanelResizeHandle className="resize-handle">
+                            <Separator className="resize-handle">
                                 <div className="resize-handle-icon-container">
                                     <span className="resize-handle-icon">↔</span>
                                 </div>
-                            </PanelResizeHandle>
+                            </Separator>
 
                             {/* Last Column - Đáp án & Giải thích */}
-                            <Panel defaultSize={isListeningTest ? (hasImage ? 30 : 40) : 35} minSize={20}>
+                            <Panel defaultSize={isListeningTest ? (hasImage ? '30%' : '40%') : '35%'} minSize="20%">
                                 <div className="review-column explanation-column" ref={answersColumnRef}>
                                     <div className="column-header">
                                         <h3><FiCheckCircle size={16} /> Đáp án & Giải thích</h3>
@@ -441,7 +441,7 @@ const TestReviewPage = () => {
                                     </div>
                                 </div>
                             </Panel>
-                        </PanelGroup>
+                        </Group>
                     </main>
                 </div>
             )}

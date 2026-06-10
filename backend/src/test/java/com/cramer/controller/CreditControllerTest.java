@@ -1,5 +1,7 @@
 package com.cramer.controller;
 
+import com.cramer.config.JwtAuthFilter;
+import com.cramer.config.SecurityConfig;
 import com.cramer.dto.CreditHistoryDTO;
 import com.cramer.dto.CreditTransactionDTO;
 import com.cramer.dto.LuaPurchaseResponseDTO;
@@ -14,15 +16,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -30,7 +32,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -41,7 +43,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Cramer Test Team
  * @since 2026-01-19
  */
-@org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest(CreditController.class)
+@org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest(CreditController.class)
+@Import({SecurityConfig.class, JwtAuthFilter.class})
 @DisplayName("CreditController Unit Tests")
 class CreditControllerTest {
 
@@ -51,13 +54,13 @@ class CreditControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+        @MockitoBean
     private CreditService creditService;
 
-    @MockBean
+        @MockitoBean
     private LuaCreditService luaCreditService;
 
-    @MockBean
+        @MockitoBean
     private com.cramer.util.JwtUtil jwtUtil;
 
     private static final UUID DEFAULT_USER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
@@ -71,18 +74,12 @@ class CreditControllerTest {
 
     private org.springframework.test.web.servlet.ResultActions performGet(String url, Object... uriVars) throws Exception {
         return mockMvc.perform(get(url, uriVars)
-                .with(jwt().jwt(jwtBuilder -> jwtBuilder
-                        .subject(DEFAULT_USER_ID_STRING)
-                        .claim("aud", "authenticated"))
-                        .authorities(new SimpleGrantedAuthority("ROLE_USER"))));
+                .with(user(DEFAULT_USER_ID_STRING).roles("USER")));
     }
 
     private org.springframework.test.web.servlet.ResultActions performPost(String url, Object body) throws Exception {
         return mockMvc.perform(post(url)
-                .with(jwt().jwt(jwtBuilder -> jwtBuilder
-                        .subject(DEFAULT_USER_ID_STRING)
-                        .claim("aud", "authenticated"))
-                        .authorities(new SimpleGrantedAuthority("ROLE_USER")))
+                .with(user(DEFAULT_USER_ID_STRING).roles("USER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body)));
     }
@@ -116,11 +113,11 @@ class CreditControllerTest {
         }
 
         @Test
-        @DisplayName("Should return 401 when no JWT token")
+        @DisplayName("Should return 403 when no authenticated principal")
         void getBalance_unauthorized_returns401() throws Exception {
             // Act & Assert
             mockMvc.perform(get("/api/credits"))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isForbidden());
 
             verify(creditService, never()).getBalance(any());
         }
@@ -288,9 +285,7 @@ class CreditControllerTest {
 
             // Act & Assert - This could be public or require auth depending on design
             mockMvc.perform(get("/api/credits/packages")
-                            .with(jwt().jwt(jwt -> jwt
-                                    .subject(testUserId.toString())
-                                    .claim("aud", "authenticated"))))
+                            .with(user(testUserId.toString()).roles("USER")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$").isArray())
                     .andExpect(jsonPath("$[0].code").value("lua_100"))
@@ -320,9 +315,7 @@ class CreditControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/credits/purchase")
-                            .with(jwt().jwt(jwt -> jwt
-                                    .subject(testUserId.toString())
-                                    .claim("aud", "authenticated")))
+                            .with(user(testUserId.toString()).roles("USER"))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"packageCode\": \"lua_100\"}"))
                     .andExpect(status().isOk())
@@ -344,9 +337,7 @@ class CreditControllerTest {
 
             // Act & Assert
             mockMvc.perform(post("/api/credits/purchase")
-                            .with(jwt().jwt(jwt -> jwt
-                                    .subject(testUserId.toString())
-                                    .claim("aud", "authenticated")))
+                            .with(user(testUserId.toString()).roles("USER"))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"packageCode\": \"invalid_code\"}"))
                     .andExpect(status().isBadRequest())

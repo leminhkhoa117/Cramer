@@ -4,6 +4,7 @@ import com.cramer.service.SpeakingSelectionPlannerService;
 import com.cramer.service.implement.HeuristicSpeakingSelectionPlannerService;
 import com.cramer.service.implement.LlmSpeakingSelectionPlannerService;
 import com.cramer.service.speaking.SpeakingSelectionPromptBuilder;
+import java.time.Duration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -47,8 +48,8 @@ public class SpeakingSelectionPlannerConfig {
 
     private RestTemplate buildSelectionRestTemplate(SpeakingSelectionProperties props) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(5000);
-        factory.setReadTimeout(props.getTimeoutMs());
+        factory.setConnectTimeout(Duration.ofMillis(5000));
+        factory.setReadTimeout(Duration.ofMillis(props.getTimeoutMs()));
         return new RestTemplate(factory);
     }
 }

@@ -330,6 +330,8 @@ function handleStreamEvent(event, { onProgress, onComplete, onError }) {
                 progress: event.progress,
                 attempt: event.attempt,
                 maxAttempts: event.maxAttempts,
+                partNumber: event.partNumber,
+                totalParts: event.totalParts,
                 data: event.data
             });
             break;
@@ -356,7 +358,14 @@ function handleStreamEvent(event, { onProgress, onComplete, onError }) {
             break;
 
         case 'FAILED':
-            onError?.(event.message);
+            // FIX 11: surface structured failure data (e.g. per-part errors map) alongside the message.
+            onError?.(event.message, event.data);
+            break;
+
+        // FIX 2: server emits ABORTED when a generation is cancelled; route it through onError
+        // (no dedicated onAbort in handleStreamEvent's callback set).
+        case 'ABORTED':
+            onError?.('Generation was aborted');
             break;
 
         default:
@@ -578,6 +587,22 @@ export async function refineContentStream(request, { onProgress, onComplete, onE
 }
 
 /**
+ * Apply accepted refinement hunks to the original content (per-hunk approval).
+ * Calls the backend patch endpoint which returns the patched JSON.
+ *
+ * @param {Object} payload - { originalJson, hunks, acceptedHunkIds }
+ * @returns {Promise<Object>} { patchedJson, appliedCount, rejectedCount, skippedHunkIds, success, errorMessage }
+ */
+export async function applyRefinementHunks(payload) {
+    const response = await fetch(`${API_BASE}/refine/apply`, {
+        method: 'POST',
+        headers: await getHeaders(),
+        body: JSON.stringify(payload)
+    });
+    return handleResponse(response);
+}
+
+/**
  * Get headers with admin user ID and auth token.
  */
 async function getHeaders() {
@@ -649,6 +674,7 @@ export const SKILL_TYPES = {
 export const GENERATION_SCOPES = {
     FULL_SKILL: 'FULL_SKILL',
     SINGLE_PART: 'SINGLE_PART',
+    MULTI_PART: 'MULTI_PART',
     QUESTION_GROUP: 'QUESTION_GROUP'
 };
 
@@ -698,6 +724,7 @@ export default {
     validateContent,
     saveGeneratedTest,
     refineContentStream,
+    applyRefinementHunks,
     getTemplateCategories,
     getTemplatesByCategory,
     getAvailableModels,

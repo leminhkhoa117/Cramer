@@ -57,6 +57,7 @@ export default function Header() {
     : profile?.fullName || profile?.full_name || profile?.username || user?.email?.split('@')[0] || 'User';
 
   const avatarUrl = profile?.avatarUrl || profile?.avatar_url;
+  const isAdmin = import.meta.env.VITE_DEV_ADMIN_BYPASS === 'true' || profile?.isAdmin === true || profile?.is_admin === true;
 
   const navLinks = (
     <Nav className="ms-auto header-nav">
@@ -82,10 +83,22 @@ export default function Header() {
         <Dropdown.Item onClick={() => { closeMenu(); navigate('/subscription'); }}>Gói đăng ký</Dropdown.Item>
         <Dropdown.Item onClick={() => { closeMenu(); navigate('/vocabulary'); }}>Sổ tay Từ vựng</Dropdown.Item>
         <Dropdown.Item onClick={() => { closeMenu(); navigate('/profile'); }}>Hồ sơ</Dropdown.Item>
-        <Dropdown.Divider />
-        <Dropdown.Item onClick={() => { closeMenu(); navigate('/admin'); }} className="header-admin-link">
-          <span className="header-admin-icon">⚙️</span> Quản trị Admin
-        </Dropdown.Item>
+        {isAdmin && (
+          <>
+            <Dropdown.Divider />
+            <Dropdown.Item
+              href="/admin"
+              onClick={(event) => {
+                event.preventDefault();
+                closeMenu();
+                window.location.assign('/admin');
+              }}
+              className="header-admin-link"
+            >
+              <span className="header-admin-icon">⚙️</span> Quản trị Admin
+            </Dropdown.Item>
+          </>
+        )}
         <Dropdown.Divider />
         <Dropdown.Item onClick={() => { closeMenu(); handleLogout(); }}>Đăng xuất</Dropdown.Item>
       </Dropdown.Menu>

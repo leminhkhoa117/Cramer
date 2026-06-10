@@ -1,25 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiZap, FiSave, FiDatabase } from 'react-icons/fi';
 import StudioConfigView from '../../components/abts/StudioConfigView';
 import StepPreview from '../../components/abts/StepPreview';
+import AIStudioTopBar from '../../components/abts/AIStudioTopBar';
+import AIStudioIssueRail from '../../components/abts/AIStudioIssueRail';
 import useABTSStore from '../../stores/useABTSStore';
 import { saveGeneratedTest } from '../../services/abtsApi';
+import { buildABTSSaveRequest } from '../../utils/abtsSavePayload';
 import { useToast } from '../../components/Toast';
 import SaveAIContentModal from '../../components/abts/SaveAIContentModal';
+import {
+    getAIStudioConfigReadiness,
+    getAIStudioIssueCounts,
+    getAIStudioSaveTargetSummary,
+    getAIStudioStepState,
+} from '../../components/abts/aiStudioStatus';
 import '../../components/abts/AIStudio.css';
 
-/**
- * AI Generation Studio - Full-Width Power-User Interface
- * 
- * V5.0 Complete Redesign:
- * - Uses unified AIStudio.css
- * - Full-width layout (no max-width constraints)
- * - Dense, efficient configuration view
- * - Hybrid preview matching test-taking UI
- * 
- * @since 2025-12-22
- */
 export default function AIGenerationPage() {
     const navigate = useNavigate();
     const {
@@ -34,10 +31,34 @@ export default function AIGenerationPage() {
     } = useABTSStore();
     const toast = useToast();
 
-    // View State: 'config' | 'preview'
     const [view, setView] = useState('config');
     const [isSaving, setIsSaving] = useState(false);
     const [showSaveModal, setShowSaveModal] = useState(false);
+    const [isRailCollapsed, setIsRailCollapsed] = useState(true);
+
+    const configReadiness = useMemo(() => getAIStudioConfigReadiness(formData), [formData]);
+    const issueCounts = useMemo(() => getAIStudioIssueCounts(generationResult), [generationResult]);
+    const saveTarget = useMemo(
+        () => getAIStudioSaveTargetSummary({ formData, generationResult }),
+        [formData, generationResult]
+    );
+    const stepState = useMemo(() => getAIStudioStepState({
+        view,
+        isGenerating,
+        generationResult,
+        isSaving,
+        isSaveModalOpen: showSaveModal,
+        canGenerate: configReadiness.canGenerate,
+    }), [view, isGenerating, generationResult, isSaving, showSaveModal, configReadiness.canGenerate]);
+
+    // Auto-collapse rail on Configure step, auto-expand when issues exist after Generate.
+    useEffect(() => {
+        if (view === 'config') {
+            setIsRailCollapsed(true);
+        } else if (issueCounts.total > 0 && !isGenerating) {
+            setIsRailCollapsed(false);
+        }
+    }, [view, issueCounts.total, isGenerating]);
 
     const handleGenerate = async () => {
         setView('preview');
@@ -51,106 +72,41 @@ export default function AIGenerationPage() {
 
     const handleBack = () => {
         if (view === 'preview') {
-            // If generation is still running, abort it first
-            if (isGenerating) {
-                abortGeneration();
-            }
+            if (isGenerating) abortGeneration();
             setView('config');
         } else {
             navigate('/admin/content');
         }
     };
 
-    /**
-     * Triggered when user confirms save in the modal.
-     */
+    const handleConfigureStep = () => {
+        if (isGenerating) abortGeneration();
+        setView('config');
+    };
+
+    const handleOpenSaveModal = () => {
+        if (!generationResult?.content || isSaving || isGenerating) return;
+        setShowSaveModal(true);
+    };
+
     const handleModalSave = async (saveConfig) => {
         if (!generationResult?.content) return;
-
-        setShowSaveModal(false); // Close modal
+        setShowSaveModal(false);
         setIsSaving(true);
         const generatedContent = generationResult.content;
 
         try {
-            // Determine skill from formData or content
-            const skill = formData.skill || generatedContent.skill || 'reading';
-            const skillLower = String(skill).toLowerCase();
-
-            // Get topic from various sources
-            const topic = formData.topic ||
-                generatedContent.metadata?.topic ||
-                'AI Generated';
-
-            // Construct partsToSave if content has multiple sections
-            let partsToSave = null;
-            if (generatedContent.sections && generatedContent.sections.length > 0) {
-                partsToSave = generatedContent.sections.map(section => {
-                    const pn = section.partNumber;
-                    const skillUpper = skillLower.toUpperCase();
-
-                    // Filter questions by standard IELTS ranges
-                    const filteredQuestions = (generatedContent.questions || []).filter(q => {
-                        const qn = q.questionNumber;
-                        if (skillUpper === 'READING') {
-                            if (pn === 1) return qn >= 1 && qn <= 13;
-                            if (pn === 2) return qn >= 14 && qn <= 26;
-                            if (pn === 3) return qn >= 27 && qn <= 40;
-                        } else if (skillUpper === 'LISTENING') {
-                            if (pn === 1) return qn >= 1 && qn <= 10;
-                            if (pn === 2) return qn >= 11 && qn <= 20;
-                            if (pn === 3) return qn >= 21 && qn <= 30;
-                            if (pn === 4) return qn >= 31 && qn <= 40;
-                        }
-                        return true;
-                    });
-
-                    return {
-                        partNumber: pn,
-                        content: {
-                            section: section,
-                            questions: filteredQuestions
-                        }
-                    };
-                });
-            }
-
-            // Build save request with modal data
-            const saveRequest = {
-                examSource: 'AI-GEN', // Legacy field
-                testNumber: null, // Auto-generate
-                skill: skillLower,
-                partNumber: formData.partNumber || 1,
-                topic: topic,
+            const saveRequest = buildABTSSaveRequest({
                 content: generatedContent,
-
-                // Use field names expected by abtsApi
-                setId: saveConfig.setId,
-                setCode: saveConfig.setCode,
-                setName: saveConfig.setNameVi, // Map to abtsApi param name
-                // Support append mode: use existingTestId if provided
-                testId: saveConfig.existingTestId || saveConfig.testId,
-                testName: saveConfig.testName, // Already correct name
-                difficulty: saveConfig.difficulty,
-                hashtagIds: saveConfig.hashtagIds,
-
-                // Multi-part support
-                partsToSave: partsToSave
-            };
-
+                formData,
+                saveConfig,
+            });
             const result = await saveGeneratedTest(saveRequest);
 
             if (result.success) {
                 toast.success(`✅ Saved! Section ID: ${result.sectionId}, ${result.questionsCreated} questions created.`);
-
-                // Show any warnings
-                if (result.warnings?.length > 0) {
-                    result.warnings.forEach(w => toast.warning(w));
-                }
-
-                // Reset generation result to prevent duplicate save on browser back
+                if (result.warnings?.length > 0) result.warnings.forEach(w => toast.warning(w));
                 clearResult();
-
-                // Navigate to content list after short delay
                 setTimeout(() => {
                     setIsSaving(false);
                     navigate('/admin/content', {
@@ -168,7 +124,6 @@ export default function AIGenerationPage() {
                 toast.error(`Save failed: ${result.message}`);
                 setIsSaving(false);
             }
-
         } catch (error) {
             console.error('Error saving content:', error);
             toast.error('Error saving content: ' + error.message);
@@ -178,52 +133,42 @@ export default function AIGenerationPage() {
 
     return (
         <div className="ai-studio">
-            {/* Header */}
-            <header className="ai-studio__header">
-                <div className="ai-studio__brand">
-                    <button
-                        className="studio-btn studio-btn--ghost studio-btn--icon"
-                        onClick={handleBack}
-                        title={view === 'preview' ? "Back to Configuration" : "Back to Dashboard"}
-                    >
-                        <FiArrowLeft size={16} />
-                    </button>
-                    <h1 className="ai-studio__title">
-                        <FiZap className="ai-studio__title-icon" />
-                        AI Generation Studio
-                    </h1>
-                    <span className="ai-studio__badge">
-                        {view === 'preview' ? 'Preview' : 'Config'}
-                    </span>
-                </div>
+            <AIStudioTopBar
+                view={view}
+                steps={stepState}
+                onBack={handleBack}
+                onConfigureStep={handleConfigureStep}
+                configReadiness={configReadiness}
+                issueCount={issueCounts.total}
+                saveTarget={saveTarget}
+                isGenerating={isGenerating}
+                isSaving={isSaving}
+                onGenerate={handleGenerate}
+                onSave={handleOpenSaveModal}
+            />
 
-                <div className="ai-studio__actions">
-                    {view === 'preview' && (
-                        <button
-                            className="studio-btn studio-btn--primary"
-                            onClick={() => setShowSaveModal(true)}
-                            disabled={!generationResult || isSaving || isGenerating}
-                        >
-                            {isSaving ? 'Saving...' : (
-                                <>
-                                    <FiDatabase size={14} /> Save to Database
-                                </>
-                            )}
-                        </button>
+            <div
+                className="ai-studio__main"
+                style={{ '--ai-studio-issue-rail-width': isRailCollapsed ? '40px' : '320px' }}
+            >
+                <div className="ai-studio__viewport">
+                    {view === 'config' ? (
+                        <StudioConfigView />
+                    ) : (
+                        <StepPreview onBack={handleBack} />
                     )}
                 </div>
-            </header>
 
-            {/* Main Content */}
-            <div className="ai-studio__viewport">
-                {view === 'config' ? (
-                    <StudioConfigView onGenerate={handleGenerate} />
-                ) : (
-                    <StepPreview onBack={handleBack} />
-                )}
+                <div className={`ai-studio__aside ${isRailCollapsed ? 'ai-studio__aside--collapsed' : ''}`}>
+                    <AIStudioIssueRail
+                        generationResult={generationResult}
+                        isGenerating={isGenerating}
+                        isCollapsed={isRailCollapsed}
+                        onCollapsedChange={setIsRailCollapsed}
+                    />
+                </div>
             </div>
 
-            {/* Saving Overlay */}
             {isSaving && (
                 <div className="studio-overlay">
                     <div className="studio-overlay__content">
@@ -235,7 +180,6 @@ export default function AIGenerationPage() {
                 </div>
             )}
 
-            {/* Save Config Modal */}
             <SaveAIContentModal
                 isOpen={showSaveModal}
                 onClose={() => setShowSaveModal(false)}

@@ -1,0 +1,320 @@
+/* === Responsive Design === */
+
+/* Tablet */
+@media (max-width: 992px) {
+  .sub-lua-packs-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .sub-upgrade-card__features {
+    grid-template-columns: 1fr;
+  }
+
+  .sub-usage-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .sub-features-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .sub-details-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .sub-usage-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sub-lua-packs-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .sub-lua-pack {
+    padding: 1.75rem 1.25rem;
+  }
+
+  .sub-payment-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .sub-payment-item__amount {
+    order: 2;
+  }
+
+  .sub-payment-status {
+    order: 3;
+    align-self: flex-start;
+  }
+
+  .sub-tier-badge {
+    width: 60px;
+    height: 60px;
+    bottom: -25px;
+  }
+
+  .sub-tier-badge__emoji {
+    font-size: 1.75rem;
+  }
+
+  .subscription-page .sl-sidebar__header {
+    padding-top: 2rem;
+  }
+
+  .lua-history__item {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .lua-history__details {
+    flex-basis: calc(100% - 58px);
+  }
+
+  .lua-history__amount {
+    order: 3;
+  }
+
+  .lua-history__balance {
+    order: 4;
+    flex-basis: 100%;
+    text-align: left;
+    margin-left: 58px;
+  }
+
+  .lua-history__filters {
+    flex-wrap: wrap;
+  }
+
+  .sub-session-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .sub-session-item__actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* ===========================================
+   AI GRADING TOGGLE CARD
+   =========================================== */
+
+.sub-ai-toggle-card {
+  margin-bottom: 1.5rem;
+}
+
+.sub-ai-toggle-card__content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.sub-ai-toggle-card__info {
+  flex: 1;
+}
+
+.sub-ai-toggle-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.sub-ai-toggle-card__icon {
+  font-size: 1.25rem;
+  color: var(--sl-primary);
+}
+
+.sub-ai-toggle-card__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--sl-text);
+  margin: 0;
+}
+
+.sub-ai-toggle-card__description {
+  font-size: 0.875rem;
+  color: var(--sl-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.sub-ai-toggle-card__locked {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #b45309;
+}
+
+.sub-ai-toggle-card__locked svg {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+/* Toggle Button */
+.sub-ai-toggle-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.sub-ai-toggle-btn__icon {
+  font-size: 2rem;
+  transition: transform 0.2s ease;
+}
+
+.sub-ai-toggle-btn__label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sub-ai-toggle-btn--on {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+}
+
+.sub-ai-toggle-btn--on:hover {
+  background: rgba(34, 197, 94, 0.25);
+}
+
+.sub-ai-toggle-btn--on .sub-ai-toggle-btn__icon {
+  color: #22c55e;
+}
+
+.sub-ai-toggle-btn--off {
+  background: rgba(156, 163, 175, 0.15);
+  color: #6b7280;
+}
+
+.sub-ai-toggle-btn--off:hover {
+  background: rgba(156, 163, 175, 0.25);
+}
+
+.sub-ai-toggle-btn--locked {
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.sub-ai-toggle-btn--locked:hover {
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+}
+
+.sub-ai-toggle-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Info Box */
+.sub-ai-toggle-card__info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: var(--sl-text-muted);
+  line-height: 1.5;
+}
+
+.sub-ai-toggle-card__info-box svg {
+  color: #3b82f6;
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.sub-ai-toggle-card__info-box strong {
+  color: var(--sl-text);
+}
+
+/* ===========================================
+   AI GRADING UPGRADE MODAL CONTENT
+   =========================================== */
+
+.sub-upgrade-modal-content {
+  text-align: center;
+}
+
+.sub-upgrade-modal-content__emoji {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.sub-upgrade-modal-content p {
+  margin: 0;
+  color: var(--modal-text-secondary, rgba(255, 255, 255, 0.9));
+  line-height: 1.6;
+}
+
+.sub-upgrade-modal-content strong {
+  color: var(--modal-text, white);
+}
+
+.sub-upgrade-modal-content__list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0 0;
+  text-align: left;
+}
+
+.sub-upgrade-modal-content__list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  color: var(--modal-text-secondary, rgba(255, 255, 255, 0.9));
+  font-size: 0.9rem;
+}
+
+.sub-upgrade-modal-content__list li svg {
+  color: #22c55e;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .sub-ai-toggle-card__content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sub-ai-toggle-btn {
+    flex-direction: row;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .sub-ai-toggle-btn__icon {
+    font-size: 1.5rem;
+  }
+}

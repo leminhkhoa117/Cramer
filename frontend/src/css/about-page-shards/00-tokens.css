@@ -1,0 +1,12 @@
+:root {
+  --about-ink: #111827;
+  --about-ink-soft: #374151;
+  --about-ink-muted: #6b7280;
+  --about-line: rgba(17, 24, 39, 0.08);
+  --about-line-strong: rgba(17, 24, 39, 0.14);
+  --about-accent: #7c3aed;
+  --about-accent-soft: rgba(124, 58, 237, 0.08);
+  --about-surface: #ffffff;
+  --about-surface-tint: #fbfaff;
+  --about-bg: #faf8ff;
+}

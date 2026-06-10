@@ -1,5 +1,6 @@
 package com.cramer.dto.abts;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,7 +10,7 @@ import java.util.List;
 
 /**
  * Response DTO from the Refinement Agent (Agent 2)
- * Contains the refined JSON and a list of patches applied.
+ * Contains the refined JSON and the structured diff hunks for per-hunk review.
  */
 @Data
 @Builder
@@ -23,9 +24,17 @@ public class RefinementResponseDTO {
     private String refinedJson;
 
     /**
-     * List of patches/changes applied by Agent 2
+     * Structured JSON-Patch style hunks diffing originalJson vs refinedJson.
+     * Each hunk is independently applyable/rejectable by the user (per-hunk
+     * approval). Populated by {@code RefinementHunkBuilder}.
      */
-    private List<RefinementPatch> patches;
+    private List<RefinementHunk> hunks;
+
+    /**
+     * Refinement loop iteration counter. Incremented by the caller per loop
+     * iteration (0 = first refinement has not run; 1 = after first refinement).
+     */
+    private int round;
 
     /**
      * New validation result after refinement
@@ -43,18 +52,30 @@ public class RefinementResponseDTO {
     private String errorMessage;
 
     /**
-     * Individual patch representing a single fix
+     * Structured diff hunk using RFC 6902 (JSON Patch) vocabulary.
+     * Represents a single, independently-applyable change between the original
+     * and refined JSON.
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class RefinementPatch {
-        private String issueId; // Which issue this fixes
-        private Integer questionNumber; // Affected question
-        private String field; // JSON field modified (e.g., "correct_answer", "question_content.text")
-        private String beforeValue; // Original value
-        private String afterValue; // New value
-        private String description; // Human-readable description of the change
+    public static class RefinementHunk {
+        /** Stable id: "hunk_" + sha1(path + "|" + before + "|" + after).substring(0,12) */
+        private String id;
+        /** RFC 6902 operation: one of add, remove, replace */
+        private String op;
+        /** JSON Pointer to the affected value, e.g. /questions/3/correct_answer/0 */
+        private String path;
+        /** Current value at path; null for add */
+        private JsonNode before;
+        /** New value; null for remove */
+        private JsonNode after;
+        /** Which validation issues this hunk addresses (may be empty) */
+        private List<String> issueIds;
+        /** 1-line human-readable summary, e.g. "/questions/3/correct_answer/0: A -> B" */
+        private String summary;
+        /** Severity carried from the issue: error, warning, info */
+        private String severity;
     }
 }

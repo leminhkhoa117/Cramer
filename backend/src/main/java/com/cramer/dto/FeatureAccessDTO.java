@@ -1,6 +1,7 @@
 package com.cramer.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -53,6 +54,11 @@ public class FeatureAccessDTO {
      */
     @JsonProperty("isPremium")
     private boolean isPremium;
+
+    @JsonIgnore
+    public boolean isPremium() {
+        return isPremium;
+    }
 
     /**
      * Display name of the tier in Vietnamese.

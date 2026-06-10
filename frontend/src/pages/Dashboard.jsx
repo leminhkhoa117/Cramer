@@ -276,13 +276,13 @@ export default function Dashboard() {
       {summary && (
         <div
           className={`sl-page dashboard-page${profile?.pageBackgroundUrl ? ' sl-page--has-bg' : ''}`}
-          style={profile?.pageBackgroundUrl ? {
-            backgroundImage: `url(${profile.pageBackgroundUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundAttachment: 'fixed'
-          } : undefined}
         >
+          {profile?.pageBackgroundUrl && (
+            <div
+              className="sl-page__bg"
+              style={{ backgroundImage: `url(${profile.pageBackgroundUrl})` }}
+            />
+          )}
           {/* Overlay for readability when background image is set */}
           {profile?.pageBackgroundUrl && (
             <div className="sl-page__overlay" />

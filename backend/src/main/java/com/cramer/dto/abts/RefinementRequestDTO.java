@@ -69,6 +69,13 @@ public class RefinementRequestDTO {
     private Boolean enableReasoning;
 
     /**
+     * Refinement loop iteration counter. Null/0 on first refinement. The service
+     * increments this and echoes it on the response. Hard-capped to prevent
+     * runaway loops (see OpenRouterConfig.maxRefinementRounds).
+     */
+    private Integer round;
+
+    /**
      * Nested DTO for validation issues
      */
     @Data
@@ -81,6 +88,7 @@ public class RefinementRequestDTO {
         private String message; // Human-readable description
         private Integer questionNumber; // Affected question (if applicable)
         private String category; // WORD_LIMIT, PLACEHOLDER, OPTIONS, etc.
+        private List<String> affectedPaths; // JSON Pointer paths this issue touches (optional)
     }
 
     @Data

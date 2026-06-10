@@ -34,6 +34,8 @@ public class StreamEventDTO {
     private Integer maxAttempts;
     private Object data; // Additional data (e.g., partial content, errors)
     private Long timestamp;
+    private Integer partNumber; // Multi-part: the part this event belongs to
+    private Integer totalParts; // Multi-part: total number of parts requested
 
     public StreamEventDTO() {
         this.timestamp = System.currentTimeMillis();
@@ -138,11 +140,36 @@ public class StreamEventDTO {
         return event;
     }
 
+    /**
+     * FIX 11: Failure event that also carries structured data (e.g. the
+     * per-part error map) so the client can render which specific parts failed
+     * instead of only a generic error string.
+     */
+    public static StreamEventDTO failedWithData(String error, Object data) {
+        StreamEventDTO event = new StreamEventDTO();
+        event.setType(EventType.FAILED);
+        event.setMessage(error);
+        event.setProgress(0);
+        event.setData(data);
+        return event;
+    }
+
     public static StreamEventDTO progress(int progress, String message) {
         StreamEventDTO event = new StreamEventDTO();
         event.setType(EventType.PROGRESS);
         event.setMessage(message);
         event.setProgress(progress);
+        return event;
+    }
+
+    /**
+     * Progress update carrying multi-part context so the UI can show which part
+     * (e.g. "Part 2/3") the current percentage refers to.
+     */
+    public static StreamEventDTO progress(int progress, String message, Integer partNumber, Integer totalParts) {
+        StreamEventDTO event = progress(progress, message);
+        event.setPartNumber(partNumber);
+        event.setTotalParts(totalParts);
         return event;
     }
 
@@ -216,6 +243,22 @@ public class StreamEventDTO {
 
     public void setData(Object data) {
         this.data = data;
+    }
+
+    public Integer getPartNumber() {
+        return partNumber;
+    }
+
+    public void setPartNumber(Integer partNumber) {
+        this.partNumber = partNumber;
+    }
+
+    public Integer getTotalParts() {
+        return totalParts;
+    }
+
+    public void setTotalParts(Integer totalParts) {
+        this.totalParts = totalParts;
     }
 
     public Long getTimestamp() {

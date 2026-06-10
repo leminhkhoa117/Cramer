@@ -1,11 +1,13 @@
 package com.cramer.service.abts;
 
 import com.cramer.config.OpenRouterConfig;
+import com.cramer.dto.abts.GenerationRequestDTO;
 import com.cramer.dto.abts.RefinementRequestDTO;
 import com.cramer.dto.abts.RefinementRequestDTO.ValidationIssue;
 import com.cramer.dto.abts.RefinementResponseDTO;
-import com.cramer.dto.abts.RefinementResponseDTO.RefinementPatch;
+import com.cramer.dto.abts.RefinementResponseDTO.RefinementHunk;
 import com.cramer.dto.abts.StreamEventDTO;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,19 +43,25 @@ public class RefinementService {
     private final RefinementPromptBuilder refinementPromptBuilder;
     private final JsonValidatorService jsonValidatorService;
     private final JsonPatcher jsonPatcher;
+    private final RefinementHunkBuilder hunkBuilder;
     private final ObjectMapper objectMapper;
+    // FIX 14: stateless, side-effect-free vendor reasoning registry. Instantiated directly
+    // (no Spring wiring needed) so refinement reasoning payloads match the target model.
+    private final ModelCapabilityRegistry capabilityRegistry = new ModelCapabilityRegistry();
 
     public RefinementService(
             OpenRouterConfig config,
             OpenRouterClient openRouterClient,
             RefinementPromptBuilder refinementPromptBuilder,
             JsonValidatorService jsonValidatorService,
-            JsonPatcher jsonPatcher) {
+            JsonPatcher jsonPatcher,
+            RefinementHunkBuilder hunkBuilder) {
         this.config = config;
         this.openRouterClient = openRouterClient;
         this.refinementPromptBuilder = refinementPromptBuilder;
         this.jsonValidatorService = jsonValidatorService;
         this.jsonPatcher = jsonPatcher;
+        this.hunkBuilder = hunkBuilder;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -70,6 +78,19 @@ public class RefinementService {
             // Validate request
             if (request.getSelectedIssueIds() == null || request.getSelectedIssueIds().isEmpty()) {
                 sendEvent(emitter, StreamEventDTO.failed("No issues selected for refinement"));
+                emitter.complete();
+                return;
+            }
+
+            // T6: Hard cap on the refine loop. The round counter is supplied by the
+            // caller and incremented on each successful refinement. Once it reaches
+            // the configured ceiling we refuse to refine again so the
+            // refine-validate-refine loop cannot run away.
+            int currentRound = request.getRound() != null ? request.getRound() : 0;
+            int maxRounds = config.getMaxRefinementRounds();
+            if (currentRound >= maxRounds) {
+                sendEvent(emitter, StreamEventDTO.failed(
+                        "Refinement loop limit (" + maxRounds + ") reached"));
                 emitter.complete();
                 return;
             }
@@ -120,11 +141,20 @@ public class RefinementService {
                     ? request.getEnableReasoning()
                     : false;
 
-            // Build reasoning config if enabled (for models like DeepSeek R1)
-            // API only allows ONE of: "effort" OR "max_tokens" (not both)
-            Map<String, Object> reasoningConfig = enableReasoning
-                    ? Map.of("effort", "high")
-                    : Map.of();
+            // FIX 14: build a vendor-aware reasoning payload via ModelCapabilityRegistry so the
+            // shape matches the actual model (OpenRouter ignores native Anthropic/Gemini shapes).
+            // The previous hardcoded {"effort":"high"} was silently dropped for budget-knob models
+            // and forced "high" regardless of the request's effort.
+            Map<String, Object> reasoningConfig;
+            if (enableReasoning) {
+                GenerationRequestDTO synthetic = new GenerationRequestDTO();
+                synthetic.setEnableReasoning(true);
+                // RefinementRequestDTO has no effort field; use the medium default (4096 tokens).
+                synthetic.setReasoningEffort("medium");
+                reasoningConfig = capabilityRegistry.buildReasoningPayload(model, synthetic);
+            } else {
+                reasoningConfig = Map.of();
+            }
 
             logger.info("Refinement using model: {} (caching: {}, reasoning: {})", model, enableCaching,
                     enableReasoning);
@@ -216,12 +246,33 @@ public class RefinementService {
                 }
             }
 
+            // T3: Build structured diff hunks alongside the legacy per-issue patches.
+            // Hunks let the frontend Issue Rail offer per-change accept/reject and feed
+            // the /refine/apply partial-apply endpoint. Best-effort: a hunk failure must
+            // never break the refinement response.
+            response.setRound(currentRound + 1);
+            try {
+                if (response.getRefinedJson() != null && !response.getRefinedJson().isEmpty()
+                        && request.getOriginalJson() != null) {
+                    JsonNode originalNode = objectMapper.readTree(request.getOriginalJson());
+                    JsonNode refinedNode = objectMapper.readTree(response.getRefinedJson());
+                    Map<String, List<String>> pathToIssueIds = buildPathToIssueIds(selectedIssues);
+                    List<RefinementHunk> hunks = hunkBuilder.buildHunks(
+                            originalNode, refinedNode, pathToIssueIds);
+                    response.setHunks(hunks);
+                    logger.info("Built {} refinement hunks (round {} of {})",
+                            hunks.size(), response.getRound(), maxRounds);
+                }
+            } catch (Exception e) {
+                logger.warn("Hunk generation skipped: {}", e.getMessage());
+            }
+
             // Send completion with response
             sendEvent(emitter, StreamEventDTO.refinementCompleted(response));
             emitter.complete();
 
-            logger.info("Refinement completed. Fixed {} issues.",
-                    response.getPatches() != null ? response.getPatches().size() : 0);
+            logger.info("Refinement completed. Proposed {} hunks.",
+                    response.getHunks() != null ? response.getHunks().size() : 0);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -258,7 +309,32 @@ public class RefinementService {
     }
 
     /**
-     * Extract passage or transcript text from the original JSON response.
+     * Build a map of JSON Pointer path -&gt; issue ids from the selected issues'
+     * {@code affectedPaths}. Used by {@link RefinementHunkBuilder} to tag each
+     * hunk with the validation issue(s) it addresses. Issues without affected
+     * paths simply contribute nothing (their hunks remain untagged).
+     */
+    private Map<String, List<String>> buildPathToIssueIds(List<ValidationIssue> selectedIssues) {
+        Map<String, List<String>> pathToIssueIds = new LinkedHashMap<>();
+        if (selectedIssues == null) {
+            return pathToIssueIds;
+        }
+        for (ValidationIssue issue : selectedIssues) {
+            if (issue == null || issue.getAffectedPaths() == null) {
+                continue;
+            }
+            for (String path : issue.getAffectedPaths()) {
+                if (path == null || path.isBlank()) {
+                    continue;
+                }
+                pathToIssueIds.computeIfAbsent(path, k -> new ArrayList<>()).add(issue.getId());
+            }
+        }
+        return pathToIssueIds;
+    }
+
+    /**
+     * Extract a passage/context snippet from the original Agent-1 JSON.
      * This provides the necessary context for the Refinement AI.
      */
     private String extractPassageContext(String originalJson) {
@@ -327,7 +403,6 @@ public class RefinementService {
             List<ValidationIssue> issues) {
 
         RefinementResponseDTO result = new RefinementResponseDTO();
-        List<RefinementPatch> patches = new ArrayList<>();
 
         try {
             // Extract JSON from response (may be in code block)
@@ -376,21 +451,12 @@ public class RefinementService {
 
                 patch.setReason(getTextOrNull(patchNode, "reason"));
                 patcherPatches.add(patch);
-
-                // Also create RefinementPatch for response
-                RefinementPatch refinementPatch = RefinementPatch.builder()
-                        .issueId(patch.getIssueId())
-                        .questionNumber(patch.getQuestionNumber())
-                        .description(patch.getReason())
-                        .build();
-                patches.add(refinementPatch);
             }
 
             // Apply patches to original JSON
             JsonPatcher.PatchResult patchResult = jsonPatcher.applyPatches(originalJson, patcherPatches);
 
             result.setRefinedJson(patchResult.getPatchedJson());
-            result.setPatches(patches);
             result.setSuccess(patchResult.getFailCount() == 0);
 
             // Extract summary if present

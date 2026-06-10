@@ -255,7 +255,7 @@ const useAdminFinanceStore = create((set, get) => ({
     },
     
     /**
-     * Export transactions to Excel (.xlsx)
+    * Export transactions to an Excel-compatible spreadsheet
      */
     exportToExcel: async (dateFrom, dateTo, status) => {
         set({ isExporting: true });

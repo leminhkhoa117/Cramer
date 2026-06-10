@@ -197,6 +197,14 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
 // ====================================================================
 export default function Login() {
   const location = useLocation();
+  const redirectTarget = (() => {
+    const from = location.state?.from;
+    if (!from) return '/dashboard';
+    if (typeof from === 'string') return from === '/login' ? '/dashboard' : from;
+
+    const path = `${from.pathname || '/dashboard'}${from.search || ''}${from.hash || ''}`;
+    return path === '/login' ? '/dashboard' : path;
+  })();
   const [formState, setFormState] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -238,9 +246,9 @@ export default function Login() {
 
   useEffect(() => {
     if (user && formState !== 'forgot') {
-      navigate('/dashboard');
+      navigate(redirectTarget, { replace: true });
     }
-  }, [user, formState, navigate]);
+  }, [user, formState, navigate, redirectTarget]);
 
   // Show a styled loading indicator while auth state is being determined
   // This prevents the blank page issue during logout → login transition

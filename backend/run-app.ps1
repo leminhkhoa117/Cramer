@@ -52,36 +52,69 @@ if (Test-Path $EnvFile) {
     Write-Host "Warning: .env file not found at $EnvFile" -ForegroundColor Yellow
 }
 
-# Check JAVA_HOME
+# Determine required JDK major version from pom.xml (defaults to 25)
+$RequiredJdkMajor = 25
+try {
+    $pomContent = Get-Content (Join-Path $ScriptDir "pom.xml") -Raw
+    if ($pomContent -match '<java\.version>\s*(\d+)\s*</java\.version>') {
+        $RequiredJdkMajor = [int]$matches[1]
+    }
+} catch { }
+
+# Validate JAVA_HOME if set; if it points to a wrong major version, ignore it and re-detect
+function Get-JdkMajor($jdkHome) {
+    try {
+        $releaseFile = Join-Path $jdkHome "release"
+        if (Test-Path $releaseFile) {
+            $line = (Get-Content $releaseFile | Where-Object { $_ -match '^JAVA_VERSION=' } | Select-Object -First 1)
+            if ($line -and $line -match 'JAVA_VERSION="?(\d+)') { return [int]$matches[1] }
+        }
+    } catch { }
+    return $null
+}
+
+if ($env:JAVA_HOME) {
+    $major = Get-JdkMajor $env:JAVA_HOME
+    if ($major -and $major -lt $RequiredJdkMajor) {
+        Write-Host "JAVA_HOME points to JDK $major but pom requires $RequiredJdkMajor. Searching for a newer JDK..." -ForegroundColor Yellow
+        $env:JAVA_HOME = $null
+    }
+}
+
 if (-not $env:JAVA_HOME) {
-    # Try common JDK paths on Windows
-    $commonPaths = @(
-        "C:\Program Files\Eclipse Adoptium\jdk-21.0.8.9-hotspot",
-        "C:\Program Files\Java\jdk-21",
-        "C:\Program Files\Eclipse Adoptium\jdk-21*",
-        "C:\Program Files\Microsoft\jdk-21*"
+    # Build search list: prefer required major and above, then fall back to common paths
+    $searchRoots = @(
+        "C:\Program Files\Eclipse Adoptium",
+        "C:\Program Files\Java",
+        "C:\Program Files\Microsoft",
+        "C:\Program Files\Zulu",
+        "C:\Program Files\Amazon Corretto"
     )
-    
-    $foundJdk = $null
-    foreach ($path in $commonPaths) {
-        $resolved = Get-Item $path -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($resolved) {
-            $foundJdk = $resolved.FullName
-            break
+
+    $candidates = @()
+    foreach ($root in $searchRoots) {
+        if (Test-Path $root) {
+            $candidates += Get-ChildItem $root -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                $m = Get-JdkMajor $_.FullName
+                if ($m) { [pscustomobject]@{ Path = $_.FullName; Major = $m } }
+            }
         }
     }
-    
-    if ($foundJdk) {
-        $env:JAVA_HOME = $foundJdk
-        Write-Host "JAVA_HOME not set. Using detected: $foundJdk" -ForegroundColor Yellow
-    } else {
-        Write-Host "WARNING: JAVA_HOME is not set. Using system java..." -ForegroundColor Yellow
-        try {
-            java -version
-        } catch {
-            Write-Host "Java not found. Please install Java 21 and set JAVA_HOME." -ForegroundColor Red
-            exit 1
+
+    # Pick the highest major >= required; else highest available
+    $best = $candidates | Where-Object { $_.Major -ge $RequiredJdkMajor } | Sort-Object Major -Descending | Select-Object -First 1
+    if (-not $best) { $best = $candidates | Sort-Object Major -Descending | Select-Object -First 1 }
+
+    if ($best) {
+        $env:JAVA_HOME = $best.Path
+        if ($best.Major -lt $RequiredJdkMajor) {
+            Write-Host "WARNING: Only JDK $($best.Major) found; pom requires $RequiredJdkMajor. Build will fail unless you install JDK $RequiredJdkMajor." -ForegroundColor Red
+        } else {
+            Write-Host "JAVA_HOME not set. Using detected JDK $($best.Major): $($best.Path)" -ForegroundColor Yellow
         }
+    } else {
+        Write-Host "Java not found. Please install JDK $RequiredJdkMajor and set JAVA_HOME." -ForegroundColor Red
+        exit 1
     }
 } else {
     Write-Host "Using JAVA_HOME=$env:JAVA_HOME" -ForegroundColor Green

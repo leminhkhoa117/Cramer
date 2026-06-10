@@ -37,6 +37,7 @@ public class OpenRouterClient {
     private final OpenRouterConfig config;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final OpenRouterClientSupport support;
 
     public OpenRouterClient(OpenRouterConfig config) {
         this.config = config;
@@ -44,10 +45,11 @@ public class OpenRouterClient {
 
         // Configure RestTemplate with timeout
         org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(30000); // 30 seconds to connect
-        factory.setReadTimeout(config.getTimeoutMs()); // Configurable read timeout
+        factory.setConnectTimeout(java.time.Duration.ofMillis(30000)); // 30 seconds to connect
+        factory.setReadTimeout(java.time.Duration.ofMillis(config.getTimeoutMs())); // Configurable read timeout
 
         this.restTemplate = new RestTemplate(factory);
+        this.support = new OpenRouterClientSupport(config, objectMapper, restTemplate);
     }
 
     /**
@@ -81,8 +83,8 @@ public class OpenRouterClient {
 
         String url = config.getBaseUrl() + CHAT_ENDPOINT;
 
-        HttpHeaders headers = buildHeaders();
-        Map<String, Object> requestBody = buildRequestBody(
+        HttpHeaders headers = support.buildHeaders();
+        Map<String, Object> requestBody = support.buildRequestBody(
                 model, systemPrompt, userPrompt, jsonSchema,
                 fallbackModels, reasoningConfig, temperature, maxTokens);
 
@@ -104,10 +106,10 @@ public class OpenRouterClient {
                         true);
             }
 
-            return parseResponse(response.getBody(), duration);
+            return support.parseResponse(response.getBody(), duration);
 
         } catch (HttpClientErrorException e) {
-            return handleHttpError(e);
+            return support.handleHttpError(e);
         } catch (Exception e) {
             logger.error("OpenRouter API call failed: {}", e.getMessage(), e);
             throw new OpenRouterException("Failed to call OpenRouter API: " + e.getMessage(), "UNKNOWN_ERROR", false);
@@ -166,8 +168,8 @@ public class OpenRouterClient {
 
         String url = config.getBaseUrl() + CHAT_ENDPOINT;
 
-        HttpHeaders headers = buildHeaders();
-        Map<String, Object> requestBody = buildRequestBodyWithFeatures(
+        HttpHeaders headers = support.buildHeaders();
+        Map<String, Object> requestBody = support.buildRequestBodyWithFeatures(
                 model, systemPrompt, userPrompt, jsonSchema,
                 fallbackModels, reasoningConfig, temperature, maxTokens,
                 enableWebSearch, enableContextCaching);
@@ -191,10 +193,10 @@ public class OpenRouterClient {
                         true);
             }
 
-            return parseResponse(response.getBody(), duration);
+            return support.parseResponse(response.getBody(), duration);
 
         } catch (HttpClientErrorException e) {
-            return handleHttpError(e);
+            return support.handleHttpError(e);
         } catch (Exception e) {
             logger.error("OpenRouter API call failed: {}", e.getMessage(), e);
             throw new OpenRouterException("Failed to call OpenRouter API: " + e.getMessage(), "UNKNOWN_ERROR", false);
@@ -214,6 +216,47 @@ public class OpenRouterClient {
         void onComplete(OpenRouterResponse response);
 
         void onError(String error);
+
+        /**
+         * FIX 5: typed error callback carrying a classified {@link OpenRouterException}
+         * (error code + retryable flag). Defaults to delegating to {@link #onError(String)}
+         * so existing implementations keep working.
+         */
+        default void onErrorTyped(OpenRouterException error) {
+            onError(error.getMessage());
+        }
+
+        /**
+         * FIX 5: invoked when generation is cancelled by the user (cancellation
+         * flag flipped). Distinct from a real error so callers can exit quietly
+         * without emitting a FAILED event. Defaults to surfacing a sentinel via
+         * {@link #onError(String)} for implementations that do not override it.
+         */
+        default void onCancelled() {
+            onError("CANCELLED");
+        }
+    }
+
+    /**
+     * FIX 5: classify an HTTP status + error body into a typed {@link OpenRouterException}.
+     */
+    private OpenRouterException classifyHttpError(int statusCode, String parsedMessage) {
+        String message = "API error " + statusCode + ": " + parsedMessage;
+        switch (statusCode) {
+            case 429:
+                return new OpenRouterException(message, "RATE_LIMITED", true);
+            case 401:
+                return new OpenRouterException(message, "AUTH_FAILED", false);
+            case 402:
+                return new OpenRouterException(message, "INSUFFICIENT_CREDITS", false);
+            case 400:
+                return new OpenRouterException(message, "INVALID_FORMAT", false);
+            default:
+                if (statusCode >= 500) {
+                    return new OpenRouterException(message, "SERVER_ERROR", true);
+                }
+                return new OpenRouterException(message, "API_ERROR", false);
+        }
     }
 
     /**
@@ -238,6 +281,7 @@ public class OpenRouterClient {
 
         String url = config.getBaseUrl() + CHAT_ENDPOINT;
 
+        java.net.HttpURLConnection conn = null;
         try {
             // Build streaming request body
             Map<String, Object> body = buildStreamingRequestBody(
@@ -248,7 +292,7 @@ public class OpenRouterClient {
 
             // Create HTTP connection
             java.net.URL apiUrl = java.net.URI.create(url).toURL();
-            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) apiUrl.openConnection();
+            conn = (java.net.HttpURLConnection) apiUrl.openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setConnectTimeout(30000);
@@ -268,8 +312,9 @@ public class OpenRouterClient {
 
             int responseCode = conn.getResponseCode();
             if (responseCode != 200) {
-                String errorBody = readStream(conn.getErrorStream());
-                callback.onError("API error " + responseCode + ": " + parseErrorMessage(errorBody));
+                String errorBody = support.readStream(conn.getErrorStream());
+                // FIX 5: emit a typed, classified error so callers can decide retryability.
+                callback.onErrorTyped(classifyHttpError(responseCode, support.parseErrorMessage(errorBody)));
                 return;
             }
 
@@ -290,6 +335,8 @@ public class OpenRouterClient {
 
                 while ((line = reader.readLine()) != null) {
                     if (cancelled != null && cancelled.get()) {
+                        // V7: proactively tear down the live HTTP connection on cancel (finally also disconnects; idempotent).
+                        conn.disconnect();
                         throw new OpenRouterException("Generation cancelled by user", "CANCELLED", false);
                     }
                     if (line.isEmpty())
@@ -371,9 +418,23 @@ public class OpenRouterClient {
 
             callback.onComplete(response);
 
+        } catch (OpenRouterException e) {
+            // FIX 5: distinguish user cancellation from genuine API failures.
+            if ("CANCELLED".equals(e.getErrorCode())) {
+                logger.info("Streaming cancelled by user");
+                callback.onCancelled();
+            } else {
+                logger.error("Streaming API call failed [{}]: {}", e.getErrorCode(), e.getMessage());
+                callback.onErrorTyped(e);
+            }
         } catch (Exception e) {
             logger.error("Streaming API call failed: {}", e.getMessage(), e);
             callback.onError("Streaming failed: " + e.getMessage());
+        } finally {
+            // FIX 6: always release the underlying socket.
+            if (conn != null) {
+                conn.disconnect();
+            }
         }
     }
 
@@ -400,6 +461,7 @@ public class OpenRouterClient {
 
         String url = config.getBaseUrl() + CHAT_ENDPOINT;
 
+        java.net.HttpURLConnection conn = null;
         try {
             // Build streaming request body with caching support
             Map<String, Object> body = buildStreamingRequestBodyWithCaching(
@@ -410,7 +472,7 @@ public class OpenRouterClient {
 
             // Create HTTP connection
             java.net.URL apiUrl = java.net.URI.create(url).toURL();
-            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) apiUrl.openConnection();
+            conn = (java.net.HttpURLConnection) apiUrl.openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setConnectTimeout(30000);
@@ -430,8 +492,9 @@ public class OpenRouterClient {
 
             int responseCode = conn.getResponseCode();
             if (responseCode != 200) {
-                String errorBody = readStream(conn.getErrorStream());
-                callback.onError("API error " + responseCode + ": " + parseErrorMessage(errorBody));
+                String errorBody = support.readStream(conn.getErrorStream());
+                // FIX 5: emit a typed, classified error so callers can decide retryability.
+                callback.onErrorTyped(classifyHttpError(responseCode, support.parseErrorMessage(errorBody)));
                 return;
             }
 
@@ -452,6 +515,8 @@ public class OpenRouterClient {
 
                 while ((line = reader.readLine()) != null) {
                     if (cancelled != null && cancelled.get()) {
+                        // V7: proactively tear down the live HTTP connection on cancel (finally also disconnects; idempotent).
+                        conn.disconnect();
                         throw new OpenRouterException("Generation cancelled by user", "CANCELLED", false);
                     }
                     if (line.isEmpty())
@@ -530,9 +595,23 @@ public class OpenRouterClient {
 
             callback.onComplete(response);
 
+        } catch (OpenRouterException e) {
+            // FIX 5: distinguish user cancellation from genuine API failures.
+            if ("CANCELLED".equals(e.getErrorCode())) {
+                logger.info("Streaming cancelled by user");
+                callback.onCancelled();
+            } else {
+                logger.error("Streaming API call failed [{}]: {}", e.getErrorCode(), e.getMessage());
+                callback.onErrorTyped(e);
+            }
         } catch (Exception e) {
             logger.error("Streaming API call failed: {}", e.getMessage(), e);
             callback.onError("Streaming failed: " + e.getMessage());
+        } finally {
+            // FIX 6: always release the underlying socket.
+            if (conn != null) {
+                conn.disconnect();
+            }
         }
     }
 
@@ -577,9 +656,7 @@ public class OpenRouterClient {
                 "allow_fallbacks", true,
                 "data_collection", "allow"));
 
-        if (reasoningConfig != null && !reasoningConfig.isEmpty()) {
-            body.put("reasoning", reasoningConfig);
-        }
+        OpenRouterClientSupport.applyReasoning(body, reasoningConfig);
 
         return body;
     }
@@ -641,315 +718,9 @@ public class OpenRouterClient {
                 "allow_fallbacks", true,
                 "data_collection", "allow"));
 
-        if (reasoningConfig != null && !reasoningConfig.isEmpty()) {
-            body.put("reasoning", reasoningConfig);
-        }
+        OpenRouterClientSupport.applyReasoning(body, reasoningConfig);
 
         return body;
-    }
-
-    /**
-     * Read input stream to string.
-     */
-    private String readStream(java.io.InputStream stream) {
-        if (stream == null)
-            return "";
-        try (java.util.Scanner scanner = new java.util.Scanner(stream, "UTF-8").useDelimiter("\\A")) {
-            return scanner.hasNext() ? scanner.next() : "";
-        }
-    }
-
-    /**
-     * Build HTTP headers for OpenRouter API.
-     */
-    private HttpHeaders buildHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(Objects.requireNonNull(config.getApiKey()));
-        headers.set("HTTP-Referer", config.getSiteUrl());
-        headers.set("X-Title", config.getSiteName());
-        return headers;
-    }
-
-    /**
-     * Build request body for OpenRouter API.
-     */
-    private Map<String, Object> buildRequestBody(
-            String model,
-            String systemPrompt,
-            String userPrompt,
-            Map<String, Object> jsonSchema,
-            List<String> fallbackModels,
-            Map<String, Object> reasoningConfig,
-            Double temperature,
-            Integer maxTokens) {
-
-        Map<String, Object> body = new HashMap<>();
-
-        // Model selection
-        body.put("model", model);
-
-        // Messages array
-        List<Map<String, Object>> messages = new ArrayList<>();
-        messages.add(Map.of("role", "system", "content", systemPrompt));
-        messages.add(Map.of("role", "user", "content", userPrompt));
-        body.put("messages", messages);
-
-        // Generation parameters
-        body.put("temperature", temperature != null ? temperature : 1.0);
-        body.put("max_tokens", maxTokens != null ? maxTokens : 8192);
-        body.put("stream", false);
-
-        // JSON Schema mode for structured output
-        // Per OpenRouter docs: Most models support structured outputs including many
-        // free ones
-        // If model doesn't support it, OpenRouter will gracefully fallback
-        if (jsonSchema != null && !jsonSchema.isEmpty()) {
-            body.put("response_format", Map.of(
-                    "type", "json_schema",
-                    "json_schema", Map.of(
-                            "name", "ielts_content_response",
-                            "strict", true,
-                            "schema", jsonSchema)));
-            logger.debug("Using JSON schema mode for model: {}", model);
-        } else {
-            // Fallback to basic JSON mode when no schema provided
-            body.put("response_format", Map.of("type", "json_object"));
-            logger.debug("Using basic JSON object mode for model: {}", model);
-        }
-
-        // Model fallbacks for reliability
-        if (fallbackModels != null && !fallbackModels.isEmpty()) {
-            List<String> allModels = new ArrayList<>();
-            allModels.add(model);
-            allModels.addAll(fallbackModels);
-            body.put("models", allModels);
-            body.put("route", "fallback");
-        }
-
-        // Provider preferences
-        // Note: "data_collection" set to "allow" to support free/community models
-        // that require training data. For privacy-sensitive use cases, set to "deny"
-        body.put("provider", Map.of(
-                "allow_fallbacks", true,
-                "data_collection", "allow"));
-
-        // Reasoning tokens (for thinking models)
-        if (reasoningConfig != null && !reasoningConfig.isEmpty()) {
-            body.put("reasoning", reasoningConfig);
-        }
-
-        return body;
-    }
-
-    /**
-     * Build request body with web search and context caching support.
-     */
-    private Map<String, Object> buildRequestBodyWithFeatures(
-            String model,
-            String systemPrompt,
-            String userPrompt,
-            Map<String, Object> jsonSchema,
-            List<String> fallbackModels,
-            Map<String, Object> reasoningConfig,
-            Double temperature,
-            Integer maxTokens,
-            boolean enableWebSearch,
-            boolean enableContextCaching) {
-
-        Map<String, Object> body = new HashMap<>();
-
-        // Model selection - append :online suffix for web search if enabled
-        String effectiveModel = enableWebSearch ? model + ":online" : model;
-        body.put("model", effectiveModel);
-
-        // Messages array
-        List<Map<String, Object>> messages = new ArrayList<>();
-        messages.add(Map.of("role", "system", "content", systemPrompt));
-        messages.add(Map.of("role", "user", "content", userPrompt));
-        body.put("messages", messages);
-
-        // Generation parameters
-        body.put("temperature", temperature != null ? temperature : 1.0);
-        body.put("max_tokens", maxTokens != null ? maxTokens : 8192);
-        body.put("stream", false);
-
-        // Context caching for faster repeated prompts
-        if (enableContextCaching) {
-            body.put("cache_prompt", true);
-            logger.debug("Context caching enabled for model: {}", effectiveModel);
-        }
-
-        // JSON Schema mode for structured output
-        if (jsonSchema != null && !jsonSchema.isEmpty()) {
-            body.put("response_format", Map.of(
-                    "type", "json_schema",
-                    "json_schema", Map.of(
-                            "name", "ielts_content_response",
-                            "strict", true,
-                            "schema", jsonSchema)));
-            logger.debug("Using JSON schema mode for model: {}", effectiveModel);
-        } else {
-            body.put("response_format", Map.of("type", "json_object"));
-            logger.debug("Using basic JSON object mode for model: {}", effectiveModel);
-        }
-
-        // Web search plugin configuration (when not using :online suffix)
-        // Note: Using :online suffix is simpler and recommended
-        if (enableWebSearch) {
-            logger.info("Web search enabled for AI fact research on model: {}", effectiveModel);
-            // The :online suffix handles this automatically
-            // But we can also explicitly add plugins if needed:
-            // body.put("plugins", List.of(Map.of("id", "web", "max_results", 5)));
-        }
-
-        // Model fallbacks for reliability
-        if (fallbackModels != null && !fallbackModels.isEmpty()) {
-            List<String> allModels = new ArrayList<>();
-            allModels.add(effectiveModel);
-            allModels.addAll(fallbackModels);
-            body.put("models", allModels);
-            body.put("route", "fallback");
-        }
-
-        // Provider preferences
-        body.put("provider", Map.of(
-                "allow_fallbacks", true,
-                "data_collection", "allow"));
-
-        // Reasoning tokens (for thinking models)
-        if (reasoningConfig != null && !reasoningConfig.isEmpty()) {
-            body.put("reasoning", reasoningConfig);
-        }
-
-        return body;
-    }
-
-    /**
-     * Parse OpenRouter API response.
-     */
-    private OpenRouterResponse parseResponse(String responseBody, long durationMs) {
-        try {
-            JsonNode root = objectMapper.readTree(responseBody);
-
-            OpenRouterResponse response = new OpenRouterResponse();
-            response.setDurationMs(durationMs);
-
-            // Extract model actually used (may differ if fallback was triggered)
-            if (root.has("model")) {
-                response.setModelUsed(root.get("model").asText());
-            }
-
-            // Extract content from choices
-            JsonNode choices = root.path("choices");
-            if (!choices.isMissingNode() && choices.isArray() && choices.size() > 0) {
-                JsonNode firstChoice = choices.get(0);
-                JsonNode message = firstChoice.path("message");
-
-                if (!message.isMissingNode()) {
-                    // Main content
-                    if (message.has("content")) {
-                        response.setContent(message.get("content").asText());
-                    }
-
-                    // Reasoning content (Chain-of-Thought)
-                    if (message.has("reasoning")) {
-                        response.setReasoning(message.get("reasoning").asText());
-                    }
-                }
-            }
-
-            // Extract usage information
-            JsonNode usage = root.path("usage");
-            if (!usage.isMissingNode()) {
-                if (usage.has("prompt_tokens")) {
-                    response.setPromptTokens(usage.get("prompt_tokens").asInt());
-                }
-                if (usage.has("completion_tokens")) {
-                    response.setCompletionTokens(usage.get("completion_tokens").asInt());
-                }
-                if (usage.has("reasoning_tokens")) {
-                    response.setReasoningTokens(usage.get("reasoning_tokens").asInt());
-                }
-            }
-
-            return response;
-
-        } catch (Exception e) {
-            logger.error("Failed to parse OpenRouter response: {}", e.getMessage());
-            throw new OpenRouterException("Failed to parse response: " + e.getMessage(), "PARSE_ERROR", false);
-        }
-    }
-
-    /**
-     * Handle HTTP errors from OpenRouter API.
-     */
-    private OpenRouterResponse handleHttpError(HttpClientErrorException e) {
-        int statusCode = e.getStatusCode().value();
-        String errorMessage = parseErrorMessage(e.getResponseBodyAsString());
-
-        logger.error("OpenRouter API error {}: {}", statusCode, errorMessage);
-
-        String errorCode;
-        boolean retryable;
-
-        switch (statusCode) {
-            case 400:
-                errorCode = "INVALID_FORMAT";
-                retryable = false;
-                break;
-            case 401:
-                errorCode = "AUTH_FAILED";
-                retryable = false;
-                break;
-            case 402:
-                errorCode = "INSUFFICIENT_CREDITS";
-                retryable = false;
-                break;
-            case 403:
-                errorCode = "CONTENT_FILTERED";
-                retryable = true;
-                break;
-            case 422:
-                errorCode = "INVALID_PARAMS";
-                retryable = false;
-                break;
-            case 429:
-                errorCode = "RATE_LIMITED";
-                retryable = true;
-                break;
-            case 502:
-                errorCode = "MODEL_UNAVAILABLE";
-                retryable = true;
-                break;
-            case 503:
-                errorCode = "NO_PROVIDERS";
-                retryable = true;
-                break;
-            default:
-                errorCode = "UNKNOWN_ERROR";
-                retryable = false;
-        }
-
-        throw new OpenRouterException(errorMessage, errorCode, retryable);
-    }
-
-    /**
-     * Parse error message from OpenRouter error response.
-     */
-    private String parseErrorMessage(String responseBody) {
-        try {
-            JsonNode root = objectMapper.readTree(responseBody);
-            if (root.has("error")) {
-                JsonNode error = root.get("error");
-                String message = error.has("message") ? error.get("message").asText() : "Unknown error";
-                String code = error.has("code") ? error.get("code").asText() : null;
-                return code != null ? code + ": " + message : message;
-            }
-            return responseBody;
-        } catch (Exception e) {
-            return responseBody;
-        }
     }
 
     // ==================== MULTIMODAL AUDIO SUPPORT ====================
@@ -1074,7 +845,7 @@ public class OpenRouterClient {
             "data_collection", dataCollection
         ));
 
-        HttpHeaders headers = buildHeaders();
+        HttpHeaders headers = support.buildHeaders();
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
         try {
@@ -1096,10 +867,10 @@ public class OpenRouterClient {
                     true);
             }
 
-            return parseResponse(response.getBody(), duration);
+            return support.parseResponse(response.getBody(), duration);
 
         } catch (HttpClientErrorException e) {
-            return handleHttpError(e);
+            return support.handleHttpError(e);
         } catch (Exception e) {
             logger.error("OpenRouter multimodal call failed: {}", e.getMessage(), e);
             throw new OpenRouterException(
@@ -1226,89 +997,6 @@ public class OpenRouterClient {
      *         supported_parameters
      */
     public List<Map<String, Object>> fetchAvailableModels() {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(Objects.requireNonNull(config.getApiKey()));
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("HTTP-Referer", "https://cramer.edu.vn");
-            headers.set("X-Title", "Cramer ABTS");
-
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-            String url = config.getBaseUrl().replace("/api/v1", "") + "/api/v1/models";
-            logger.info("Fetching models from: {}", url);
-
-            ResponseEntity<String> response = restTemplate.exchange(
-                    url,
-                    Objects.requireNonNull(HttpMethod.GET),
-                    entity,
-                    String.class);
-
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                JsonNode rootNode = objectMapper.readTree(response.getBody());
-                JsonNode dataNode = rootNode.get("data");
-
-                if (dataNode != null && dataNode.isArray()) {
-                    List<Map<String, Object>> models = new ArrayList<>();
-
-                    for (JsonNode modelNode : dataNode) {
-                        Map<String, Object> model = new HashMap<>();
-
-                        // Basic info
-                        model.put("id", getTextValue(modelNode, "id"));
-                        model.put("name", getTextValue(modelNode, "name"));
-                        model.put("description", getTextValue(modelNode, "description"));
-                        model.put("context_length", modelNode.has("context_length")
-                                ? modelNode.get("context_length").asInt()
-                                : null);
-
-                        // Pricing
-                        if (modelNode.has("pricing")) {
-                            JsonNode pricing = modelNode.get("pricing");
-                            Map<String, String> pricingMap = new HashMap<>();
-                            pricingMap.put("prompt", getTextValue(pricing, "prompt"));
-                            pricingMap.put("completion", getTextValue(pricing, "completion"));
-                            model.put("pricing", pricingMap);
-                        }
-
-                        // Supported parameters (for filtering JSON support)
-                        if (modelNode.has("supported_parameters")) {
-                            JsonNode params = modelNode.get("supported_parameters");
-                            if (params.isArray()) {
-                                List<String> paramList = new ArrayList<>();
-                                for (JsonNode param : params) {
-                                    paramList.add(param.asText());
-                                }
-                                model.put("supported_parameters", paramList);
-                            }
-                        }
-
-                        // Top provider info
-                        if (modelNode.has("top_provider")) {
-                            JsonNode topProvider = modelNode.get("top_provider");
-                            model.put("max_completion_tokens", topProvider.has("max_completion_tokens")
-                                    ? topProvider.get("max_completion_tokens").asInt()
-                                    : null);
-                        }
-
-                        models.add(model);
-                    }
-
-                    logger.info("Fetched {} models from OpenRouter", models.size());
-                    return models;
-                }
-            }
-
-            logger.warn("Failed to fetch models, returning empty list");
-            return Collections.emptyList();
-
-        } catch (Exception e) {
-            logger.error("Error fetching models from OpenRouter: {}", e.getMessage());
-            return Collections.emptyList();
-        }
-    }
-
-    private String getTextValue(JsonNode node, String field) {
-        return node.has(field) && !node.get(field).isNull() ? node.get(field).asText() : null;
+        return support.fetchAvailableModels();
     }
 }

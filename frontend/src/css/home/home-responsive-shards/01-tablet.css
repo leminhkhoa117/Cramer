@@ -1,0 +1,487 @@
+/* ============================================
+   HOMEPAGE - RESPONSIVE STYLES
+   ============================================ */
+
+/* Tablet */
+@media (max-width: 992px) {
+    :root {
+        --section-padding: 3.5rem 0;
+        --container-padding: 1.5rem;
+    }
+
+    .home-page {
+        scroll-snap-type: none;
+    }
+
+    /* Hero */
+    .hero-section {
+        min-height: auto;
+        padding: 6rem 1.5rem 8rem;
+    }
+
+    .hero-badges {
+        gap: 0.5rem;
+    }
+
+    .hero-badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+    }
+
+    .hero-logo-inline {
+        height: 0.6em;
+    }
+
+    .hero-content {
+        max-width: min(740px, 100%);
+    }
+
+    .hero-subheadline {
+        max-width: 620px;
+    }
+
+    /* Features */
+    .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .feature-card-3d {
+        height: 320px;
+    }
+
+    /* Stacked Features */
+    .stacked-feature-card-inner {
+        padding: 1.75rem;
+        min-height: 320px;
+    }
+
+    .stacked-feature-icon {
+        width: 64px;
+        height: 64px;
+        font-size: 1.4rem;
+    }
+
+    .stacked-feature-title {
+        font-size: 1.2rem;
+    }
+
+    .features-section--stacked {
+        padding: 3.75rem 0 4.5rem;
+    }
+
+    .features-section--stacked .features-container {
+        padding: 0 1.25rem;
+    }
+
+    .stacked-progress-shell {
+        width: 100%;
+        grid-template-columns: auto 1fr;
+        gap: 0.65rem;
+        padding: 0.64rem 0.85rem;
+    }
+
+    .stacked-progress-step {
+        justify-self: end;
+    }
+
+    .features-section--zigzag-lite .stacked-feature-card {
+        width: 100%;
+    }
+
+    .stacked-features-container {
+        width: 100%;
+        gap: 1.75rem;
+    }
+
+    .stacked-feature-card-inner {
+        gap: 1.5rem;
+        min-height: clamp(300px, 56vh, 500px);
+    }
+
+    .stacked-feature-left {
+        gap: 1.1rem;
+        flex: 1;
+        max-width: none;
+    }
+
+    .stacked-feature-visual-wrap {
+        width: clamp(310px, 48vw, 560px);
+        max-width: 54%;
+    }
+
+    .feature-test-layout,
+    .feature-review-grid,
+    .feature-speaking-layout,
+    .feature-dashboard-layout,
+    .feature-support-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .feature-test-head {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .feature-test-actions {
+        grid-column: 1 / -1;
+        justify-self: end;
+    }
+
+    .feature-library-skills {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .feature-library-path {
+        grid-template-columns: 1fr;
+    }
+
+    .feature-dashboard-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .feature-dashboard-goal {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .feature-test-foot-left {
+        width: 100%;
+    }
+
+    .feature-review-tabs,
+    .feature-test-status {
+        flex-wrap: wrap;
+    }
+
+    .stacked-feature-description {
+        line-height: 1.62;
+    }
+
+    .stacked-feature-step {
+        font-size: 0.68rem;
+        margin-bottom: 0.34rem;
+    }
+
+    .stacked-feature-eyebrow {
+        font-size: 0.74rem;
+        margin-bottom: 0.46rem;
+    }
+
+    /* Morph Features */
+    .features-section--morph {
+        padding: 3.75rem 0 4.5rem;
+    }
+
+    .features-section--morph .features-container {
+        padding: 0 1.25rem;
+    }
+
+    .morph-features-track {
+        height: auto !important;
+    }
+
+    .morph-features-sticky {
+        position: relative;
+        top: auto;
+        gap: 0.75rem;
+    }
+
+    .morph-stage-progress {
+        padding: 0.62rem 0.88rem;
+        gap: 0.65rem;
+    }
+
+    .morph-stage-progress-label {
+        font-size: 0.68rem;
+    }
+
+    .morph-stage-progress-step {
+        font-size: 0.75rem;
+    }
+
+    .morph-feature-card {
+        min-height: auto;
+        padding: 0.88rem;
+    }
+
+    .morph-feature-layout {
+        flex-direction: column;
+        gap: 1.05rem !important;
+        min-height: auto;
+    }
+
+    .morph-copy-panel,
+    .morph-media-panel {
+        flex: 1 1 auto !important;
+    }
+
+    .morph-media-panel {
+        order: -1;
+    }
+
+    .morph-copy-content {
+        padding: 0.6rem 0.4rem 0.55rem;
+    }
+
+    .morph-copy-eyebrow {
+        margin-bottom: 0.65rem;
+    }
+
+    .morph-copy-icon {
+        width: 66px;
+        height: 66px;
+        font-size: 1.35rem;
+        border-radius: 16px;
+        margin-bottom: 0.8rem;
+    }
+
+    .morph-copy-title {
+        font-size: clamp(1.28rem, 3.5vw, 1.6rem);
+        margin-bottom: 0.52rem;
+    }
+
+    .morph-copy-description {
+        font-size: 0.93rem;
+        line-height: 1.66;
+        margin-bottom: 0.95rem;
+        max-width: none;
+    }
+
+    .morph-copy-highlights li {
+        font-size: 0.78rem;
+        padding: 0.32rem 0.65rem;
+    }
+
+    .morph-media-frame {
+        min-height: clamp(250px, 38vw, 340px);
+        max-height: none;
+        border-radius: 18px;
+    }
+
+    .morph-step-rail {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.5rem;
+    }
+
+    .morph-step-chip {
+        min-height: 50px;
+        padding: 0.4rem 0.55rem;
+    }
+
+    .morph-step-label {
+        font-size: 0.72rem;
+    }
+
+    .morph-mobile-nav {
+        display: flex;
+        gap: 0.65rem;
+    }
+
+    .morph-mobile-nav button {
+        flex: 1;
+        border: 1px solid rgba(124, 58, 237, 0.22);
+        background: rgba(255, 255, 255, 0.82);
+        color: var(--color-primary);
+        border-radius: 12px;
+        padding: 0.75rem 0.95rem;
+        font-size: 0.86rem;
+        font-weight: 700;
+        transition: transform 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+    }
+
+    .morph-mobile-nav button:not(:disabled):hover {
+        transform: translateY(-1px);
+        border-color: rgba(124, 58, 237, 0.4);
+    }
+
+    .morph-mobile-nav button:disabled {
+        opacity: 0.45;
+    }
+
+    /* Disable zig-zag on tablet */
+    .stacked-feature-card--left,
+    .stacked-feature-card--right {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Hero stats */
+    .hero-stats-bar {
+        padding: 0.75rem 1.5rem;
+    }
+
+    .hero-stat {
+        padding: 0.25rem 1rem;
+    }
+
+    /* Parallax dividers */
+    .parallax-divider {
+        height: 50px;
+    }
+
+    /* Guide */
+    .guide-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .guide-cards-grid .guide-card:last-child {
+        grid-column: 1 / -1;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .journey-container {
+        max-width: 100%;
+    }
+
+    .journey-step-indicator {
+        padding: 0 1rem;
+    }
+
+    .journey-step-label {
+        max-width: 98px;
+        font-size: 0.78rem;
+    }
+
+    .journey-content-card {
+        gap: 1.5rem;
+        padding: 1.8rem;
+    }
+
+    .journey-icon-section {
+        width: 160px;
+        padding: 1.25rem;
+    }
+
+    .journey-icon-wrapper {
+        width: 68px;
+        height: 68px;
+    }
+
+    .journey-icon {
+        font-size: 1.7rem;
+    }
+
+    .journey-content-title {
+        font-size: 1.3rem;
+    }
+
+    .journey-content-description {
+        font-size: 0.95rem;
+        margin-bottom: 1.1rem;
+    }
+
+    .journey-details-list li {
+        font-size: 0.9rem;
+    }
+
+    .journey-navigation {
+        margin-top: 1.4rem;
+    }
+
+    .journey-nav-btn {
+        padding: 0.78rem 1.15rem;
+        font-size: 0.88rem;
+    }
+
+    /* Signup */
+    .signup-container {
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+        text-align: center;
+    }
+
+    .signup-content {
+        max-width: 100%;
+        order: 1;
+    }
+
+    .signup-form-wrapper {
+        order: 2;
+        max-width: 450px;
+        margin: 0 auto;
+    }
+
+    .signup-stats {
+        justify-content: center;
+    }
+
+    .testimonials-container {
+        max-width: 100%;
+    }
+
+    .testimonial-carousel {
+        padding: 0 3rem;
+    }
+
+    .testimonial-card {
+        padding: 2.15rem;
+    }
+
+    .testimonial-quote {
+        font-size: 1.08rem;
+        line-height: 1.72;
+    }
+
+    .testimonial-quote-icon {
+        font-size: 2.85rem;
+    }
+
+    .faq-container {
+        max-width: 100%;
+    }
+
+    .faq-question {
+        padding: 1.1rem 1.2rem;
+    }
+
+    .faq-question-text {
+        font-size: 0.95rem;
+    }
+
+    .faq-answer {
+        padding: 0 1.2rem 1.15rem 3.2rem;
+    }
+
+    .signup-section--redesigned {
+        min-height: auto;
+        padding: 3.5rem 0;
+    }
+
+    .signup-container--centered {
+        max-width: 620px;
+    }
+
+    .signup-card {
+        padding: 2rem;
+    }
+
+    .signup-stats-row {
+        width: 100%;
+        gap: 1.15rem;
+        padding: 1rem 1.15rem;
+    }
+
+    /* Demo */
+    .demo-container {
+        max-width: 100%;
+    }
+
+    .demo-content--split {
+        height: 400px;
+    }
+
+    .demo-speaking-container {
+        padding: 1.5rem;
+        gap: 1.5rem;
+    }
+
+    .demo-speaking-right {
+        flex: 0 0 220px;
+    }
+
+    .demo-resize-handle-grip span {
+        width: 3px;
+        height: 3px;
+    }
+}
+

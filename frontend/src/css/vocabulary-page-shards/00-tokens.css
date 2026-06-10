@@ -1,0 +1,27 @@
+/* === CSS Variables === */
+:root {
+  --vocab-primary: #7c3aed;
+  --vocab-primary-hover: #6d28d9;
+  --vocab-primary-light: #6366f1;
+  --vocab-star: #f59e0b;
+  --vocab-star-bg: rgba(245, 158, 11, 0.1);
+  --vocab-glass-bg: rgba(255, 255, 255, 0.96);
+  --vocab-glass-border: rgba(124, 58, 237, 0.1);
+  --vocab-glass-shadow: 0 4px 20px rgba(124, 58, 237, 0.06);
+  --vocab-glass-shadow-hover: 0 15px 35px rgba(124, 58, 237, 0.1);
+  --vocab-text: #1f2937;
+  --vocab-text-secondary: #4b5563;
+  --vocab-text-muted: #6b7280;
+  --vocab-success: #10b981;
+  --vocab-danger: #ef4444;
+
+  --vocab-noun: #3b82f6;
+  --vocab-verb: #10b981;
+  --vocab-adj: #f59e0b;
+  --vocab-adv: #8b5cf6;
+  --vocab-prep: #ec4899;
+  --vocab-conj: #6366f1;
+  --vocab-pron: #14b8a6;
+  --vocab-interj: #f43f5e;
+  --vocab-phrase: #84cc16;
+}

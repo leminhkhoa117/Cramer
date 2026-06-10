@@ -1,6 +1,7 @@
 package com.cramer.dto.abts;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * DTO for ABTS generation responses.
@@ -61,6 +62,13 @@ public class GenerationResponseDTO {
      * Warning messages (if any).
      */
     private List<String> warnings;
+
+    /**
+     * Per-part error messages keyed by part number, populated when a multi-part
+     * generation finishes with PARTIAL_SUCCESS (some parts failed but others
+     * succeeded). Null/empty when every requested part succeeded.
+     */
+    private Map<Integer, String> partErrors;
 
     // ==================== STATIC FACTORY METHODS ====================
 
@@ -154,6 +162,14 @@ public class GenerationResponseDTO {
 
     public void setWarnings(List<String> warnings) {
         this.warnings = warnings;
+    }
+
+    public Map<Integer, String> getPartErrors() {
+        return partErrors;
+    }
+
+    public void setPartErrors(Map<Integer, String> partErrors) {
+        this.partErrors = partErrors;
     }
 
     // ==================== INNER DTOs ====================

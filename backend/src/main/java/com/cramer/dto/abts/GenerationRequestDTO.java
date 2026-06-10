@@ -1,5 +1,7 @@
 package com.cramer.dto.abts;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
@@ -149,7 +151,19 @@ public class GenerationRequestDTO {
     /**
      * Reasoning effort level.
      */
-    private String reasoningEffort = "high";
+    // Default: medium = 4096 thinking tokens; users can override
+    private String reasoningEffort = "medium";
+
+    /**
+     * Explicit thinking-token budget (vendor-specific).
+     * When non-null and within the model's supported range, this overrides the
+     * effort-derived budget for token-budget knobs (Anthropic/Gemini/DeepSeek).
+     * Clamped at the DTO boundary to a sane [0, 65536] range so vendors with no
+     * registry min/max (DeepSeek/Qwen/GLM) cannot be sent an abusive budget.
+     */
+    @Min(0)
+    @Max(65536)
+    private Integer reasoningBudget;
 
     /**
      * Temperature for AI generation (0.0 to 2.0).
@@ -468,6 +482,14 @@ public class GenerationRequestDTO {
 
     public void setReasoningEffort(String reasoningEffort) {
         this.reasoningEffort = reasoningEffort;
+    }
+
+    public Integer getReasoningBudget() {
+        return reasoningBudget;
+    }
+
+    public void setReasoningBudget(Integer reasoningBudget) {
+        this.reasoningBudget = reasoningBudget;
     }
 
     public Double getTemperature() {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore, useProfileStore } from '../../stores';
 
 /**
@@ -19,10 +19,22 @@ const ADMIN_USER_IDS = [
  * để dễ dàng test giao diện
  */
 export default function AdminRouteGuard({ children }) {
+    const location = useLocation();
     const user = useAuthStore(state => state.user);
     const loading = useAuthStore(state => state.loading);
     const profile = useProfileStore(state => state.profile);
     const profileLoading = useProfileStore(state => state.loading);
+
+    // ======================================================================
+    // DEV MODE: Only allow in development environment
+    // Uses VITE_DEV_ADMIN_BYPASS environment variable
+    // ======================================================================
+    const isDevBypass = import.meta.env.VITE_DEV_ADMIN_BYPASS === 'true' && import.meta.env.DEV;
+
+    if (isDevBypass) {
+        console.warn('⚠️ Admin bypass enabled - DEV MODE ONLY');
+        return children ?? <Outlet />;
+    }
 
     // Nếu đang loading, hiển thị loading state
     if (loading || profileLoading) {
@@ -60,19 +72,7 @@ export default function AdminRouteGuard({ children }) {
 
     // Nếu chưa đăng nhập, redirect về login
     if (!user) {
-        return <Navigate to="/login" replace />;
-    }
-
-    // ======================================================================
-    // DEV MODE: Only allow in development environment
-    // Uses VITE_DEV_ADMIN_BYPASS environment variable
-    // ======================================================================
-    const isDevBypass = import.meta.env.VITE_DEV_ADMIN_BYPASS === 'true' && import.meta.env.DEV;
-
-    if (isDevBypass) {
-        // In dev mode with bypass enabled, allow all authenticated users
-        console.warn('⚠️ Admin bypass enabled - DEV MODE ONLY');
-        return children ?? <Outlet />;
+        return <Navigate to="/login" replace state={{ from: location }} />;
     }
 
     // ======================================================================

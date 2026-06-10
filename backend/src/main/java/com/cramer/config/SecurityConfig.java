@@ -62,6 +62,9 @@ public class SecurityConfig {
                     // Allow public access to PayOS config status check
                     .requestMatchers("/api/payments/config-status")
                     .permitAll()
+                    // Admin APIs require server-side admin authority, not caller-supplied headers
+                    .requestMatchers("/api/admin/**")
+                    .hasRole("ADMIN")
                     // All other API requests must be authenticated
                     .requestMatchers("/api/**")
                     .authenticated()

@@ -1,0 +1,149 @@
+/* QuotaDisplay.css */
+
+.quota-display {
+    background: var(--bg-secondary, #f8f9fa);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 12px 0;
+}
+
+.quota-display.compact {
+    padding: 12px;
+    margin: 8px 0;
+}
+
+.quota-premium-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-premium, #ffc107);
+    font-weight: 600;
+    justify-content: center;
+    padding: 8px;
+}
+
+.premium-icon {
+    font-size: 1.2em;
+}
+
+.quota-loading {
+    text-align: center;
+    color: var(--text-muted, #6c757d);
+    padding: 8px;
+}
+
+.quota-section {
+    margin-bottom: 16px;
+}
+
+.quota-section:last-child {
+    margin-bottom: 0;
+}
+
+.quota-section.skill-quota {
+    border-top: 1px solid var(--border-color, #dee2e6);
+    padding-top: 12px;
+    margin-top: 12px;
+}
+
+.quota-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.quota-label {
+    font-weight: 600;
+    color: var(--text-primary, #212529);
+    font-size: 0.9rem;
+}
+
+.quota-item {
+    margin-bottom: 10px;
+}
+
+.quota-item:last-child {
+    margin-bottom: 0;
+}
+
+.quota-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.quota-item-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #495057);
+}
+
+.quota-item-count {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary, #212529);
+}
+
+/* Progress bar */
+.quota-progress-bar {
+    height: 8px;
+    background: var(--bg-tertiary, #e9ecef);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.quota-progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.quota-progress-fill.green {
+    background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.quota-progress-fill.yellow {
+    background: linear-gradient(90deg, #ffc107, #fd7e14);
+}
+
+.quota-progress-fill.red {
+    background: linear-gradient(90deg, #dc3545, #e83e8c);
+}
+
+/* Compact mode adjustments */
+.quota-display.compact .quota-section {
+    margin-bottom: 12px;
+}
+
+.quota-display.compact .quota-header {
+    margin-bottom: 8px;
+}
+
+.quota-display.compact .quota-item {
+    margin-bottom: 6px;
+}
+
+.quota-display.compact .quota-progress-bar {
+    height: 6px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .quota-display {
+        background: var(--bg-secondary-dark, #2d2d2d);
+    }
+
+    .quota-label,
+    .quota-item-count {
+        color: var(--text-primary-dark, #f8f9fa);
+    }
+
+    .quota-item-label {
+        color: var(--text-secondary-dark, #adb5bd);
+    }
+
+    .quota-progress-bar {
+        background: var(--bg-tertiary-dark, #3d3d3d);
+    }
+}

@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.*;
 
@@ -64,8 +65,8 @@ public class LLMGradingService {
         public LLMGradingService(LLMConfig llmConfig) {
                 // Configure RestTemplate with timeout
                 org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
-                factory.setConnectTimeout(30000); // 30 seconds to connect
-                factory.setReadTimeout(API_TIMEOUT_MS); // 10 minutes for response
+                factory.setConnectTimeout(Duration.ofMillis(30000)); // 30 seconds to connect
+                factory.setReadTimeout(Duration.ofMillis(API_TIMEOUT_MS)); // 10 minutes for response
 
                 this.restTemplate = new RestTemplate(factory);
                 this.objectMapper = new ObjectMapper();

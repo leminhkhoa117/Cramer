@@ -12,6 +12,7 @@ import '../../css/admin.css';
 export default function AdminLayout() {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar state
+    const [isMobileLayout, setIsMobileLayout] = useState(false);
     const location = useLocation();
 
     // Close mobile sidebar on route change
@@ -26,6 +27,28 @@ export default function AdminLayout() {
         };
         document.addEventListener('keydown', handleEscape);
         return () => document.removeEventListener('keydown', handleEscape);
+    }, []);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(max-width: 1024px)');
+        const handleChange = () => setIsMobileLayout(mediaQuery.matches);
+
+        handleChange();
+        window.addEventListener('resize', handleChange);
+
+        if (mediaQuery.addEventListener) {
+            mediaQuery.addEventListener('change', handleChange);
+            return () => {
+                mediaQuery.removeEventListener('change', handleChange);
+                window.removeEventListener('resize', handleChange);
+            };
+        }
+
+        mediaQuery.addListener(handleChange);
+        return () => {
+            mediaQuery.removeListener(handleChange);
+            window.removeEventListener('resize', handleChange);
+        };
     }, []);
 
     const toggleSidebar = () => {
@@ -70,6 +93,9 @@ export default function AdminLayout() {
         location.pathname.includes('/content/editor') ||
         location.pathname.includes('/content/tests') ||
         location.pathname.includes('/ai-studio');
+    const mainStyle = isMobileLayout
+        ? { width: '100%', maxWidth: '100%', marginLeft: 0 }
+        : undefined;
 
     return (
         <ToastProvider>
@@ -91,7 +117,10 @@ export default function AdminLayout() {
                 />
 
                 {/* Main content area */}
-                <div className={`admin-main ${sidebarCollapsed ? 'admin-main--collapsed' : ''}`}>
+                <div
+                    className={`admin-main ${sidebarCollapsed ? 'admin-main--collapsed' : ''}`}
+                    style={mainStyle}
+                >
                     <AdminHeader
                         breadcrumbs={getBreadcrumbs()}
                         collapsed={sidebarCollapsed}

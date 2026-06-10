@@ -77,6 +77,46 @@ function RouteError() {
   );
 }
 
+function RouteLoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="text-xl font-semibold text-gray-700">Đang tải...</div>
+    </div>
+  );
+}
+
+function AdminRouteLoadingFallback() {
+  return (
+    <div
+      className="admin-root"
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#0F0F23',
+        color: '#F8FAFC',
+      }}
+    >
+      <div style={{ textAlign: 'center' }}>
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            margin: '0 auto 14px',
+            border: '3px solid rgba(139, 92, 246, 0.25)',
+            borderTopColor: '#8B5CF6',
+            borderRadius: '50%',
+            animation: 'adminRouteSpin 0.9s linear infinite',
+          }}
+        />
+        <style>{`@keyframes adminRouteSpin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ fontSize: '0.95rem', fontWeight: 600 }}>Đang mở trang quản trị...</div>
+      </div>
+    </div>
+  );
+}
+
 function RootLayout() {
   const location = useLocation();
   const navigation = useNavigation();
@@ -113,7 +153,7 @@ function RootLayout() {
       )}
       {showHeader && <Header />}
       <main className={showHeader ? 'with-fixed-header' : ''}>
-        <AnimatedOutlet />
+        {navigation.state === 'loading' && isAdminPage ? <AdminRouteLoadingFallback /> : <AnimatedOutlet />}
       </main>
       {(isTestPage) && <SmallViewportWarning minWidth={768} />}
       {!isTestPage && !isReviewPage && !isAdminPage && <Footer />}
@@ -127,6 +167,7 @@ export const router = createBrowserRouter([
     path: '/',
     element: <RootLayout />,
     errorElement: <RouteError />,
+    HydrateFallback: RouteLoadingFallback,
     children: [
       // ============ PUBLIC ROUTES ============
       { index: true, element: <PageWrapper><Home /></PageWrapper> },

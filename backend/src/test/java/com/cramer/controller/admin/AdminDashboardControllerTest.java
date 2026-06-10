@@ -7,11 +7,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -38,10 +39,10 @@ class AdminDashboardControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+        @MockitoBean
     private JdbcTemplate jdbcTemplate;
 
-    @MockBean
+        @MockitoBean
     private com.cramer.util.JwtUtil jwtUtil;
 
     private static final String DEFAULT_ADMIN_ID = "550e8400-e29b-41d4-a716-446655440000";
@@ -50,7 +51,8 @@ class AdminDashboardControllerTest {
         return mockMvc.perform(get(url)
                 .with(jwt().jwt(jwtBuilder -> jwtBuilder
                         .subject(DEFAULT_ADMIN_ID)
-                        .claim("aud", "authenticated"))));
+                        .claim("aud", "authenticated"))
+                        .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))));
     }
 
     // =========================================================================
@@ -170,7 +172,8 @@ class AdminDashboardControllerTest {
                             .param("limit", "10")
                             .with(jwt().jwt(jwtBuilder -> jwtBuilder
                                     .subject(DEFAULT_ADMIN_ID)
-                                    .claim("aud", "authenticated"))))
+                                    .claim("aud", "authenticated"))
+                                    .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$").isArray());
         }
