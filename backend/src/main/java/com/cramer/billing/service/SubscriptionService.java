@@ -126,6 +126,25 @@ public class SubscriptionService {
         return saved;
     }
 
+    /**
+     * Admin-initiated tier change (SPEC-17 §2): activate the tier for {@code months} with reset
+     * counters; no Lúa bonus (audited by the admin module). A free tier sets a null expiry.
+     */
+    public UserSubscription adminSetTier(UUID userId, SubscriptionTier tier, int months) {
+        UserSubscription s = new UserSubscription();
+        s.setUserId(userId);
+        s.setTierId(tier.getId());
+        s.setStatus("ACTIVE");
+        s.setExpiresAt(tier.isPremium() ? OffsetDateTime.now().plusMonths(Math.max(1, months)) : null);
+        s.setAutoRenew(false);
+        s.setAttemptsUsed(0);
+        s.setAttemptAisUsed(0);
+        s.setChatbotUsed(0);
+        s.setAiGradingEnabled(tier.isPremium());
+        s.setPaymentReference("admin");
+        return subscriptions.save(s);
+    }
+
     private boolean isActive(UserSubscription sub) {
         return "ACTIVE".equals(sub.getStatus())
                 && (sub.getExpiresAt() == null || sub.getExpiresAt().isAfter(OffsetDateTime.now()));
