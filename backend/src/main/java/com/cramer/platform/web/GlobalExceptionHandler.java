@@ -13,9 +13,11 @@ import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -115,9 +117,22 @@ public class GlobalExceptionHandler {
         return respond(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), req);
     }
 
-    // ---- 500 (catch-all; never leak internals) ----
+    // ---- Spring MVC exceptions that already carry a status (e.g. NoResourceFoundException → 404,
+    //      method-not-allowed → 405, unsupported-media-type → 415). Honor their status. ----
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnexpected(Exception ex, HttpServletRequest req) {
+        // Spring MVC's status-carrying exceptions implement ErrorResponse (NoResourceFoundException
+        // extends ServletException, not ErrorResponseException, so match the interface) — honor it.
+        if (ex instanceof ErrorResponse er) {
+            HttpStatusCode status = er.getStatusCode();
+            HttpStatus resolved = HttpStatus.resolve(status.value());
+            String reason = resolved != null ? resolved.getReasonPhrase() : "Error";
+            if (status.is5xxServerError()) {
+                log.error("Server error on {} {}", req.getMethod(), req.getRequestURI(), ex);
+            }
+            ApiError body = ApiError.of(status.value(), reason, reason, req.getRequestURI());
+            return ResponseEntity.status(status).body(body);
+        }
         log.error("Unhandled exception on {} {}", req.getMethod(), req.getRequestURI(), ex);
         ApiError body = new ApiError(Instant.now(), HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal Server Error", "An unexpected error occurred", req.getRequestURI(),
