@@ -42,4 +42,12 @@ public final class ValidationResult {
     public boolean isValid() {
         return errors().isEmpty();
     }
+
+    /** Serializable projection for HTTP/SSE payloads (SPEC-23 §1.1). */
+    public ValidationView toView() {
+        List<ValidationIssue> all = issues();
+        List<String> errorMsgs = errors().stream().map(ValidationIssue::message).toList();
+        List<String> warningMsgs = warnings().stream().map(ValidationIssue::message).toList();
+        return new ValidationView(isValid(), all, errorMsgs, warningMsgs, errorMsgs.size(), warningMsgs.size());
+    }
 }
