@@ -4,14 +4,16 @@
 > **Version:** 1.2.0  
 > **Note:** This directory was renamed from `library/` to `canonical/` on 17/05/2026.
 
-> ⚠️ **Backend rewrite in progress (since 11/06/2026).** The backend has been rebuilt from a
-> layered architecture into a **vertical-slice, 10-module** design under `com.cramer.*`
+> ⚠️ **Backend rewrite (since 11/06/2026).** The backend has been rebuilt from a layered
+> architecture into a **vertical-slice, 10-module** design under `com.cramer.*`
 > (`platform`, `identity`, `catalog`, `assessment`, `writing`, `speaking`, `billing`,
-> `engagement`, `admin`, `abts`). The **source of truth** for the new architecture is
-> [`docs/specs/backend/`](../specs/backend/README.md) (SPEC-00…25). The detailed backend docs
-> below (`ENTITIES.md`, `SERVICES.md`, `API_REFERENCE.md`) still describe the **legacy** layout
-> and will be regenerated once the integration-tier (admin/speaking/abts services + controllers)
-> is complete. `DATABASE_SCHEMA.md` remains accurate (the Supabase schema is frozen/unchanged).
+> `engagement`, `admin`, `abts`). Each module owns its own `web/` · `service/` · `domain/` ·
+> `repository/` · `config/`. The **source of truth** for the architecture is
+> [`docs/specs/backend/`](../specs/backend/README.md) (SPEC-00…25). All 10 modules are built
+> and tested (unit suite green; a `@SpringBootTest` boots the full context against the live
+> Supabase schema with `ddl-auto=validate`). The detailed backend docs below
+> (`ENTITIES.md`, `SERVICES.md`, `API_REFERENCE.md`) still describe the **legacy** layout and
+> are pending regeneration; `DATABASE_SCHEMA.md` remains accurate (schema is frozen/unchanged).
 
 ---
 
