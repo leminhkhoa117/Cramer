@@ -24,4 +24,7 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
     /** Active subscriptions that have passed their expiry (for the daily expiry scheduler). */
     @Query("select s from UserSubscription s where s.status = 'ACTIVE' and s.expiresAt is not null and s.expiresAt < :now")
     List<UserSubscription> findExpired(@Param("now") OffsetDateTime now);
+
+    /** All subscriptions in a status (for the monthly reset scheduler). */
+    List<UserSubscription> findByStatus(String status);
 }

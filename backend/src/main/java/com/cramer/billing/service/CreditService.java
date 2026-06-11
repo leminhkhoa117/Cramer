@@ -40,6 +40,22 @@ public class CreditService {
         return credits.findByUserId(userId).map(UserCredit::getBalance).orElse(0);
     }
 
+    /** Balance + lifetime totals (SPEC-15 §3, §9 {@code /stats}). */
+    @Transactional(readOnly = true)
+    public com.cramer.billing.web.dto.CreditStatsView stats(UUID userId) {
+        return credits.findByUserId(userId)
+                .map(c -> new com.cramer.billing.web.dto.CreditStatsView(
+                        c.getBalance(), c.getLifetimeEarned(), c.getLifetimeSpent()))
+                .orElseGet(() -> new com.cramer.billing.web.dto.CreditStatsView(0, 0, 0));
+    }
+
+    /** Recent transactions, newest first (SPEC-15 §9 {@code /transactions}). */
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<CreditTransaction> transactions(
+            UUID userId, org.springframework.data.domain.Pageable pageable) {
+        return transactions.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+    }
+
     /** Whether a transaction with the given reference + category already exists (for refund gating). */
     @Transactional(readOnly = true)
     public boolean hasTransaction(UUID userId, String referenceId, CreditCategory category) {

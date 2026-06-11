@@ -2,7 +2,9 @@ package com.cramer.billing.service;
 
 import com.cramer.billing.domain.CreditCategory;
 import com.cramer.billing.domain.PaymentOrder;
+import com.cramer.billing.config.PayOsProperties;
 import com.cramer.billing.repository.PaymentOrderRepository;
+import com.cramer.billing.repository.SubscriptionTierRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,9 +28,12 @@ class PaymentServiceTest {
     @Mock PaymentOrderRepository orders;
     @Mock LuaPackService luaPacks;
     @Mock CreditService credits;
+    @Mock SubscriptionService subscriptions;
+    @Mock SubscriptionTierRepository tiers;
 
     private PaymentService service() {
-        return new PaymentService(orders, luaPacks, credits);
+        PayOsProperties payos = new PayOsProperties(null, null, null, null, null);
+        return new PaymentService(orders, luaPacks, credits, subscriptions, tiers, payos);
     }
 
     private PaymentOrder order(String status, String type) {

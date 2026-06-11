@@ -6,6 +6,7 @@ import com.cramer.billing.domain.UserSubscription;
 import com.cramer.billing.repository.SubscriptionTierRepository;
 import com.cramer.billing.repository.UserCreditRepository;
 import com.cramer.billing.repository.UserSubscriptionRepository;
+import com.cramer.platform.error.OperationNotAllowedException;
 import com.cramer.platform.error.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,6 +59,71 @@ public class SubscriptionService {
 
     public UserSubscription save(UserSubscription sub) {
         return subscriptions.save(sub);
+    }
+
+    /** All tiers ordered for display (SPEC-15 §2). */
+    @Transactional(readOnly = true)
+    public java.util.List<SubscriptionTier> listTiers() {
+        return tiers.findAll().stream()
+                .sorted(java.util.Comparator.comparing(t ->
+                        t.getDisplayOrder() != null ? t.getDisplayOrder()
+                                : (t.getSortOrder() != null ? t.getSortOrder() : 0)))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public SubscriptionTier getTierByCode(String code) {
+        return tiers.findByCode(code)
+                .orElseThrow(() -> ResourceNotFoundException.of("SubscriptionTier", code));
+    }
+
+    /** Remaining included AI gradings this period (clamped at 0). */
+    @Transactional(readOnly = true)
+    public int gradingsRemaining(UUID userId) {
+        UserSubscription sub = getOrCreateActive(userId);
+        SubscriptionTier tier = tierOf(sub);
+        return Math.max(0, tier.getIncludedAiGradings() - sub.getAttemptAisUsed());
+    }
+
+    /** Monthly chatbot message limit for the active tier ({@code < 0} = unlimited). */
+    @Transactional(readOnly = true)
+    public int chatLimit(UUID userId) {
+        return tierOf(getOrCreateActive(userId)).getChatbotMonthlyLimit();
+    }
+
+    /** Enable/disable AI grading; enabling requires a premium tier (SPEC-15 §2). */
+    public UserSubscription setAiGrading(UUID userId, boolean enabled) {
+        UserSubscription sub = getOrCreateActive(userId);
+        if (enabled && !tierOf(sub).isPremium()) {
+            throw new OperationNotAllowedException("AI grading can only be enabled on a premium tier");
+        }
+        sub.setAiGradingEnabled(enabled);
+        return subscriptions.save(sub);
+    }
+
+    /**
+     * Activate a paid subscription after a verified payment (SPEC-15 §2, §8). Creates a fresh
+     * subscription row for the tier with reset counters and a one-month expiry, then grants the
+     * tier's initial Lúa as {@code TIER_BONUS} (idempotent by payment reference).
+     */
+    public UserSubscription activatePaid(UUID userId, SubscriptionTier tier, String paymentReference) {
+        UserSubscription s = new UserSubscription();
+        s.setUserId(userId);
+        s.setTierId(tier.getId());
+        s.setStatus("ACTIVE");
+        s.setExpiresAt(OffsetDateTime.now().plusMonths(1));
+        s.setAutoRenew(false);
+        s.setAttemptsUsed(0);
+        s.setAttemptAisUsed(0);
+        s.setChatbotUsed(0);
+        s.setAiGradingEnabled(true);
+        s.setPaymentReference(paymentReference);
+        UserSubscription saved = subscriptions.save(s);
+        if (tier.getInitialLua() != null && tier.getInitialLua() > 0) {
+            creditService.earn(userId, tier.getInitialLua(), CreditCategory.TIER_BONUS,
+                    "tierbonus_" + paymentReference, "Tier activation bonus: " + tier.getCode());
+        }
+        return saved;
     }
 
     private boolean isActive(UserSubscription sub) {

@@ -26,10 +26,12 @@ public class QuotaService {
 
     private final SubscriptionService subscriptions;
     private final UserQuotaRepository userQuotas;
+    private final CreditService credits;
 
-    public QuotaService(SubscriptionService subscriptions, UserQuotaRepository userQuotas) {
+    public QuotaService(SubscriptionService subscriptions, UserQuotaRepository userQuotas, CreditService credits) {
         this.subscriptions = subscriptions;
         this.userQuotas = userQuotas;
+        this.credits = credits;
     }
 
     public QuotaStatusView status(UUID userId) {
@@ -49,5 +51,31 @@ public class QuotaService {
         int aiUsed = q == null ? 0 : q.getAttemptAiCount();
         return new QuotaStatusView(false, tier.getCode(),
                 tier.getMonthlyAttemptLimit(), used, tier.getMonthlyAttemptAiLimit(), aiUsed, false);
+    }
+
+    /**
+     * Pre-check whether the caller may start an attempt (SPEC-15 §6, §9 {@code /can-attempt}).
+     * Premium and within-cap users are allowed without Lúa; over-cap users need to cover the tier
+     * overage cost (regular 10 / AI 20 by default). Read-only — no counter mutation.
+     */
+    public com.cramer.billing.web.dto.CanAttemptView canAttempt(UUID userId, String skill, boolean ai) {
+        UserSubscription sub = subscriptions.getOrCreateActive(userId);
+        SubscriptionTier tier = subscriptions.tierOf(sub);
+        int balance = credits.balance(userId);
+        if (tier.isPremium()) {
+            return new com.cramer.billing.web.dto.CanAttemptView(true, true, false, 0, balance, "premium");
+        }
+        QuotaStatusView status = status(userId);
+        int limit = ai ? status.globalAiLimit() : status.globalLimit();
+        int used = ai ? status.globalAiUsed() : status.globalUsed();
+        boolean withinCap = limit < 0 || used < limit;
+        if (withinCap) {
+            return new com.cramer.billing.web.dto.CanAttemptView(true, false, false, 0, balance, "within monthly quota");
+        }
+        int cost = ai ? tier.getAttemptAiOverageCost() : tier.getAttemptOverageCost();
+        boolean affordable = balance >= cost;
+        return new com.cramer.billing.web.dto.CanAttemptView(affordable, false, true, cost, balance,
+                affordable ? "monthly quota reached; Lúa overage applies"
+                        : "monthly quota reached and insufficient Lúa");
     }
 }
