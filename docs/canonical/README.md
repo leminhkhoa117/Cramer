@@ -4,6 +4,15 @@
 > **Version:** 1.2.0  
 > **Note:** This directory was renamed from `library/` to `canonical/` on 17/05/2026.
 
+> ⚠️ **Backend rewrite in progress (since 11/06/2026).** The backend has been rebuilt from a
+> layered architecture into a **vertical-slice, 10-module** design under `com.cramer.*`
+> (`platform`, `identity`, `catalog`, `assessment`, `writing`, `speaking`, `billing`,
+> `engagement`, `admin`, `abts`). The **source of truth** for the new architecture is
+> [`docs/specs/backend/`](../specs/backend/README.md) (SPEC-00…25). The detailed backend docs
+> below (`ENTITIES.md`, `SERVICES.md`, `API_REFERENCE.md`) still describe the **legacy** layout
+> and will be regenerated once the integration-tier (admin/speaking/abts services + controllers)
+> is complete. `DATABASE_SCHEMA.md` remains accurate (the Supabase schema is frozen/unchanged).
+
 ---
 
 ## Overview
@@ -24,7 +33,7 @@
 | Layer | Technologies |
 |-------|-------------|
 | **Frontend** | React 18, Vite, Tailwind CSS, Zustand, Framer Motion |
-| **Backend** | Spring Boot 3.x, Java 21, Maven |
+| **Backend** | Spring Boot 4.0, Java 25, Maven (vertical-slice modules) |
 | **Database** | PostgreSQL (Supabase) with RLS |
 | **Auth** | Supabase Auth with JWT |
 | **AI** | OpenRouter API (400+ models), DeepSeek V3.2 |
