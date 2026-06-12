@@ -1,296 +1,91 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import { subscriptionApi, creditsApi, chatApi } from '../api/backendApi';
+import { subscriptionApi, creditApi, chatApi, getApiError } from '../lib/api';
 import { useAuthStore } from './index';
 
+const EMOJI = { cramerous: '🌟', cramerich: '🌻', cramerie: '🌾' };
+
 /**
- * Zustand store for user stats (subscription, credits, chat usage).
- * Used by FloatingAssistant widget for displaying balance and tier.
+ * User stats store (SPEC-F15) for the FloatingAssistant + subscription widgets: subscription
+ * status (flat SubscriptionStatusView), Lúa balance (CreditStatsView), chat remaining, tiers,
+ * grading status. 30s cache.
  */
 const useUserStatsStore = create(
   devtools(
     subscribeWithSelector((set, get) => ({
-      // ===== STATE =====
-      // Subscription
-      subscription: null,
+      subscription: null,   // SubscriptionStatusView
       tiers: [],
-
-      // Credits (Lúa)
-      credits: {
-        balance: 0,
-        lifetimeEarned: 0,
-        lifetimeSpent: 0,
-      },
-
-      // Chat usage - using MONTHLY limits
-      chatUsage: {
-        usedThisMonth: 0,
-        monthlyLimit: 50,
-        remainingThisMonth: 50,
-        // Legacy fields for backward compatibility
-        usedToday: 0,
-        dailyLimit: 50,
-        remainingToday: 50,
-      },
-
-      // Grading status
-      gradingStatus: {
-        canGrade: false,
-        monthlyLimit: 0,
-        usedThisMonth: 0,
-        remaining: 0,
-      },
-
-      // Loading states
+      credits: { balance: 0, lifetime: 0, spent: 0 },
+      chat: { remaining: 50, limit: 50, unlimited: false },
+      grading: { aiGradingEnabled: false, gradingsRemaining: 0 },
       loading: false,
       error: null,
       lastFetched: null,
 
-      // ===== SELECTORS =====
-      getTierEmoji: () => {
-        const { subscription } = get();
-        if (!subscription?.tier) return '🌾';
-        // Backend returns name (e.g., "Cramerich") or code (e.g., "cramerich")
-        const tierCode = subscription.tier.code?.toLowerCase() || '';
-        const tierName = subscription.tier.name?.toLowerCase() || '';
-        if (tierCode.includes('cramerous') || tierName.includes('cramerous')) return '🌟';
-        if (tierCode.includes('cramerich') || tierName.includes('cramerich')) return '🌻';
-        return '🌾';
-      },
+      getTierEmoji: () => EMOJI[get().subscription?.tierCode] || '🌾',
+      getTierName: () => get().subscription?.tierName || 'Cramerie',
+      isPremium: () => get().subscription?.premium === true,
 
-      getTierName: () => {
-        const { subscription } = get();
-        // Backend returns name for Vietnamese name, fallback to nameEn then code
-        return subscription?.tier?.name || subscription?.tier?.code || 'Cramerie';
-      },
-
-      // ===== ACTIONS =====
-
-      /**
-       * Fetch all user stats (subscription, credits, chat usage)
-       */
-      fetchUserStats: async () => {
+      fetchUserStats: async (force = false) => {
         const user = useAuthStore.getState().user;
-        if (!user) {
-          console.log('⏭️ Skipping fetchUserStats - no user');
-          return;
-        }
-
+        if (!user) return;
         const { loading, lastFetched } = get();
-
-        // Debounce: don't fetch if already loading or fetched within last 30 seconds
-        if (loading) {
-          console.log('⏭️ Skipping fetchUserStats - already loading');
-          return;
-        }
-
-        if (lastFetched && Date.now() - lastFetched < 30000) {
-          console.log('⏭️ Skipping fetchUserStats - cached (30s TTL)');
-          return;
-        }
-
+        if (loading) return;
+        if (!force && lastFetched && Date.now() - lastFetched < 30000) return;
         set({ loading: true, error: null }, false, 'fetchUserStats/start');
-
         try {
-          // Fetch all data in parallel
-          const [subRes, creditsRes, chatRes, tiersRes, gradingRes] = await Promise.allSettled([
-            subscriptionApi.getCurrent(),
-            creditsApi.getBalance(),
-            chatApi.getRemainingQuestions(),
-            subscriptionApi.getTiers(),
-            subscriptionApi.getGradingStatus(),
+          const [sub, credits, chat, tiers, grading] = await Promise.allSettled([
+            subscriptionApi.current(),
+            creditApi.stats(),
+            chatApi.remaining(),
+            subscriptionApi.tiers(),
+            subscriptionApi.gradingStatus(),
           ]);
-
-          // Process subscription
-          if (subRes.status === 'fulfilled' && subRes.value?.data) {
-            set({ subscription: subRes.value.data }, false, 'fetchUserStats/subscription');
+          const patch = { loading: false, lastFetched: Date.now() };
+          if (sub.status === 'fulfilled') patch.subscription = sub.value;
+          if (credits.status === 'fulfilled') {
+            patch.credits = {
+              balance: credits.value.balance ?? 0,
+              lifetime: credits.value.lifetime ?? 0,
+              spent: credits.value.spent ?? 0,
+            };
           }
-
-          // Process credits
-          if (creditsRes.status === 'fulfilled' && creditsRes.value?.data) {
-            set({
-              credits: {
-                balance: creditsRes.value.data.balance || 0,
-                lifetimeEarned: creditsRes.value.data.lifetimeEarned || 0,
-                lifetimeSpent: creditsRes.value.data.lifetimeSpent || 0,
-              }
-            }, false, 'fetchUserStats/credits');
+          if (chat.status === 'fulfilled') {
+            const remaining = chat.value.remaining ?? 50;
+            const unlimited = remaining < 0;
+            const limit = sub.status === 'fulfilled' ? (sub.value.chatMonthlyLimit ?? 50) : 50;
+            patch.chat = { remaining, unlimited, limit };
           }
-
-          // Process chat usage - API returns { remaining, unlimited }
-          // Now using MONTHLY limits (chatbot_monthly_limit) instead of daily
-          if (chatRes.status === 'fulfilled' && chatRes.value?.data) {
-            const data = chatRes.value.data;
-            const isUnlimited = data.unlimited === true || data.remaining < 0;
-            const remainingValue = isUnlimited ? -1 : (data.remaining ?? 50);
-
-            // Get monthly limit from subscription tier if available
-            const { subscription } = get();
-            const monthlyLimit = isUnlimited ? -1 : (subscription?.tier?.chatbotMonthlyLimit || 50);
-            const usedThisMonth = isUnlimited ? 0 : Math.max(0, monthlyLimit - remainingValue);
-
-            set({
-              chatUsage: {
-                usedThisMonth,
-                monthlyLimit,
-                remainingThisMonth: remainingValue,
-                // Keep legacy field names for backward compatibility
-                usedToday: usedThisMonth,
-                dailyLimit: monthlyLimit,
-                remainingToday: remainingValue,
-              }
-            }, false, 'fetchUserStats/chatUsage');
-          }
-
-          // Process tiers
-          if (tiersRes.status === 'fulfilled' && tiersRes.value?.data) {
-            set({ tiers: tiersRes.value.data }, false, 'fetchUserStats/tiers');
-          }
-
-          // Process grading status
-          if (gradingRes.status === 'fulfilled' && gradingRes.value?.data) {
-            set({ gradingStatus: gradingRes.value.data }, false, 'fetchUserStats/gradingStatus');
-          }
-
-          set({ loading: false, lastFetched: Date.now() }, false, 'fetchUserStats/complete');
-          console.log('✅ User stats fetched successfully');
-
+          if (tiers.status === 'fulfilled') patch.tiers = tiers.value;
+          if (grading.status === 'fulfilled') patch.grading = grading.value;
+          set(patch, false, 'fetchUserStats/complete');
         } catch (error) {
-          console.error('❌ Error fetching user stats:', error);
-          set({
-            loading: false,
-            error: error.message || 'Failed to load user stats'
-          }, false, 'fetchUserStats/error');
+          set({ loading: false, error: getApiError(error).message }, false, 'fetchUserStats/error');
         }
       },
 
-      /**
-       * Refresh credits balance only
-       */
       refreshCredits: async () => {
         try {
-          const response = await creditsApi.getBalance();
-          if (response?.data) {
-            set({
-              credits: {
-                balance: response.data.balance || 0,
-                lifetimeEarned: response.data.lifetimeEarned || 0,
-                lifetimeSpent: response.data.lifetimeSpent || 0,
-              }
-            }, false, 'refreshCredits');
-          }
-        } catch (error) {
-          console.error('❌ Error refreshing credits:', error);
-        }
+          const c = await creditApi.stats();
+          set({ credits: { balance: c.balance ?? 0, lifetime: c.lifetime ?? 0, spent: c.spent ?? 0 } }, false, 'refreshCredits');
+        } catch { /* ignore */ }
       },
 
-      /**
-       * Refresh chat usage only - API returns { remaining, unlimited }
-       * Now using MONTHLY limits consistently
-       */
-      refreshChatUsage: async () => {
+      refreshChat: async () => {
         try {
-          const response = await chatApi.getRemainingQuestions();
-          if (response?.data) {
-            const data = response.data;
-            const isUnlimited = data.unlimited === true || data.remaining < 0;
-            const remainingValue = isUnlimited ? -1 : (data.remaining ?? 50);
-
-            // Get MONTHLY limit from current subscription (chatbotMonthlyLimit, not dailyChatLimit)
-            const { subscription } = get();
-            const monthlyLimit = isUnlimited ? -1 : (subscription?.tier?.chatbotMonthlyLimit || 50);
-            const usedThisMonth = isUnlimited ? 0 : Math.max(0, monthlyLimit - remainingValue);
-
-            set({
-              chatUsage: {
-                usedThisMonth,
-                monthlyLimit,
-                remainingThisMonth: remainingValue,
-                // Keep legacy field names for backward compatibility
-                usedToday: usedThisMonth,
-                dailyLimit: monthlyLimit,
-                remainingToday: remainingValue,
-              }
-            }, false, 'refreshChatUsage');
-          }
-        } catch (error) {
-          console.error('❌ Error refreshing chat usage:', error);
-        }
+          const { remaining = 50 } = await chatApi.remaining();
+          set((s) => ({ chat: { ...s.chat, remaining, unlimited: remaining < 0 } }), false, 'refreshChat');
+        } catch { /* ignore */ }
       },
 
-      /**
-       * Increment chat usage locally (optimistic update)
-       */
-      incrementChatUsage: () => {
-        const { chatUsage } = get();
-        const newRemaining = Math.max(0, (chatUsage.remainingThisMonth ?? chatUsage.remainingToday) - 1);
-        const newUsed = (chatUsage.usedThisMonth ?? chatUsage.usedToday) + 1;
-        set({
-          chatUsage: {
-            ...chatUsage,
-            usedThisMonth: newUsed,
-            remainingThisMonth: newRemaining,
-            // Keep legacy fields in sync
-            usedToday: newUsed,
-            remainingToday: newRemaining,
-          }
-        }, false, 'incrementChatUsage');
-      },
-
-      /**
-       * Deduct credits locally (optimistic update)
-       */
-      deductCredits: (amount) => {
-        const { credits } = get();
-        set({
-          credits: {
-            ...credits,
-            balance: Math.max(0, credits.balance - amount),
-            lifetimeSpent: credits.lifetimeSpent + amount,
-          }
-        }, false, 'deductCredits');
-      },
-
-      /**
-       * Clear all stats (on logout)
-       */
-      clearStats: () => {
-        set({
-          subscription: null,
-          tiers: [],
-          credits: { balance: 0, lifetimeEarned: 0, lifetimeSpent: 0 },
-          chatUsage: {
-            usedThisMonth: 0,
-            monthlyLimit: 50,
-            remainingThisMonth: 50,
-            // Legacy fields
-            usedToday: 0,
-            dailyLimit: 50,
-            remainingToday: 50
-          },
-          gradingStatus: { canGrade: false, monthlyLimit: 0, usedThisMonth: 0, remaining: 0 },
-          loading: false,
-          error: null,
-          lastFetched: null,
-        }, false, 'clearStats');
-      },
+      reset: () => set({
+        subscription: null, tiers: [], credits: { balance: 0, lifetime: 0, spent: 0 },
+        chat: { remaining: 50, limit: 50, unlimited: false }, grading: { aiGradingEnabled: false, gradingsRemaining: 0 },
+        lastFetched: null,
+      }, false, 'reset'),
     })),
     { name: 'UserStatsStore' }
   )
-);
-
-// Auto-clear stats when user logs out
-useAuthStore.subscribe(
-  (state) => state.user,
-  (user, prevUser) => {
-    if (prevUser && !user) {
-      // User logged out
-      useUserStatsStore.getState().clearStats();
-    } else if (user && !prevUser) {
-      // User logged in - fetch stats
-      useUserStatsStore.getState().fetchUserStats();
-    }
-  }
 );
 
 export default useUserStatsStore;

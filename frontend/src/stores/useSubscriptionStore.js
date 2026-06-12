@@ -1,164 +1,79 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import { subscriptionApi } from '../api/backendApi';
+import { subscriptionApi, getApiError } from '../lib/api';
+
+/** Default Cramerie (free) features when a tier exposes none (SPEC-15 §7). */
+const FREE_FEATURES = ['limited_tests', 'normal_grading', 'vocabulary', 'basic_progress'];
+
+function featuresToMap(features) {
+  const map = {};
+  if (Array.isArray(features)) {
+    features.forEach((f) => { map[f] = true; });
+  } else if (features && typeof features === 'object') {
+    Object.entries(features).forEach(([k, v]) => { map[k] = !!v; });
+  }
+  return map;
+}
 
 /**
- * Zustand store for subscription and feature access state management.
- * Used to gate premium features and show upgrade prompts.
+ * Subscription / feature-access store (SPEC-F15). Current status (SubscriptionStatusView) gives
+ * tierCode + premium; features are read from the matching TierView.features.
  */
 const useSubscriptionStore = create(
-    devtools(
-        subscribeWithSelector((set, get) => ({
-            // ===== STATE =====
-            tier: null, // Current tier code (cramerie, cramerich, cramerous)
-            tierNameVi: null,
-            tierNameEn: null,
-            features: {}, // Map of feature codes to boolean access
-            isPremium: false,
+  devtools(
+    subscribeWithSelector((set, get) => ({
+      tier: null,
+      tierName: null,
+      features: {},
+      isPremium: false,
+      status: null,
+      loading: false,
+      error: null,
+      lastFetchedAt: null,
+
+      fetchSubscriptionStatus: async (force = false) => {
+        const { loading, lastFetchedAt } = get();
+        if (loading) return { success: true };
+        if (!force && lastFetchedAt && Date.now() - lastFetchedAt < 60000) return { success: true };
+        set({ loading: true, error: null }, false, 'fetchSubscriptionStatus/start');
+        try {
+          const [status, tiers] = await Promise.all([
+            subscriptionApi.current(),
+            subscriptionApi.tiers().catch(() => []),
+          ]);
+          const tier = (tiers || []).find((t) => t.code === status.tierCode);
+          let featuresMap = featuresToMap(tier?.features);
+          if (Object.keys(featuresMap).length === 0 && !status.premium) {
+            featuresMap = featuresToMap(FREE_FEATURES);
+          }
+          set({
+            tier: status.tierCode,
+            tierName: status.tierName,
+            features: featuresMap,
+            isPremium: !!status.premium,
+            status,
             loading: false,
-            error: null,
-            lastFetchedAt: null,
-
-            // ===== ACTIONS =====
-
-            /**
-             * Fetch subscription status from backend.
-             * This populates tier, features, and isPremium state.
-             */
-            fetchSubscriptionStatus: async () => {
-                const { loading } = get();
-                if (loading) return; // Prevent duplicate fetches
-
-                set({ loading: true, error: null }, false, 'fetchSubscriptionStatus/start');
-
-                try {
-                    const response = await subscriptionApi.getMyStatus();
-                    const data = response.data;
-
-                    // Extract tier info
-                    const tierInfo = data.tier || {};
-                    const tierCode = tierInfo.code || 'cramerie';
-
-                    // Parse features from response. Backend actual shape (verified
-                    // SubscriptionStatusDTO.java:47) puts features as a root-level array of
-                    // feature code strings — e.g. data.features = ["ai_writing_grading", ...].
-                    // The other shapes below are kept for backward-compat with any legacy
-                    // response variants or test fixtures.
-                    let featuresMap = {};
-
-                    // Option 1 (CURRENT BE SHAPE): root-level features array
-                    if (Array.isArray(data.features)) {
-                        data.features.forEach(feature => {
-                            featuresMap[feature] = true;
-                        });
-                    }
-                    // Option 2 (legacy): features inside a separate featureAccess field
-                    else if (data.featureAccess?.features) {
-                        featuresMap = data.featureAccess.features;
-                    }
-                    // Option 3 (legacy): features array inside tier
-                    else if (tierInfo.features && Array.isArray(tierInfo.features)) {
-                        tierInfo.features.forEach(feature => {
-                            featuresMap[feature] = true;
-                        });
-                    }
-                    // Option 4 (legacy): features map inside tier
-                    else if (tierInfo.featuresMap) {
-                        featuresMap = tierInfo.featuresMap;
-                    }
-
-                    set(
-                        {
-                            tier: tierCode,
-                            tierNameVi: tierInfo.name || 'Cramerie',
-                            tierNameEn: tierInfo.name || 'Cramerie',
-                            features: featuresMap,
-                            isPremium: (tierInfo.priceVnd || 0) > 0,
-                            loading: false,
-                            error: null,
-                            lastFetchedAt: Date.now(),
-                        },
-                        false,
-                        'fetchSubscriptionStatus/success'
-                    );
-
-                    return { success: true };
-                } catch (error) {
-                    console.error('Failed to fetch subscription status:', error);
-                    set(
-                        {
-                            loading: false,
-                            error: error.message || 'Failed to fetch subscription status',
-                        },
-                        false,
-                        'fetchSubscriptionStatus/error'
-                    );
-                    return { success: false, error };
-                }
-            },
-
-            /**
-             * Check if user has access to a specific feature.
-             * @param {string} featureCode - The feature code to check
-             * @returns {boolean} Whether user has access
-             */
-            hasFeature: (featureCode) => {
-                const { features } = get();
-                return features[featureCode] === true;
-            },
-
-            /**
-             * Reset subscription state (on logout).
-             */
-            reset: () =>
-                set(
-                    {
-                        tier: null,
-                        tierNameVi: null,
-                        tierNameEn: null,
-                        features: {},
-                        isPremium: false,
-                        loading: false,
-                        error: null,
-                        lastFetchedAt: null,
-                    },
-                    false,
-                    'reset'
-                ),
-
-            /**
-             * Set feature access directly (for testing or optimistic updates).
-             */
-            setFeatures: (features) =>
-                set({ features }, false, 'setFeatures'),
-        })),
-        {
-            name: 'subscription-store',
-            enabled: import.meta.env.DEV,
+            lastFetchedAt: Date.now(),
+          }, false, 'fetchSubscriptionStatus/success');
+          return { success: true };
+        } catch (error) {
+          set({ loading: false, error: getApiError(error).message }, false, 'fetchSubscriptionStatus/error');
+          return { success: false };
         }
-    )
+      },
+
+      hasFeature: (code) => get().features[code] === true,
+
+      reset: () => set({ tier: null, tierName: null, features: {}, isPremium: false, status: null, lastFetchedAt: null }, false, 'reset'),
+    })),
+    { name: 'SubscriptionStore' }
+  )
 );
 
-// ===== SELECTORS =====
+export const selectHasFeature = (code) => (state) => state.features[code] === true;
 export const selectTier = (state) => state.tier;
-export const selectTierNameVi = (state) => state.tierNameVi;
+export const selectTierName = (state) => state.tierName;
 export const selectFeatures = (state) => state.features;
 export const selectIsPremium = (state) => state.isPremium;
 export const selectLoading = (state) => state.loading;
-export const selectError = (state) => state.error;
-
-/**
- * Selector factory for checking specific feature access.
- * Usage: useSubscriptionStore(selectHasFeature('ai_writing_grading'))
- */
-export const selectHasFeature = (featureCode) => (state) =>
-    state.features[featureCode] === true;
-
-// ===== ACTIONS (for use outside React components) =====
-export const subscriptionActions = {
-    fetchSubscriptionStatus: useSubscriptionStore.getState().fetchSubscriptionStatus,
-    hasFeature: useSubscriptionStore.getState().hasFeature,
-    reset: useSubscriptionStore.getState().reset,
-};
-
 export default useSubscriptionStore;
