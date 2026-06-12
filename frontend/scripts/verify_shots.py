@@ -3,7 +3,6 @@ import sys
 from playwright.sync_api import sync_playwright
 
 PAGES = [
-    ("login", "http://localhost:3000/login"),
     ("home", "http://localhost:3000/"),
 ]
 OUT = r"e:\IT and Computer Knowledges\Cramer\frontend\.verify"
@@ -17,7 +16,19 @@ with sync_playwright() as p:
     for name, url in PAGES:
         try:
             page.goto(url, wait_until="networkidle", timeout=30000)
-            page.wait_for_timeout(800)
+            page.wait_for_timeout(500)
+            # Scroll through the page to trigger framer-motion whileInView animations
+            height = page.evaluate("document.body.scrollHeight")
+            step = 700
+            y = 0
+            while y < height:
+                page.evaluate(f"window.scrollTo(0, {y})")
+                page.wait_for_timeout(180)
+                y += step
+            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            page.wait_for_timeout(400)
+            page.evaluate("window.scrollTo(0, 0)")
+            page.wait_for_timeout(300)
             page.screenshot(path=f"{OUT}/{name}.png", full_page=True)
             print(f"OK {name}: {url}")
             # capture console errors
