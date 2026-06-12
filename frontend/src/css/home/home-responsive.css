@@ -1,7 +1,0 @@
-/* ===================================
-   HOMEPAGE RESPONSIVE - import hub
-   Import order matters.
-   =================================== */
-@import './home-responsive-shards/01-tablet.css';
-@import './home-responsive-shards/02-mobile.css';
-@import './home-responsive-shards/03-motion-and-small-mobile.css';

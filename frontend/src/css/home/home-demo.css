@@ -1,6 +1,0 @@
-/* ===================================
-   SECTION: INTERACTIVE DEMO - import hub
-   Import order matters.
-   =================================== */
-@import './home-demo-shards/01-demo-window.css';
-@import './home-demo-shards/02-audio-questions-and-cta.css';
