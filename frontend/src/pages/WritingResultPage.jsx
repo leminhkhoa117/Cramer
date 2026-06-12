@@ -108,9 +108,10 @@ const WritingResultPage = () => {
             if (!isMounted || abortController.signal.aborted) return;
 
             try {
-                const statusRes = await writingApi.getGradingStatus(attemptId);
-                const status = statusRes.data.status;
-                const taskStatusData = statusRes.data.taskStatuses || {}; // NEW: Get task statuses
+                const statusRes = await writingApi.status(attemptId);
+                const overall = statusRes.overall;
+                const status = overall === 'GRADING' ? 'PENDING' : overall;
+                const taskStatusData = Object.fromEntries((statusRes.tasks || []).map(t => [t.taskNumber, t.status]));
 
                 if (!isMounted || abortController.signal.aborted) return;
 
@@ -123,9 +124,9 @@ const WritingResultPage = () => {
                     clearInterval(pollInterval);
                     // Fetch review data
                     try {
-                        const reviewRes = await writingApi.getWritingReview(attemptId);
+                        const reviewRes = await writingApi.review(attemptId);
                         if (isMounted && !abortController.signal.aborted) {
-                            setReview(reviewRes.data);
+                            setReview(reviewRes);
                             setLoading(false);
                             setIsRegrading(false); // Reset regrading state
                         }
@@ -141,12 +142,12 @@ const WritingResultPage = () => {
                     clearInterval(pollInterval);
                     // Try to fetch review data even on failure to see if there's a specific error message (e.g., Quota Exceeded)
                     try {
-                        const reviewRes = await writingApi.getWritingReview(attemptId);
+                        const reviewRes = await writingApi.review(attemptId);
                         if (isMounted && !abortController.signal.aborted) {
-                            setReview(reviewRes.data); // This might contain aiFeedback.error
+                            setReview(reviewRes); // This might contain aiFeedback.error
 
                             // Check if there is specific aiFeedback error
-                            const hasTaskError = reviewRes.data?.tasks?.some(t => t.aiFeedback?.error);
+                            const hasTaskError = reviewRes?.tasks?.some(t => t.aiFeedback?.error);
                             if (!hasTaskError) {
                                 setError('Chấm điểm thất bại. Vui lòng thử chấm lại hoặc liên hệ hỗ trợ.');
                             }
@@ -223,8 +224,9 @@ const WritingResultPage = () => {
     }, [review]);
 
     const getTaskPrompt = useCallback((taskNumber) => {
-        if (!review?.prompts) return null;
-        return review.prompts.find(p => p.taskNumber === taskNumber);
+        const t = review?.tasks?.find(t => t.taskNumber === taskNumber);
+        if (!t) return null;
+        return { promptText: t.taskPrompt, imageUrl: t.taskImageUrl };
     }, [review]);
 
     const currentTaskReview = getTaskReview(activeTask);
@@ -391,7 +393,7 @@ const WritingResultPage = () => {
             setReview(null); // Reset review to trigger polling
             setError(null);  // Reset error to allow polling
 
-            await writingApi.regradeAttempt(attemptId);
+            await writingApi.regrade(attemptId);
 
             // Increment pollKey to force useEffect to restart with fresh state
             setPollKey(prev => prev + 1);
@@ -623,19 +625,19 @@ const WritingResultPage = () => {
                         <button className="back-btn" onClick={() => navigate('/dashboard')}>
                             <FiArrowLeft size={14} /> Quay lại
                         </button>
-                        <h1 className="review-title">{review?.examSource?.toUpperCase()} · Test {review?.testNumber} · Writing</h1>
+                        <h1 className="review-title">Kết quả bài viết · Writing</h1>
                     </div>
                     <div className="review-header-center">
                         <div className="summary-item">
                             <span className="summary-label">THỜI GIAN LÀM</span>
                             <span className="summary-value">
-                                {review?.completedAt ? new Date(review.completedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                                {currentTaskReview?.gradedAt ? new Date(currentTaskReview.gradedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                             </span>
                         </div>
                         <div className="summary-item">
                             <span className="summary-label">NGÀY LÀM</span>
                             <span className="summary-value">
-                                {review?.completedAt ? new Date(review.completedAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
+                                {currentTaskReview?.gradedAt ? new Date(currentTaskReview.gradedAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
                             </span>
                         </div>
                     </div>
@@ -655,8 +657,8 @@ const WritingResultPage = () => {
                         </div>
                         <div className="band-badge">
                             <span className="label">BAND</span>
-                            <span className={`value band-${Math.floor(review?.overallBand || 0)}`}>
-                                {review?.overallBand ? Number(review.overallBand).toFixed(1) : 'N/A'}
+                            <span className={`value band-${Math.floor(review?.weightedOverallBand || 0)}`}>
+                                {review?.weightedOverallBand ? Number(review.weightedOverallBand).toFixed(1) : 'N/A'}
                             </span>
                         </div>
                     </div>
