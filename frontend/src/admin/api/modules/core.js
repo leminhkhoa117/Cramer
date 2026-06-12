@@ -9,7 +9,6 @@ export const getAuthHeaders = async () => {
     }
     return {
         'Authorization': `Bearer ${session.access_token}`,
-        'X-User-Id': session.user.id,
         'Content-Type': 'application/json'
     };
 };

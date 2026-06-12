@@ -611,8 +611,7 @@ async function getHeaders() {
     const { data: { session } } = await supabase.auth.getSession();
 
     const headers = {
-        'Content-Type': 'application/json',
-        'X-User-Id': session?.user?.id || localStorage.getItem('userId') || ''
+        'Content-Type': 'application/json'
     };
 
     if (session?.access_token) {
