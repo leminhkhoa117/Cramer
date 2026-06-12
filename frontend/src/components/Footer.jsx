@@ -1,53 +1,53 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaGithub } from 'react-icons/fa';
-import '../css/footer.css';
+import { FiGithub, FiMail } from 'react-icons/fi';
+
+const LINKS = [
+  { to: '/', label: 'Trang chủ' },
+  { to: '/courses', label: 'Khóa học' },
+  { to: '/pricing', label: 'Gói Cramer' },
+  { to: '/about', label: 'Về chúng tôi' },
+];
 
 export default function Footer() {
+  const year = new Date().getFullYear();
   return (
-    <footer className="site-footer">
-      <div className="container">
-        <div className="footer-content">
-          {/* Left Section: Brand */}
-          <div className="footer-brand">
-            <Link to="/" className="footer-brand__logo">
-              <img 
-                src="/pictures/logo/Icon.png" 
-                alt="Cramer Logo" 
-                style={{ height: '40px', objectFit: 'contain' }}
-              />
-            </Link>
-            <p className="footer-brand__tagline">Góc nhỏ thân thiện để luyện thi IELTS.</p>
-          </div>
+    <footer className="site-footer border-t border-line bg-surface">
+      <div className="mx-auto grid max-w-[1200px] gap-8 px-4 py-10 sm:px-6 md:grid-cols-3">
+        <div>
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/pictures/logo/Icon.png" alt="Cramer" className="h-8 w-auto" />
+          </Link>
+          <p className="mt-3 max-w-xs text-base text-muted">
+            Góc nhỏ thân thiện để luyện thi IELTS — Reading, Listening, Writing &amp; Speaking.
+          </p>
+        </div>
 
-          {/* Middle Section: Navigation & Contact */}
-          <div className="footer-links-wrapper">
-            <nav className="footer-nav">
-              <h4 className="footer-links__title">Điều hướng</h4>
-              <Link to="/" className="footer-nav__link">Trang chủ</Link>
-              <Link to="/about" className="footer-nav__link">Về chúng tôi</Link>
-              <Link to="/dashboard" className="footer-nav__link">Bảng điều khiển</Link>
-            </nav>
+        <div>
+          <h4 className="text-sm font-bold uppercase tracking-wide text-ink">Điều hướng</h4>
+          <ul className="mt-3 space-y-2">
+            {LINKS.map((l) => (
+              <li key={l.to}>
+                <Link to={l.to} className="text-base text-muted hover:text-brand-700">{l.label}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-            <div className="footer-contact">
-              <h4 className="footer-links__title">Liên hệ</h4>
-              <a href="mailto:hello@cramer.vn" className="footer-nav__link">hello@cramer.vn</a>
-            </div>
-          </div>
-
-          {/* Right Section: Social Links */}
-          <div className="footer-socials">
-            <a href="https://github.com/huuunleashed" target="_blank" rel="noopener noreferrer" className="footer-socials__link">
-              <FaGithub />
-            </a>
-            <a href="https://github.com/leminhkhoa117" target="_blank" rel="noopener noreferrer" className="footer-socials__link">
-              <FaGithub />
+        <div>
+          <h4 className="text-sm font-bold uppercase tracking-wide text-ink">Liên hệ</h4>
+          <a href="mailto:hello@cramer.vn" className="mt-3 inline-flex items-center gap-2 text-base text-muted hover:text-brand-700">
+            <FiMail size={16} /> hello@cramer.vn
+          </a>
+          <div className="mt-3 flex items-center gap-3">
+            <a href="https://github.com" target="_blank" rel="noreferrer" aria-label="GitHub" className="text-muted hover:text-brand-700">
+              <FiGithub size={18} />
             </a>
           </div>
         </div>
-
-        <div className="footer-bottom">
-          <p>&copy; {new Date().getFullYear()} Cramer. Đồ án của sinh viên, vì sinh viên.</p>
+      </div>
+      <div className="border-t border-line">
+        <div className="mx-auto max-w-[1200px] px-4 py-4 text-center text-sm text-faint sm:px-6">
+          © {year} Cramer. Made with care for Vietnamese IELTS learners.
         </div>
       </div>
     </footer>

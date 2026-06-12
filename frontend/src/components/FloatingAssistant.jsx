@@ -1,316 +1,146 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  FiMessageCircle,
-  FiX,
-  FiSend,
-  FiPhone,
-  FiAlertCircle
-} from 'react-icons/fi';
+import { FiMessageCircle, FiX, FiSend } from 'react-icons/fi';
 import { useAuthStore, useUserStatsStore } from '../stores';
-import { chatApi } from '../api/backendApi';
-import ChatBubble from './ChatBubble';
-import '../css/floating-assistant.css';
+import { chatApi, getApiError } from '../lib/api';
+import { IconButton, Spinner } from '../ui';
+import { cn } from '../lib/cn';
 
-/**
- * Floating Assistant Widget - "Trợ lý Cramer"
- *
- * A persistent floating UI element that provides:
- * - User's Lúa balance and subscription tier display
- * - AI-powered chatbot for IELTS help
- * - Quick access to customer support
- *
- * Two states:
- * - Collapsed: Compact pill showing tier emoji + "Cramer" + balance badge
- * - Expanded: Full chat interface
- */
-const FloatingAssistant = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const user = useAuthStore((state) => state.user);
-
-  const {
-    credits,
-    chatUsage,
-    fetchUserStats,
-    incrementChatUsage,
-    refreshChatUsage,
-    getTierEmoji,
-    getTierName,
-  } = useUserStatsStore();
-
-  // Single state: expanded or collapsed (pill)
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  // Chat states
-  const [messages, setMessages] = useState([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: 'Xin chào! 👋 Mình là Cramer, trợ lý học IELTS của bạn. Bạn cần giúp gì hôm nay?',
-      timestamp: new Date().toISOString(),
-    }
-  ]);
-  const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Refs
-  const chatContainerRef = useRef(null);
-  const inputRef = useRef(null);
-
-  // Pages where widget should be hidden
-  const hiddenPaths = ['/', '/login', '/register', '/about'];
-
-  // Check if on test-taking pages (Reading/Listening test or Writing test)
-  const isTestPage = /^\/test\/\w+\/\d+\/\w+$/.test(location.pathname) ||
-    /^\/test\/writing\/(?!review)\w+\/\d+$/.test(location.pathname);
-
-  const shouldHide = !user || hiddenPaths.includes(location.pathname) || isTestPage;
-
-  // Fetch user stats on mount
-  useEffect(() => {
-    if (user) {
-      fetchUserStats();
-    }
-  }, [user, fetchUserStats]);
-
-  // Scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  // Focus input when expanded
-  useEffect(() => {
-    if (isExpanded && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 300);
-    }
-  }, [isExpanded]);
-
-  // Send message to AI
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return;
-
-    // Check if user has remaining questions (use monthly limit)
-    const remaining = chatUsage.remainingThisMonth ?? chatUsage.remainingToday;
-    if (remaining !== undefined && remaining !== null && remaining <= 0 && remaining !== -1) {
-      setError('Bạn đã hết lượt hỏi tháng này. Hãy nâng cấp gói để có thêm lượt!');
-      return;
-    }
-
-    const userMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: inputValue.trim(),
-      timestamp: new Date().toISOString(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInputValue('');
-    setIsLoading(true);
-    setError(null);
-
-    // Optimistic update
-    incrementChatUsage();
-
-    try {
-      const response = await chatApi.sendMessage(userMessage.content);
-
-      const assistantMessage = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: response.data?.message || response.data?.content || 'Xin lỗi, mình không hiểu. Bạn có thể nói rõ hơn được không?',
-        timestamp: new Date().toISOString(),
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-
-      // Refresh chat usage from server to get accurate remaining count
-      await refreshChatUsage();
-    } catch (err) {
-      console.error('Chat error:', err);
-
-      // Handle specific errors
-      if (err.response?.status === 429) {
-        setError('Bạn đã hết lượt hỏi hôm nay.');
-        refreshChatUsage();
-      } else if (err.response?.status === 401) {
-        setError('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
-      } else {
-        // Add error message to chat
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `error-${Date.now()}`,
-            role: 'assistant',
-            content: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau nhé! 🙏',
-            timestamp: new Date().toISOString(),
-          }
-        ]);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle Enter key
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  // Close widget (collapse to pill)
-  const handleClose = (e) => {
-    e.stopPropagation();
-    setIsExpanded(false);
-  };
-
-  // Navigate to credits page
-  const handleCreditsClick = (e) => {
-    e.stopPropagation();
-    navigate('/pricing');
-  };
-
-  // Don't render if should be hidden
-  if (shouldHide) {
-    return null;
-  }
-
-  // Compute tier display
-  const tierEmoji = getTierEmoji();
-  const tierName = getTierName();
-
-  // Collapsed state: Compact pill
-  if (!isExpanded) {
-    return (
-      <button
-        className="fa-widget__pill"
-        onClick={() => setIsExpanded(true)}
-        title={`Trợ lý Cramer - ${tierName} - ${credits.balance} Lúa`}
-      >
-        <span className="fa-widget__pill-emoji">{tierEmoji}</span>
-        <span className="fa-widget__pill-label">Cramer</span>
-        <FiMessageCircle className="fa-widget__pill-icon" />
-        <span className="fa-widget__pill-badge">{credits.balance}</span>
-      </button>
-    );
-  }
-
-  // Expanded state: Full chat interface
-  return (
-    <div className="fa-widget fa-widget--expanded">
-      {/* Header */}
-      <div className="fa-widget__header">
-        <div className="fa-widget__tier">
-          <span className="fa-widget__tier-emoji">{tierEmoji}</span>
-          <span className="fa-widget__tier-name">{tierName}</span>
-        </div>
-
-        <button
-          className="fa-widget__balance"
-          onClick={handleCreditsClick}
-          title="Xem chi tiết Lúa"
-        >
-          <span className="fa-widget__balance-icon">💰</span>
-          <span className="fa-widget__balance-value">{credits.balance}</span>
-          <span className="fa-widget__balance-label">Lúa</span>
-        </button>
-
-        <div className="fa-widget__controls">
-          <button
-            className="fa-widget__control-btn"
-            onClick={handleClose}
-            title="Đóng"
-          >
-            <FiX />
-          </button>
-        </div>
-      </div>
-
-      {/* Chat area */}
-      <div className="fa-widget__chat-area" ref={chatContainerRef}>
-        {messages.map((msg) => (
-          <ChatBubble
-            key={msg.id}
-            message={msg.content}
-            isUser={msg.role === 'user'}
-            timestamp={msg.timestamp}
-          />
-        ))}
-
-        {isLoading && (
-          <ChatBubble isLoading={true} />
-        )}
-      </div>
-
-      {/* Usage indicator */}
-      <div className="fa-widget__usage">
-        <span className="fa-widget__usage-text">
-          {(chatUsage.remainingThisMonth ?? chatUsage.remainingToday) < 0
-            ? 'Không giới hạn tin nhắn'
-            : `Còn ${chatUsage.remainingThisMonth ?? chatUsage.remainingToday}/${chatUsage.monthlyLimit ?? chatUsage.dailyLimit} câu hỏi tháng này`
-          }
-        </span>
-        {(chatUsage.remainingThisMonth ?? chatUsage.remainingToday) >= 0 && (
-          <div className="fa-widget__usage-bar">
-            <div
-              className="fa-widget__usage-fill"
-              style={{
-                width: `${Math.min(100, ((chatUsage.remainingThisMonth ?? chatUsage.remainingToday) / (chatUsage.monthlyLimit ?? chatUsage.dailyLimit)) * 100)}%`
-              }}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Error message */}
-      {error && (
-        <div className="fa-widget__error">
-          <FiAlertCircle />
-          <span>{error}</span>
-          <button onClick={() => setError(null)}>×</button>
-        </div>
-      )}
-
-      {/* Input area */}
-      <div className="fa-widget__input-area">
-        <input
-          ref={inputRef}
-          type="text"
-          className="fa-widget__input"
-          placeholder="Nhập câu hỏi..."
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={isLoading || ((chatUsage.remainingThisMonth ?? chatUsage.remainingToday) <= 0 && (chatUsage.remainingThisMonth ?? chatUsage.remainingToday) !== -1)}
-        />
-        <button
-          className="fa-widget__send-btn"
-          onClick={handleSendMessage}
-          disabled={!inputValue.trim() || isLoading || ((chatUsage.remainingThisMonth ?? chatUsage.remainingToday) <= 0 && (chatUsage.remainingThisMonth ?? chatUsage.remainingToday) !== -1)}
-          title="Gửi"
-        >
-          <FiSend />
-        </button>
-      </div>
-
-      {/* Support link */}
-      <div className="fa-widget__support">
-        <a
-          href="mailto:support@cramer.edu.vn"
-          className="fa-widget__support-link"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <FiPhone />
-          <span>Liên hệ hỗ trợ</span>
-        </a>
-      </div>
-    </div>
-  );
+const HIDDEN_PATHS = ['/login'];
+const WELCOME = {
+  id: 'welcome',
+  role: 'assistant',
+  content: 'Xin chào! 👋 Mình là trợ lý Cramer. Bạn cần giúp gì về IELTS hôm nay?',
 };
 
-export default FloatingAssistant;
+/** Floating AI assistant (SPEC-F16): tier + Lúa balance pill that expands into a chat. */
+export default function FloatingAssistant() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const user = useAuthStore((s) => s.user);
+  const credits = useUserStatsStore((s) => s.credits);
+  const chat = useUserStatsStore((s) => s.chat);
+  const fetchUserStats = useUserStatsStore((s) => s.fetchUserStats);
+  const refreshChat = useUserStatsStore((s) => s.refreshChat);
+  const getTierEmoji = useUserStatsStore((s) => s.getTierEmoji);
+
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState([WELCOME]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const scrollRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const isTestPage =
+    /^\/test\/\w+\/\d+\/\w+$/.test(location.pathname) ||
+    /^\/test\/writing\/(?!review)\w+\/\d+$/.test(location.pathname);
+  const shouldHide = !user || HIDDEN_PATHS.includes(location.pathname) || isTestPage;
+
+  useEffect(() => { if (user) fetchUserStats(); }, [user, fetchUserStats]);
+  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages]);
+  useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 250); }, [open]);
+
+  if (shouldHide) return null;
+
+  const remaining = chat?.remaining ?? 0;
+  const unlimited = chat?.unlimited || remaining < 0;
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || loading) return;
+    if (!unlimited && remaining <= 0) {
+      setError('Bạn đã hết lượt hỏi tháng này. Nâng cấp gói để có thêm lượt!');
+      return;
+    }
+    setMessages((m) => [...m, { id: `u-${Date.now()}`, role: 'user', content: text }]);
+    setInput('');
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await chatApi.send(text);
+      setMessages((m) => [...m, { id: `a-${Date.now()}`, role: 'assistant', content: res.reply || '…' }]);
+      refreshChat();
+    } catch (err) {
+      const e = getApiError(err);
+      setError(e.blockType === 'CHAT_LIMIT' ? 'Bạn đã hết lượt hỏi tháng này.' : e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed bottom-4 right-4" style={{ zIndex: 'var(--z-drawer)' }}>
+      {open ? (
+        <div className="flex h-[min(560px,calc(100vh-2rem))] w-[min(380px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-xl animate-[cr-slide-up_0.2s_ease-out]">
+          <div className="flex items-center justify-between gap-2 gradient-brand px-4 py-3 text-white">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">{getTierEmoji()}</span>
+              <div className="leading-tight">
+                <div className="text-base font-bold">Trợ lý Cramer</div>
+                <div className="text-xs text-white/80">
+                  {unlimited ? 'Không giới hạn' : `Còn ${remaining} lượt hỏi`} · 🌾 {credits?.balance ?? 0}
+                </div>
+              </div>
+            </div>
+            <IconButton aria-label="Đóng" size="sm" onClick={() => setOpen(false)} className="text-white hover:bg-white/15">
+              <FiX size={18} />
+            </IconButton>
+          </div>
+
+          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto cr-scroll bg-surface-2 p-3">
+            {messages.map((m) => (
+              <div key={m.id} className={cn('flex', m.role === 'user' ? 'justify-end' : 'justify-start')}>
+                <div
+                  className={cn(
+                    'max-w-[80%] rounded-2xl px-3 py-2 text-base',
+                    m.role === 'user' ? 'bg-brand-600 text-white rounded-br-sm' : 'bg-surface text-ink-2 border border-line rounded-bl-sm'
+                  )}
+                >
+                  {m.content}
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="rounded-2xl rounded-bl-sm border border-line bg-surface px-3 py-2">
+                  <Spinner size="sm" className="text-brand-500" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <div className="bg-danger-soft px-3 py-2 text-sm text-danger">
+              {error}{' '}
+              <button className="font-bold underline" onClick={() => navigate('/subscription')}>Nâng cấp</button>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 border-t border-line p-2.5">
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && send()}
+              placeholder="Hỏi mình bất cứ điều gì…"
+              className="h-9 flex-1 rounded-lg border border-line bg-surface px-3 text-base text-ink placeholder:text-faint focus-visible:outline-none focus:border-brand-400"
+            />
+            <IconButton aria-label="Gửi" variant="primary" onClick={send} disabled={loading || !input.trim()}>
+              <FiSend size={16} />
+            </IconButton>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-2 rounded-full gradient-brand py-2 pl-2 pr-4 text-white shadow-lg transition-transform hover:scale-[1.03]"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-lg">{getTierEmoji()}</span>
+          <span className="text-base font-bold">Cramer</span>
+          <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold">🌾 {credits?.balance ?? 0}</span>
+        </button>
+      )}
+    </div>
+  );
+}
