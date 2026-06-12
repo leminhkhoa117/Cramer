@@ -1,573 +1,142 @@
-﻿import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { FiEdit3, FiClock, FiTrendingUp, FiPieChart, FiTarget, FiChevronRight, FiMenu } from 'react-icons/fi';
-import { useLocation } from 'react-router-dom';
-import { useAuthStore, useProfileStore, useDashboardStore } from '../stores';
-import { motion, AnimatePresence } from 'framer-motion';
-import GoalModal from '../components/GoalModal';
-import FilterModal from '../components/FilterModal';
-import CourseListItem from '../components/CourseListItem';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { FiCheckCircle, FiHelpCircle, FiTarget, FiTrendingUp, FiArrowRight, FiActivity } from 'react-icons/fi';
+import { useDashboardStore, useProfileStore } from '../stores';
+import { toast } from '../ui/toast';
+import {
+  Page, Container, PageHeader, Card, StatCard, Tabs, Progress, Badge,
+  EmptyState, Skeleton, Button, Modal, Input, Avatar,
+} from '../ui';
 
-import '../css/pages/dashboard.css';
-import '../css/shared/layout.css';
-import '../css/components/course-list.css';
-import ProgressChart from '../components/ProgressChart';
-import SkillAnalysis from '../components/SkillAnalysis';
-import '../css/components/progress-chart.css';
-import '../css/components/skill-analysis.css';
-import FullPageLoader from '../components/FullPageLoader';
-import Pagination from '../components/Pagination';
-
-const formatSkillName = (skill) => {
-  if (!skill) return '';
-  return skill.charAt(0).toUpperCase() + skill.slice(1);
-};
-
-// Animation variants for staggering children
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-};
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1
-  }
-};
-
-// Tab definitions for sidebar navigation
-const dashboardTabs = [
-  { id: 'courses', label: 'Lịch sử làm bài', icon: FiClock },
-  { id: 'progress', label: 'Biểu đồ tiến độ', icon: FiTrendingUp },
-  { id: 'analysis', label: 'Phân tích Kỹ năng', icon: FiPieChart },
-];
+const pct = (v) => `${Math.round((v || 0) * 100)}%`;
+const SKILL_LABEL = { reading: 'Reading', listening: 'Listening', writing: 'Writing', speaking: 'Speaking' };
 
 export default function Dashboard() {
-  // Auth & Profile from Zustand stores
-  const user = useAuthStore(state => state.user);
-  const profile = useProfileStore(state => state.profile);
-  const profileLoading = useProfileStore(state => state.loading);
+  const { summary, loading, fetchSummary, saveTarget } = useDashboardStore();
+  const profile = useProfileStore((s) => s.profile);
+  const [tab, setTab] = useState('progress');
+  const [targetOpen, setTargetOpen] = useState(false);
+  const [targetBand, setTargetBand] = useState('7.0');
 
-  // Dashboard store for summary data, loading, error, and pagination
-  const {
-    summary,
-    loading,
-    error,
-    currentPage,
-    totalPages,
-    searchQuery,
-    debouncedSearchQuery,
-    fetchSummary,
-    refreshSummary,
-    setPage,
-    setSearchQuery,
-    setDebouncedSearchQuery,
-    updateSummary,
-  } = useDashboardStore();
+  useEffect(() => { fetchSummary(); }, [fetchSummary]);
 
-  const location = useLocation();
-  const sidebarRef = useRef(null);
-  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [activeFilters, setActiveFilters] = useState({});
-  const [activeView, setActiveView] = useState('courses');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const stats = summary?.stats;
+  const target = summary?.target;
 
-  const closeSidebar = useCallback(() => setIsSidebarOpen(false), []);
-
-  // Handle refresh request from navigation (e.g., after cancelling test)
-  useEffect(() => {
-    console.log('📍 Dashboard location.state:', location.state);
-    if (location.state?.refreshData) {
-      console.log('🔄 Refresh triggered from navigation state!');
-      // Clear the navigation state to prevent re-refresh on subsequent renders
-      window.history.replaceState({}, document.title);
-      // Force refresh using store action
-      refreshSummary();
-    }
-  }, [location.state, refreshSummary]);
-
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchQuery, setDebouncedSearchQuery]);
-
-  // Fetch dashboard data using store action
-  useEffect(() => {
-    if (!user?.id) {
-      return;
-    }
-    console.log('📥 Fetching dashboard summary via store');
-    fetchSummary(currentPage, null, debouncedSearchQuery).catch(err => {
-      console.error('Failed to load dashboard summary:', err);
-    });
-  }, [user?.id, currentPage, debouncedSearchQuery, fetchSummary]);
-
-  // Callback for refreshing data (used by child components)
-  const handleRefreshData = useCallback(() => {
-    refreshSummary();
-  }, [refreshSummary]);
-
-  const { overallTarget, skillTargets } = useMemo(() => {
-    if (!summary?.target) {
-      return { overallTarget: null, skillTargets: [] };
-    }
-
-    const skillMeta = {
-      listening: { label: 'Listening', shortLabel: 'Nghe' },
-      speaking: { label: 'Speaking', shortLabel: 'Nói' },
-      reading: { label: 'Reading', shortLabel: 'Đọc' },
-      writing: { label: 'Writing', shortLabel: 'Viết' },
-    };
-
-    const overallScore = summary.target.overall ?? (() => {
-      const scores = [
-        summary.target.listening,
-        summary.target.reading,
-        summary.target.writing,
-        summary.target.speaking,
-      ].filter((s) => s !== null && s !== undefined);
-
-      if (scores.length === 0) return null;
-
-      const sum = scores.reduce((acc, score) => acc + score, 0);
-      const avg = sum / scores.length;
-      return Math.round(avg * 2) / 2;
-    })();
-
-    const allTargets = {
-      ...summary.target,
-      overall: overallScore,
-    };
-
-    let overall = null;
-    if (allTargets.overall !== null && allTargets.overall !== undefined) {
-      overall = {
-        label: 'Overall',
-        value: allTargets.overall.toFixed(1),
-      };
-    }
-
-    const skillsOrder = ['listening', 'speaking', 'reading', 'writing'];
-    const sTargets = skillsOrder
-      .map((key) => {
-        const value = allTargets[key];
-        const meta = skillMeta[key];
-        if (meta && value !== null && value !== undefined) {
-          return {
-            id: key,
-            label: meta.label,
-            shortLabel: meta.shortLabel,
-            value: value.toFixed(1),
-          };
-        }
-        return null;
-      })
-      .filter(Boolean);
-
-    return { overallTarget: overall, skillTargets: sTargets };
-  }, [summary?.target]);
-
-  const targetExamName = summary?.target?.examName || 'Chưa đặt';
-  const examDateDisplay = useMemo(() => {
-    const isoDate = summary?.target?.examDate;
-    if (!isoDate) return 'Chưa đặt';
-    const parsed = new Date(isoDate);
-    if (Number.isNaN(parsed.getTime())) {
-      return isoDate;
-    }
-    return parsed.toLocaleDateString('vi-VN', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  }, [summary?.target?.examDate]);
-
-  // Handle paginated course progress
-  const courses = summary?.courseProgress?.content ?? [];
-  const skills = summary?.skillSummary ?? [];
-
-  const availableFilters = useMemo(() => {
-    const skills = [...new Set(courses.map(c => c.skill))].map(s => ({ value: s, label: formatSkillName(s) }));
-    const statuses = [...new Set(courses.map(c => c.status))].map(s => ({ value: s, label: s }));
-
-    return {
-      skill: { label: 'Kỹ năng', options: skills },
-      status: { label: 'Trạng thái', options: statuses },
-    };
-  }, [courses]);
-
-  const filteredCourses = useMemo(() => {
-    if (Object.keys(activeFilters).length === 0) {
-      return courses;
-    }
-    return courses.filter(course => {
-      return Object.entries(activeFilters).every(([group, values]) => {
-        if (!values || values.length === 0) return true;
-        return values.includes(course[group]);
-      });
-    });
-  }, [courses, activeFilters]);
-
-  const heroData = useMemo(() => {
-    const username = summary?.profile?.username || profile?.username || 'bạn';
-    return {
-      welcomeMessage: `Chào mừng, ${username}!`,
-      tagline: 'Mục tiêu của tôi', // Keep it consistent
-    };
-  }, [profile?.username, summary?.profile?.username]);
-
-  const formattedSkills = useMemo(() => {
-    if (!skills.length) return [];
-    const capitalize = (value) => value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
-    const viLabel = (skill) => {
-      const mapping = {
-        reading: 'Reading - Đọc',
-        listening: 'Listening - Nghe',
-        writing: 'Writing - Viết',
-        speaking: 'Speaking - Nói',
-      };
-      return mapping[skill?.toLowerCase()] || capitalize(skill);
-    };
-    return skills.map((skill) => ({
-      label: viLabel(skill.skill),
-      score: `${Math.round(skill.accuracy)}%`,
-    }));
-  }, [skills]);
-
-  if (!user && !profileLoading) {
-    return (
-      <div className="sl-page">
-        <div className="sl-empty" style={{ margin: '4rem auto', maxWidth: '480px' }}>Vui lòng đăng nhập để xem dashboard.</div>
-      </div>
-    );
-  }
-
-  const showLoader = (profileLoading || loading) && (!summary && !error);
-
-  if (error) {
-    return (
-      <div className="sl-page">
-        <div className="sl-error">{error}</div>
-      </div>
-    );
-  }
+  const onSaveTarget = async () => {
+    try { await saveTarget(parseFloat(targetBand), null); setTargetOpen(false); toast.success('Đã lưu mục tiêu'); }
+    catch { toast.error('Không thể lưu mục tiêu'); }
+  };
 
   return (
-    <>
-      <AnimatePresence>
-        {showLoader && (
-          <FullPageLoader
-            key="loader"
-            message="Đang tải bảng điều khiển học tập..."
-            subMessage="Chúng tôi đang tổng hợp tiến độ và gợi ý lộ trình học cho bạn."
-          />
-        )}
-      </AnimatePresence>
-      {summary && (
-        <div
-          className={`sl-page dashboard-page${profile?.pageBackgroundUrl ? ' sl-page--has-bg' : ''}`}
-        >
-          {profile?.pageBackgroundUrl && (
-            <div
-              className="sl-page__bg"
-              style={{ backgroundImage: `url(${profile.pageBackgroundUrl})` }}
-            />
+    <Page>
+      <Container className="py-8">
+        <PageHeader
+          title={`Chào, ${profile?.fullName || profile?.username || 'bạn'} 👋`}
+          subtitle="Theo dõi tiến độ luyện thi IELTS của bạn"
+          actions={<Button variant="outline" iconLeft={<FiTarget size={16} />} onClick={() => setTargetOpen(true)}>
+            {target ? `Mục tiêu: ${target.targetBand}` : 'Đặt mục tiêu'}
+          </Button>}
+        />
+
+        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {loading && !summary ? (
+            Array.from({ length: 4 }).map((_, i) => <Card key={i}><Skeleton className="h-12 w-full" /></Card>)
+          ) : (
+            <>
+              <StatCard icon={<FiCheckCircle />} label="Bài đã hoàn thành" value={stats?.testsCompleted ?? 0} />
+              <StatCard icon={<FiHelpCircle />} label="Câu đã trả lời" value={stats?.questionsAnswered ?? 0} />
+              <StatCard icon={<FiCheckCircle />} label="Câu đúng" value={stats?.correctAnswers ?? 0} />
+              <StatCard icon={<FiTrendingUp />} label="Độ chính xác" value={pct(stats?.accuracy)} />
+            </>
           )}
-          {/* Overlay for readability when background image is set */}
-          {profile?.pageBackgroundUrl && (
-            <div className="sl-page__overlay" />
-          )}
-
-          {/* Main Layout: Sidebar + Content */}
-          <div className="sl-layout container">
-            {/* Left Sidebar */}
-            <aside
-              ref={sidebarRef}
-              className={`sl-sidebar ${isSidebarOpen ? 'sl-sidebar--drawer-open' : ''}`}
-            >
-              {/* Cover Image Banner */}
-              <div className="sl-sidebar__cover">
-                {profile?.heroBackgroundUrl ? (
-                  <img
-                    src={profile.heroBackgroundUrl}
-                    alt="Ảnh bìa"
-                    className="sl-sidebar__cover-img"
-                  />
-                ) : (
-                  <div className="sl-sidebar__cover-placeholder" />
-                )}
-              </div>
-
-              {/* Sidebar Header */}
-              <div className="sl-sidebar__header">
-                <h1 className="sl-sidebar__title">{heroData.welcomeMessage}</h1>
-                <p className="sl-sidebar__subtitle">Bảng điều khiển học tập</p>
-              </div>
-
-              {/* Sidebar Navigation */}
-              <nav className="sl-sidebar__nav">
-                {dashboardTabs.map(tab => {
-                  const IconComponent = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      className={`sl-sidebar__nav-btn ${activeView === tab.id ? 'active' : ''}`}
-                      onClick={() => { setActiveView(tab.id); closeSidebar(); }}
-                    >
-                      <IconComponent />
-                      <span>{tab.label}</span>
-                      <FiChevronRight className="sl-sidebar__nav-arrow" />
-                    </button>
-                  );
-                })}
-              </nav>
-
-              {/* Goals Section */}
-              <div className="sl-sidebar__section dashboard-goals">
-                <div className="sl-sidebar__section-header">
-                  <div className="sl-sidebar__section-title">
-                    <FiTarget />
-                    <span>Mục tiêu của tôi</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="sl-edit-btn"
-                    aria-label="Chỉnh sửa mục tiêu"
-                    onClick={() => setIsGoalModalOpen(true)}
-                  >
-                    <FiEdit3 />
-                  </button>
-                </div>
-
-                {(!overallTarget && skillTargets.length === 0) ? (
-                  <div className="sl-empty dashboard-goals__empty">
-                    Chưa có mục tiêu. Nhấn nút chỉnh sửa để đặt mục tiêu.
-                  </div>
-                ) : (
-                  <motion.div
-                    className="dashboard-goals__content"
-                    initial="hidden"
-                    animate="visible"
-                    variants={containerVariants}
-                  >
-                    {/* Exam Info */}
-                    <motion.div className="dashboard-goal-meta" variants={itemVariants}>
-                      <div className="dashboard-goal-meta__item">
-                        <span className="dashboard-goal-meta__label">Kì thi</span>
-                        <span className="dashboard-goal-meta__value" title={targetExamName}>{targetExamName}</span>
-                      </div>
-                      <div className="dashboard-goal-meta__item">
-                        <span className="dashboard-goal-meta__label">Ngày thi</span>
-                        <span className="dashboard-goal-meta__value">{examDateDisplay}</span>
-                      </div>
-                    </motion.div>
-
-                    {/* Overall Target */}
-                    <motion.div className="dashboard-goal-overall" variants={itemVariants}>
-                      <span className="dashboard-goal-overall__label">Mục tiêu chung</span>
-                      <span className="dashboard-goal-overall__value">{overallTarget?.value ?? '--'}</span>
-                    </motion.div>
-
-                    {/* Skill Targets - 2x2 Grid */}
-                    {skillTargets.length > 0 && (
-                      <motion.div className="dashboard-goal-skills" variants={containerVariants}>
-                        {skillTargets.map((target) => (
-                          <motion.div key={target.id} className="dashboard-goal-skill" variants={itemVariants}>
-                            <span className="dashboard-goal-skill__label">{target.shortLabel}</span>
-                            <span className="dashboard-goal-skill__value">{target.value}</span>
-                          </motion.div>
-                        ))}
-                      </motion.div>
-                    )}
-                  </motion.div>
-                )}
-              </div>
-            </aside>
-
-            {/* Right Content Area */}
-            <main className="sl-content">
-              {/* Mobile header strip — hamburger visible on all tabs */}
-              <div className="dash-mobile-header">
-                <span className="dash-mobile-header__title">
-                  {dashboardTabs.find(t => t.id === activeView)?.label || 'Bảng điều khiển'}
-                </span>
-                <button
-                  type="button"
-                  className="dash-hamburger"
-                  onClick={() => setIsSidebarOpen(true)}
-                  aria-label="Mở menu"
-                >
-                  <FiMenu />
-                </button>
-              </div>
-
-              {/* Mobile sidebar drawer overlay — inside content, absolute positioned, never covers sidebar */}
-              {isSidebarOpen && (
-                <div
-                  className="dash-sidebar-overlay dash-sidebar-overlay--visible"
-                  onClick={closeSidebar}
-                  aria-hidden="true"
-                />
-              )}
-
-              <AnimatePresence mode="wait">
-                {activeView === 'courses' && (
-                  <motion.div
-                    key="courses"
-                    className="sl-tab-panel"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {/* Courses Card */}
-                    <div className="sl-card">
-                      <div className="sl-card__header">
-                        <h2 className="sl-card__title">
-                          <FiClock />
-                          Lịch sử làm bài
-                        </h2>
-                        <div className="sl-card__controls">
-                          <div className="sl-search-container">
-                            <input
-                              type="text"
-                              placeholder="Tìm kiếm khoá học..."
-                              value={searchQuery}
-                              onChange={(e) => setSearchQuery(e.target.value)}
-                              className="sl-search-input"
-                            />
-                          </div>
-                          <button type="button" className="sl-btn sl-btn--secondary sl-btn--small" onClick={() => setIsFilterModalOpen(true)}>Lọc</button>
-                        </div>
-                      </div>
-
-                      <div className="dashboard-course-list">
-                        <AnimatePresence>
-                          {loading && (
-                            <motion.div
-                              className="sl-loading-overlay"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <span>Đang tải...</span>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-
-                        {filteredCourses.length === 0 && !loading ? (
-                          <div className="sl-empty">Không tìm thấy khoá học nào khớp với bộ lọc.</div>
-                        ) : (
-                          <>
-                            <div className="dash-course-list">
-                              {filteredCourses.map((course) => (
-                                <CourseListItem
-                                  key={`${course.examSource}-${course.testNumber}-${course.skill}`}
-                                  course={course}
-                                  onAttemptDeleted={handleRefreshData}
-                                />
-                              ))}
-                            </div>
-                            <Pagination
-                              currentPage={currentPage}
-                              totalPages={totalPages}
-                              onPageChange={setPage}
-                            />
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {activeView === 'progress' && (
-                  <motion.div
-                    key="progress"
-                    className="sl-tab-panel"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className="sl-card">
-                      <div className="sl-card__header">
-                        <h2 className="sl-card__title">
-                          <FiTrendingUp />
-                          Biểu đồ tiến độ
-                        </h2>
-                      </div>
-                      <ProgressChart data={courses} />
-                    </div>
-                  </motion.div>
-                )}
-
-                {activeView === 'analysis' && (
-                  <motion.div
-                    key="analysis"
-                    className="sl-tab-panel"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className="sl-card">
-                      <div className="sl-card__header">
-                        <h2 className="sl-card__title">
-                          <FiPieChart />
-                          Phân tích Kỹ năng
-                        </h2>
-                      </div>
-                      <SkillAnalysis courseData={courses} targets={skillTargets} />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </main>
-          </div>
-
-          <GoalModal
-            isOpen={isGoalModalOpen}
-            onClose={() => setIsGoalModalOpen(false)}
-            currentTarget={summary?.target}
-            onSave={(newTargetData) => {
-              setIsGoalModalOpen(false);
-              // Safely update summary with null check to prevent TypeError
-              updateSummary(prevSummary => {
-                if (!prevSummary) {
-                  return { target: newTargetData };
-                }
-                return {
-                  ...prevSummary,
-                  target: newTargetData,
-                };
-              });
-            }}
-          />
-
-          <FilterModal
-            isOpen={isFilterModalOpen}
-            onClose={() => setIsFilterModalOpen(false)}
-            onApply={setActiveFilters}
-            availableFilters={availableFilters}
-            currentFilters={activeFilters}
-          />
         </div>
-      )}
-    </>
+
+        <div className="mt-6">
+          <Tabs value={tab} onChange={setTab} items={[
+            { value: 'progress', label: 'Tiến độ khóa học', icon: <FiTrendingUp size={15} /> },
+            { value: 'skills', label: 'Phân tích kỹ năng', icon: <FiActivity size={15} /> },
+            { value: 'activity', label: 'Hoạt động', icon: <FiActivity size={15} /> },
+          ]} />
+        </div>
+
+        <div className="mt-5">
+          {tab === 'progress' && (
+            <CourseProgress items={summary?.courseProgress} loading={loading && !summary} />
+          )}
+          {tab === 'skills' && (
+            <SkillAnalysis items={summary?.perSkillAccuracy} loading={loading && !summary} />
+          )}
+          {tab === 'activity' && (
+            <ActivityFeed items={summary?.recentActivity} loading={loading && !summary} />
+          )}
+        </div>
+      </Container>
+
+      <Modal open={targetOpen} onClose={() => setTargetOpen(false)} title="Đặt mục tiêu band" size="sm"
+        footer={<><Button variant="ghost" onClick={() => setTargetOpen(false)}>Huỷ</Button><Button onClick={onSaveTarget}>Lưu</Button></>}>
+        <Input label="Band mục tiêu" type="number" step="0.5" min="0" max="9" value={targetBand} onChange={(e) => setTargetBand(e.target.value)} />
+      </Modal>
+    </Page>
   );
 }
 
+function CourseProgress({ items, loading }) {
+  if (loading) return <div className="flex flex-col gap-3">{Array.from({ length: 4 }).map((_, i) => <Card key={i}><Skeleton className="h-10 w-full" /></Card>)}</div>;
+  if (!items?.length) return <EmptyState icon="📈" title="Chưa có dữ liệu" description="Hoàn thành một bài thi để xem tiến độ của bạn." action={<Link to="/courses"><Button>Bắt đầu luyện tập</Button></Link>} />;
+  return (
+    <Card padded={false} className="divide-y divide-line overflow-hidden">
+      {items.map((c, i) => (
+        <div key={i} className="flex flex-wrap items-center gap-3 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-base font-semibold text-ink">{c.examSource} · Test {c.testNumber}</span>
+              <Badge size="sm" variant="neutral">{SKILL_LABEL[c.skill] || c.skill}</Badge>
+            </div>
+            <div className="mt-0.5 text-sm text-muted">{c.latestCorrect}/{c.latestAnswered} đúng · {c.attempts} lượt</div>
+          </div>
+          {c.band != null && <div className="text-center"><div className="text-xs text-muted">Band</div><div className="text-lg font-bold text-brand-700">{c.band}</div></div>}
+          <div className="w-28"><Progress value={(c.completionPct || 0) * 100} /></div>
+        </div>
+      ))}
+    </Card>
+  );
+}
 
+function SkillAnalysis({ items, loading }) {
+  if (loading) return <Card><Skeleton className="h-24 w-full" /></Card>;
+  if (!items?.length) return <EmptyState icon="🎯" title="Chưa có phân tích" description="Làm bài để xem độ chính xác theo từng kỹ năng." />;
+  const tint = { reading: 'bg-info', listening: 'bg-brand-600', writing: 'bg-warning', speaking: 'bg-success' };
+  return (
+    <Card className="flex flex-col gap-4">
+      {items.map((s) => (
+        <div key={s.skill} className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between text-base">
+            <span className="font-semibold text-ink-2">{SKILL_LABEL[s.skill] || s.skill}</span>
+            <span className="text-muted">{s.correct}/{s.answered} · {pct(s.accuracy)}</span>
+          </div>
+          <Progress value={(s.accuracy || 0) * 100} barClassName={tint[s.skill] || 'bg-brand-600'} />
+        </div>
+      ))}
+    </Card>
+  );
+}
 
+function ActivityFeed({ items, loading }) {
+  if (loading) return <Card><Skeleton className="h-24 w-full" /></Card>;
+  if (!items?.length) return <EmptyState icon="🗂️" title="Chưa có hoạt động" description="Hoạt động gần đây của bạn sẽ hiển thị ở đây." />;
+  return (
+    <Card padded={false} className="divide-y divide-line overflow-hidden">
+      {items.map((a, i) => (
+        <div key={i} className="flex items-start gap-3 px-4 py-3">
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-600"><FiActivity size={15} /></div>
+          <div className="min-w-0 flex-1">
+            <div className="text-base font-semibold text-ink">{a.title}</div>
+            {a.description && <div className="text-sm text-muted">{a.description}</div>}
+          </div>
+          <div className="shrink-0 text-xs text-faint">{a.createdAt ? new Date(a.createdAt).toLocaleDateString('vi-VN') : ''}</div>
+        </div>
+      ))}
+    </Card>
+  );
+}
