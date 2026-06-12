@@ -4,6 +4,7 @@ import { FiChevronDown, FiMenu, FiX, FiGrid, FiCreditCard, FiBookOpen, FiUser, F
 import { useAuthStore, useProfileStore } from '../stores';
 import { Avatar, Button } from '../ui';
 import { cn } from '../lib/cn';
+import logoIcon from '../../pictures/logo/Icon.png';
 
 const NAV = [
   { to: '/', label: 'Trang chủ', end: true },
@@ -87,7 +88,7 @@ export default function Header() {
       >
         <div className="mx-auto flex h-full max-w-[1200px] items-center gap-4 px-4 sm:px-6">
           <Link to="/" className="flex items-center shrink-0" aria-label="Cramer">
-            <img src="/pictures/logo/Icon.png" alt="Cramer" className="h-8 w-auto" />
+            <img src={logoIcon} alt="Cramer" className="h-8 w-auto" />
           </Link>
 
           <nav className="ml-2 hidden items-center gap-1 lg:flex">

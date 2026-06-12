@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { FiGithub, FiMail } from 'react-icons/fi';
+import logoIcon from '../../pictures/logo/Icon.png';
 
 const LINKS = [
   { to: '/', label: 'Trang chủ' },
@@ -15,7 +16,7 @@ export default function Footer() {
       <div className="mx-auto grid max-w-[1200px] gap-8 px-4 py-10 sm:px-6 md:grid-cols-3">
         <div>
           <Link to="/" className="flex items-center gap-2">
-            <img src="/pictures/logo/Icon.png" alt="Cramer" className="h-8 w-auto" />
+            <img src={logoIcon} alt="Cramer" className="h-8 w-auto" />
           </Link>
           <p className="mt-3 max-w-xs text-base text-muted">
             Góc nhỏ thân thiện để luyện thi IELTS — Reading, Listening, Writing &amp; Speaking.
