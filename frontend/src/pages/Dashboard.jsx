@@ -14,7 +14,7 @@ import { useDashboardStore, useProfileStore } from '../stores';
 import { toast } from '../ui/toast';
 import {
   Page, Container, Card, Button, IconButton, Avatar, Badge, Progress,
-  StatCard, EmptyState, Skeleton, Modal, Select, Alert, Pagination,
+  StatCard, EmptyState, Skeleton, Modal, Input, Select, Alert, Pagination,
 } from '../ui';
 import { cn } from '../lib/cn';
 
@@ -79,7 +79,15 @@ export default function Dashboard() {
 
   const stats = summary?.stats;
   const target = summary?.target;
-  const hasTarget = target && target.targetBand != null && !Number.isNaN(Number(target.targetBand));
+  const targetSkills = target ? SKILL_ORDER.filter((s) => target[s] != null) : [];
+  const hasTarget = targetSkills.length > 0;
+  const overallTarget = (() => {
+    if (!hasTarget) return null;
+    const vals = targetSkills.map((s) => Number(target[s])).filter((n) => Number.isFinite(n));
+    if (!vals.length) return null;
+    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+    return (Math.round(avg * 2) / 2).toFixed(1);
+  })();
   const courseProgress = summary?.courseProgress ?? [];
   const perSkill = summary?.perSkillAccuracy ?? [];
   const recentActivity = summary?.recentActivity ?? [];
@@ -132,11 +140,29 @@ export default function Dashboard() {
         </div>
 
         {hasTarget ? (
-          <div className="mt-3 rounded-xl gradient-brand p-4 text-white">
-            <div className="text-xs font-semibold uppercase tracking-wide text-white/80">Band mục tiêu</div>
-            <div className="mt-0.5 text-3xl font-bold leading-none">{Number(target.targetBand).toFixed(1)}</div>
-            <div className="mt-2 text-xs text-white/85">
-              {target.targetSkill ? `Kỹ năng ${SKILL_LABEL[target.targetSkill] || target.targetSkill}` : 'Mục tiêu tổng thể'}
+          <div className="mt-3 flex flex-col gap-3">
+            <div className="rounded-xl gradient-brand p-4 text-white">
+              <div className="flex items-end justify-between">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-white/80">Mục tiêu tổng thể</div>
+                  <div className="mt-0.5 text-3xl font-bold leading-none">{overallTarget ?? '—'}</div>
+                </div>
+                <FiAward size={28} className="text-white/70" />
+              </div>
+              {(target.examName || target.examDate) && (
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/20 pt-2 text-xs text-white/85">
+                  {target.examName && <span>{target.examName}</span>}
+                  {target.examDate && <span>· {fmtDate(target.examDate)}</span>}
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {targetSkills.map((s) => (
+                <div key={s} className="rounded-lg border border-line bg-surface-2 px-2.5 py-1.5">
+                  <div className="text-[11px] font-medium uppercase tracking-wide text-muted">{SKILL_LABEL[s]}</div>
+                  <div className="text-base font-bold text-ink">{Number(target[s]).toFixed(1)}</div>
+                </div>
+              ))}
             </div>
           </div>
         ) : (
@@ -522,20 +548,38 @@ function AnalysisTab({ perSkill, loading }) {
 }
 
 function TargetModal({ open, onClose, target, saveTarget }) {
-  const [band, setBand] = useState('7.0');
-  const [skill, setSkill] = useState('');
+  const [form, setForm] = useState({ examName: 'IELTS', examDate: '', listening: '', reading: '', writing: '', speaking: '' });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setBand(target?.targetBand != null ? Number(target.targetBand).toFixed(1) : '7.0');
-    setSkill(target?.targetSkill || '');
+    setForm({
+      examName: target?.examName || 'IELTS',
+      examDate: target?.examDate || '',
+      listening: target?.listening != null ? Number(target.listening).toFixed(1) : '',
+      reading: target?.reading != null ? Number(target.reading).toFixed(1) : '',
+      writing: target?.writing != null ? Number(target.writing).toFixed(1) : '',
+      speaking: target?.speaking != null ? Number(target.speaking).toFixed(1) : '',
+    });
   }, [open, target]);
 
+  const setField = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
   const onSave = async () => {
+    if (!form.examName.trim()) {
+      toast.error('Vui lòng nhập tên kỳ thi');
+      return;
+    }
     setSaving(true);
     try {
-      await saveTarget(parseFloat(band), skill || null);
+      await saveTarget({
+        examName: form.examName.trim(),
+        examDate: form.examDate || null,
+        listening: form.listening === '' ? null : parseFloat(form.listening),
+        reading: form.reading === '' ? null : parseFloat(form.reading),
+        writing: form.writing === '' ? null : parseFloat(form.writing),
+        speaking: form.speaking === '' ? null : parseFloat(form.speaking),
+      });
       toast.success('Đã lưu mục tiêu');
       onClose();
     } catch {
@@ -549,8 +593,8 @@ function TargetModal({ open, onClose, target, saveTarget }) {
     <Modal
       open={open}
       onClose={onClose}
-      title="Mục tiêu band"
-      size="sm"
+      title="Mục tiêu IELTS"
+      size="md"
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>Huỷ</Button>
@@ -559,15 +603,22 @@ function TargetModal({ open, onClose, target, saveTarget }) {
       }
     >
       <div className="flex flex-col gap-4">
-        <Select label="Kỹ năng" hint="Để trống cho mục tiêu tổng thể" value={skill} onChange={(e) => setSkill(e.target.value)}>
-          <option value="">Tổng thể</option>
-          {SKILL_ORDER.map((s) => (
-            <option key={s} value={s}>{SKILL_LABEL[s]} — {SKILL_VI[s]}</option>
-          ))}
-        </Select>
-        <Select label="Band mục tiêu" value={band} onChange={(e) => setBand(e.target.value)}>
-          {BAND_OPTIONS.map((b) => <option key={b} value={b}>{b}</option>)}
-        </Select>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input label="Kỳ thi" value={form.examName} onChange={setField('examName')} placeholder="IELTS" />
+          <Input type="date" label="Ngày thi" value={form.examDate || ''} onChange={setField('examDate')} hint="Tuỳ chọn" />
+        </div>
+        <div>
+          <div className="mb-2 text-sm font-semibold text-ink-2">Band mục tiêu theo kỹ năng</div>
+          <div className="grid grid-cols-2 gap-3">
+            {SKILL_ORDER.map((s) => (
+              <Select key={s} label={`${SKILL_LABEL[s]} (${SKILL_VI[s]})`} value={form[s]} onChange={setField(s)}>
+                <option value="">Chưa đặt</option>
+                {BAND_OPTIONS.map((b) => <option key={b} value={b}>{b}</option>)}
+              </Select>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-muted">Mục tiêu tổng thể được tính trung bình từ các kỹ năng đã đặt.</p>
+        </div>
       </div>
     </Modal>
   );

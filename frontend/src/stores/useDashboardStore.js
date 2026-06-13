@@ -46,9 +46,9 @@ const useDashboardStore = create(
         }
       },
 
-      saveTarget: async (targetBand, targetSkill = null) => {
+      saveTarget: async (payload) => {
         try {
-          const target = await dashboardApi.setTarget({ targetBand, targetSkill });
+          const target = await dashboardApi.setTarget(payload);
           set((s) => ({ summary: s.summary ? { ...s.summary, target } : s.summary }), false, 'saveTarget');
           return target;
         } catch (error) {
