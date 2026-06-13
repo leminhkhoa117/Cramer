@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
 import { FiGithub, FiMail } from 'react-icons/fi';
+import logoIcon from '../../pictures/logo/Icon.png';
+
+const LOGO_FILTER_BRAND = 'brightness(0) saturate(100%) invert(24%) sepia(94%) saturate(2388%) hue-rotate(253deg) brightness(93%) contrast(93%)';
 
 const LINKS = [
   { to: '/', label: 'Trang chủ' },
@@ -14,9 +17,8 @@ export default function Footer() {
     <footer className="site-footer border-t border-line bg-surface">
       <div className="mx-auto grid max-w-[1200px] gap-8 px-4 py-10 sm:px-6 md:grid-cols-3">
         <div>
-          <Link to="/" className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg gradient-brand text-base font-bold text-white">C</span>
-            <span className="text-xl font-bold text-gradient-brand">cramer</span>
+          <Link to="/" className="flex items-center">
+            <img src={logoIcon} alt="Cramer" className="h-7 w-auto" style={{ filter: LOGO_FILTER_BRAND }} />
           </Link>
           <p className="mt-3 max-w-xs text-base text-muted">
             Góc nhỏ thân thiện để luyện thi IELTS — Reading, Listening, Writing &amp; Speaking.

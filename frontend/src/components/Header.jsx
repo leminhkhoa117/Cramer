@@ -4,6 +4,10 @@ import { FiChevronDown, FiMenu, FiX, FiGrid, FiCreditCard, FiBookOpen, FiUser, F
 import { useAuthStore, useProfileStore } from '../stores';
 import { Avatar, Button } from '../ui';
 import { cn } from '../lib/cn';
+import logoIcon from '../../pictures/logo/Icon.png';
+
+const LOGO_FILTER_WHITE = 'brightness(0) invert(1)';
+const LOGO_FILTER_BRAND = 'brightness(0) saturate(100%) invert(24%) sepia(94%) saturate(2388%) hue-rotate(253deg) brightness(93%) contrast(93%)';
 
 const NAV = [
   { to: '/', label: 'Trang chủ', end: true },
@@ -68,7 +72,9 @@ export default function Header() {
   const navLinkClass = ({ isActive }) =>
     cn(
       'px-3 py-2 rounded-lg text-base font-semibold transition-colors',
-      isActive ? 'text-brand-700 bg-brand-soft' : 'text-ink-2 hover:text-brand-700 hover:bg-surface-2'
+      scrolled
+        ? (isActive ? 'text-brand-700 bg-brand-soft' : 'text-ink-2 hover:text-brand-700 hover:bg-surface-2')
+        : (isActive ? 'text-white bg-white/20' : 'text-white/90 hover:text-white hover:bg-white/12')
     );
 
   return (
@@ -81,14 +87,19 @@ export default function Header() {
     >
       <div
         className={cn(
-          'h-full border-b transition-colors',
-          scrolled ? 'glass border-line' : 'bg-page/80 backdrop-blur-sm border-transparent'
+          'h-full border-b backdrop-blur-md transition-colors duration-300',
+          scrolled ? 'border-line' : 'border-white/10'
         )}
+        style={{ background: scrolled ? 'rgba(255,255,255,0.95)' : 'rgba(124,58,237,0.90)' }}
       >
         <div className="mx-auto flex h-full max-w-[1200px] items-center gap-4 px-4 sm:px-6">
-          <Link to="/" className="flex items-center gap-2 shrink-0" aria-label="Cramer">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg gradient-brand text-base font-bold text-white shadow-sm">C</span>
-            <span className="text-xl font-bold text-gradient-brand">cramer</span>
+          <Link to="/" className="flex items-center shrink-0" aria-label="Cramer">
+            <img
+              src={logoIcon}
+              alt="Cramer"
+              className="h-7 w-auto transition-[filter] duration-300"
+              style={{ filter: scrolled ? LOGO_FILTER_BRAND : LOGO_FILTER_WHITE }}
+            />
           </Link>
 
           <nav className="ml-2 hidden items-center gap-1 lg:flex">
@@ -104,11 +115,14 @@ export default function Header() {
               <div className="relative hidden lg:block" ref={menuRef}>
                 <button
                   onClick={() => setMenuOpen((v) => !v)}
-                  className="flex items-center gap-2 rounded-full border border-line bg-surface py-1 pl-1 pr-2.5 transition-colors hover:bg-surface-2"
+                  className={cn(
+                    'flex items-center gap-2 rounded-full border py-1 pl-1 pr-2.5 transition-colors',
+                    scrolled ? 'border-line bg-surface hover:bg-surface-2' : 'border-white/25 bg-white/15 hover:bg-white/25'
+                  )}
                 >
                   <Avatar src={profile?.avatarUrl} name={displayName} size="sm" />
-                  <span className="max-w-[140px] truncate text-base font-semibold text-ink-2">{displayName}</span>
-                  <FiChevronDown size={16} className={cn('text-muted transition-transform', menuOpen && 'rotate-180')} />
+                  <span className={cn('max-w-[140px] truncate text-base font-semibold', scrolled ? 'text-ink-2' : 'text-white')}>{displayName}</span>
+                  <FiChevronDown size={16} className={cn('transition-transform', scrolled ? 'text-muted' : 'text-white/80', menuOpen && 'rotate-180')} />
                 </button>
                 {menuOpen && (
                   <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-line bg-surface shadow-lg animate-[cr-slide-up_0.15s_ease-out]">
@@ -145,13 +159,21 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              <Button size="sm" className="hidden lg:inline-flex" onClick={() => navigate('/login')}>
+              <Button
+                size="sm"
+                variant={scrolled ? 'primary' : 'secondary'}
+                className={cn('hidden lg:inline-flex', !scrolled && 'bg-white text-brand-700 hover:bg-white/90')}
+                onClick={() => navigate('/login')}
+              >
                 Đăng nhập
               </Button>
             )}
 
             <button
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-ink-2 hover:bg-surface-2 lg:hidden"
+              className={cn(
+                'inline-flex h-9 w-9 items-center justify-center rounded-lg lg:hidden transition-colors',
+                scrolled ? 'text-ink-2 hover:bg-surface-2' : 'text-white hover:bg-white/15'
+              )}
               aria-label="Menu"
               onClick={() => setMobileOpen((v) => !v)}
             >
