@@ -15,6 +15,7 @@ const SOURCE_LABELS = {
   OFFICIAL: 'Chính thức',
   AI: 'AI',
   ABTS: 'AI',
+  AI_GENERATED: 'AI Generated',
   IELTS: 'IELTS',
 };
 
