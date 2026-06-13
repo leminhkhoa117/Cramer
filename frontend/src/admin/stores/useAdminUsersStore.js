@@ -63,10 +63,22 @@ const useAdminUsersStore = create((set, get) => ({
                 sortBy: 'createdAt',
                 sortOrder: 'desc'
             });
-            
+
+            // New backend returns List<AdminUserView> directly; tolerate legacy {users,content}.
+            const list = Array.isArray(response)
+                ? response
+                : (response?.users ?? response?.content ?? []);
+
+            // Normalize AdminUserView -> shape the page expects (subscription/credits aliases).
+            const normalized = list.map((u) => ({
+                ...u,
+                subscription: u.subscription ?? u.tierCode ?? 'FREE',
+                credits: u.credits ?? u.luaBalance ?? 0,
+            }));
+
             set({
-                users: response.users || [],
-                totalItems: response.totalItems || 0,
+                users: normalized,
+                totalItems: response?.totalItems ?? response?.totalElements ?? normalized.length,
                 isLoading: false
             });
         } catch (error) {
