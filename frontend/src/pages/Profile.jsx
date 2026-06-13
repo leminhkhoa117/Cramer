@@ -56,7 +56,7 @@ export default function Profile() {
       <div className="relative h-24 gradient-brand">
         {profile?.heroBackgroundUrl && <img src={profile.heroBackgroundUrl} alt="" className="h-full w-full object-cover" />}
       </div>
-      <div className="flex flex-col items-center px-4 pb-4 -mt-10">
+      <div className="relative z-10 flex flex-col items-center px-4 pb-4 -mt-10">
         <div className="relative">
           <Avatar src={profile?.avatarUrl} name={displayName} size="xl" className="ring-4 ring-surface" />
           <IconButton aria-label="Đổi ảnh" size="sm" variant="primary" className="absolute -bottom-1 -right-1 shadow-md" onClick={() => setImageModal(true)}>

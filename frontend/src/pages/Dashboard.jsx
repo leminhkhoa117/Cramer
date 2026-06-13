@@ -98,7 +98,7 @@ export default function Dashboard() {
           <img src={profile.heroBackgroundUrl} alt="" className="h-full w-full object-cover" />
         )}
       </div>
-      <div className="flex flex-col items-center px-4 pb-4 -mt-10">
+      <div className="relative z-10 flex flex-col items-center px-4 pb-4 -mt-10">
         <Avatar src={profAvatar} name={profName} size="xl" className="ring-4 ring-surface" />
         <h2 className="mt-3 text-center text-lg font-bold text-ink">{profName}</h2>
         {profUser && <p className="text-sm text-muted">@{profUser}</p>}
