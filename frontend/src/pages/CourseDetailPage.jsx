@@ -41,7 +41,7 @@ export default function CourseDetailPage() {
           <Link to="/courses" className="inline-flex items-center gap-1.5 text-base font-semibold text-white/85 hover:text-white">
             <FiArrowLeft size={16} /> Quay lại danh sách
           </Link>
-          <h1 className="mt-3 text-3xl font-bold">{title}</h1>
+          <h1 className="mt-3 text-3xl font-bold text-white">{title}</h1>
           <p className="mt-1 max-w-2xl text-md text-white/85">
             Bộ đề thi chính thức với 3 kỹ năng: Reading, Listening và Writing.
           </p>

@@ -1,0 +1,325 @@
+/* ============================================
+   FEATURES — KINETIC 3D ZIGZAG (Option B)
+   Replaces the old "stacked-feature-card" treatment.
+   Cards alternate left/right, lifted via CSS perspective,
+   with rotation/translateZ driven by framer-motion useScroll.
+   ============================================ */
+
+.features-section--zigzag3d {
+    padding: clamp(4rem, 8vh, 6rem) 0;
+    position: relative;
+    perspective: 1600px;
+    perspective-origin: 50% 35%;
+    overflow: visible;
+    z-index: 1;
+}
+
+.features-section--zigzag3d .features-container {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 3vw, 2.5rem);
+    width: 100%;
+}
+
+/* Header shared with other variants but a touch larger here. */
+.features-section--zigzag3d .features-title {
+    font-size: clamp(1.9rem, 4.5vw, 3rem);
+}
+
+.zigzag-track {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(2.5rem, 6vh, 4.5rem);
+    margin-top: clamp(2rem, 4vh, 3.5rem);
+    transform-style: preserve-3d;
+}
+
+.zigzag-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: clamp(1.5rem, 3vw, 3rem);
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+    border-radius: clamp(24px, 2.4vw, 32px);
+    transform-style: preserve-3d;
+    will-change: transform, opacity;
+
+    background:
+        radial-gradient(circle at 20% 18%, rgba(167, 139, 250, 0.18), transparent 55%),
+        radial-gradient(circle at 88% 84%, rgba(34, 211, 238, 0.14), transparent 55%),
+        linear-gradient(150deg, rgba(255, 255, 255, 0.92) 0%, rgba(245, 243, 255, 0.92) 100%);
+    border: 1px solid rgba(124, 58, 237, 0.14);
+    box-shadow:
+        0 30px 60px -25px rgba(76, 29, 149, 0.45),
+        0 12px 35px -15px rgba(15, 23, 42, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.zigzag-card--right {
+    direction: rtl;
+}
+
+.zigzag-card--right > * {
+    direction: ltr;
+}
+
+/* Floating accent badge on the outer corner that hints the zigzag. */
+.zigzag-card__chip {
+    position: absolute;
+    top: -14px;
+    padding: 0.34rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: #fff;
+    box-shadow: 0 12px 25px -10px rgba(124, 58, 237, 0.55);
+    transform: translateZ(40px);
+}
+
+.zigzag-card--left  .zigzag-card__chip { left: clamp(1.25rem, 2.5vw, 2.25rem); }
+.zigzag-card--right .zigzag-card__chip { right: clamp(1.25rem, 2.5vw, 2.25rem); }
+
+.zigzag-card__copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    transform: translateZ(20px);
+    min-width: 0;
+}
+
+.zigzag-card__icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.55rem;
+    box-shadow: 0 16px 32px -10px rgba(124, 58, 237, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    transform: translateZ(30px);
+}
+
+.zigzag-card__icon.gradient-purple { background: var(--gradient-purple-pink); }
+.zigzag-card__icon.gradient-blue   { background: var(--gradient-blue); }
+.zigzag-card__icon.gradient-teal   { background: var(--gradient-teal); }
+.zigzag-card__icon.gradient-orange { background: var(--gradient-orange); }
+
+.zigzag-card__eyebrow {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.zigzag-card__title {
+    font-size: clamp(1.4rem, 2.2vw, 1.85rem);
+    line-height: 1.18;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+}
+
+.zigzag-card__description {
+    font-size: 1rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    margin: 0;
+    max-width: 46ch;
+}
+
+.zigzag-card__highlights {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.4rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.zigzag-card__highlights li {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.34rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    background: rgba(124, 58, 237, 0.08);
+    border: 1px solid rgba(124, 58, 237, 0.18);
+}
+
+.zigzag-card__highlights li::before {
+    content: '\2713';
+    margin-right: 0.35rem;
+    font-weight: 700;
+}
+
+/* Visual host: keep the existing FeatureVisualHost. The wrapper provides
+   the lifted-glass frame + inner perspective glow. */
+.zigzag-card__visual {
+    position: relative;
+    border-radius: 22px;
+    overflow: hidden;
+    background: linear-gradient(160deg, #ffffff 0%, #f6f5ff 70%, #eef2ff 100%);
+    box-shadow:
+        0 28px 55px -25px rgba(15, 23, 42, 0.4),
+        inset 0 0 0 1px rgba(124, 58, 237, 0.08);
+    transform: translateZ(48px);
+    aspect-ratio: 4 / 3;
+    isolation: isolate;
+}
+
+.zigzag-card__visual::after {
+    /* moving glint on hover/active */
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(120deg, transparent 30%, rgba(192, 132, 252, 0.18) 48%, transparent 68%);
+    transform: translateX(-120%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.zigzag-card:hover .zigzag-card__visual::after {
+    opacity: 1;
+    animation: zigzag-glint 1.6s ease-in-out 1;
+}
+
+@keyframes zigzag-glint {
+    0%   { transform: translateX(-120%); opacity: 0; }
+    35%  { opacity: 0.55; }
+    100% { transform: translateX(120%);  opacity: 0; }
+}
+
+/* Inner frame for FeatureVisualHost so the existing visuals fit nicely. */
+.zigzag-card__visual > .stacked-feature-visual,
+.zigzag-card__visual > .feature-visual-app {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    border: none;
+    padding: clamp(0.85rem, 1.8vw, 1.25rem);
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+/* Ribbon decoration behind every other card */
+.zigzag-card__ribbon {
+    position: absolute;
+    inset: auto;
+    width: 240px;
+    height: 240px;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: 0.55;
+    pointer-events: none;
+    z-index: -1;
+    transform: translateZ(-60px);
+}
+
+.zigzag-card--left  .zigzag-card__ribbon { top: -80px; right: -80px; background: radial-gradient(circle, rgba(124, 58, 237, 0.5), transparent 70%); }
+.zigzag-card--right .zigzag-card__ribbon { bottom: -80px; left: -80px;  background: radial-gradient(circle, rgba(34, 211, 238, 0.5), transparent 70%); }
+
+.zigzag-card.gradient-orange .zigzag-card__ribbon { background: radial-gradient(circle, rgba(251, 146, 60, 0.5), transparent 70%); }
+.zigzag-card.gradient-teal   .zigzag-card__ribbon { background: radial-gradient(circle, rgba(20, 184, 166, 0.5), transparent 70%); }
+
+/* Step number etched on the back wall */
+.zigzag-card__index {
+    position: absolute;
+    font-family: 'Quicksand', sans-serif;
+    font-size: clamp(5rem, 10vw, 9rem);
+    font-weight: 900;
+    line-height: 0.85;
+    color: rgba(124, 58, 237, 0.07);
+    letter-spacing: -0.05em;
+    pointer-events: none;
+    z-index: -1;
+    transform: translateZ(-30px);
+}
+
+.zigzag-card--left  .zigzag-card__index { right: 4%; bottom: 6%; }
+.zigzag-card--right .zigzag-card__index { left:  4%; top: 6%; }
+
+/* Compact grid on smaller laptops */
+@media (max-width: 1024px) {
+    .zigzag-card {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .zigzag-card--right { direction: ltr; }
+
+    .zigzag-card__visual {
+        aspect-ratio: 16 / 10;
+        order: -1;
+    }
+}
+
+@media (max-width: 640px) {
+    .features-section--zigzag3d { perspective: none; }
+
+    .zigzag-card {
+        padding: 1.1rem;
+        gap: 1.1rem;
+    }
+
+    .zigzag-card__icon { width: 52px; height: 52px; font-size: 1.2rem; }
+    .zigzag-card__title { font-size: 1.2rem; }
+    .zigzag-card__description { font-size: 0.92rem; }
+    .zigzag-card__chip { font-size: 0.62rem; padding: 0.25rem 0.6rem; }
+    .zigzag-card__index { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .zigzag-card { transform: none !important; }
+    .zigzag-card__visual::after,
+    .zigzag-card:hover .zigzag-card__visual::after { animation: none !important; opacity: 0 !important; }
+}
+
+/* Force FeatureVisualHost internals visible inside zigzag cards
+   (the original stacked-feature-card.is-live gating doesn't apply here). */
+.zigzag-card__visual .feature-complex-appear {
+    opacity: 1;
+    transform: none;
+}
+
+.zigzag-card__visual .feature-type-line {
+    opacity: 1;
+    transform: none;
+}
+
+.zigzag-card__visual .stacked-feature-visual-frame {
+    transform: none;
+    opacity: 1;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+    border-radius: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}
+
+.zigzag-card__visual .stacked-feature-visual {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}

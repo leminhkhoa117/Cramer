@@ -126,6 +126,24 @@
   --text-secondary: var(--color-ink-2);
   --text-light: #ffffff;
   --header-clearance: var(--header-height);
+
+  /* Marketing-page palette (consumed by recovered home/about/pricing CSS) */
+  --color-primary: var(--color-brand-600);
+  --color-primary-hover: var(--color-brand-700);
+  --color-primary-light: var(--color-brand-400);
+  --color-secondary: var(--color-accent);
+  --color-teal: #22d3ee;
+  --color-coral: #fb923c;
+  --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+  --gradient-purple-pink: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+  --gradient-blue: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+  --gradient-teal: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);
+  --gradient-orange: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+  --bg-light: #f9fafb;
+  --bg-gradient: linear-gradient(180deg, #ffffff 0%, #f5f3ff 50%, #ede9fe 100%);
+  --container-max: 1200px;
+  --container-padding: 2rem;
+  --section-padding: 5rem 0;
 }
 
 /* ============================================================================
