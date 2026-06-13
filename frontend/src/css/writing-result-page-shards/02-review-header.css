@@ -1,0 +1,203 @@
+/* ============================================
+   Header - Purple Glassmorphism Style (Unified)
+   ============================================ */
+.writing-result-page .review-header {
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(102, 97, 241, 0.95), rgba(140, 82, 255, 0.95));
+    backdrop-filter: blur(16px);
+    color: white;
+    padding: 0.6rem 1.5rem;
+    box-shadow: 0 4px 20px rgba(102, 97, 241, 0.3);
+}
+
+.writing-result-page .review-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+.writing-result-page .review-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.writing-result-page .review-header-left .back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-width: 125px;
+    background-color: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.writing-result-page .review-header-left .back-btn:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+.writing-result-page .review-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    color: white;
+    white-space: nowrap;
+}
+
+.writing-result-page .review-header-center {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex: 1;
+    justify-content: center;
+}
+
+.writing-result-page .review-header-center .summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+}
+
+.writing-result-page .review-header-center .summary-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+}
+
+.writing-result-page .review-header-center .summary-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: white;
+}
+
+.writing-result-page .review-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.writing-result-page .header-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.writing-result-page .header-actions .btn {
+    border: none;
+    border-radius: 8px;
+    padding: 0.4rem 0.75rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
+}
+
+.writing-result-page .header-actions .btn-regrade {
+    background: linear-gradient(135deg, rgba(224, 242, 254, 0.9), rgba(186, 230, 253, 0.9));
+    border: 1px solid rgba(125, 211, 252, 0.5);
+    color: #0369a1;
+}
+
+.writing-result-page .header-actions .btn-regrade:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(186, 230, 253, 0.95), rgba(125, 211, 252, 0.95));
+    box-shadow: 0 2px 8px rgba(3, 105, 161, 0.2);
+}
+
+.writing-result-page .header-actions .btn-regrade:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.writing-result-page .header-actions .btn-regrade svg.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.writing-result-page .header-actions .btn-secondary {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.writing-result-page .header-actions .btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+.writing-result-page .band-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.writing-result-page .band-badge .label {
+    font-size: 0.55rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.writing-result-page .band-badge .value {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: white;
+    line-height: 1.2;
+}
+
+/* Band Color Coding for Header */
+.writing-result-page .band-badge .band-9,
+.writing-result-page .band-badge .band-8 {
+    color: #4ade80 !important;
+}
+
+.writing-result-page .band-badge .band-7 {
+    color: #86efac !important;
+}
+
+.writing-result-page .band-badge .band-6 {
+    color: #fbbf24 !important;
+}
+
+.writing-result-page .band-badge .band-5 {
+    color: #fb923c !important;
+}
+
+.writing-result-page .band-badge .band-4,
+.writing-result-page .band-badge .band-3,
+.writing-result-page .band-badge .band-2,
+.writing-result-page .band-badge .band-1,
+.writing-result-page .band-badge .band-0 {
+    color: #f87171 !important;
+}
+

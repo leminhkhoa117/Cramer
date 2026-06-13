@@ -12,7 +12,7 @@ import ExitTestModal from '../components/ExitTestModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import GradingQuotaInfo from '../components/GradingQuotaInfo';
 import QuotaExceededModal from '../components/QuotaExceededModal';
-import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
+import { Group, Panel, Separator } from 'react-resizable-panels';
 import useAutoSave from '../hooks/useAutoSave';
 
 // Reuse TestPage styles
@@ -466,9 +466,9 @@ const WritingTestPage = () => {
 
                     {/* Main Content - Reusing test-page-container structure */}
                     <div className="test-page-container">
-                        <PanelGroup direction="horizontal">
+                        <Group orientation="horizontal">
                             {/* Left Panel - Task Prompt (like passage-container) */}
-                            <Panel defaultSize={50} minSize={30}>
+                            <Panel defaultSize="50%" minSize="30%">
                                 <div className="passage-container writing-prompt-panel">
                                     <div className="task-header">
                                         <h2 className="passage-title">WRITING TASK {activeTask}</h2>
@@ -499,14 +499,14 @@ const WritingTestPage = () => {
                                 </div>
                             </Panel>
 
-                            <PanelResizeHandle className="resize-handle">
+                            <Separator className="resize-handle">
                                 <div className="resize-handle-icon-container">
                                     <span className="resize-handle-icon">↔</span>
                                 </div>
-                            </PanelResizeHandle>
+                            </Separator>
 
                             {/* Right Panel - Writing Area (like questions-column) */}
-                            <Panel defaultSize={50} minSize={30}>
+                            <Panel defaultSize="50%" minSize="30%">
                                 <div className="questions-column writing-editor-panel">
                                     <div className="editor-header">
                                         <h3>Your Response</h3>
@@ -526,7 +526,7 @@ const WritingTestPage = () => {
                                     />
                                 </div>
                             </Panel>
-                        </PanelGroup>
+                        </Group>
                     </div>
 
                     {/* Footer with Task Navigation - using TestFooter component */}

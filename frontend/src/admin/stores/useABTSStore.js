@@ -7,6 +7,7 @@
  * @since 2025-12-20 - ABTS v2.0
  */
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import {
     generateReading,
     generateListening,
@@ -21,9 +22,14 @@ import {
     getStatus,
     saveGeneratedTest,
     refineContentStream,
+    applyRefinementHunks,
+    validateContent,
     SKILL_TYPES,
     GENERATION_SCOPES
 } from '../services/abtsApi';
+import { buildABTSGenerationRequest } from '../utils/abtsGenerationPayload';
+import { buildABTSSaveRequest } from '../utils/abtsSavePayload';
+import { createABTSFormActions } from './abtsFormActions';
 
 // ==================== IELTS QUESTION TYPE POOLS ====================
 // Part-specific question types for semi-random selection (based on Cambridge IELTS)
@@ -45,6 +51,24 @@ export const LISTENING_PART_TYPES = {
 export const QUESTION_COUNTS = {
     READING: { 1: 13, 2: 13, 3: 14 },
     LISTENING: { 1: 10, 2: 10, 3: 10, 4: 10 }
+};
+
+// Recommended default model (capability-driven picker falls back to this on first load)
+export const DEFAULT_MODEL_ID = 'deepseek/deepseek-v4-flash';
+
+// FIX 2: canonical "clean slate" for the loopable-refinement slice. Used by
+// resetRefinementState() so every lifecycle entry point (new generation, clear
+// result, open/close wizard) starts from an identical, known-good state and no
+// stale hunks / round counters / in-flight flags leak between runs.
+const REFINEMENT_RESET = {
+    round: 0,
+    hunks: [],
+    acceptedHunkIds: [],
+    appliedHistory: [],
+    isApplying: false,
+    isLooping: false,
+    lastSkippedHunks: [], // FIX 9: [{id, reason}] from the most recent apply
+    lastError: null,      // FIX 5: surfaced apply/refine failure message
 };
 
 // Helper to extract issue category from warning message
@@ -75,6 +99,7 @@ const initialFormState = {
     model: null,
     enableReasoning: true,
     reasoningEffort: 'high',
+    reasoningBudget: null, // Explicit thinking-token budget (vendor-specific); null = derive from effort/defaults
     temperature: 1.0, // AI creativity: 0.0 (deterministic) to 2.0 (creative)
     existingPassageText: null,
     questionsToRegenerate: null,
@@ -99,7 +124,7 @@ const initialFormState = {
     enableRefinementReasoning: false, // Enable reasoning/thinking tokens for refinement (default OFF for speed)
 };
 
-const useABTSStore = create((set, get) => ({
+const useABTSStore = create(persist((set, get) => ({
     // ==================== WIZARD STATE ====================
     currentStep: 1,
     isWizardOpen: false,
@@ -112,12 +137,16 @@ const useABTSStore = create((set, get) => ({
     generationResult: null,
     generationError: null,
     generationProgress: 0,
+    partErrors: null,       // FIX 12: per-part error map on PARTIAL_SUCCESS / all-parts-failed
     streamEvents: [],       // Array of streaming events for UI display
+    streamPreview: '',      // Accumulated AI response chunks for live preview
+    streamChunkCount: 0,    // Number of response chunks received
     abortStream: null,      // Function to abort streaming
     reasoning: '',          // Accumulated real-time reasoning tokens from AI_THINKING
 
     // ==================== CACHE DATA ====================
     models: [],
+    capabilities: {}, // { modelId: capabilityDescriptor } - filled from models[].capabilities on fetch
     templateCategories: [],
     templatesCache: {}, // { categoryId: templates[] }
     abtsStatus: null,
@@ -146,6 +175,19 @@ const useABTSStore = create((set, get) => ({
     refinementStream: [],        // Streaming events during refinement
     abortRefinement: null,       // Function to abort refinement
 
+    // ==================== LOOPABLE REFINEMENT (per-hunk approval) ====================
+    refinement: {
+        round: 0,                // Current refinement round (server caps at maxRefinementRounds)
+        hunks: [],               // Proposed hunks: {id, op, path, before, after, issueIds, summary, severity}
+        acceptedHunkIds: [],     // Hunk IDs the user has accepted (default: all)
+        appliedHistory: [],      // [{ round, appliedCount, rejectedCount, at }]
+        isApplying: false,       // Apply-accepted request in flight
+        isLooping: false,        // Refine-again request in flight
+        lastSkippedHunks: [],    // FIX 9: [{id, reason}] from the most recent apply
+        lastError: null,         // FIX 5: surfaced apply/refine failure message
+    },
+
+
     // ==================== AUDIO URLS (Listening) ====================
     audioUrls: {},               // { partNumber: url } - Audio URLs for Listening parts
 
@@ -155,12 +197,15 @@ const useABTSStore = create((set, get) => ({
      * Open the generation wizard
      */
     openWizard: () => {
+        get().resetRefinementState(); // FIX 2: never inherit a prior run's hunks
         set({
             isWizardOpen: true,
             currentStep: 1,
             formData: { ...initialFormState },
             generationResult: null,
-            generationError: null
+            generationError: null,
+            streamPreview: '',
+            streamChunkCount: 0
         });
     },
 
@@ -168,11 +213,14 @@ const useABTSStore = create((set, get) => ({
      * Close the generation wizard
      */
     closeWizard: () => {
+        get().resetRefinementState(); // FIX 2
         set({
             isWizardOpen: false,
             currentStep: 1,
             generationResult: null,
-            generationError: null
+            generationError: null,
+            streamPreview: '',
+            streamChunkCount: 0
         });
     },
 
@@ -229,460 +277,12 @@ const useABTSStore = create((set, get) => ({
         }
     },
 
-    // ==================== FORM ACTIONS ====================
-
-    /**
-     * Update form data
-     * When skill changes, filter selectedParts to only include valid parts for the new skill
-     */
-    updateFormData: (updates) => {
-        set(state => {
-            const newFormData = { ...state.formData, ...updates };
-
-            // If skill is being changed, filter selectedParts to valid parts for that skill
-            if (updates.skill && updates.skill !== state.formData.skill) {
-                const maxParts = updates.skill === 'READING' ? 3 :
-                    updates.skill === 'LISTENING' ? 4 : 2;
-                newFormData.selectedParts = (newFormData.selectedParts || [])
-                    .filter(p => p >= 1 && p <= maxParts);
-                // Also clear partConfigs for invalid parts
-                if (newFormData.partConfigs) {
-                    const validConfigs = {};
-                    Object.keys(newFormData.partConfigs).forEach(key => {
-                        const partNum = parseInt(key, 10);
-                        if (partNum >= 1 && partNum <= maxParts) {
-                            validConfigs[key] = newFormData.partConfigs[key];
-                        }
-                    });
-                    newFormData.partConfigs = validConfigs;
-                }
-            }
-
-            return { formData: newFormData };
-        });
-    },
-
-    /**
-     * Set a single form field
-     */
-    setFormField: (field, value) => {
-        set(state => ({
-            formData: { ...state.formData, [field]: value }
-        }));
-    },
-
-    /**
-     * Reset form to initial state
-     */
-    resetForm: () => {
-        set({
-            formData: { ...initialFormState },
-            generationResult: null,
-            generationError: null,
-            currentStep: 1,
-            audioUrls: {}
-        });
-    },
-
-    /**
-     * Set audio URL for a specific part (Listening only)
-     */
-    setAudioUrl: (partNumber, url) => {
-        set(state => ({
-            audioUrls: { ...state.audioUrls, [partNumber]: url }
-        }));
-    },
-
-    // ==================== MULTI-PART ACTIONS ====================
-
-    /**
-     * Toggle part selection for multi-part generation
-     */
-    togglePartSelection: (partNumber) => {
-        const { formData } = get();
-        const currentParts = formData.selectedParts || [];
-        const newParts = currentParts.includes(partNumber)
-            ? currentParts.filter(p => p !== partNumber)
-            : [...currentParts, partNumber].sort((a, b) => a - b);
-
-        set({
-            formData: {
-                ...formData,
-                selectedParts: newParts,
-                // Always use MULTI_PART mode (v7.0 - removed SINGLE_PART toggle)
-                scope: 'MULTI_PART',
-                // Set partNumber for backward compatibility with save logic
-                partNumber: newParts.length >= 1 ? newParts[0] : formData.partNumber
-            }
-        });
-    },
-
-    /**
-     * Set configuration for a specific part
-     */
-    setPartConfig: (partNumber, config) => {
-        const { formData } = get();
-        const updatedConfigs = {
-            ...formData.partConfigs,
-            [partNumber]: {
-                ...(formData.partConfigs[partNumber] || {}),
-                ...config
-            }
-        };
-        set({
-            formData: { ...formData, partConfigs: updatedConfigs }
-        });
-    },
-
-    /**
-     * Apply global config to all selected parts
-     */
-    applyGlobalConfigToAllParts: () => {
-        const { formData } = get();
-        const { selectedParts, topic, facts, questionTypes } = formData;
-        const partConfigs = {};
-
-        selectedParts.forEach(part => {
-            partConfigs[part] = { topic, facts: [...facts], questionTypes: [...questionTypes] };
-        });
-
-        set({
-            formData: { ...formData, partConfigs }
-        });
-    },
-
-    /**
-     * Clear all part selections
-     */
-    clearPartSelections: () => {
-        set(state => ({
-            formData: {
-                ...state.formData,
-                selectedParts: [],
-                partConfigs: {},
-                scope: 'MULTI_PART' // Always stay in MULTI_PART mode (v7.0)
-            }
-        }));
-    },
-
-    /**
-     * Semi-randomize question types for a specific part.
-     * Uses IELTS-realistic type pools with balanced counts.
-     */
-    randomizePartConfig: (partNumber) => {
-        const { formData } = get();
-        const skill = formData.skill;
-
-        if (!skill || skill === 'WRITING') return;
-
-        const typePool = skill === 'READING'
-            ? READING_PART_TYPES[partNumber]
-            : LISTENING_PART_TYPES[partNumber];
-
-        const totalQuestions = QUESTION_COUNTS[skill]?.[partNumber] || 10;
-
-        // Pick 2-3 types randomly
-        const numTypes = Math.random() < 0.5 ? 2 : 3;
-        const shuffled = [...typePool].sort(() => 0.5 - Math.random());
-        const selectedTypes = shuffled.slice(0, numTypes);
-
-        // Calculate balanced counts
-        const counts = {};
-        const baseCount = Math.floor(totalQuestions / numTypes);
-        let remainder = totalQuestions % numTypes;
-
-        selectedTypes.forEach(type => {
-            counts[type] = baseCount + (remainder > 0 ? 1 : 0);
-            remainder--;
-        });
-
-        // Update partConfigs
-        const updatedConfigs = {
-            ...formData.partConfigs,
-            [partNumber]: {
-                ...(formData.partConfigs[partNumber] || {}),
-                questionTypes: selectedTypes,
-                questionTypeCounts: counts
-            }
-        };
-
-        set({ formData: { ...formData, partConfigs: updatedConfigs } });
-    },
-
-    /**
-     * Randomize all selected parts at once
-     */
-    randomizeAllParts: () => {
-        const { formData } = get();
-        const skill = formData.skill;
-
-        if (!skill || skill === 'WRITING') return;
-
-        const updatedConfigs = { ...formData.partConfigs };
-
-        formData.selectedParts.forEach(partNumber => {
-            const typePool = skill === 'READING'
-                ? READING_PART_TYPES[partNumber]
-                : LISTENING_PART_TYPES[partNumber];
-
-            const totalQuestions = QUESTION_COUNTS[skill]?.[partNumber] || 10;
-            const numTypes = Math.random() < 0.5 ? 2 : 3;
-            const shuffled = [...typePool].sort(() => 0.5 - Math.random());
-            const selectedTypes = shuffled.slice(0, numTypes);
-
-            const counts = {};
-            const baseCount = Math.floor(totalQuestions / numTypes);
-            let remainder = totalQuestions % numTypes;
-            selectedTypes.forEach(type => {
-                counts[type] = baseCount + (remainder > 0 ? 1 : 0);
-                remainder--;
-            });
-
-            updatedConfigs[partNumber] = {
-                ...(formData.partConfigs[partNumber] || {}),
-                questionTypes: selectedTypes,
-                questionTypeCounts: counts
-            };
-        });
-
-        set({ formData: { ...formData, partConfigs: updatedConfigs } });
-    },
-
-    /**
-     * Toggle a question type for a specific part (manual selection)
-     */
-    togglePartQuestionType: (partNumber, typeId) => {
-        const { formData } = get();
-        const skill = formData.skill;
-        const totalQuestions = QUESTION_COUNTS[skill]?.[partNumber] || 13;
-
-        const partConfig = formData.partConfigs[partNumber] || { questionTypes: [], questionTypeCounts: {} };
-        const currentTypes = partConfig.questionTypes || [];
-
-        let newTypes, newCounts;
-
-        if (currentTypes.includes(typeId)) {
-            // Remove type
-            newTypes = currentTypes.filter(t => t !== typeId);
-            newCounts = { ...partConfig.questionTypeCounts };
-            delete newCounts[typeId];
-
-            // Recalculate counts for remaining types
-            if (newTypes.length > 0) {
-                const baseCount = Math.floor(totalQuestions / newTypes.length);
-                let remainder = totalQuestions % newTypes.length;
-                newTypes.forEach(type => {
-                    newCounts[type] = baseCount + (remainder > 0 ? 1 : 0);
-                    remainder--;
-                });
-            }
-        } else {
-            // Add type (max 3)
-            if (currentTypes.length >= 3) return;
-            newTypes = [...currentTypes, typeId];
-
-            // Recalculate balanced counts
-            newCounts = {};
-            const baseCount = Math.floor(totalQuestions / newTypes.length);
-            let remainder = totalQuestions % newTypes.length;
-            newTypes.forEach(type => {
-                newCounts[type] = baseCount + (remainder > 0 ? 1 : 0);
-                remainder--;
-            });
-        }
-
-        const updatedConfigs = {
-            ...formData.partConfigs,
-            [partNumber]: { ...partConfig, questionTypes: newTypes, questionTypeCounts: newCounts }
-        };
-
-        set({ formData: { ...formData, partConfigs: updatedConfigs } });
-    },
-
-    /**
-     * Set topic for a specific part
-     */
-    setPartTopic: (partNumber, topic) => {
-        const { formData } = get();
-        const updatedConfigs = {
-            ...formData.partConfigs,
-            [partNumber]: {
-                ...(formData.partConfigs[partNumber] || {}),
-                topic: topic
-            }
-        };
-        set({ formData: { ...formData, partConfigs: updatedConfigs } });
-    },
-
-    /**
-     * Add a fact to a specific part
-     */
-    addPartFact: (partNumber, fact) => {
-        const { formData } = get();
-        const partConfig = formData.partConfigs[partNumber] || { facts: [] };
-        const currentFacts = partConfig.facts || [];
-        if (fact.trim() && currentFacts.length < 30) {
-            const updatedConfigs = {
-                ...formData.partConfigs,
-                [partNumber]: {
-                    ...partConfig,
-                    facts: [...currentFacts, fact.trim()]
-                }
-            };
-            set({ formData: { ...formData, partConfigs: updatedConfigs } });
-        }
-    },
-
-    /**
-     * Remove a fact from a specific part
-     */
-    removePartFact: (partNumber, index) => {
-        const { formData } = get();
-        const partConfig = formData.partConfigs[partNumber] || { facts: [] };
-        const currentFacts = partConfig.facts || [];
-        const updatedConfigs = {
-            ...formData.partConfigs,
-            [partNumber]: {
-                ...partConfig,
-                facts: currentFacts.filter((_, i) => i !== index)
-            }
-        };
-        set({ formData: { ...formData, partConfigs: updatedConfigs } });
-    },
-
-    /**
-     * Set passage length for a specific part (Reading only)
-     */
-    setPartPassageLength: (partNumber, length) => {
-        const { formData } = get();
-        const updatedConfigs = {
-            ...formData.partConfigs,
-            [partNumber]: {
-                ...(formData.partConfigs[partNumber] || {}),
-                passageLength: length
-            }
-        };
-        set({ formData: { ...formData, partConfigs: updatedConfigs } });
-    },
-
-    /**
-     * Update a generated question in the result (for preview editing)
-     */
-    updateGeneratedQuestion: (questionId, updates) => {
-        const { generationResult } = get();
-        if (!generationResult?.content?.questions) return;
-
-        const updatedQuestions = generationResult.content.questions.map((q, idx) => {
-            const syntheticId = `abts-q-${idx}`;
-            // Match against real ID or synthetic ID (StepPreview uses synthetic)
-            if (questionId === q.id || questionId === syntheticId) {
-                return { ...q, ...updates };
-            }
-            return q;
-        });
-
-        set({
-            generationResult: {
-                ...generationResult,
-                content: {
-                    ...generationResult.content,
-                    questions: updatedQuestions
-                }
-            }
-        });
-    },
-
-    /**
-     * Add a fact
-     */
-    addFact: (fact) => {
-        const { formData } = get();
-        if (fact.trim() && formData.facts.length < 30) {
-            set({
-                formData: {
-                    ...formData,
-                    facts: [...formData.facts, fact.trim()]
-                }
-            });
-        }
-    },
-
-    /**
-     * Remove a fact by index
-     */
-    removeFact: (index) => {
-        const { formData } = get();
-        set({
-            formData: {
-                ...formData,
-                facts: formData.facts.filter((_, i) => i !== index)
-            }
-        });
-    },
-
-    /**
-     * Toggle a question type
-     */
-    toggleQuestionType: (typeId) => {
-        const { formData } = get();
-        const currentTypes = formData.questionTypes || [];
-        const newTypes = currentTypes.includes(typeId)
-            ? currentTypes.filter(t => t !== typeId)
-            : [...currentTypes, typeId];
-
-        // Also update counts: add with default 2, or remove
-        const newCounts = { ...formData.questionTypeCounts };
-        if (newTypes.includes(typeId) && !newCounts[typeId]) {
-            newCounts[typeId] = 2; // Default count
-        } else if (!newTypes.includes(typeId)) {
-            delete newCounts[typeId];
-        }
-
-        set({
-            formData: { ...formData, questionTypes: newTypes, questionTypeCounts: newCounts }
-        });
-    },
-
-    /**
-     * Set question count for a specific type
-     */
-    setQuestionTypeCount: (typeId, count) => {
-        const { formData } = get();
-        const clampedCount = Math.max(1, Math.min(10, count));
-
-        // Ensure type is in questionTypes
-        const currentTypes = formData.questionTypes || [];
-        const newTypes = currentTypes.includes(typeId)
-            ? currentTypes
-            : [...currentTypes, typeId];
-
-        const newCounts = {
-            ...formData.questionTypeCounts,
-            [typeId]: clampedCount
-        };
-
-        set({
-            formData: {
-                ...formData,
-                questionTypes: newTypes,
-                questionTypeCounts: newCounts
-            }
-        });
-    },
-
-    /**
-     * Load a template into form
-     */
-    loadTemplate: (template) => {
-        set(state => ({
-            formData: {
-                ...state.formData,
-                topic: template.name,
-                hashtags: template.hashtags || [],
-                facts: template.facts || []
-            }
-        }));
-    },
+    ...createABTSFormActions(set, get, {
+        initialFormState,
+        READING_PART_TYPES,
+        LISTENING_PART_TYPES,
+        QUESTION_COUNTS
+    }),
 
     // ==================== GENERATION ACTIONS ====================
 
@@ -698,49 +298,7 @@ const useABTSStore = create((set, get) => ({
         });
 
         try {
-            const resolvePartNumber = () => {
-                if (formData.skill === SKILL_TYPES.WRITING) {
-                    const types = formData.questionTypes || [];
-                    const hasTask1 = types.includes('TASK_1');
-                    const hasTask2 = types.includes('TASK_2');
-                    if (hasTask2 && !hasTask1) return 2;
-                    if (hasTask1 && !hasTask2) return 1;
-                }
-                return formData.partNumber;
-            };
-
-            const hasCustomCounts = Object.keys(formData.questionTypeCounts).length > 0;
-            const shouldSendTotalQuestions = hasCustomCounts
-                || formData.questionTypes.length > 0
-                || (typeof formData.totalQuestions === 'number' && formData.totalQuestions !== 13);
-
-            // Build request
-            const request = {
-                skill: formData.skill,
-                scope: formData.scope,
-                partNumber: resolvePartNumber(),
-                topic: formData.topic,
-                hashtags: formData.hashtags,
-                facts: formData.facts,
-                difficulty: formData.difficulty,
-                explanationLanguage: formData.explanationLanguage,
-                testType: formData.testType,
-                questionTypes: formData.questionTypes.length > 0 ? formData.questionTypes : null,
-                model: formData.model,
-                enableReasoning: formData.enableReasoning,
-                reasoningEffort: formData.reasoningEffort,
-                temperature: formData.temperature,
-                questionTypeCounts: Object.keys(formData.questionTypeCounts).length > 0
-                    ? formData.questionTypeCounts : null,
-                passageLength: formData.passageLength,
-                customInstructions: formData.customInstructions || null,
-                maxTokens: formData.maxTokens,
-                totalQuestions: shouldSendTotalQuestions ? formData.totalQuestions : null,
-                writingEssayType: formData.writingEssayType || null,
-                // Multi-part generation (v6.0)
-                partsToGenerate: formData.selectedParts?.length > 0 ? formData.selectedParts : null,
-                partConfigs: Object.keys(formData.partConfigs || {}).length > 0 ? formData.partConfigs : null
-            };
+            const request = buildABTSGenerationRequest(formData);
 
             set({ generationProgress: 30 });
 
@@ -798,59 +356,20 @@ const useABTSStore = create((set, get) => ({
     generateStreaming: async () => {
         const { formData } = get();
 
+        get().resetRefinementState(); // FIX 2: a fresh generation must start with no carried-over hunks
         set({
             isGenerating: true,
             generationError: null,
             generationProgress: 0,
+            partErrors: null, // FIX 12: clear stale per-part errors from a prior run
             streamEvents: [],
             generationResult: null,
+            streamPreview: '',
+            streamChunkCount: 0,
             reasoning: '' // Reset accumulated reasoning
         });
 
-        const resolvePartNumber = () => {
-            if (formData.skill === SKILL_TYPES.WRITING) {
-                const types = formData.questionTypes || [];
-                const hasTask1 = types.includes('TASK_1');
-                const hasTask2 = types.includes('TASK_2');
-                if (hasTask2 && !hasTask1) return 2;
-                if (hasTask1 && !hasTask2) return 1;
-            }
-            return formData.partNumber;
-        };
-
-        const hasCustomCounts = Object.keys(formData.questionTypeCounts).length > 0;
-        const shouldSendTotalQuestions = hasCustomCounts
-            || formData.questionTypes.length > 0
-            || (typeof formData.totalQuestions === 'number' && formData.totalQuestions !== 13);
-
-        // Build request
-        const request = {
-            skill: formData.skill,
-            scope: formData.scope,
-            partNumber: resolvePartNumber(),
-            topic: formData.topic,
-            hashtags: formData.hashtags,
-            facts: formData.facts,
-            difficulty: formData.difficulty,
-            explanationLanguage: formData.explanationLanguage,
-            testType: formData.testType,
-            questionTypes: formData.questionTypes.length > 0 ? formData.questionTypes : null,
-            model: formData.model,
-            enableReasoning: formData.enableReasoning,
-            reasoningEffort: formData.reasoningEffort,
-            temperature: formData.temperature,
-            // Power-user settings
-            questionTypeCounts: Object.keys(formData.questionTypeCounts).length > 0
-                ? formData.questionTypeCounts : null,
-            passageLength: formData.passageLength,
-            customInstructions: formData.customInstructions || null,
-            maxTokens: formData.maxTokens,
-            totalQuestions: shouldSendTotalQuestions ? formData.totalQuestions : null,
-            writingEssayType: formData.writingEssayType || null,
-            // Multi-part generation (v6.0)
-            partsToGenerate: formData.selectedParts?.length > 0 ? formData.selectedParts : null,
-            partConfigs: Object.keys(formData.partConfigs || {}).length > 0 ? formData.partConfigs : null
-        };
+        const request = buildABTSGenerationRequest(formData);
 
         // Callbacks for streaming events
         const callbacks = {
@@ -863,15 +382,28 @@ const useABTSStore = create((set, get) => ({
                     return; // Don't add to streamEvents
                 }
 
-                // AI_CHUNK: Skip from log display (JSON data, not useful to show)
+                // AI_CHUNK: Keep content chunks out of the event log, but surface them in the live preview.
                 if (event.type === 'AI_CHUNK') {
+                    const chunk = typeof event.data === 'string'
+                        ? event.data
+                        : event.data == null
+                            ? ''
+                            : JSON.stringify(event.data);
+
+                    if (chunk) {
+                        set(state => ({
+                            streamPreview: state.streamPreview + chunk,
+                            streamChunkCount: state.streamChunkCount + 1
+                        }));
+                    }
                     return; // Don't add to streamEvents
                 }
 
                 // All other events: add to log normally
                 set(state => ({
                     streamEvents: [...state.streamEvents, event],
-                    generationProgress: event.progress ?? state.generationProgress
+                    // FIX 3: progress must never move backwards (parts report local 0-100 ranges).
+                    generationProgress: Math.max(state.generationProgress ?? 0, event.progress ?? 0)
                 }));
             },
             onComplete: (result) => {
@@ -879,12 +411,16 @@ const useABTSStore = create((set, get) => ({
                     generationResult: result,
                     isGenerating: false,
                     generationProgress: 100,
+                    // FIX 12: capture per-part errors so the UI can show a PARTIAL_SUCCESS banner.
+                    partErrors: result?.partErrors ?? null,
                     currentStep: 5 // Auto-advance to preview
                 });
             },
-            onError: (errorMessage) => {
+            onError: (errorMessage, data) => {
                 set({
                     generationError: errorMessage,
+                    // FIX 11/12: a FAILED event may carry a per-part errors map in its data payload.
+                    partErrors: (data && typeof data === 'object') ? data : null,
                     isGenerating: false,
                     generationProgress: 0
                 });
@@ -1010,6 +546,7 @@ const useABTSStore = create((set, get) => ({
      * Clear generation result
      */
     clearResult: () => {
+        get().resetRefinementState(); // FIX 2
         set({
             generationResult: null,
             generationError: null,
@@ -1070,70 +607,14 @@ const useABTSStore = create((set, get) => ({
         set({ isSaving: true, saveError: null });
 
         try {
-            // Prepare multi-part data if sections array exists
-            let partsToSave = null;
-            if (generationResult.content.sections && generationResult.content.sections.length > 0) {
-                partsToSave = generationResult.content.sections.map(section => {
-                    // Filter questions by standard IELTS ranges based on part number
-                    const pn = section.partNumber;
-                    const skill = formData.skill?.toUpperCase();
-
-                    const filteredQuestions = generationResult.content.questions.filter(q => {
-                        const qn = q.questionNumber;
-
-                        if (skill === 'READING') {
-                            if (pn === 1) return qn >= 1 && qn <= 13;
-                            if (pn === 2) return qn >= 14 && qn <= 26;
-                            if (pn === 3) return qn >= 27 && qn <= 40;
-                        } else if (skill === 'LISTENING') {
-                            if (pn === 1) return qn >= 1 && qn <= 10;
-                            if (pn === 2) return qn >= 11 && qn <= 20;
-                            if (pn === 3) return qn >= 21 && qn <= 30;
-                            if (pn === 4) return qn >= 31 && qn <= 40;
-                        }
-                        return true; // Include question if skill/part not matched
-                    });
-
-                    // Match backend PartSaveData structure: { partNumber, content }
-                    return {
-                        partNumber: pn,
-                        content: {
-                            section: section,
-                            questions: filteredQuestions
-                        }
-                    };
-                });
-            }
-
-
-            const saveRequest = {
-                skill: formData.skill?.toLowerCase() || 'reading',
-                partNumber: formData.partNumber || 1,
+            const saveRequest = buildABTSSaveRequest({
                 content: generationResult.content,
-                // New fields for naming
-                setId: options.setId ?? selectedSetId,
-                setCode: options.setCode ?? selectedSetCode ?? 'ai_generated',
-                setName: options.setName || null, // Pass user-provided set name
-                testId: options.testId ?? selectedTestId,
-                testName: options.testName || null, // Pass user-provided test name
-
-                topic: formData.topic || null,
-                difficulty: formData.difficulty || 'INTERMEDIATE',
-                hashtagCodes: formData.hashtags || [],
-                generationConfig: {
-                    topic: formData.topic,
-                    facts: formData.facts,
-                    difficulty: formData.difficulty,
-                    testType: formData.testType,
-                    questionTypes: formData.questionTypes,
-                    model: formData.model,
-                    temperature: formData.temperature,
-                    writingEssayType: formData.writingEssayType || null
-                },
-                examSource: options.examSource || 'ai_generated',
-                testNumber: options.testNumber || null,
-                partsToSave: partsToSave // Include the split parts
-            };
+                formData,
+                saveConfig: options,
+                selectedSetId,
+                selectedSetCode,
+                selectedTestId,
+            });
 
             const result = await saveGeneratedTest(saveRequest);
 
@@ -1191,8 +672,30 @@ const useABTSStore = create((set, get) => ({
 
         try {
             const models = await getAvailableModels();
+
+            // Build id -> capability descriptor map from the catalog payload.
+            const capabilities = {};
+            (models || []).forEach((model) => {
+                if (model && model.id && model.capabilities) {
+                    capabilities[model.id] = model.capabilities;
+                }
+            });
+
+            // Pick a sensible default model the first time the catalog loads:
+            // prefer the recommended deepseek/deepseek-v4-flash, else the first model.
+            const { formData } = get();
+            let nextModel = formData.model;
+            if (!nextModel && Array.isArray(models) && models.length > 0) {
+                const recommended = models.find((m) => m.id === DEFAULT_MODEL_ID);
+                nextModel = recommended ? recommended.id : models[0].id;
+            }
+
             set({
                 models,
+                capabilities,
+                formData: nextModel === formData.model
+                    ? formData
+                    : { ...formData, model: nextModel },
                 isLoadingModels: false,
                 lastModelsFetch: Date.now()
             });
@@ -1200,6 +703,17 @@ const useABTSStore = create((set, get) => ({
             console.error('Failed to fetch models:', error);
             set({ isLoadingModels: false });
         }
+    },
+
+    /**
+     * Look up the capability descriptor for a model id (defaults to the
+     * currently selected model). Returns null when unknown.
+     */
+    selectCapabilitiesForModel: (modelId) => {
+        const { capabilities, formData } = get();
+        const id = modelId || formData.model;
+        if (!id) return null;
+        return capabilities[id] || null;
     },
 
     /**
@@ -1396,6 +910,7 @@ const useABTSStore = create((set, get) => ({
                 model: formData.refinementModel, // User-selected model for refinement
                 enableCaching: formData.enableRefinementCaching !== false, // Default to true
                 enableReasoning: formData.enableRefinementReasoning === true, // Default to false
+                round: get().refinement?.round || 0, // Loopable refinement round (server caps at 5)
                 validationResult: {
                     errors: [],
                     warnings: validationIssues
@@ -1418,6 +933,8 @@ const useABTSStore = create((set, get) => ({
                         refinementResult: result,
                         isRefining: false
                     });
+                    // Loopable refinement: ingest hunks + round into refinement state
+                    get().setRefinementResponse(result);
                 },
                 onError: (error) => {
                     console.error('Refinement error:', error);
@@ -1439,112 +956,249 @@ const useABTSStore = create((set, get) => ({
         }
     },
 
+    // ==================== LOOPABLE REFINEMENT ACTIONS ====================
+
     /**
-     * Apply refinement result to generation result and revalidate
+     * Ingest a refinement stream result into per-hunk approval state.
+     * Defaults to ALL hunks accepted (opt-out model).
      */
-    applyRefinement: async () => {
-        const { refinementResult, generationResult, formData } = get();
+    setRefinementResponse: (response) => {
+        if (!response || response.error) return;
+        const hunks = Array.isArray(response.hunks) ? response.hunks : [];
+        const round = typeof response.round === 'number'
+            ? response.round
+            : (get().refinement?.round || 0) + 1;
+        set((state) => ({
+            refinement: {
+                ...state.refinement,
+                round,
+                hunks,
+                acceptedHunkIds: hunks.map((h) => h.id),
+                isLooping: false,
+            }
+        }));
+    },
 
-        if (!refinementResult) {
-            console.warn('No refinement result to apply');
+    /** Accept a single hunk by id. */
+    acceptHunk: (id) => set((state) => ({
+        refinement: {
+            ...state.refinement,
+            acceptedHunkIds: state.refinement.acceptedHunkIds.includes(id)
+                ? state.refinement.acceptedHunkIds
+                : [...state.refinement.acceptedHunkIds, id],
+        }
+    })),
+
+    /** Reject a single hunk by id. */
+    rejectHunk: (id) => set((state) => ({
+        refinement: {
+            ...state.refinement,
+            acceptedHunkIds: state.refinement.acceptedHunkIds.filter((h) => h !== id),
+        }
+    })),
+
+    /** Accept every proposed hunk. */
+    acceptAllHunks: () => set((state) => ({
+        refinement: {
+            ...state.refinement,
+            acceptedHunkIds: state.refinement.hunks.map((h) => h.id),
+        }
+    })),
+
+    /** Reject every proposed hunk. */
+    rejectAllHunks: () => set((state) => ({
+        refinement: {
+            ...state.refinement,
+            acceptedHunkIds: [],
+        }
+    })),
+
+    /**
+     * Apply accepted hunks via backend patch, then revalidate.
+     */
+    applyAcceptedHunks: async () => {
+        const { refinement, generationResult, formData } = get();
+        const { hunks, acceptedHunkIds, isApplying } = refinement;
+
+        if (isApplying || acceptedHunkIds.length === 0 || hunks.length === 0) {
             return;
         }
 
-        // Check for errors from backend
-        if (!refinementResult.success || refinementResult.errorMessage) {
-            console.error('Refinement failed:', refinementResult.errorMessage);
-            set({
-                refinementResult: {
-                    ...refinementResult,
-                    error: refinementResult.errorMessage || 'Refinement failed'
-                }
-            });
-            return;
-        }
-
-        if (!refinementResult.refinedJson) {
-            console.warn('No refined JSON to apply');
-            return;
-        }
+        set((state) => ({ refinement: { ...state.refinement, isApplying: true } }));
 
         try {
-            const refinedContent = JSON.parse(refinementResult.refinedJson);
+            const result = await applyRefinementHunks({
+                originalJson: JSON.stringify(generationResult.content),
+                hunks,
+                acceptedHunkIds,
+            });
 
-            // Apply refined content first
-            set({
+            if (!result?.success || !result?.patchedJson) {
+                const failMsg = result?.errorMessage || 'Failed to apply hunks';
+                set((state) => ({
+                    refinement: { ...state.refinement, isApplying: false, lastError: failMsg },
+                    refinementResult: {
+                        ...(state.refinementResult || {}),
+                        error: failMsg,
+                    }
+                }));
+                return;
+            }
+
+            const patchedContent = JSON.parse(result.patchedJson);
+            const historyEntry = {
+                round: refinement.round,
+                appliedCount: result.appliedCount ?? acceptedHunkIds.length,
+                rejectedCount: result.rejectedCount ?? (hunks.length - acceptedHunkIds.length),
+                at: Date.now(),
+            };
+
+            // Apply patched content; clear current hunk batch + streaming/selection
+            set((state) => ({
                 generationResult: {
-                    ...generationResult,
-                    content: refinedContent,
-                    warnings: [] // Will be updated by validation
+                    ...state.generationResult,
+                    content: patchedContent,
+                    warnings: [],
                 },
                 refinementResult: null,
+                refinementStream: [],
                 selectedIssues: [],
-                refinementStream: []
-            });
-            console.log('Refinement applied, now revalidating...');
-
-            // Call backend to revalidate the refined content
-            try {
-                const userId = localStorage.getItem('userId');
-                const response = await fetch('/api/admin/abts/validate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-User-Id': userId || 'admin'
-                    },
-                    body: JSON.stringify({
-                        skill: formData.skill,
-                        content: refinedContent
-                    })
-                });
-
-                if (response.ok) {
-                    const validationResult = await response.json();
-                    const newWarnings = validationResult.warnings || [];
-
-                    // Update with new validation warnings
-                    set((state) => ({
-                        generationResult: {
-                            ...state.generationResult,
-                            warnings: newWarnings
-                        }
-                    }));
-
-                    console.log(`Revalidation complete: ${newWarnings.length} warnings remaining`);
-                } else {
-                    console.warn('Validation request failed, warnings not updated');
+                refinement: {
+                    ...state.refinement,
+                    hunks: [],
+                    acceptedHunkIds: [],
+                    appliedHistory: [...state.refinement.appliedHistory, historyEntry],
+                    isApplying: false,
+                    lastError: null, // FIX 5: clear any prior error on success
+                    lastSkippedHunks: result.skippedHunks || [], // FIX 9: surface skipped hunks + reasons
                 }
+            }));
+
+            // Revalidate patched content via the canonical helper.
+            // FIX 1 (silent bug): post the content object directly so the
+            // backend infers the correct skill from its top-level keys.
+            try {
+                const validationResult = await validateContent(patchedContent);
+                set((state) => ({
+                    generationResult: {
+                        ...state.generationResult,
+                        warnings: validationResult.warnings || [],
+                        validationIssues: validationResult.issues || [], // FIX 3
+                    }
+                }));
             } catch (validationError) {
-                console.warn('Revalidation failed:', validationError);
-                // Content is already applied, just log the validation error
+                console.warn('Revalidation after apply failed:', validationError);
             }
         } catch (error) {
-            console.error('Failed to parse refined JSON:', error);
-            set({
+            console.error('Apply accepted hunks failed:', error);
+            // FIX 5: prefer a structured backend message (400 malformed body, etc.)
+            // over the bare axios message so the user sees something actionable.
+            const apiMsg = error?.data?.errorMessage
+                || error?.response?.data?.errorMessage
+                || error?.message
+                || 'Failed to apply hunks';
+            set((state) => ({
+                refinement: { ...state.refinement, isApplying: false, lastError: apiMsg },
                 refinementResult: {
-                    ...refinementResult,
-                    error: `JSON parse error: ${error.message}`
+                    ...(state.refinementResult || {}),
+                    error: apiMsg,
                 }
-            });
+            }));
         }
     },
 
     /**
-     * Discard refinement result
+     * Run another refinement round on the still-selected issues.
+     * Server caps at 5; guard client-side too.
      */
-    discardRefinement: () => {
+    refineAgain: async () => {
+        const { refinement, isRefining, startRefinement, abtsStatus } = get();
+        // FIX 4: also block while an apply is mid-flight.
+        if (isRefining || refinement.isLooping || refinement.isApplying) return;
+
+        // FIX 11: round cap comes from backend status, not a hardcoded 5.
+        const maxRounds = abtsStatus?.maxRefinementRounds || 5;
+        const nextRound = (refinement.round || 0) + 1;
+        if (nextRound > maxRounds) {
+            set((state) => ({
+                refinementResult: {
+                    ...(state.refinementResult || {}),
+                    error: `Refinement limit reached (${maxRounds} rounds)`,
+                }
+            }));
+            return;
+        }
+
+        set((state) => ({ refinement: { ...state.refinement, isLooping: true } }));
+        await startRefinement();
+    },
+
+    /**
+     * Close the refinement loop and reset all refinement state.
+     */
+    closeRefinement: () => {
+        get().resetRefinementState();
+    },
+
+    /**
+     * FIX 2: single source of truth for tearing down ALL refinement state.
+     * Aborts any in-flight stream and resets both the legacy Agent-2 slice and
+     * the loopable per-hunk slice to a clean baseline. Call this on every
+     * lifecycle boundary (new generation, clear result, open/close wizard) so
+     * stale hunks, round counters, or in-flight flags never leak between runs.
+     */
+    resetRefinementState: () => {
         const { abortRefinement } = get();
         if (abortRefinement) {
-            abortRefinement();
+            try {
+                abortRefinement();
+            } catch (e) {
+                console.warn('Error aborting refinement during reset:', e);
+            }
         }
         set({
             isRefining: false,
             refinementResult: null,
             selectedIssues: [],
             refinementStream: [],
-            abortRefinement: null
+            abortRefinement: null,
+            refinement: { ...REFINEMENT_RESET },
         });
     }
+}), {
+    // FIX 12: persist only the user's last model + skill choice across reloads.
+    // Everything else (cache, streaming, results) is intentionally NOT persisted.
+    name: 'abts-form-v1',
+    partialize: (state) => ({
+        formData: {
+            model: state.formData?.model,
+            skill: state.formData?.skill,
+        },
+    }),
+    // Zustand's default merge is SHALLOW, which would replace the whole `formData`
+    // object with the persisted `{ model, skill }` and wipe every other default
+    // (selectedParts, partConfigs, difficulty, ...), crashing components that read
+    // those nested fields. Deep-merge `formData` so persisted values only overlay
+    // the initial defaults.
+    merge: (persisted, current) => ({
+        ...current,
+        ...(persisted || {}),
+        formData: {
+            ...current.formData,
+            ...((persisted && persisted.formData) || {}),
+        },
+    }),
 }));
+
+/**
+ * FIX 9: resolve the recommended/default generation model id.
+ * Prefers the backend-advertised default (abtsStatus.defaultGenerationModel) and
+ * falls back to the local DEFAULT_MODEL_ID constant when status is unavailable.
+ *
+ * @param {Object} state - the ABTS store state
+ * @returns {string} the default generation model id
+ */
+export const selectDefaultModelId = (state) =>
+    state.abtsStatus?.defaultGenerationModel ?? DEFAULT_MODEL_ID;
 
 export default useABTSStore;

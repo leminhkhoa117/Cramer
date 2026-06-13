@@ -1,15 +1,15 @@
 /**
- * Export Utilities - Xuất dữ liệu ra file Excel
+ * Export Utilities - Xuất dữ liệu ra file bảng tính
  * 
  * Re-export từ exportExcel.js và thêm các hàm mới cho Finance
  */
-import * as XLSX from 'xlsx';
+import { downloadExcelTable } from './spreadsheetExport';
 
 // Re-export các hàm đã có
 export { exportUsersToExcel, exportTransactionsToExcel } from './exportExcel';
 
 /**
- * Export finance report to Excel file (.xlsx)
+ * Export finance report to an Excel-compatible file (.xls)
  * @param {Array} data - Finance/transaction data from API
  */
 export const exportFinanceReport = (data) => {
@@ -45,33 +45,14 @@ export const exportFinanceReport = (data) => {
     }));
 
     try {
-        // Create worksheet
-        const ws = XLSX.utils.json_to_sheet(formattedData, {
-            header: columns.map(c => c.key)
-        });
-
-        // Style header - replace default headers with Vietnamese
-        columns.forEach((col, index) => {
-            const cellRef = XLSX.utils.encode_cell({ r: 0, c: index });
-            if (ws[cellRef]) {
-                ws[cellRef].v = col.header;
-            }
-        });
-
-        // Set column widths
-        ws['!cols'] = columns.map(col => ({ wch: col.width }));
-
-        // Create workbook
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Báo cáo tài chính');
-
-        // Generate filename with date
         const now = new Date();
         const dateStr = now.toISOString().split('T')[0];
-        const filename = `Cramer_Finance_Report_${dateStr}.xlsx`;
-
-        // Download file
-        XLSX.writeFile(wb, filename);
+        downloadExcelTable({
+            rows: formattedData,
+            columns,
+            sheetName: 'Báo cáo tài chính',
+            filename: `Cramer_Finance_Report_${dateStr}`,
+        });
 
         return true;
     } catch (error) {
@@ -91,28 +72,12 @@ export const exportToExcel = (data, filename, sheetName = 'Sheet1') => {
     }
 
     try {
-        const ws = XLSX.utils.json_to_sheet(data);
-        
-        // Auto-size columns
-        const colWidths = Object.keys(data[0]).map(key => {
-            let maxLen = key.length;
-            data.forEach(row => {
-                const value = row[key];
-                if (value !== null && value !== undefined) {
-                    const len = String(value).length;
-                    if (len > maxLen) maxLen = len;
-                }
-            });
-            return { wch: Math.min(maxLen + 2, 50) };
-        });
-        
-        ws['!cols'] = colWidths;
-
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, sheetName);
-
         const dateStr = new Date().toISOString().split('T')[0];
-        XLSX.writeFile(wb, `${filename}_${dateStr}.xlsx`);
+        downloadExcelTable({
+            rows: data,
+            sheetName,
+            filename: `${filename}_${dateStr}`,
+        });
 
         return true;
     } catch (error) {

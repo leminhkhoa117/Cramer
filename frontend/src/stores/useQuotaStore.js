@@ -1,191 +1,67 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import { quotaApi } from '../api/backendApi';
+import { quotaApi, getApiError } from '../lib/api';
 import { useAuthStore } from './index';
 
 /**
- * Zustand store for quota status (dual-quota billing system).
- * Tracks global and per-skill monthly usage limits.
+ * Quota store (SPEC-F15). Wraps the tier-aware QuotaStatusView {premium, tierCode, globalLimit,
+ * globalUsed, globalAiLimit, globalAiUsed, unlimited} and the can-attempt pre-check
+ * (CanAttemptView {canAttempt, reason, blockType}). The backend quota model is global (no
+ * per-skill breakdown), so progress helpers report global usage.
  */
 const useQuotaStore = create(
-    devtools(
-        subscribeWithSelector((set, get) => ({
-            // ===== STATE =====
-            quotaStatus: null,
-            loading: false,
-            error: null,
-            lastFetched: null,
+  devtools(
+    subscribeWithSelector((set, get) => ({
+      quotaStatus: null,
+      loading: false,
+      error: null,
+      lastFetched: null,
+      preCheckResult: null,
+      preCheckLoading: false,
 
-            // Pre-check result (for current attempt)
-            preCheckResult: null,
-            preCheckLoading: false,
+      isPremium: () => get().quotaStatus?.premium === true || get().quotaStatus?.unlimited === true,
 
-            // ===== SELECTORS =====
+      getGlobalProgress: (isAI = false) => {
+        const q = get().quotaStatus;
+        if (!q || q.unlimited) return 0;
+        const cap = isAI ? q.globalAiLimit : q.globalLimit;
+        const used = isAI ? q.globalAiUsed : q.globalUsed;
+        return cap > 0 ? Math.min(100, (used / cap) * 100) : 0;
+      },
 
-            /**
-             * Check if user is on premium tier (unlimited quota).
-             */
-            isPremium: () => {
-                const { quotaStatus } = get();
-                return quotaStatus?.isPremium === true;
-            },
+      getProgressColor: (percent) => (percent < 50 ? 'green' : percent < 80 ? 'yellow' : 'red'),
 
-            /**
-             * Get global quota progress (0-100).
-             */
-            getGlobalProgress: (isAI = false) => {
-                const { quotaStatus } = get();
-                if (!quotaStatus || quotaStatus.isPremium) return 0;
-
-                if (isAI) {
-                    const cap = quotaStatus.globalAttemptAICap;
-                    return cap > 0 ? Math.min(100, (quotaStatus.globalAttemptAI / cap) * 100) : 0;
-                }
-                const cap = quotaStatus.globalAttemptCap;
-                return cap > 0 ? Math.min(100, (quotaStatus.globalAttempt / cap) * 100) : 0;
-            },
-
-            /**
-             * Get skill quota progress (0-100).
-             */
-            getSkillProgress: (skill, isAI = false) => {
-                const { quotaStatus } = get();
-                if (!quotaStatus || quotaStatus.isPremium) return 0;
-
-                const skillInfo = quotaStatus.skills?.[skill];
-                if (!skillInfo) return 0;
-
-                if (isAI) {
-                    const cap = skillInfo.attemptAICap;
-                    return cap > 0 ? Math.min(100, (skillInfo.attemptAI / cap) * 100) : 0;
-                }
-                const cap = skillInfo.attemptCap;
-                return cap > 0 ? Math.min(100, (skillInfo.attempt / cap) * 100) : 0;
-            },
-
-            /**
-             * Get color for progress bar based on percentage.
-             */
-            getProgressColor: (percent) => {
-                if (percent < 50) return 'green';
-                if (percent < 80) return 'yellow';
-                return 'red';
-            },
-
-            // ===== ACTIONS =====
-
-            /**
-             * Fetch quota status from API.
-             */
-            fetchQuotaStatus: async (force = false) => {
-                const user = useAuthStore.getState().user;
-                if (!user) {
-                    console.log('⏭️ Skipping fetchQuotaStatus - no user');
-                    return;
-                }
-
-                const { loading, lastFetched } = get();
-
-                // Debounce: don't fetch if already loading or fetched within last 30 seconds
-                if (loading) {
-                    console.log('⏭️ Skipping fetchQuotaStatus - already loading');
-                    return;
-                }
-
-                if (!force && lastFetched && Date.now() - lastFetched < 30000) {
-                    console.log('⏭️ Skipping fetchQuotaStatus - cached (30s TTL)');
-                    return;
-                }
-
-                set({ loading: true, error: null }, false, 'fetchQuotaStatus/start');
-
-                try {
-                    const response = await quotaApi.getStatus();
-                    if (response?.data) {
-                        set({
-                            quotaStatus: response.data,
-                            loading: false,
-                            lastFetched: Date.now()
-                        }, false, 'fetchQuotaStatus/success');
-                        console.log('✅ Quota status fetched successfully');
-                    }
-                } catch (error) {
-                    console.error('❌ Error fetching quota status:', error);
-                    set({
-                        loading: false,
-                        error: error.message || 'Failed to load quota status'
-                    }, false, 'fetchQuotaStatus/error');
-                }
-            },
-
-            /**
-             * Pre-check if an attempt is allowed.
-             */
-            preCheckAttempt: async (skill, isAI = false) => {
-                const user = useAuthStore.getState().user;
-                if (!user) return null;
-
-                set({ preCheckLoading: true }, false, 'preCheckAttempt/start');
-
-                try {
-                    const response = await quotaApi.canAttempt(skill, isAI);
-                    const result = response?.data;
-                    set({
-                        preCheckResult: result,
-                        preCheckLoading: false
-                    }, false, 'preCheckAttempt/success');
-                    return result;
-                } catch (error) {
-                    console.error('❌ Error pre-checking attempt:', error);
-                    set({ preCheckLoading: false }, false, 'preCheckAttempt/error');
-                    return null;
-                }
-            },
-
-            /**
-             * Clear pre-check result.
-             */
-            clearPreCheck: () => {
-                set({ preCheckResult: null }, false, 'clearPreCheck');
-            },
-
-            /**
-             * Invalidate cache (force refresh on next fetch).
-             */
-            invalidateCache: () => {
-                set({ lastFetched: null }, false, 'invalidateCache');
-            },
-
-            /**
-             * Clear all quota data (on logout).
-             */
-            clearQuota: () => {
-                set({
-                    quotaStatus: null,
-                    loading: false,
-                    error: null,
-                    lastFetched: null,
-                    preCheckResult: null,
-                    preCheckLoading: false,
-                }, false, 'clearQuota');
-            },
-        })),
-        { name: 'QuotaStore' }
-    )
-);
-
-// Auto-clear quota when user logs out
-useAuthStore.subscribe(
-    (state) => state.user,
-    (user, prevUser) => {
-        if (prevUser && !user) {
-            // User logged out
-            useQuotaStore.getState().clearQuota();
-        } else if (user && !prevUser) {
-            // User logged in - fetch quota status
-            useQuotaStore.getState().fetchQuotaStatus();
+      fetchQuotaStatus: async (force = false) => {
+        const user = useAuthStore.getState().user;
+        if (!user) return;
+        const { loading, lastFetched } = get();
+        if (loading) return;
+        if (!force && lastFetched && Date.now() - lastFetched < 30000) return;
+        set({ loading: true, error: null }, false, 'fetchQuotaStatus/start');
+        try {
+          const quotaStatus = await quotaApi.status();
+          set({ quotaStatus, loading: false, lastFetched: Date.now() }, false, 'fetchQuotaStatus/success');
+        } catch (error) {
+          set({ loading: false, error: getApiError(error).message }, false, 'fetchQuotaStatus/error');
         }
-    }
+      },
+
+      preCheckAttempt: async (skill, isAI = false) => {
+        const user = useAuthStore.getState().user;
+        if (!user) return null;
+        set({ preCheckLoading: true }, false, 'preCheckAttempt/start');
+        try {
+          const result = await quotaApi.canAttempt(skill, isAI);
+          set({ preCheckResult: result, preCheckLoading: false }, false, 'preCheckAttempt/success');
+          return result;
+        } catch (error) {
+          set({ preCheckLoading: false }, false, 'preCheckAttempt/error');
+          return null;
+        }
+      },
+    })),
+    { name: 'QuotaStore' }
+  )
 );
 
 export default useQuotaStore;

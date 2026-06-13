@@ -1,0 +1,12 @@
+/* ===================================
+   Writing Result Page Styles - import hub
+   Import order matters.
+   =================================== */
+@import 'test/writing-result-shards/01-base.css';
+@import 'test/writing-result-shards/02-header-note.css';
+@import 'test/writing-result-shards/03-task-scores-content.css';
+@import 'test/writing-result-shards/04-feedback-word-analysis.css';
+@import 'test/writing-result-shards/05-footer-grading-base.css';
+@import 'test/writing-result-shards/06-grading-progress.css';
+@import 'test/writing-result-shards/07-comparison.css';
+@import 'test/writing-result-shards/08-responsive.css';

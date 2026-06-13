@@ -1,351 +1,227 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  FiBook,
-  FiPlus,
-  FiSearch,
-  FiStar,
-  FiGrid,
-  FiList,
-  FiLoader,
-  FiAlertCircle,
-  FiBookOpen,
-} from 'react-icons/fi';
+import { FiBook, FiPlus, FiSearch, FiStar, FiEdit2, FiTrash2, FiVolume2, FiGrid, FiList } from 'react-icons/fi';
 import { useVocabularyStore } from '../stores';
-import VocabularyCard from '../components/VocabularyCard';
-import VocabularyModal from '../components/VocabularyModal';
-import Pagination from '../components/Pagination';
-import '../css/vocabulary-page.css';
+import { toast } from '../ui/toast';
+import {
+  Page, Container, Button, IconButton, Input, Textarea, Badge, Card,
+  Tabs, Pagination, EmptyState, Skeleton, StatCard, Modal, ConfirmDialog,
+} from '../ui';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05 },
-  },
-};
+const EMPTY = { word: '', translation: '', phonetic: '', partOfSpeech: '', definition: '', exampleSentence: '' };
 
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { duration: 0.3 },
-  },
-};
+function VocabModal({ open, onClose, onSave, initial }) {
+  const [form, setForm] = useState(EMPTY);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { setForm(initial ? { ...EMPTY, ...initial } : EMPTY); }, [initial, open]);
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-const VocabularyPage = () => {
-  const {
-    vocabulary,
-    stats,
-    loading,
-    error,
-    currentPage,
-    totalPages,
-    searchQuery,
-    filter,
-    fetchVocabulary,
-    fetchStats,
-    addWord,
-    updateWord,
-    deleteWord,
-    toggleMastered,
-    setPage,
-    setSearchQuery,
-    setDebouncedSearchQuery,
-    setFilter,
-    clearError,
-  } = useVocabularyStore();
-
-  const [viewMode, setViewMode] = useState('grid');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingVocabulary, setEditingVocabulary] = useState(null);
-  const [deletingId, setDeletingId] = useState(null);
-
-  useEffect(() => {
-    fetchVocabulary();
-    fetchStats();
-  }, [fetchVocabulary, fetchStats]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchQuery, setDebouncedSearchQuery]);
-
-  const handleSearchChange = useCallback(
-    (e) => {
-      setSearchQuery(e.target.value);
-    },
-    [setSearchQuery],
-  );
-
-  const handleFilterChange = useCallback(
-    (newFilter) => {
-      setFilter(newFilter);
-    },
-    [setFilter],
-  );
-
-  const handleAddNew = useCallback(() => {
-    setEditingVocabulary(null);
-    setIsModalOpen(true);
-  }, []);
-
-  const handleEdit = useCallback((vocab) => {
-    setEditingVocabulary(vocab);
-    setIsModalOpen(true);
-  }, []);
-
-  const handleCloseModal = useCallback(() => {
-    setIsModalOpen(false);
-    setEditingVocabulary(null);
-  }, []);
-
-  const handleSaveWord = useCallback(
-    async (wordData) => {
-      if (editingVocabulary) {
-        await updateWord(editingVocabulary.id, wordData);
-      } else {
-        await addWord(wordData);
-      }
-    },
-    [editingVocabulary, updateWord, addWord],
-  );
-
-  const handleDelete = useCallback(
-    async (id) => {
-      if (window.confirm('Bạn có chắc muốn xóa từ này khỏi sổ tay?')) {
-        setDeletingId(id);
-        try {
-          await deleteWord(id);
-        } finally {
-          setDeletingId(null);
-        }
-      }
-    },
-    [deleteWord],
-  );
-
-  const handleToggleMastered = useCallback(
-    async (id) => {
-      await toggleMastered(id);
-    },
-    [toggleMastered],
-  );
-
-  const handlePageChange = useCallback(
-    (newPage) => {
-      setPage(newPage);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    },
-    [setPage],
-  );
-
-  const statsDisplay = useMemo(() => {
-    if (!stats) return { total: 0, mastered: 0, unmastered: 0 };
-    return {
-      total: stats.total || 0,
-      mastered: stats.mastered || 0,
-      unmastered: stats.learning || (stats.total || 0) - (stats.mastered || 0),
-    };
-  }, [stats]);
-
-  const filterTabs = [
-    { id: 'all', label: 'Tất cả', count: statsDisplay.total },
-    { id: 'unmastered', label: 'Chưa thuộc', count: statsDisplay.unmastered },
-    { id: 'mastered', label: 'Đã thuộc', count: statsDisplay.mastered },
-  ];
+  const save = async () => {
+    if (!form.word.trim()) return toast.error('Vui lòng nhập từ');
+    setSaving(true);
+    try { await onSave(form); onClose(); toast.success(initial ? 'Đã cập nhật từ' : 'Đã thêm từ mới'); }
+    catch { toast.error('Không thể lưu từ. Thử lại.'); }
+    finally { setSaving(false); }
+  };
 
   return (
-    <div className="vocab-page">
-      <div className="vocab-page__bg">
-        <div className="vocab-page__orb vocab-page__orb--1" />
-        <div className="vocab-page__orb vocab-page__orb--2" />
+    <Modal open={open} onClose={onClose} title={initial ? 'Sửa từ vựng' : 'Thêm từ mới'} size="md"
+      footer={<><Button variant="ghost" onClick={onClose}>Huỷ</Button><Button onClick={save} loading={saving}>Lưu</Button></>}>
+      <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Từ" value={form.word} onChange={set('word')} required />
+          <Input label="Phiên âm" value={form.phonetic} onChange={set('phonetic')} placeholder="/ˈwɜːd/" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Nghĩa" value={form.translation} onChange={set('translation')} />
+          <Input label="Loại từ" value={form.partOfSpeech} onChange={set('partOfSpeech')} placeholder="noun, verb…" />
+        </div>
+        <Textarea label="Định nghĩa" value={form.definition} onChange={set('definition')} rows={2} />
+        <Textarea label="Ví dụ" value={form.exampleSentence} onChange={set('exampleSentence')} rows={2} />
       </div>
+    </Modal>
+  );
+}
 
-      <div className="vocab-page__container">
-        <motion.header
-          className="vocab-page__header"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <div className="vocab-page__header-left">
-            <div className="vocab-page__header-icon">
-              <FiBook />
-            </div>
-            <div className="vocab-page__header-text">
-              <h1 className="vocab-page__header-title">Sổ tay Từ vựng</h1>
-              <p className="vocab-page__header-subtitle">
-                Quản lý và học các từ vựng đã lưu
-              </p>
+function VocabCard({ v, onEdit, onDelete, onToggle }) {
+  return (
+    <Card padded className="flex flex-col gap-2">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="truncate text-lg font-bold text-ink">{v.word}</h3>
+            {v.partOfSpeech && <Badge variant="neutral" size="sm">{v.partOfSpeech}</Badge>}
+          </div>
+          {v.phonetic && <span className="text-sm text-muted">{v.phonetic}</span>}
+        </div>
+        <IconButton aria-label={v.isMastered ? 'Bỏ đánh dấu thuộc' : 'Đánh dấu đã thuộc'} size="sm"
+          onClick={() => onToggle(v.id)} className={v.isMastered ? 'text-warning' : 'text-faint'}>
+          <FiStar size={16} fill={v.isMastered ? 'currentColor' : 'none'} />
+        </IconButton>
+      </div>
+      {v.translation && <p className="text-base font-semibold text-brand-700">{v.translation}</p>}
+      {v.definition && <p className="text-base text-ink-2 line-clamp-2">{v.definition}</p>}
+      {v.exampleSentence && <p className="text-sm italic text-muted line-clamp-2">“{v.exampleSentence}”</p>}
+      <div className="mt-1 flex items-center justify-end gap-1 border-t border-line pt-2">
+        <IconButton aria-label="Sửa" size="sm" onClick={() => onEdit(v)}><FiEdit2 size={14} /></IconButton>
+        <IconButton aria-label="Xoá" size="sm" className="text-danger" onClick={() => onDelete(v.id)}><FiTrash2 size={14} /></IconButton>
+      </div>
+    </Card>
+  );
+}
+
+function VocabRow({ v, onEdit, onDelete, onToggle }) {
+  return (
+    <Card padded className="flex items-center gap-4">
+      <IconButton aria-label={v.isMastered ? 'Bỏ đánh dấu thuộc' : 'Đánh dấu đã thuộc'} size="sm"
+        onClick={() => onToggle(v.id)} className={v.isMastered ? 'text-warning' : 'text-faint'}>
+        <FiStar size={16} fill={v.isMastered ? 'currentColor' : 'none'} />
+      </IconButton>
+      <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <h3 className="text-base font-bold text-ink">{v.word}</h3>
+        {v.phonetic && <span className="text-sm text-muted">{v.phonetic}</span>}
+        {v.partOfSpeech && <Badge variant="neutral" size="sm">{v.partOfSpeech}</Badge>}
+        {v.translation && <span className="text-base font-semibold text-brand-700">{v.translation}</span>}
+        {v.definition && <span className="w-full truncate text-sm text-muted">{v.definition}</span>}
+      </div>
+      <div className="flex shrink-0 items-center gap-1">
+        <IconButton aria-label="Sửa" size="sm" onClick={() => onEdit(v)}><FiEdit2 size={14} /></IconButton>
+        <IconButton aria-label="Xoá" size="sm" className="text-danger" onClick={() => onDelete(v.id)}><FiTrash2 size={14} /></IconButton>
+      </div>
+    </Card>
+  );
+}
+
+export default function VocabularyPage() {
+  const {
+    vocabulary, stats, loading, page, totalPages, search, filter,
+    fetchVocabulary, fetchStats, addWord, updateWord, deleteWord, toggleMastered, setPage, setSearch, setFilter,
+  } = useVocabularyStore();
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [view, setView] = useState('card');
+
+  useEffect(() => { fetchVocabulary(); fetchStats(); }, [fetchVocabulary, fetchStats]);
+  useEffect(() => {
+    const t = setTimeout(() => fetchVocabulary(), 400);
+    return () => clearTimeout(t);
+  }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const total = stats?.total ?? stats?.totalWords ?? 0;
+  const mastered = stats?.mastered ?? stats?.masteredWords ?? 0;
+
+  const onSave = (data) => (editing ? updateWord(editing.id, data) : addWord(data));
+
+  return (
+    <Page>
+      <Container className="py-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-soft text-brand-600"><FiBook size={22} /></div>
+            <div>
+              <h1 className="text-2xl font-bold text-ink">Sổ tay từ vựng</h1>
+              <p className="text-base text-muted">Quản lý và ôn tập các từ đã lưu</p>
             </div>
           </div>
-          <div className="vocab-page__header-right">
-            <div className="vocab-page__stats">
-              <div className="vocab-page__stat">
-                <span className="vocab-page__stat-value">{statsDisplay.total}</span>
-                <span className="vocab-page__stat-label">Tổng từ</span>
-              </div>
-              <div className="vocab-page__stat vocab-page__stat--mastered">
-                <FiStar className="vocab-page__stat-star" />
-                <span className="vocab-page__stat-value">{statsDisplay.mastered}</span>
-                <span className="vocab-page__stat-label">Đã thuộc</span>
-              </div>
-            </div>
-            <button className="vocab-page__add-btn" onClick={handleAddNew}>
-              <FiPlus />
-              <span>Thêm từ mới</span>
-            </button>
-          </div>
-        </motion.header>
+          <Button iconLeft={<FiPlus size={16} />} onClick={() => { setEditing(null); setModalOpen(true); }}>Thêm từ mới</Button>
+        </div>
 
-        <motion.div
-          className="vocab-page__controls"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-        >
-          <div className="vocab-page__search">
-            <FiSearch className="vocab-page__search-icon" />
-            <input
-              type="text"
-              className="vocab-page__search-input"
-              placeholder="Tìm kiếm từ vựng..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-            />
-          </div>
+        <div className="mt-5 grid grid-cols-2 gap-3 auto-rows-fr sm:grid-cols-3">
+          <StatCard icon={<FiBook />} label="Tổng từ" value={total} />
+          <StatCard icon={<FiStar />} label="Đã thuộc" value={mastered} />
+          <StatCard icon={<FiStar />} label="Đang học" value={Math.max(0, total - mastered)} />
+        </div>
 
-          <div className="vocab-page__filters">
-            {filterTabs.map((tab) => (
-              <button
-                key={tab.id}
-                className={`vocab-page__filter-btn${
-                  filter === tab.id ? ' vocab-page__filter-btn--active' : ''
-                }`}
-                onClick={() => handleFilterChange(tab.id)}
+        <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <Tabs
+            variant="pill"
+            value={filter}
+            onChange={setFilter}
+            items={[
+              { value: 'all', label: 'Tất cả' },
+              { value: 'unmastered', label: 'Chưa thuộc' },
+              { value: 'mastered', label: 'Đã thuộc' },
+            ]}
+          />
+          <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-line bg-surface p-0.5">
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.9 }}
+                aria-label="Xem dạng thẻ"
+                aria-pressed={view === 'card'}
+                onClick={() => setView('card')}
+                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${view === 'card' ? 'bg-brand-soft text-brand-700' : 'text-muted hover:text-ink-2'}`}
               >
-                <span>{tab.label}</span>
-                <span className="vocab-page__filter-count">{tab.count}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="vocab-page__view-toggle">
-            <button
-              className={`vocab-page__view-btn${
-                viewMode === 'grid' ? ' vocab-page__view-btn--active' : ''
-              }`}
-              onClick={() => setViewMode('grid')}
-              aria-label="Xem dạng lưới"
-            >
-              <FiGrid />
-            </button>
-            <button
-              className={`vocab-page__view-btn${
-                viewMode === 'list' ? ' vocab-page__view-btn--active' : ''
-              }`}
-              onClick={() => setViewMode('list')}
-              aria-label="Xem dạng danh sách"
-            >
-              <FiList />
-            </button>
-          </div>
-        </motion.div>
-
-        {error && (
-          <motion.div
-            className="vocab-page__error"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <FiAlertCircle />
-            <span>{error}</span>
-            <button onClick={clearError}>Đóng</button>
-          </motion.div>
-        )}
-
-        {loading && vocabulary.length === 0 && (
-          <div className="vocab-page__loading">
-            <FiLoader className="vocab-page__loading-icon" />
-            <span>Đang tải từ vựng...</span>
-          </div>
-        )}
-
-        {!loading && vocabulary.length === 0 ? (
-          <motion.div
-            className="vocab-page__empty"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            <div className="vocab-page__empty-icon">
-              <FiBookOpen />
+                <FiGrid size={16} />
+              </motion.button>
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.9 }}
+                aria-label="Xem dạng danh sách"
+                aria-pressed={view === 'list'}
+                onClick={() => setView('list')}
+                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${view === 'list' ? 'bg-brand-soft text-brand-700' : 'text-muted hover:text-ink-2'}`}
+              >
+                <FiList size={16} />
+              </motion.button>
             </div>
-            <h3 className="vocab-page__empty-title">
-              {searchQuery ? 'Không tìm thấy từ vựng' : 'Chưa có từ vựng nào'}
-            </h3>
-            <p className="vocab-page__empty-text">
-              {searchQuery
-                ? 'Thử tìm kiếm với từ khóa khác'
-                : 'Thêm từ đầu tiên của bạn để bắt đầu học!'}
-            </p>
-            {!searchQuery && (
-              <button className="vocab-page__empty-btn" onClick={handleAddNew}>
-                <FiPlus />
-                <span>Thêm từ mới</span>
-              </button>
-            )}
-          </motion.div>
-        ) : (
-          <>
-            <motion.div
-              className={`vocab-page__grid${
-                viewMode === 'list' ? ' vocab-page__grid--list' : ''
-              }`}
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              <AnimatePresence mode="popLayout">
-                {vocabulary.map((vocab) => (
-                  <motion.div key={vocab.id} variants={itemVariants} layout>
-                    <VocabularyCard
-                      vocabulary={vocab}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                      onToggleMastered={handleToggleMastered}
-                      isDeleting={deletingId === vocab.id}
-                    />
+            <div className="w-full lg:w-64">
+              <Input placeholder="Tìm từ vựng…" value={search} onChange={(e) => setSearch(e.target.value)} iconLeft={<FiSearch size={16} />} />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5">
+          {loading && vocabulary.length === 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => <Card key={i}><Skeleton className="h-5 w-1/2" /><Skeleton className="mt-2 h-3 w-full" /><Skeleton className="mt-2 h-3 w-2/3" /></Card>)}
+            </div>
+          ) : vocabulary.length === 0 ? (
+            <EmptyState icon="📖" title="Chưa có từ nào" description="Bắt đầu xây dựng sổ tay của bạn bằng cách thêm từ mới hoặc lưu từ khi luyện đọc."
+              action={<Button iconLeft={<FiPlus size={16} />} onClick={() => { setEditing(null); setModalOpen(true); }}>Thêm từ đầu tiên</Button>} />
+          ) : (
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={view}
+                className={view === 'list' ? 'flex flex-col gap-2.5' : 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3'}
+                initial={{ opacity: 0, y: 8, scale: 0.99 }}
+                animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.22, ease: 'easeOut', staggerChildren: 0.035 } }}
+                exit={{ opacity: 0, y: -8, scale: 0.99, transition: { duration: 0.14, ease: 'easeIn' } }}
+              >
+                {vocabulary.map((v) => (
+                  <motion.div
+                    key={v.id}
+                    layout
+                    variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    {view === 'list'
+                      ? <VocabRow v={v} onEdit={(x) => { setEditing(x); setModalOpen(true); }} onDelete={setDeletingId} onToggle={toggleMastered} />
+                      : <VocabCard v={v} onEdit={(x) => { setEditing(x); setModalOpen(true); }} onDelete={setDeletingId} onToggle={toggleMastered} />}
                   </motion.div>
                 ))}
-              </AnimatePresence>
-            </motion.div>
+              </motion.div>
+            </AnimatePresence>
+          )}
 
-            {totalPages > 1 && (
-              <div className="vocab-page__pagination">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                />
-              </div>
-            )}
-          </>
-        )}
-      </div>
+          {totalPages > 1 && <Pagination className="mt-6" page={page} totalPages={totalPages} onPageChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
+        </div>
+      </Container>
 
-      <VocabularyModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        vocabulary={editingVocabulary}
-        onSave={handleSaveWord}
+      <VocabModal open={modalOpen} onClose={() => setModalOpen(false)} onSave={onSave} initial={editing} />
+      <ConfirmDialog
+        open={deletingId != null}
+        onClose={() => setDeletingId(null)}
+        onConfirm={async () => { await deleteWord(deletingId); setDeletingId(null); toast.success('Đã xoá từ'); }}
+        title="Xoá từ vựng"
+        message="Bạn có chắc muốn xoá từ này khỏi sổ tay?"
+        confirmLabel="Xoá"
+        variant="danger"
       />
-    </div>
+    </Page>
   );
-};
-
-export default VocabularyPage;
+}

@@ -18,6 +18,7 @@ import {
 } from 'react-icons/fi';
 import '../../css/pages/content/SetListPage.css';
 import '../../css/pages/content/SetDetailPage.css'; // For unified modal styles
+import '../../css/pages/content/SetDetailPageList.css'; // For unified modal styles
 
 /**
  * SetListPage - Display and manage test sets in a grid layout

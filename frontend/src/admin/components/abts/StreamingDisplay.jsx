@@ -1,262 +1,385 @@
 /**
- * StreamingDisplay - Real-time AI thinking visualization.
- * 
- * Shows the AI's reasoning process as it generates content,
- * creating a terminal-like experience with streaming text.
+ * StreamingDisplay - Real-time ABTS generation workbench.
+ *
+ * Shows streamed response chunks, compact run metrics, model trace,
+ * and recent generation events while AI content is being produced.
  * 
  * @since 2025-12-21 - Cat C Feature
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { FiCpu, FiCheck, FiLoader, FiAlertTriangle, FiStopCircle } from 'react-icons/fi';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+    FiActivity,
+    FiAlertTriangle,
+    FiCheck,
+    FiChevronDown,
+    FiChevronRight,
+    FiCode,
+    FiCpu,
+    FiDatabase,
+    FiEye,
+    FiFileText,
+    FiList,
+    FiLoader,
+    FiStopCircle
+} from 'react-icons/fi';
 import './StreamingDisplay.css';
 
-// Stage definitions for generation process
 const STAGES = {
-    CONNECTING: { icon: '~', label: 'Connecting...', order: 1 },
-    SENDING: { icon: '>', label: 'Sending Request...', order: 2 },
-    CONNECTED: { icon: '+', label: 'Connected!', order: 3 },
+    CONNECTING: { icon: '~', label: 'Connecting', order: 1 },
+    SENDING: { icon: '>', label: 'Sending request', order: 2 },
+    CONNECTED: { icon: '+', label: 'Connected', order: 3 },
     STARTED: { icon: '*', label: 'Started', order: 4 },
-    PROMPT_BUILT: { icon: '#', label: 'Analyzing Prompt', order: 5 },
-    AI_CALLING: { icon: '@', label: 'AI Thinking...', order: 6 },
-    AI_THINKING: { icon: '?', label: 'Reasoning', order: 7 },
-    AI_CHUNK: { icon: '.', label: 'Receiving Data...', order: 7 },
-    AI_COMPLETED: { icon: '=', label: 'Content Generated', order: 8 },
+    PROMPT_BUILT: { icon: '#', label: 'Prompt ready', order: 5 },
+    AI_CALLING: { icon: '@', label: 'Calling model', order: 6 },
+    AI_THINKING: { icon: '?', label: 'Model trace', order: 7 },
+    AI_CHUNK: { icon: '.', label: 'Receiving output', order: 7 },
+    AI_COMPLETED: { icon: '=', label: 'Output received', order: 8 },
     VALIDATING: { icon: '/', label: 'Validating', order: 9 },
-    VALIDATION_RESULT: { icon: '+', label: 'Validated', order: 10 },
-    COMPLETED: { icon: '!', label: 'Completed!', order: 11 },
+    VALIDATION_RESULT: { icon: '+', label: 'Validation result', order: 10 },
+    COMPLETED: { icon: '!', label: 'Completed', order: 11 },
     RETRY: { icon: 'R', label: 'Retrying', order: 0 },
     FAILED: { icon: 'X', label: 'Failed', order: -1 },
-    TIMEOUT_WARNING: { icon: 'W', label: 'Waiting...', order: 6 },
+    TIMEOUT_WARNING: { icon: 'W', label: 'Waiting', order: 6 },
     ABORTED: { icon: 'X', label: 'Aborted', order: -1 },
-    PROGRESS: { icon: '.', label: 'Processing...', order: 6 }
+    PROGRESS: { icon: '.', label: 'Processing', order: 6 }
 };
+
+function formatReasoning(text) {
+    if (!text || text === 'null') return '';
+    const thinkMatch = text.match(/<think>([\s\S]*?)<\/think>/);
+    if (thinkMatch) return thinkMatch[1].trim();
+    const reasonMatch = text.match(/Reasoning:([\s\S]*?)(?=Output:|$)/i);
+    if (reasonMatch) return reasonMatch[1].trim();
+    return text.trim();
+}
+
+function formatPreviewText(text) {
+    if (!text || text === 'null') return '';
+    const rawText = typeof text === 'string' ? text : JSON.stringify(text, null, 2);
+    return rawText
+        .replace(/\\r\\n/g, '\n')
+        .replace(/\\n/g, '\n')
+        .replace(/\\t/g, '  ')
+        .trimStart();
+}
+
+function getPreviewType(text) {
+    const trimmedText = text.trim();
+    if (!trimmedText) return 'Waiting for response';
+    if (trimmedText.startsWith('{') || trimmedText.startsWith('[')) return 'JSON stream';
+    if (trimmedText.includes('<strong>') || trimmedText.toLowerCase().includes('passage')) return 'Content stream';
+    return 'Text stream';
+}
+
+function getStatusTone({ error, progress, isActive }) {
+    if (error) return 'error';
+    if (progress >= 100) return 'complete';
+    if (isActive) return 'active';
+    return 'idle';
+}
 
 export default function StreamingDisplay({
     events = [],
+    streamPreview = '',
+    streamChunkCount = 0,
     progress = 0,
     isActive = false,
     error = null,
-    reasoning = '', // AI reasoning/thinking tokens
+    reasoning = '',
+    partErrors = null,
     onAbort,
-    onBack  // Called when user wants to go back to config after abort/error
+    onBack
 }) {
     const logRef = useRef(null);
+    const previewRef = useRef(null);
     const [expandedReasoning, setExpandedReasoning] = useState(false);
     const [displayedReasoning, setDisplayedReasoning] = useState('');
 
-    // Auto-scroll to bottom when new events arrive
+    const safeProgress = Math.min(100, Math.max(0, progress || 0));
+    const previewText = useMemo(() => formatPreviewText(streamPreview), [streamPreview]);
+    const previewLines = previewText ? previewText.split(/\r\n|\r|\n/).length : 0;
+    const previewType = getPreviewType(previewText);
+    const statusTone = getStatusTone({ error, progress: safeProgress, isActive });
+
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             if (logRef.current) {
-                const element = logRef.current;
-                element.scrollTop = element.scrollHeight;
+                logRef.current.scrollTop = logRef.current.scrollHeight;
             }
         }, 50);
         return () => clearTimeout(timeoutId);
-    }, [events, displayedReasoning]);
+    }, [events]);
 
-    // Typewriter effect for reasoning
     useEffect(() => {
-        if (reasoning && reasoning.length > displayedReasoning.length) {
-            const timeout = setTimeout(() => {
-                setDisplayedReasoning(reasoning.slice(0, displayedReasoning.length + 5)); // Speed up typing slightly
-            }, 5);
-            return () => clearTimeout(timeout);
+        const timeoutId = setTimeout(() => {
+            if (previewRef.current) {
+                previewRef.current.scrollTop = previewRef.current.scrollHeight;
+            }
+        }, 40);
+        return () => clearTimeout(timeoutId);
+    }, [previewText]);
+
+    useEffect(() => {
+        if (!reasoning || reasoning === 'null') {
+            setDisplayedReasoning('');
+            return undefined;
         }
+
+        if (reasoning.length < displayedReasoning.length) {
+            setDisplayedReasoning(reasoning);
+            return undefined;
+        }
+
+        if (reasoning.length > displayedReasoning.length) {
+            const timeoutId = setTimeout(() => {
+                setDisplayedReasoning(reasoning.slice(0, displayedReasoning.length + 8));
+            }, 5);
+            return () => clearTimeout(timeoutId);
+        }
+
+        return undefined;
     }, [reasoning, displayedReasoning]);
 
-    // Get current stage from events
-    const getCurrentStage = () => {
+    const currentStage = useMemo(() => {
         if (events.length === 0) return null;
         const lastEvent = events[events.length - 1];
         return STAGES[lastEvent.type] || { icon: '*', label: lastEvent.type, order: 0 };
-    };
+    }, [events]);
 
-    const currentStage = getCurrentStage();
-
-    // Deduplicate events to prevent overlapping log entries
-    // Only show first and last of consecutive PROGRESS events with same message
-    const deduplicatedEvents = React.useMemo(() => {
+    const deduplicatedEvents = useMemo(() => {
         if (events.length <= 1) return events;
 
         const result = [];
-        let i = 0;
+        let eventIndex = 0;
 
-        while (i < events.length) {
-            const event = events[i];
+        while (eventIndex < events.length) {
+            const event = events[eventIndex];
 
-            // For PROGRESS type events, skip duplicates with same message
             if (event.type === 'PROGRESS' || event.type === 'AI_CHUNK') {
-                // Find all consecutive events with same type and message
-                let j = i;
-                while (j < events.length - 1 &&
-                    events[j + 1].type === event.type &&
-                    events[j + 1].message === event.message) {
-                    j++;
+                let duplicateIndex = eventIndex;
+                while (
+                    duplicateIndex < events.length - 1 &&
+                    events[duplicateIndex + 1].type === event.type &&
+                    events[duplicateIndex + 1].message === event.message
+                ) {
+                    duplicateIndex += 1;
                 }
 
-                // Only add the first one if there are duplicates
-                if (j > i) {
-                    // Add first with updated progress from last
-                    result.push({
-                        ...event,
-                        progress: events[j].progress // Use latest progress
-                    });
-                    i = j + 1;
-                } else {
-                    result.push(event);
-                    i++;
-                }
+                result.push({
+                    ...event,
+                    progress: events[duplicateIndex].progress
+                });
+                eventIndex = duplicateIndex + 1;
             } else {
                 result.push(event);
-                i++;
+                eventIndex += 1;
             }
         }
 
         return result;
     }, [events]);
 
-    // Format reasoning for display (extract from <think> tags if present)
-    const formatReasoning = (text) => {
-        if (!text) return '';
-        const thinkMatch = text.match(/<think>([\s\S]*?)<\/think>/);
-        if (thinkMatch) return thinkMatch[1].trim();
-        const reasonMatch = text.match(/Reasoning:([\s\S]*?)(?=Output:|$)/i);
-        if (reasonMatch) return reasonMatch[1].trim();
-        return text;
-    };
+    const latestEvent = deduplicatedEvents[deduplicatedEvents.length - 1];
+    const visibleEvents = deduplicatedEvents.slice(-12);
+    const reasoningText = formatReasoning(displayedReasoning);
+    const metrics = [
+        { label: 'Progress', value: `${Math.round(safeProgress)}%`, Icon: FiActivity },
+        { label: 'Chunks', value: streamChunkCount.toLocaleString(), Icon: FiDatabase },
+        { label: 'Preview', value: `${previewText.length.toLocaleString()} ch`, Icon: FiFileText },
+        { label: 'Trace', value: deduplicatedEvents.length.toLocaleString(), Icon: FiList }
+    ];
 
     return (
-        <div className={`streaming-display ${isActive ? 'active' : ''} ${error ? 'error' : ''}`}>
-            {/* Header with current stage */}
+        <div className={`streaming-display streaming-display--${statusTone}`}>
             <div className="streaming-header">
                 <div className="streaming-status">
                     {isActive ? (
-                        <FiLoader className="spin" size={20} />
+                        <FiLoader className="spin" size={18} />
                     ) : error ? (
-                        <FiAlertTriangle size={20} />
+                        <FiAlertTriangle size={18} />
                     ) : progress >= 100 ? (
-                        <FiCheck size={20} />
+                        <FiCheck size={18} />
                     ) : (
-                        <FiCpu size={20} />
+                        <FiCpu size={18} />
                     )}
-                    <span>
-                        {error ? 'Generation Error' :
-                            currentStage ? currentStage.label :
-                                isActive ? 'Initializing...' : 'Ready'}
+                    <span className="streaming-status__copy">
+                        <span className="streaming-status__eyebrow">Live generation</span>
+                        <strong>
+                            {error ? 'Generation error' : currentStage?.label || (isActive ? 'Initializing' : 'Ready')}
+                        </strong>
                     </span>
-                    {isActive && <span className="progress-text-header">{Math.round(progress)}%</span>}
+                    <span className="progress-text-header">{Math.round(safeProgress)}%</span>
                 </div>
 
-                {onAbort && isActive && (
-                    <button className="abort-btn" onClick={onAbort} title="Stop Generation">
-                        <FiStopCircle style={{ marginRight: '6px' }} /> Stop
-                    </button>
-                )}
-            </div>
-
-            {/* Progress bar */}
-            <div className="streaming-progress">
-                <div
-                    className="progress-fill"
-                    style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-                />
-                <span className="progress-text">{Math.round(progress)}%</span>
-            </div>
-
-            {/* AI Reasoning section - POSITIONED AT TOP */}
-            {displayedReasoning && displayedReasoning !== 'null' && (
-                <div className="reasoning-section" style={{ marginBottom: '12px', flexShrink: 0 }}>
-                    <div
-                        className="reasoning-header"
-                        onClick={() => setExpandedReasoning(!expandedReasoning)}
-                    >
-                        <span className="reasoning-icon">?</span>
-                        <span>AI Reasoning Process</span>
-                        <span style={{ marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.7 }}>
-                            {expandedReasoning ? 'Hide' : 'Show'}
-                        </span>
-                    </div>
-                    <div className={`reasoning-content ${expandedReasoning ? 'expanded' : ''}`}>
-                        <pre>
-                            {formatReasoning(displayedReasoning)}
-                            {isActive && <span className="typing-cursor"></span>}
-                        </pre>
-                    </div>
+                <div className="streaming-header__actions">
+                    <span className={`streaming-live-pill ${isActive ? 'is-active' : ''}`}>
+                        <span className="streaming-live-dot" />
+                        {isActive ? 'Streaming' : 'Idle'}
+                    </span>
+                    {onAbort && isActive && (
+                        <button className="abort-btn" onClick={onAbort} title="Stop generation" type="button">
+                            <FiStopCircle />
+                            <span>Stop</span>
+                        </button>
+                    )}
                 </div>
-            )}
+            </div>
 
-            {/* Event log */}
-            <div className="streaming-log" ref={logRef}>
-                {deduplicatedEvents.map((event, index) => {
-                    const stage = STAGES[event.type] || { icon: '*' };
-                    // Namespaced class to avoid global .progress conflicts
-                    const typeClass = `type-${(event.type || 'unknown').toLowerCase()}`;
+            <div
+                className="streaming-progress"
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow={Math.round(safeProgress)}
+            >
+                <div className="progress-fill" style={{ width: `${safeProgress}%` }} />
+            </div>
 
-                    // Check if event has validation errors
-                    const hasErrors = event.type === 'VALIDATION_RESULT' && event.data && Array.isArray(event.data) && event.data.length > 0;
+            <div className="streaming-workbench">
+                <section className="streaming-panel streaming-panel--preview" aria-label="Live response preview">
+                    <div className="streaming-panel__header">
+                        <div className="streaming-panel__title">
+                            <FiEye size={15} />
+                            <div>
+                                <strong>Live response</strong>
+                                <span>{previewType}</span>
+                            </div>
+                        </div>
+                        <div className="streaming-panel__stats" aria-label="Preview metrics">
+                            <span>{previewText.length.toLocaleString()} chars</span>
+                            <span>{previewLines.toLocaleString()} lines</span>
+                        </div>
+                    </div>
 
-                    return (
-                        <div
-                            key={index}
-                            className={`log-entry ${typeClass}`}
+                    <div className={`streaming-preview ${previewText ? '' : 'streaming-preview--empty'}`} ref={previewRef}>
+                        {previewText ? (
+                            <pre>
+                                {previewText}
+                                {isActive && <span className="typing-cursor" />}
+                            </pre>
+                        ) : (
+                            <div className="streaming-empty-state">
+                                <FiCode size={20} />
+                                <strong>Awaiting response stream</strong>
+                                <span>{currentStage?.label || 'Connection not started'}</span>
+                            </div>
+                        )}
+                    </div>
+                </section>
+
+                <aside className="streaming-inspector" aria-label="Generation inspector">
+                    <section className="streaming-stats-grid" aria-label="Run metrics">
+                        {metrics.map(({ label, value, Icon }) => (
+                            <div className="streaming-stat" key={label}>
+                                <Icon />
+                                <span>{label}</span>
+                                <strong>{value}</strong>
+                            </div>
+                        ))}
+                    </section>
+
+                    <section className={`reasoning-section ${reasoningText ? '' : 'reasoning-section--empty'}`}>
+                        <button
+                            className="reasoning-header"
+                            onClick={() => setExpandedReasoning(!expandedReasoning)}
+                            type="button"
+                            aria-expanded={expandedReasoning}
                         >
-                            <span className="log-icon">{stage.icon}</span>
-                            <span className="log-message">{event.message}</span>
-                            {event.progress != null && (
-                                <span className="log-progress">{event.progress}%</span>
-                            )}
-                            {/* Show validation errors inline */}
-                            {hasErrors && (
-                                <div className="log-errors" style={{
-                                    marginTop: '4px',
-                                    marginLeft: '24px',
-                                    fontSize: '0.85rem',
-                                    color: 'rgba(239, 68, 68, 0.9)'
-                                }}>
-                                    {event.data.slice(0, 3).map((err, i) => (
-                                        <div key={i}>- {err}</div>
-                                    ))}
-                                    {event.data.length > 3 && (
-                                        <div style={{ opacity: 0.7 }}>...and {event.data.length - 3} more</div>
-                                    )}
+                            <span className="reasoning-header__title">
+                                <FiCpu size={14} />
+                                <span>Model trace</span>
+                            </span>
+                            <span className="reasoning-header__meta">
+                                {reasoningText ? `${reasoningText.length.toLocaleString()} chars` : 'empty'}
+                                {expandedReasoning ? <FiChevronDown size={14} /> : <FiChevronRight size={14} />}
+                            </span>
+                        </button>
+
+                        {expandedReasoning && (
+                            <div className="reasoning-content expanded">
+                                {reasoningText ? (
+                                    <pre>
+                                        {reasoningText}
+                                        {isActive && <span className="typing-cursor" />}
+                                    </pre>
+                                ) : (
+                                    <span>No reasoning tokens received yet.</span>
+                                )}
+                            </div>
+                        )}
+                    </section>
+
+                    <section className="streaming-panel streaming-panel--trace" aria-label="Recent generation events">
+                        <div className="streaming-panel__header streaming-panel__header--compact">
+                            <div className="streaming-panel__title">
+                                <FiList size={15} />
+                                <div>
+                                    <strong>Trace</strong>
+                                    <span>{latestEvent?.message || currentStage?.label || 'No events yet'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="streaming-log" ref={logRef}>
+                            {visibleEvents.length > 0 ? visibleEvents.map((event, index) => {
+                                const stage = STAGES[event.type] || { icon: '*' };
+                                const typeClass = `type-${(event.type || 'unknown').toLowerCase()}`;
+                                const hasErrors = event.type === 'VALIDATION_RESULT' && Array.isArray(event.data) && event.data.length > 0;
+
+                                return (
+                                    <div key={`${event.type}-${index}`} className={`log-entry ${typeClass}`}>
+                                        <span className="log-icon">{stage.icon}</span>
+                                        <span className="log-message">{event.message || event.type}</span>
+                                        {event.progress != null && <span className="log-progress">{event.progress}%</span>}
+                                        {hasErrors && (
+                                            <div className="log-errors">
+                                                {event.data.slice(0, 3).map((validationError, errorIndex) => (
+                                                    <div key={errorIndex}>- {validationError}</div>
+                                                ))}
+                                                {event.data.length > 3 && <div>...and {event.data.length - 3} more</div>}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            }) : (
+                                <div className="log-entry type-connecting">
+                                    <span className="log-icon">~</span>
+                                    <span className="log-message">Establishing connection to AI...</span>
                                 </div>
                             )}
                         </div>
-                    );
-                })}
-
-                {/* Initial connection state */}
-                {isActive && events.length === 0 && (
-                    <div className="log-entry type-connecting">
-                        <span className="log-icon">~</span>
-                        <span className="log-message">Establishing connection to AI...</span>
-                        <span className="typing-dots">
-                            <span>.</span><span>.</span><span>.</span>
-                        </span>
-                    </div>
-                )}
+                    </section>
+                </aside>
             </div>
 
-            {/* Error display */}
             {error && (
-                <div className="log-entry type-error" style={{ marginTop: 'auto', borderTop: '1px solid rgba(239, 68, 68, 0.2)', padding: '12px' }}>
-                    <FiAlertTriangle size={16} color="#ef4444" style={{ flexShrink: 0 }} />
-                    <span style={{ color: '#ef4444' }}>{error}</span>
+                <div className="streaming-error">
+                    <FiAlertTriangle size={16} />
+                    <span>{error}</span>
                 </div>
             )}
 
-            {/* Back button when not active (aborted or error) */}
+            {partErrors && typeof partErrors === 'object' && Object.keys(partErrors).length > 0 && (
+                <div className="streaming-error streaming-error--partial">
+                    <FiAlertTriangle size={16} />
+                    <div>
+                        <strong>Some parts could not be generated:</strong>
+                        <ul>
+                            {Object.entries(partErrors).map(([part, msg]) => (
+                                <li key={part}>Part {part}: {String(msg)}</li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            )}
+
             {!isActive && onBack && (
-                <button
-                    className="abort-btn"
-                    style={{ marginTop: '12px', background: 'rgba(139, 92, 246, 0.2)' }}
-                    onClick={onBack}
-                    title="Go back to config"
-                >
-                    Back to Configure
-                </button>
+                <div className="streaming-footer-actions">
+                    <button className="abort-btn abort-btn--secondary" onClick={onBack} type="button">
+                        Back to Configure
+                    </button>
+                </div>
             )}
         </div>
     );

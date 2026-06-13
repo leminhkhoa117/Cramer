@@ -1,148 +1,93 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+import { FiArrowLeft, FiBookOpen, FiHeadphones, FiEdit3, FiArrowRight } from 'react-icons/fi';
 import { useCourseStore } from '../stores';
-import './../css/course-detail.css';
-import FullPageLoader from '../components/FullPageLoader';
-import { FaBookOpen, FaHeadphones, FaPen, FaArrowLeft } from 'react-icons/fa';
+import { Page, Container, Card, Badge, EmptyState, Skeleton } from '../ui';
 
-const formatCourseName = (source) => {
-    if (source.toLowerCase().startsWith('cam')) {
-        return `IELTS Cambridge ${source.substring(3)}`;
-    }
-    return source;
-};
+const formatCourseName = (s) => (s?.toLowerCase().startsWith('cam') ? `IELTS Cambridge ${s.substring(3)}` : s);
 
-const skills = [
-    { name: 'Reading', icon: <FaBookOpen />, color: 'skill-icon-reading', time: '60 phút', questions: '40 câu' },
-    { name: 'Listening', icon: <FaHeadphones />, color: 'skill-icon-listening', time: '30 phút', questions: '40 câu' },
-    { name: 'Writing', icon: <FaPen />, color: 'skill-icon-writing', time: '60 phút', questions: '2 phần' }
+const SKILLS = [
+  { name: 'Reading', key: 'reading', icon: <FiBookOpen size={18} />, meta: '60 phút · 40 câu', tint: 'bg-info-soft text-info' },
+  { name: 'Listening', key: 'listening', icon: <FiHeadphones size={18} />, meta: '30 phút · 40 câu', tint: 'bg-brand-soft text-brand-600' },
+  { name: 'Writing', key: 'writing', icon: <FiEdit3 size={18} />, meta: '60 phút · 2 phần', tint: 'bg-warning-soft text-warning' },
 ];
 
 export default function CourseDetailPage() {
-    const { courseName } = useParams();
-    const [displayName, setDisplayName] = useState(null);
-    const [hasFetched, setHasFetched] = useState(false);
+  const { courseName } = useParams();
+  const { courseTests, fetchCourseTests, fetchCourseDetails, loading, error } = useCourseStore();
+  const [displayName, setDisplayName] = useState(null);
+  const [ready, setReady] = useState(false);
 
-    // Zustand store for course tests caching
-    const {
-        courseTests,
-        fetchCourseTests,
-        getCachedTests,
-        fetchCourseDetails,
-        getCachedDetails,
-        loading,
-        error
-    } = useCourseStore();
+  const tests = courseTests[courseName] || [];
 
-    // Get tests from cache or fetch
-    const tests = courseTests[courseName] || [];
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const details = await fetchCourseDetails(courseName);
+      if (active && details?.name) setDisplayName(details.name);
+      await fetchCourseTests(courseName);
+      if (active) setReady(true);
+    })();
+    return () => { active = false; };
+  }, [courseName, fetchCourseTests, fetchCourseDetails]);
 
-    // If we already have cached tests, mark as fetched immediately
-    const hasCachedTests = !!courseTests[courseName];
+  const title = displayName || formatCourseName(courseName);
 
-    useEffect(() => {
-        if (hasCachedTests) setHasFetched(true);
-    }, [hasCachedTests]);
+  return (
+    <Page>
+      {/* Banner */}
+      <div className="gradient-brand text-white">
+        <Container className="py-10">
+          <Link to="/courses" className="inline-flex items-center gap-1.5 text-base font-semibold text-white/85 hover:text-white">
+            <FiArrowLeft size={16} /> Quay lại danh sách
+          </Link>
+          <h1 className="mt-3 text-3xl font-bold text-white">{title}</h1>
+          <p className="mt-1 max-w-2xl text-md text-white/85">
+            Bộ đề thi chính thức với 3 kỹ năng: Reading, Listening và Writing.
+          </p>
+        </Container>
+      </div>
 
-    useEffect(() => {
-        const loadData = async () => {
-            // Fetch course details (name)
-            const cachedDetails = getCachedDetails(courseName);
-            if (cachedDetails) {
-                setDisplayName(cachedDetails.name);
-            } else {
-                const details = await fetchCourseDetails(courseName);
-                if (details?.name) {
-                    setDisplayName(details.name);
-                }
-            }
+      <Container className="py-8">
+        {error && <p className="rounded-lg bg-danger-soft px-4 py-3 text-base text-danger">{error}</p>}
 
-            // Fetch tests
-            const cachedTests = getCachedTests(courseName);
-            if (!cachedTests) {
-                try {
-                    await fetchCourseTests(courseName);
-                } catch (err) {
-                    console.error('Failed to fetch course tests:', err);
-                } finally {
-                    setHasFetched(true);
-                }
-            }
-        };
-        loadData();
-    }, [courseName, getCachedTests, fetchCourseTests, getCachedDetails, fetchCourseDetails]);
-
-    const showLoader = (!hasFetched || loading) && !error && tests.length === 0;
-
-    // Use displayName if available, otherwise fallback to formatted courseName
-    const title = displayName || formatCourseName(courseName);
-
-    return (
-        <>
-            <AnimatePresence>
-                {showLoader && (
-                    <FullPageLoader
-                        key="loader"
-                        message={`Đang tải các bài test của ${title}...`}
-                        subMessage="Vui lòng chờ trong giây lát, chúng tôi đang lấy danh sách bài test cho bạn."
-                    />
-                )}
-            </AnimatePresence>
-
-            <div className="course-detail-page">
-                <div className="course-detail-banner">
-                    <div className="course-detail-banner__overlay" />
-                    <div className="course-container">
-                        <Link to="/courses" className="back-link">
-                            <FaArrowLeft /> Quay lại danh sách
-                        </Link>
-                        <h1 className="course-detail-title">{title}</h1>
-                        <p className="course-detail-subtitle">
-                            Bộ đề thi chính thức với 3 kỹ năng hiện có: Reading, Listening và Writing.
-                        </p>
-                    </div>
+        {!ready && loading ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => <Card key={i}><Skeleton className="h-6 w-24" /><Skeleton className="mt-3 h-24 w-full" /></Card>)}
+          </div>
+        ) : tests.length === 0 ? (
+          <EmptyState icon="📭" title="Chưa có bài test" description="Bộ đề này hiện chưa có bài test nào." />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {tests.map((testNumber) => (
+              <Card key={testNumber} padded>
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-lg font-bold text-ink">Test {testNumber}</h2>
+                  <Badge variant="brand">Full Test</Badge>
                 </div>
-
-                <div className="course-container course-content-container">
-                    {loading && <p>Đang tải...</p>}
-                    {error && <p className="course-detail-error">{error}</p>}
-
-                    {!loading && !error && hasFetched && (
-                        <div className="tests-grid">
-                            {tests.map(testNumber => (
-                                <div key={testNumber} className="test-card">
-                                    <div className="test-card-header">
-                                        <h2 className="test-card-title">Test {testNumber}</h2>
-                                        <span className="test-card-badge">Full Test</span>
-                                    </div>
-                                    <div className="test-card-skills">
-                                        {skills.map(skill => (
-                                                <Link
-                                                    key={skill.name}
-                                                    to={`/test/${courseName}/${testNumber}/${skill.name.toLowerCase()}`}
-                                                    className="test-card-skill-link"
-                                                >
-                                                    <span className={`skill-icon ${skill.color}`}>{skill.icon}</span>
-                                                    <div className="skill-info">
-                                                        <span className="skill-name">{skill.name}</span>
-                                                        <span className="skill-meta">{skill.time} • {skill.questions}</span>
-                                                    </div>
-                                                    <span className="skill-action">Làm bài</span>
-                                                </Link>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                            {tests.length === 0 && (
-                                <div className="no-tests-message">
-                                    <p>Không có bài test nào trong bộ đề này.</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                <div className="flex flex-col gap-2">
+                  {SKILLS.map((skill) => (
+                    <Link
+                      key={skill.key}
+                      to={`/test/${courseName}/${testNumber}/${skill.key}`}
+                      className="group flex items-center gap-3 rounded-lg border border-line p-2.5 transition-colors hover:border-brand-300 hover:bg-surface-2"
+                    >
+                      <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${skill.tint}`}>{skill.icon}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-base font-semibold text-ink">{skill.name}</div>
+                        <div className="text-xs text-muted">{skill.meta}</div>
+                      </div>
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 opacity-0 transition-opacity group-hover:opacity-100">
+                        Làm bài <FiArrowRight size={14} />
+                      </span>
+                    </Link>
+                  ))}
                 </div>
-            </div>
-        </>
-    );
+              </Card>
+            ))}
+          </div>
+        )}
+      </Container>
+    </Page>
+  );
 }

@@ -146,8 +146,8 @@ export default function ReportsPage() {
 
             if (format === 'csv') {
                 exportToCsv(exportData, fileName);
-            } else if (format === 'xlsx') {
-                exportToExcel(exportData, 'Báo cáo Tài chính', fileName);
+            } else if (format === 'excel') {
+                exportToExcel(exportData, fileName, 'Báo cáo Tài chính');
             } else if (format === 'pdf') {
                 exportToPdf(exportData, 'Báo cáo Tài chính', fileName);
             }
@@ -698,7 +698,7 @@ export default function ReportsPage() {
                         </button>
                         <button
                             className="export-btn export-btn--excel"
-                            onClick={() => handleExport('xlsx')}
+                            onClick={() => handleExport('excel')}
                             disabled={isExporting}
                         >
                             <FiDownload size={14} /> Excel

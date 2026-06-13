@@ -1,0 +1,7 @@
+/* ===================================
+   ABOUT PAGE STYLES - import hub
+   Import order matters.
+   =================================== */
+@import './about-shards/01-hero-through-story.css';
+@import './about-shards/02-comparison-through-interactive.css';
+@import './about-shards/03-responsive.css';

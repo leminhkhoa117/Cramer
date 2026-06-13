@@ -1,0 +1,182 @@
+/* ========================================================================== 
+   SHARED ADMIN CONTROL BASELINE
+   ========================================================================== */
+
+.admin-root :where(.set-toolbar, .content-toolbar, .hub-toolbar, .hashtag-toolbar, .table-header, .data-table__filters, .bulk-toolbar, .admin-preview-toolbar) {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.admin-root :where(.set-toolbar__left, .set-toolbar__right, .content-toolbar__left, .content-toolbar__right, .table-header__left, .table-header__right, .bulk-toolbar__actions, .admin-toolbar__left, .admin-toolbar__right, .data-table__actions) {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.admin-root :where(.search-box) {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-root :where(.search-box__icon) {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  color: var(--admin-text-muted);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.admin-root :where(.search-box__input) {
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 40px;
+  background: var(--admin-bg-input);
+  border: 1px solid var(--admin-border-primary);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  appearance: none;
+  transition: all var(--admin-transition-fast);
+}
+
+.admin-root .search-box__input::placeholder {
+  color: var(--admin-text-muted);
+}
+
+.admin-root :where(.search-box__input:focus) {
+  outline: none;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px rgba(var(--admin-primary-rgb), 0.15);
+}
+
+.admin-root :where(.search-box__clear) {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  transition: all var(--admin-transition-fast);
+}
+
+.admin-root :where(.search-box__clear:hover, .search-box__clear:focus-visible) {
+  background: var(--admin-bg-card-hover);
+  color: var(--admin-text-primary);
+  outline: none;
+}
+
+.admin-root :where(.form-group) {
+  margin-bottom: var(--admin-spacing-md);
+}
+
+.admin-root :where(.form-group label) {
+  display: block;
+  margin-bottom: var(--admin-spacing-xs);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+}
+
+.admin-root :where(.form-label) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-spacing-xs);
+  margin-bottom: var(--admin-spacing-xs);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+}
+
+.admin-root :where(.form-input, .form-select, .form-textarea, .filter-select) {
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 14px;
+  background: var(--admin-bg-input);
+  border: 1px solid var(--admin-border-primary);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text-primary);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  transition: all var(--admin-transition-fast);
+}
+
+.admin-root :where(.filter-select) {
+  width: auto;
+  min-width: 140px;
+  cursor: pointer;
+}
+
+.admin-root :where(.form-select, .filter-select) {
+  padding-right: 36px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.admin-root :where(.form-input:focus, .form-select:focus, .form-textarea:focus, .filter-select:focus) {
+  outline: none;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px rgba(var(--admin-primary-rgb), 0.15);
+}
+
+.admin-root :where(.form-input, .form-textarea)::placeholder {
+  color: var(--admin-text-disabled);
+}
+
+.admin-root :where(.form-select option, .filter-select option) {
+  background: var(--admin-bg-secondary);
+  color: var(--admin-text-primary);
+}
+
+.admin-root :where(.form-textarea) {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.admin-root :where(.form-input:disabled, .form-select:disabled, .form-textarea:disabled, .filter-select:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-root :where(.form-input--error, .form-input.error, .form-select.error, .form-textarea.error, .form-input.is-invalid, .form-select.is-invalid, .form-textarea.is-invalid) {
+  border-color: var(--admin-danger);
+}
+
+.admin-root :where(.form-input--error:focus, .form-input.error:focus, .form-select.error:focus, .form-textarea.error:focus, .form-input.is-invalid:focus, .form-select.is-invalid:focus, .form-textarea.is-invalid:focus) {
+  border-color: var(--admin-danger);
+  box-shadow: 0 0 0 3px rgba(var(--admin-danger-rgb), 0.15);
+}
+
+.admin-root :where(.form-error) {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-spacing-xs);
+  margin-top: var(--admin-spacing-xs);
+  font-size: 0.8125rem;
+  color: var(--admin-danger);
+}
+
+.admin-root :where(.form-hint) {
+  margin-top: var(--admin-spacing-xs);
+  font-size: 0.8125rem;
+  color: var(--admin-text-muted);
+}

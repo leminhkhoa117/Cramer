@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useAuthStore, useProfileStore } from '../stores';
+import { useAuthStore } from '../stores';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaGoogle, FaEnvelope, FaLock, FaUser, FaArrowLeft, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FiMail, FiLock, FiUser, FiArrowLeft, FiEye, FiEyeOff, FiCheck } from 'react-icons/fi';
+import { FcGoogle } from 'react-icons/fc';
 import OTPVerification from '../components/OTPVerification';
-import { authApi } from '../api/backendApi';
+import { authApi, getApiError } from '../lib/api';
 import { authHelpers } from '../api/supabaseClient';
+import { Button, Input, Alert, Spinner } from '../ui';
 import logoImage from '../../pictures/logo/Icon.png';
-import '../css/login.css';
 
-// ====================================================================
-// FORGOT PASSWORD FORM
-// ====================================================================
+/* ── Forgot-password flow (email → new password → OTP) ─────────────────── */
 function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
   const [step, setStep] = useState('enterEmail');
   const [email, setEmail] = useState('');
@@ -21,42 +20,26 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleEmailSubmit = async (e) => {
+  const submitEmail = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
-    if (!email || !email.includes('@')) {
-      setError('Vui lòng nhập email hợp lệ');
-      return;
-    }
+    setError(''); setSuccess('');
+    if (!email.includes('@')) return setError('Vui lòng nhập email hợp lệ');
     setLoading(true);
     try {
-      const { data } = await authApi.checkEmail(email);
-      if (!data || data.exists === false) {
-        setError('Email không tồn tại trong hệ thống.');
-        return;
-      }
+      const data = await authApi.checkEmail(email);
+      if (!data || data.exists === false) { setError('Email không tồn tại trong hệ thống.'); return; }
       setStep('enterPassword');
       setSuccess('Email được xác nhận. Vui lòng nhập mật khẩu mới.');
     } catch (err) {
-      setError(err.message || 'Không thể kiểm tra email. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
-    }
+      setError(getApiError(err).message);
+    } finally { setLoading(false); }
   };
 
-  const handlePasswordSubmit = async (e) => {
+  const submitPassword = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
-    if (newPassword.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError('Mật khẩu và xác nhận không khớp');
-      return;
-    }
+    setError(''); setSuccess('');
+    if (newPassword.length < 6) return setError('Mật khẩu phải có ít nhất 6 ký tự');
+    if (newPassword !== confirmPassword) return setError('Mật khẩu và xác nhận không khớp');
     setLoading(true);
     try {
       const { error: resetError } = await authHelpers.requestPasswordReset(email);
@@ -64,19 +47,12 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
       setSuccess('Mã xác thực đã được gửi tới email của bạn.');
       setStep('verifyOtp');
     } catch (err) {
-      if (err?.status === 429 || err?.message?.includes('rate')) {
-        setError('Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau vài phút.');
-      } else {
-        setError(err.message || 'Không thể gửi yêu cầu OTP. Vui lòng thử lại.');
-      }
-    } finally {
-      setLoading(false);
-    }
+      setError(err?.status === 429 ? 'Bạn đã gửi quá nhiều yêu cầu. Thử lại sau vài phút.' : (err.message || 'Không thể gửi OTP.'));
+    } finally { setLoading(false); }
   };
 
-  const handleOtpSubmit = async (otpCode) => {
+  const submitOtp = async (otpCode) => {
     setError('');
-    setLoading(true);
     try {
       const { error: verifyError } = await authHelpers.verifyRecoveryOtp(email, otpCode);
       if (verifyError) throw verifyError;
@@ -85,119 +61,80 @@ function ForgotPasswordForm({ onSwitchToLogin, signOut }) {
       await signOut();
       setSuccess('Mật khẩu đã được cập nhật thành công!');
       setStep('done');
-      setTimeout(() => onSwitchToLogin(), 2000);
+      setTimeout(onSwitchToLogin, 1800);
     } catch (err) {
       setError(err.message || 'Mã OTP không hợp lệ hoặc đã hết hạn.');
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
   if (step === 'enterEmail') {
     return (
-      <form className="auth-form" onSubmit={handleEmailSubmit}>
-        <h2 className="auth-title">Quên mật khẩu</h2>
-        <p className="auth-subtitle">Nhập email để khôi phục mật khẩu</p>
-
-        {error && <div className="auth-alert auth-alert--error">{error}</div>}
-
-        <div className="auth-input-group">
-          <FaEnvelope className="auth-input-icon" />
-          <input
-            type="email"
-            placeholder="Địa chỉ email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={loading}
-            required
-          />
-        </div>
-
-        <button type="submit" className="auth-btn auth-btn--primary" disabled={loading}>
-          {loading ? 'Đang xử lý...' : 'Tiếp tục'}
-        </button>
-
-        <button type="button" className="auth-btn auth-btn--text" onClick={onSwitchToLogin}>
-          <FaArrowLeft /> Quay lại đăng nhập
-        </button>
+      <form className="flex flex-col gap-4" onSubmit={submitEmail}>
+        <Header title="Quên mật khẩu" subtitle="Nhập email để khôi phục mật khẩu" />
+        {error && <Alert variant="danger">{error}</Alert>}
+        <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} iconLeft={<FiMail size={16} />} placeholder="ban@email.com" required disabled={loading} />
+        <Button type="submit" fullWidth loading={loading}>Tiếp tục</Button>
+        <Button type="button" variant="ghost" fullWidth iconLeft={<FiArrowLeft size={16} />} onClick={onSwitchToLogin}>Quay lại đăng nhập</Button>
       </form>
     );
   }
-
   if (step === 'enterPassword') {
     return (
-      <form className="auth-form" onSubmit={handlePasswordSubmit}>
-        <h2 className="auth-title">Tạo mật khẩu mới</h2>
-        <p className="auth-subtitle">Nhập mật khẩu mới cho tài khoản của bạn</p>
-
-        {success && <div className="auth-alert auth-alert--success">{success}</div>}
-        {error && <div className="auth-alert auth-alert--error">{error}</div>}
-
-        <div className="auth-input-group">
-          <FaLock className="auth-input-icon" />
-          <input
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Mật khẩu mới"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            disabled={loading}
-            required
-          />
-          <button type="button" className="auth-password-toggle" onClick={() => setShowPassword(!showPassword)}>
-            {showPassword ? <FaEyeSlash /> : <FaEye />}
-          </button>
-        </div>
-
-        <div className="auth-input-group">
-          <FaLock className="auth-input-icon" />
-          <input
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Xác nhận mật khẩu"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            disabled={loading}
-            required
-          />
-        </div>
-
-        <button type="submit" className="auth-btn auth-btn--primary" disabled={loading}>
-          {loading ? 'Đang xử lý...' : 'Gửi mã xác thực'}
-        </button>
-
-        <button type="button" className="auth-btn auth-btn--text" onClick={onSwitchToLogin}>
-          Hủy
-        </button>
+      <form className="flex flex-col gap-4" onSubmit={submitPassword}>
+        <Header title="Tạo mật khẩu mới" subtitle="Nhập mật khẩu mới cho tài khoản của bạn" />
+        {success && <Alert variant="success">{success}</Alert>}
+        {error && <Alert variant="danger">{error}</Alert>}
+        <Input label="Mật khẩu mới" type={showPassword ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} iconLeft={<FiLock size={16} />} required disabled={loading} />
+        <Input label="Xác nhận mật khẩu" type={showPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} iconLeft={<FiLock size={16} />} required disabled={loading} />
+        <label className="flex items-center gap-2 text-sm text-muted">
+          <input type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} /> Hiện mật khẩu
+        </label>
+        <Button type="submit" fullWidth loading={loading}>Gửi mã xác thực</Button>
+        <Button type="button" variant="ghost" fullWidth onClick={onSwitchToLogin}>Hủy</Button>
       </form>
     );
   }
-
   if (step === 'verifyOtp') {
     return (
-      <div className="auth-form">
-        <h2 className="auth-title">Xác thực OTP</h2>
-        <p className="auth-subtitle">Nhập mã 6 chữ số được gửi đến <strong>{email}</strong></p>
-        {success && <div className="auth-alert auth-alert--success">{success}</div>}
-        <OTPVerification email={email} onVerify={handleOtpSubmit} onResend={() => { }} onClose={onSwitchToLogin} />
+      <div className="flex flex-col gap-4">
+        <Header title="Xác thực OTP" subtitle={`Nhập mã 6 chữ số gửi đến ${email}`} />
+        {success && <Alert variant="success">{success}</Alert>}
+        <OTPVerification email={email} onVerify={submitOtp} onResend={() => {}} onClose={onSwitchToLogin} />
       </div>
     );
   }
-
   return (
-    <div className="auth-form">
-      <h2 className="auth-title">Hoàn tất!</h2>
-      <div className="auth-alert auth-alert--success">{success}</div>
-      <p className="auth-subtitle">Đang chuyển về trang đăng nhập...</p>
+    <div className="flex flex-col gap-4 text-center">
+      <Header title="Hoàn tất!" subtitle="Đang chuyển về trang đăng nhập…" />
+      <Alert variant="success">{success}</Alert>
     </div>
   );
 }
 
-// ====================================================================
-// MAIN LOGIN COMPONENT
-// ====================================================================
+function Header({ title, subtitle }) {
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-ink">{title}</h2>
+      {subtitle && <p className="mt-1 text-base text-muted">{subtitle}</p>}
+    </div>
+  );
+}
+
+/* ── Main auth page ────────────────────────────────────────────────────── */
 export default function Login() {
   const location = useLocation();
-  const [formState, setFormState] = useState('login');
+  const navigate = useNavigate();
+
+  const redirectTarget = (() => {
+    const from = location.state?.from;
+    if (!from) return '/dashboard';
+    if (typeof from === 'string') return from === '/login' ? '/dashboard' : from;
+    const path = `${from.pathname || '/dashboard'}${from.search || ''}${from.hash || ''}`;
+    return path === '/login' ? '/dashboard' : path;
+  })();
+
+  const [mode, setMode] = useState('login'); // login | signup | forgot
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -206,336 +143,187 @@ export default function Login() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showOtpPopup, setShowOtpPopup] = useState(false);
+  const [showOtp, setShowOtp] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
 
-  // Zustand store selectors
-  const user = useAuthStore(state => state.user);
-  const authLoading = useAuthStore(state => state.loading);
-  const signOut = useAuthStore(state => state.signOut);
-  const signIn = useAuthStore(state => state.signIn);
-  const signUp = useAuthStore(state => state.signUp);
-  const verifyOtp = useAuthStore(state => state.verifyOtp);
-  const resendOtp = useAuthStore(state => state.resendOtp);
-  const signInWithGoogle = useAuthStore(state => state.signInWithGoogle);
-  const createProfileForUser = useProfileStore(state => state.createProfileForUser);
-  const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+  const authLoading = useAuthStore((s) => s.loading);
+  const { signOut, signIn, signUp, verifyOtp, resendOtp, signInWithGoogle } = useAuthStore.getState();
 
-  // Scroll to top on mount
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
-  // Handle prefilled email from homepage
+  useEffect(() => { window.scrollTo(0, 0); }, []);
   useEffect(() => {
     if (location.state?.prefillEmail) {
       setEmail(location.state.prefillEmail);
-      if (location.state.mode === 'signup') {
-        setFormState('signup');
-      }
+      if (location.state.mode === 'signup') setMode('signup');
     }
   }, [location.state]);
-
   useEffect(() => {
-    if (user && formState !== 'forgot') {
-      navigate('/dashboard');
-    }
-  }, [user, formState, navigate]);
+    if (user && mode !== 'forgot') navigate(redirectTarget, { replace: true });
+  }, [user, mode, navigate, redirectTarget]);
 
-  // Show a styled loading indicator while auth state is being determined
-  // This prevents the blank page issue during logout → login transition
   if (authLoading) {
     return (
-      <div className="login-page">
-        <div className="login-bg-orbs">
-          <div className="login-orb login-orb--1" />
-          <div className="login-orb login-orb--2" />
-          <div className="login-orb login-orb--3" />
-        </div>
-        <div className="login-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-          <div style={{ color: 'white', fontSize: '1.2rem' }}>Đang tải...</div>
-        </div>
+      <div className="flex min-h-screen items-center justify-center gradient-brand">
+        <Spinner size="lg" className="text-white" />
       </div>
     );
   }
 
-  const clearForm = () => {
-    setEmail('');
-    setPassword('');
-    setConfirmPassword('');
-    setUsername('');
-    setError('');
-    setSuccess('');
-  };
+  const clear = () => { setEmail(''); setPassword(''); setConfirmPassword(''); setUsername(''); setError(''); setSuccess(''); };
 
-  const validateForm = () => {
-    if (!email.trim()) {
-      setError('Vui lòng nhập email');
-      return false;
-    }
-    if (!password.trim()) {
-      setError('Vui lòng nhập mật khẩu');
-      return false;
-    }
-    if (formState === 'signup') {
-      if (!username.trim()) {
-        setError('Vui lòng nhập tên người dùng');
-        return false;
-      }
-      if (password.length < 6) {
-        setError('Mật khẩu phải có ít nhất 6 ký tự');
-        return false;
-      }
-      if (password !== confirmPassword) {
-        setError('Mật khẩu xác nhận không khớp');
-        return false;
-      }
+  const validate = () => {
+    if (!email.trim()) return (setError('Vui lòng nhập email'), false);
+    if (!password.trim()) return (setError('Vui lòng nhập mật khẩu'), false);
+    if (mode === 'signup') {
+      if (!username.trim()) return (setError('Vui lòng nhập tên người dùng'), false);
+      if (password.length < 6) return (setError('Mật khẩu phải có ít nhất 6 ký tự'), false);
+      if (password !== confirmPassword) return (setError('Mật khẩu xác nhận không khớp'), false);
     }
     return true;
   };
 
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError(''); setSuccess('');
+    if (!validate()) return;
     setLoading(true);
-
-    if (!validateForm()) {
-      setLoading(false);
-      return;
-    }
-
     try {
-      if (formState === 'signup') {
+      if (mode === 'signup') {
         const { data, error } = await signUp(email, password, username);
         if (error) throw error;
-
         if (data?.user) {
           if (!data.user.confirmed_at && !data.user.email_confirmed_at) {
-            setPendingEmail(email);
-            setShowOtpPopup(true);
+            setPendingEmail(email); setShowOtp(true);
             setSuccess('Mã xác thực đã được gửi! Kiểm tra email của bạn.');
           } else {
-            await createProfileForUser(data.user.id, username || email.split('@')[0]);
             setSuccess('Tạo tài khoản thành công! Bạn có thể đăng nhập ngay.');
-            setTimeout(() => {
-              clearForm();
-              setFormState('login');
-            }, 2000);
+            setTimeout(() => { clear(); setMode('login'); }, 1800);
           }
-        } else {
-          throw new Error('Đăng ký thất bại. Vui lòng thử lại.');
-        }
+        } else throw new Error('Đăng ký thất bại. Vui lòng thử lại.');
       } else {
         const { data, error } = await signIn(email, password);
         if (error) throw error;
         if (!data?.session || !data?.user) throw new Error('Đăng nhập thất bại');
-        setSuccess('Đăng nhập thành công! Đang chuyển hướng...');
+        setSuccess('Đăng nhập thành công! Đang chuyển hướng…');
       }
     } catch (err) {
       setError(err.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  const handleGoogleLogin = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      const { error } = await signInWithGoogle();
-      if (error) throw error;
-    } catch (err) {
-      setError(err.message || 'Đăng nhập Google thất bại.');
-    } finally {
-      setLoading(false);
-    }
+  const googleLogin = async () => {
+    setError(''); setLoading(true);
+    try { const { error } = await signInWithGoogle(); if (error) throw error; }
+    catch (err) { setError(err.message || 'Đăng nhập Google thất bại.'); }
+    finally { setLoading(false); }
   };
 
   const handleVerifyOtp = async (otpCode) => {
-    try {
-      const { data, error } = await verifyOtp(pendingEmail, otpCode);
-      if (error) throw error;
-
-      const storedUsername = sessionStorage.getItem('pendingUsername');
-      const userId = sessionStorage.getItem('pendingUserId');
-
-      if (userId && storedUsername) {
-        await createProfileForUser(userId, storedUsername);
-        sessionStorage.removeItem('pendingUsername');
-        sessionStorage.removeItem('pendingUserId');
-      }
-
-      setShowOtpPopup(false);
-      setSuccess('Xác thực thành công! Vui lòng đăng nhập.');
-      clearForm();
-      setFormState('login');
-    } catch (error) {
-      throw error;
-    }
+    const { error } = await verifyOtp(pendingEmail, otpCode);
+    if (error) throw error;
+    setShowOtp(false);
+    setSuccess('Xác thực thành công! Vui lòng đăng nhập.');
+    clear(); setMode('login');
   };
 
-  const renderFormContent = () => {
-    if (formState === 'forgot') {
-      return <ForgotPasswordForm onSwitchToLogin={() => setFormState('login')} signOut={signOut} />;
-    }
-
-    const isSignUp = formState === 'signup';
-
-    return (
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <h2 className="auth-title">{isSignUp ? 'Tạo tài khoản' : 'Đăng nhập'}</h2>
-        <p className="auth-subtitle">
-          {isSignUp ? 'Đăng ký để bắt đầu hành trình chinh phục IELTS' : 'Chào mừng trở lại! Đăng nhập để tiếp tục.'}
-        </p>
-
-        {error && <div className="auth-alert auth-alert--error">{error}</div>}
-        {success && <div className="auth-alert auth-alert--success">{success}</div>}
-
-        {isSignUp && (
-          <div className="auth-input-group">
-            <FaUser className="auth-input-icon" />
-            <input
-              type="text"
-              placeholder="Tên người dùng"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              disabled={loading}
-              required
-            />
-          </div>
-        )}
-
-        <div className="auth-input-group">
-          <FaEnvelope className="auth-input-icon" />
-          <input
-            type="email"
-            placeholder="Địa chỉ email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={loading}
-            required
-          />
-        </div>
-
-        <div className="auth-input-group">
-          <FaLock className="auth-input-icon" />
-          <input
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Mật khẩu"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={loading}
-            required
-          />
-          <button type="button" className="auth-password-toggle" onClick={() => setShowPassword(!showPassword)}>
-            {showPassword ? <FaEyeSlash /> : <FaEye />}
-          </button>
-        </div>
-
-        {isSignUp && (
-          <div className="auth-input-group">
-            <FaLock className="auth-input-icon" />
-            <input
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Xác nhận mật khẩu"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              disabled={loading}
-              required
-            />
-          </div>
-        )}
-
-        {!isSignUp && (
-          <div className="auth-links">
-            <button type="button" className="auth-link" onClick={() => { setFormState('forgot'); clearForm(); }}>
-              Quên mật khẩu?
-            </button>
-          </div>
-        )}
-
-        <button type="submit" className="auth-btn auth-btn--primary" disabled={loading}>
-          {loading ? 'Đang xử lý...' : (isSignUp ? 'Đăng ký' : 'Đăng nhập')}
-        </button>
-
-        <div className="auth-divider">
-          <span>hoặc</span>
-        </div>
-
-        <button type="button" className="auth-btn auth-btn--google" onClick={handleGoogleLogin} disabled={loading}>
-          <FaGoogle />
-          <span>Tiếp tục với Google</span>
-        </button>
-
-        <p className="auth-switch">
-          {isSignUp ? 'Đã có tài khoản?' : 'Chưa có tài khoản?'}
-          <button type="button" onClick={() => { setFormState(isSignUp ? 'login' : 'signup'); clearForm(); }}>
-            {isSignUp ? 'Đăng nhập' : 'Đăng ký ngay'}
-          </button>
-        </p>
-      </form>
-    );
-  };
+  const isSignUp = mode === 'signup';
 
   return (
-    <div className="login-page">
-      {showOtpPopup && (
+    <div className="grid min-h-screen lg:grid-cols-2">
+      {showOtp && (
         <OTPVerification
           email={pendingEmail}
           onVerify={handleVerifyOtp}
           onResend={() => resendOtp(pendingEmail)}
-          onClose={() => { setShowOtpPopup(false); setError('Xác thực đã bị hủy.'); }}
+          onClose={() => { setShowOtp(false); setError('Xác thực đã bị hủy.'); }}
         />
       )}
 
-      {/* Background orbs */}
-      <div className="login-bg-orbs">
-        <div className="login-orb login-orb--1" />
-        <div className="login-orb login-orb--2" />
-        <div className="login-orb login-orb--3" />
+      {/* Brand panel */}
+      <div className="relative hidden flex-col justify-between overflow-hidden gradient-brand p-10 text-white lg:flex">
+        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
+        <div className="absolute -bottom-20 -left-10 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+        <img src={logoImage} alt="Cramer" className="relative h-10 w-auto" />
+        <div className="relative">
+          <h1 className="text-4xl font-bold leading-tight">Chinh phục IELTS<br />cùng Cramer</h1>
+          <p className="mt-3 max-w-sm text-md text-white/85">
+            Nền tảng luyện thi IELTS thông minh với AI, giúp bạn đạt band điểm mơ ước.
+          </p>
+          <ul className="mt-6 space-y-2.5">
+            {['1000+ đề thi thực tế', 'AI đánh giá chi tiết', 'Lộ trình cá nhân hóa'].map((f) => (
+              <li key={f} className="flex items-center gap-2.5 text-md">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20"><FiCheck size={14} /></span>
+                {f}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p className="relative text-sm text-white/60">© {new Date().getFullYear()} Cramer</p>
       </div>
 
-      <div className="login-container">
-        {/* Left side - Branding */}
-        <div className="login-branding">
-          <div className="login-branding-content">
-            <img src={logoImage} alt="Cramer" className="login-logo" />
-            <h1 className="login-headline">
-              Chinh phục IELTS
-              <br />
-              <span>cùng Cramer</span>
-            </h1>
-            <p className="login-tagline">
-              Nền tảng luyện thi IELTS thông minh với công nghệ AI,
-              giúp bạn đạt band điểm mơ ước.
-            </p>
+      {/* Form panel */}
+      <div className="flex items-center justify-center bg-page p-6">
+        <div className="w-full max-w-md">
+          <img src={logoImage} alt="Cramer" className="mx-auto mb-6 h-10 w-auto lg:hidden" />
+          {mode === 'forgot' ? (
+            <ForgotPasswordForm onSwitchToLogin={() => setMode('login')} signOut={signOut} />
+          ) : (
+            <form className="flex flex-col gap-4" onSubmit={submit}>
+              <Header
+                title={isSignUp ? 'Tạo tài khoản' : 'Đăng nhập'}
+                subtitle={isSignUp ? 'Đăng ký để bắt đầu hành trình IELTS' : 'Chào mừng trở lại! Đăng nhập để tiếp tục.'}
+              />
+              {error && <Alert variant="danger">{error}</Alert>}
+              {success && <Alert variant="success">{success}</Alert>}
 
-            <div className="login-features">
-              <div className="login-feature">
-                <div className="login-feature-icon">✓</div>
-                <span>1000+ đề thi thực tế</span>
-              </div>
-              <div className="login-feature">
-                <div className="login-feature-icon">✓</div>
-                <span>AI đánh giá chi tiết</span>
-              </div>
-              <div className="login-feature">
-                <div className="login-feature-icon">✓</div>
-                <span>Lộ trình cá nhân hóa</span>
-              </div>
-            </div>
-          </div>
-        </div>
+              {isSignUp && (
+                <Input label="Tên người dùng" value={username} onChange={(e) => setUsername(e.target.value)} iconLeft={<FiUser size={16} />} placeholder="cramer_learner" required disabled={loading} />
+              )}
+              <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} iconLeft={<FiMail size={16} />} placeholder="ban@email.com" required disabled={loading} />
+              <Input
+                label="Mật khẩu"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                iconLeft={<FiLock size={16} />}
+                required
+                disabled={loading}
+                inputClassName="pr-10"
+              />
+              {isSignUp && (
+                <Input label="Xác nhận mật khẩu" type={showPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} iconLeft={<FiLock size={16} />} required disabled={loading} />
+              )}
 
-        {/* Right side - Form */}
-        <div className="login-form-section">
-          <div className="login-form-card">
-            <div className="login-form-card-border" />
-            <div className="login-form-card-inner">
-              {renderFormContent()}
-            </div>
-          </div>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-sm text-muted">
+                  <input type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} />
+                  {showPassword ? <FiEyeOff size={14} /> : <FiEye size={14} />} Hiện mật khẩu
+                </label>
+                {!isSignUp && (
+                  <button type="button" className="text-sm font-semibold text-brand-600 hover:text-brand-700" onClick={() => { setMode('forgot'); clear(); }}>
+                    Quên mật khẩu?
+                  </button>
+                )}
+              </div>
+
+              <Button type="submit" fullWidth loading={loading}>{isSignUp ? 'Đăng ký' : 'Đăng nhập'}</Button>
+
+              <div className="relative flex items-center gap-3 py-1 text-sm text-faint">
+                <span className="h-px flex-1 bg-line" /> hoặc <span className="h-px flex-1 bg-line" />
+              </div>
+
+              <Button type="button" variant="outline" fullWidth iconLeft={<FcGoogle size={18} />} onClick={googleLogin} disabled={loading}>
+                Tiếp tục với Google
+              </Button>
+
+              <p className="text-center text-base text-muted">
+                {isSignUp ? 'Đã có tài khoản? ' : 'Chưa có tài khoản? '}
+                <button type="button" className="font-semibold text-brand-600 hover:text-brand-700" onClick={() => { setMode(isSignUp ? 'login' : 'signup'); clear(); }}>
+                  {isSignUp ? 'Đăng nhập' : 'Đăng ký ngay'}
+                </button>
+              </p>
+            </form>
+          )}
         </div>
       </div>
     </div>

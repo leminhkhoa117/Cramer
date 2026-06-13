@@ -1,183 +1,203 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import useABTSStore, { selectDefaultModelId } from '../../stores/useABTSStore';
+
 /**
- * ModelSelector - Advanced model selection component with search, filter and sort.
- * Fetches models from OpenRouter API and displays them in a searchable dropdown.
- * 
- * Features:
- * - Real-time search by model name or ID
- * - Sort by price, context length, or name
- * - Filter by capabilities (structured outputs, free, etc.)
- * - Shows pricing and context info
- * 
- * @since 2025-12-21 - ABTS v2.1
+ * ModelSelector — capability-driven model picker.
+ *
+ * The model catalog (and each model's capability descriptor) comes entirely from
+ * the backend via the store; there are no hardcoded "featured" models. The
+ * recommended model (DEFAULT_MODEL_ID) is surfaced via sort order + a badge.
  */
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import useABTSStore from '../../stores/useABTSStore';
+const VENDOR_LABELS = {
+    deepseek: 'DeepSeek',
+    anthropic: 'Anthropic',
+    google: 'Google',
+    openai: 'OpenAI',
+    qwen: 'Qwen',
+    'z-ai': 'Z-AI',
+    moonshotai: 'Moonshot',
+    moonshot: 'Moonshot',
+    mistralai: 'Mistral',
+    'x-ai': 'xAI',
+    meta: 'Meta',
+    'meta-llama': 'Meta'
+};
 
-// Popular/recommended models with descriptions
-const FEATURED_MODELS = [
-    { id: 'mistralai/devstral-2512:free', name: 'Devstral (Free)', desc: 'Free & Fast', badge: 'recommended' },
-    { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', desc: 'Best Reasoning', badge: 'quality' },
-    { id: 'google/gemini-2.0-flash-001', name: 'Gemini 2.0 Flash', desc: 'Fast & Reliable', badge: 'popular' },
-    { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3', desc: 'Best Value', badge: 'value' },
-    { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', desc: 'Most Capable', badge: null },
-    { id: 'openai/gpt-4o', name: 'GPT-4o', desc: 'OpenAI Latest', badge: null },
-    { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash (Free)', desc: 'Free Tier', badge: 'free' },
-];
+function vendorLabel(model) {
+    const raw = model?.capabilities?.vendor || (model?.id ? model.id.split('/')[0] : '');
+    if (!raw) return '';
+    const key = String(raw).toLowerCase();
+    return VENDOR_LABELS[key] || (raw.charAt(0).toUpperCase() + raw.slice(1));
+}
 
-// Default model used when none selected (matches backend application.properties)
-const DEFAULT_MODEL_ID = 'mistralai/devstral-2512:free';
-const DEFAULT_MODEL_DISPLAY = 'Devstral (Free - Recommended)';
+function reasoningTag(capabilities) {
+    switch (capabilities?.knobType) {
+        case 'EFFORT_LOW_MED_HIGH':
+            return { label: 'Effort', tone: 'reason' };
+        case 'ANTHROPIC_BUDGET':
+        case 'GEMINI_BUDGET':
+            return { label: 'Budget', tone: 'reason' };
+        case 'DEEPSEEK_TOGGLE':
+        case 'QWEN_THINKING':
+        case 'GLM_THINKING':
+            return { label: 'Thinking ✓', tone: 'reason' };
+        default:
+            return { label: 'No reasoning', tone: 'muted' };
+    }
+}
+
+function modelContextLength(model) {
+    return model?.capabilities?.contextLength ?? model?.context_length ?? null;
+}
+
+function isFreeModel(model) {
+    return model?.id?.endsWith(':free')
+        || (model?.pricing && Number.parseFloat(model.pricing.prompt) === 0);
+}
+
+function formatPrice(pricing) {
+    if (!pricing) return 'N/A';
+    const promptPrice = Number.parseFloat(pricing.prompt);
+    const completionPrice = Number.parseFloat(pricing.completion);
+
+    if (promptPrice === 0 && completionPrice === 0) return 'Free';
+
+    const averagePrice = ((promptPrice + completionPrice) / 2) * 1000000;
+    if (averagePrice < 0.01) return '$<0.01/M';
+    if (averagePrice < 1) return `$${averagePrice.toFixed(2)}/M`;
+    return `$${averagePrice.toFixed(1)}/M`;
+}
+
+function formatContext(length) {
+    if (!length) return 'N/A';
+    if (length >= 1000000) return `${(length / 1000000).toFixed(1)}M`;
+    if (length >= 1000) return `${(length / 1000).toFixed(0)}K`;
+    return length.toString();
+}
 
 export default function ModelSelector({ value, onChange }) {
     const { models, fetchModels, isLoadingModels } = useABTSStore();
-
+    // FIX 9: prefer the backend-advertised default; fall back to DEFAULT_MODEL_ID.
+    const defaultModelId = useABTSStore(selectDefaultModelId);
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState('recommended'); // recommended, price, context, name
-    const [activeFilters, setActiveFilters] = useState([]); // Multi-select: ['free', 'structured', 'fast']
+    const [sortBy, setSortBy] = useState('recommended');
+    const [activeFilters, setActiveFilters] = useState([]);
     const [showCustomInput, setShowCustomInput] = useState(false);
     const [customModel, setCustomModel] = useState('');
 
     const dropdownRef = useRef(null);
     const searchInputRef = useRef(null);
 
-    // Fetch models on mount
     useEffect(() => {
         if (models.length === 0) {
             fetchModels();
         }
     }, [models.length, fetchModels]);
 
-    // Close dropdown when clicking outside
     useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsOpen(false);
             }
         };
+
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Focus search input when dropdown opens
     useEffect(() => {
         if (isOpen && searchInputRef.current) {
             searchInputRef.current.focus();
         }
     }, [isOpen]);
 
-    // Toggle filter (multi-select)
-    const toggleFilter = (filter) => {
-        setActiveFilters(prev =>
-            prev.includes(filter)
-                ? prev.filter(f => f !== filter)
-                : [...prev, filter]
-        );
-    };
-
-    // Clear all filters
-    const clearFilters = () => {
-        setActiveFilters([]);
-    };
-
-    // Format price for display
-    const formatPrice = (pricing) => {
-        if (!pricing) return 'N/A';
-        const promptPrice = parseFloat(pricing.prompt);
-        const completionPrice = parseFloat(pricing.completion);
-
-        if (promptPrice === 0 && completionPrice === 0) return 'Free';
-
-        // Convert to $/M tokens
-        const avgPrice = ((promptPrice + completionPrice) / 2) * 1000000;
-        if (avgPrice < 0.01) return '$<0.01/M';
-        if (avgPrice < 1) return `$${avgPrice.toFixed(2)}/M`;
-        return `$${avgPrice.toFixed(1)}/M`;
-    };
-
-    // Format context length
-    const formatContext = (length) => {
-        if (!length) return 'N/A';
-        if (length >= 1000000) return `${(length / 1000000).toFixed(1)}M`;
-        if (length >= 1000) return `${(length / 1000).toFixed(0)}K`;
-        return length.toString();
-    };
-
-    // Filter and sort models
     const processedModels = useMemo(() => {
         let result = [...models];
 
-        // Apply search filter
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
-            result = result.filter(m =>
-                m.id?.toLowerCase().includes(query) ||
-                m.name?.toLowerCase().includes(query)
+            result = result.filter(model =>
+                model.id?.toLowerCase().includes(query) ||
+                model.name?.toLowerCase().includes(query) ||
+                model.capabilities?.displayName?.toLowerCase().includes(query)
             );
         }
 
-        // Apply multi-select filters (AND logic - model must match ALL active filters)
         if (activeFilters.includes('free')) {
-            result = result.filter(m =>
-                m.id?.endsWith(':free') ||
-                (m.pricing && parseFloat(m.pricing.prompt) === 0)
-            );
+            result = result.filter(isFreeModel);
         }
         if (activeFilters.includes('structured')) {
-            result = result.filter(m =>
-                m.supported_parameters?.includes('structured_outputs')
-            );
+            result = result.filter(model =>
+                model.capabilities?.supportsJsonSchema
+                || model.supported_parameters?.includes('structured_outputs'));
         }
-        if (activeFilters.includes('fast')) {
-            result = result.filter(m =>
-                m.id?.includes(':nitro') || m.id?.includes('flash')
-            );
+        if (activeFilters.includes('reasoning')) {
+            result = result.filter(model => {
+                const knob = model.capabilities?.knobType;
+                return knob && knob !== 'NONE' && knob !== 'KIMI_NONE';
+            });
         }
         if (activeFilters.includes('large')) {
-            result = result.filter(m =>
-                m.context_length && m.context_length >= 100000
-            );
+            result = result.filter(model => {
+                const ctx = modelContextLength(model);
+                return ctx && ctx >= 100000;
+            });
         }
 
-        // Apply sorting
+        const rank = (model) => {
+            if (model.id === defaultModelId) return 0;
+            if (isFreeModel(model)) return 1;
+            return 2;
+        };
+
         switch (sortBy) {
             case 'price':
-                result.sort((a, b) => {
-                    const priceA = a.pricing ? parseFloat(a.pricing.prompt) : Infinity;
-                    const priceB = b.pricing ? parseFloat(b.pricing.prompt) : Infinity;
-                    return priceA - priceB;
+                result.sort((left, right) => {
+                    const leftPrice = left.pricing ? Number.parseFloat(left.pricing.prompt) : Infinity;
+                    const rightPrice = right.pricing ? Number.parseFloat(right.pricing.prompt) : Infinity;
+                    return leftPrice - rightPrice;
                 });
                 break;
             case 'context':
-                result.sort((a, b) => (b.context_length || 0) - (a.context_length || 0));
+                result.sort((left, right) => (modelContextLength(right) || 0) - (modelContextLength(left) || 0));
                 break;
             case 'name':
-                result.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                result.sort((left, right) => (left.name || left.id || '').localeCompare(right.name || right.id || ''));
                 break;
-            default:
-                // Keep original order for 'recommended'
+            default: // recommended
+                result.sort((left, right) => {
+                    const diff = rank(left) - rank(right);
+                    if (diff !== 0) return diff;
+                    return (left.name || left.id || '').localeCompare(right.name || right.id || '');
+                });
                 break;
         }
 
-        return result.slice(0, 100); // Limit to 100 for performance
-    }, [models, searchQuery, sortBy, activeFilters]);
+        return result.slice(0, 100);
+    }, [models, searchQuery, sortBy, activeFilters, defaultModelId]);
 
-    // Get current model info
     const currentModel = useMemo(() => {
         if (!value) return null;
-
-        // 1. Try featured models
-        const featured = FEATURED_MODELS.find(m => m.id === value);
-        if (featured) return featured;
-
-        // 2. Try fetched models list
-        const fromList = models.find(m => m.id === value);
-        if (fromList) return { id: fromList.id, name: fromList.name, desc: '' };
-
-        // 3. Fallback: just show value if we have one
-        return { id: value, name: value, desc: 'Custom/Unlisted' };
+        const fromList = models.find(model => model.id === value);
+        if (fromList) {
+            return {
+                id: fromList.id,
+                name: fromList.capabilities?.displayName || fromList.name || fromList.id,
+                desc: vendorLabel(fromList)
+            };
+        }
+        return { id: value, name: value, desc: 'Custom / Unlisted' };
     }, [value, models]);
+
+    const toggleFilter = (filter) => {
+        setActiveFilters(previous =>
+            previous.includes(filter)
+                ? previous.filter(item => item !== filter)
+                : [...previous, filter]
+        );
+    };
 
     const handleSelect = (modelId) => {
         onChange(modelId);
@@ -186,103 +206,65 @@ export default function ModelSelector({ value, onChange }) {
     };
 
     const handleCustomSubmit = () => {
-        if (customModel.trim()) {
-            onChange(customModel.trim());
-            setShowCustomInput(false);
-            setCustomModel('');
-            setIsOpen(false);
-        }
-    };
-
-    const getBadgeClass = (badge) => {
-        switch (badge) {
-            case 'recommended': return 'badge-recommended';
-            case 'quality': return 'badge-quality';
-            case 'value': return 'badge-value';
-            case 'free': return 'badge-free';
-            case 'popular': return 'badge-popular';
-            default: return '';
-        }
+        if (!customModel.trim()) return;
+        onChange(customModel.trim());
+        setShowCustomInput(false);
+        setCustomModel('');
+        setIsOpen(false);
     };
 
     return (
         <div className="model-selector" ref={dropdownRef}>
-            {/* Selected Model Display */}
             <button
                 className="model-selector-trigger"
                 onClick={() => setIsOpen(!isOpen)}
                 type="button"
+                aria-haspopup="listbox"
+                aria-expanded={isOpen}
+                aria-label="Select AI model"
             >
                 <div className="selected-model">
                     {currentModel ? (
                         <>
-                            <span className="model-name" style={{ color: 'white' }}>
-                                {currentModel.name || currentModel.id || 'Unknown Model'}
-                            </span>
-                            {currentModel.desc && (
-                                <span className="model-desc" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                                    {currentModel.desc}
-                                </span>
-                            )}
+                            <span className="model-name">{currentModel.name || currentModel.id || 'Unknown Model'}</span>
+                            {currentModel.desc && <span className="model-desc">{currentModel.desc}</span>}
                         </>
                     ) : (
-                        <span className="placeholder" style={{ color: 'rgba(255, 255, 255, 0.5)', opacity: 1, backgroundColor: 'rgba(255, 255, 255, 0)' }}>
-                            Use Default ({DEFAULT_MODEL_DISPLAY})
-                        </span>
+                        <span className="placeholder">Select a model…</span>
                     )}
                 </div>
-                <span className="dropdown-arrow" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                    {isOpen ? '▲' : '▼'}
-                </span>
+                <span className="dropdown-arrow">{isOpen ? '▲' : '▼'}</span>
             </button>
 
-            {/* Dropdown Panel */}
             {isOpen && (
-                <div className="model-selector-dropdown">
-                    {/* Search Bar */}
+                <div className="model-selector-dropdown" role="listbox" aria-label="Available models">
                     <div className="dropdown-search">
                         <input
                             ref={searchInputRef}
                             type="text"
                             placeholder="Search models..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(event) => setSearchQuery(event.target.value)}
                             className="search-input"
+                            aria-label="Search models"
                         />
                     </div>
 
-                    {/* Filter & Sort Controls */}
                     <div className="dropdown-controls">
                         <div className="filter-buttons">
                             {activeFilters.length > 0 && (
                                 <button
                                     className="filter-btn filter-btn-clear"
-                                    onClick={clearFilters}
+                                    onClick={() => setActiveFilters([])}
                                     title="Clear all filters"
-                                >✕</button>
+                                >X</button>
                             )}
-                            <button
-                                className={`filter-btn ${activeFilters.includes('free') ? 'active' : ''}`}
-                                onClick={() => toggleFilter('free')}
-                            >Free</button>
-                            <button
-                                className={`filter-btn ${activeFilters.includes('structured') ? 'active' : ''}`}
-                                onClick={() => toggleFilter('structured')}
-                            >JSON</button>
-                            <button
-                                className={`filter-btn ${activeFilters.includes('fast') ? 'active' : ''}`}
-                                onClick={() => toggleFilter('fast')}
-                            >Fast</button>
-                            <button
-                                className={`filter-btn ${activeFilters.includes('large') ? 'active' : ''}`}
-                                onClick={() => toggleFilter('large')}
-                            >100K+</button>
+                            <button className={`filter-btn ${activeFilters.includes('free') ? 'active' : ''}`} onClick={() => toggleFilter('free')} aria-pressed={activeFilters.includes('free')} aria-label="Filter free models">Free</button>
+                            <button className={`filter-btn ${activeFilters.includes('structured') ? 'active' : ''}`} onClick={() => toggleFilter('structured')} aria-pressed={activeFilters.includes('structured')} aria-label="Filter models supporting JSON">JSON</button>
+                            <button className={`filter-btn ${activeFilters.includes('reasoning') ? 'active' : ''}`} onClick={() => toggleFilter('reasoning')} aria-pressed={activeFilters.includes('reasoning')} aria-label="Filter reasoning models">Reasoning</button>
+                            <button className={`filter-btn ${activeFilters.includes('large') ? 'active' : ''}`} onClick={() => toggleFilter('large')} aria-pressed={activeFilters.includes('large')} aria-label="Filter large context models">100K+</button>
                         </div>
-                        <select
-                            className="sort-select"
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                        >
+                        <select className="sort-select" value={sortBy} onChange={(event) => setSortBy(event.target.value)} aria-label="Sort models by">
                             <option value="recommended">Recommended</option>
                             <option value="price">Cheapest</option>
                             <option value="context">Largest Context</option>
@@ -290,80 +272,62 @@ export default function ModelSelector({ value, onChange }) {
                         </select>
                     </div>
 
-                    {/* Model List */}
                     <div className="model-list">
-                        {/* Default Option */}
-                        <div
-                            className={`model-item default-item ${!value ? 'selected' : ''}`}
-                            onClick={() => handleSelect(null)}
-                        >
-                            <div className="model-info">
-                                <span className="model-name">Use Default</span>
-                                <span className="model-desc">{DEFAULT_MODEL_DISPLAY}</span>
+                        <div className="model-section">
+                            <div className="section-header">
+                                {isLoadingModels ? 'Loading models...' : `Models (${processedModels.length})`}
                             </div>
-                        </div>
-
-                        {/* Featured Models */}
-                        {!searchQuery && activeFilters.length === 0 && (
-                            <div className="model-section">
-                                <div className="section-header">Featured Models</div>
-                                {FEATURED_MODELS.map(model => (
-                                    <div
+                            {!isLoadingModels && processedModels.length === 0 && (
+                                <div className="model-item model-empty">
+                                    <span className="model-desc">No models match your filters.</span>
+                                </div>
+                            )}
+                            {processedModels.map(model => {
+                                const caps = model.capabilities;
+                                const tag = reasoningTag(caps);
+                                const recommended = model.id === defaultModelId;
+                                const free = isFreeModel(model);
+                                const rawName = caps?.displayName || model.name || model.id;
+                                // Backend `displayName` strips the vendor prefix, so slugs like
+                                // `openrouter/free` render as the unhelpful "free". Fall back to
+                                // the slug suffix when the name is too short or matches a generic word.
+                                const displayName = (typeof rawName === 'string' && rawName.length <= 4)
+                                    ? (model.id || rawName)
+                                    : rawName;
+                                return (
+                                    <button
                                         key={model.id}
+                                        type="button"
+                                        role="option"
+                                        aria-selected={value === model.id}
+                                        tabIndex={0}
                                         className={`model-item ${value === model.id ? 'selected' : ''}`}
                                         onClick={() => handleSelect(model.id)}
                                     >
                                         <div className="model-info">
                                             <span className="model-name">
-                                                {model.name}
-                                                {model.badge && (
-                                                    <span className={`model-badge ${getBadgeClass(model.badge)}`}>
-                                                        {model.badge}
-                                                    </span>
-                                                )}
+                                                {displayName}
+                                                {recommended && <span className="model-badge badge-recommended">recommended</span>}
+                                                {!recommended && free && <span className="model-badge badge-free">free</span>}
                                             </span>
-                                            <span className="model-desc">{model.desc}</span>
+                                            <span className="model-meta">
+                                                {vendorLabel(model) && <span className="meta-vendor">{vendorLabel(model)}</span>}
+                                                <span className="meta-price">{formatPrice(model.pricing)}</span>
+                                                <span className="meta-context">{formatContext(modelContextLength(model))}</span>
+                                                <span className={`meta-reason ${tag.tone === 'muted' ? 'is-muted' : ''}`}>{tag.label}</span>
+                                                {caps?.supportsJsonSchema && <span className="meta-json">JSON</span>}
+                                            </span>
                                         </div>
                                         <span className="model-id">{model.id}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* All Models */}
-                        <div className="model-section">
-                            <div className="section-header">
-                                {isLoadingModels ? 'Loading models...' : `All Models (${processedModels.length})`}
-                            </div>
-                            {processedModels.map(model => (
-                                <div
-                                    key={model.id}
-                                    className={`model-item ${value === model.id ? 'selected' : ''}`}
-                                    onClick={() => handleSelect(model.id)}
-                                >
-                                    <div className="model-info">
-                                        <span className="model-name">{model.name}</span>
-                                        <span className="model-meta">
-                                            <span className="meta-price">{formatPrice(model.pricing)}</span>
-                                            <span className="meta-context">{formatContext(model.context_length)}</span>
-                                            {model.supported_parameters?.includes('structured_outputs') && (
-                                                <span className="meta-json">JSON</span>
-                                            )}
-                                        </span>
-                                    </div>
-                                    <span className="model-id">{model.id}</span>
-                                </div>
-                            ))}
+                                    </button>
+                                );
+                            })}
                         </div>
 
-                        {/* Custom Model Option */}
                         <div className="model-section">
                             <div className="section-header">Custom Model</div>
                             {!showCustomInput ? (
-                                <div
-                                    className="model-item custom-trigger"
-                                    onClick={() => setShowCustomInput(true)}
-                                >
+                                <div className="model-item custom-trigger" onClick={() => setShowCustomInput(true)}>
                                     <span className="model-name">Enter custom model ID...</span>
                                 </div>
                             ) : (
@@ -372,8 +336,8 @@ export default function ModelSelector({ value, onChange }) {
                                         type="text"
                                         placeholder="e.g., anthropic/claude-3-opus"
                                         value={customModel}
-                                        onChange={(e) => setCustomModel(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleCustomSubmit()}
+                                        onChange={(event) => setCustomModel(event.target.value)}
+                                        onKeyDown={(event) => event.key === 'Enter' && handleCustomSubmit()}
                                         className="custom-input"
                                         autoFocus
                                     />
@@ -387,298 +351,6 @@ export default function ModelSelector({ value, onChange }) {
                     </div>
                 </div>
             )}
-
-            <style>{`
-                .model-selector {
-                    position: relative;
-                    width: 100%;
-                }
-
-                .model-selector-trigger {
-                    width: 100%;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: var(--admin-spacing-md, 12px) var(--admin-spacing-md, 16px);
-                    background: var(--admin-bg-input, rgba(255, 255, 255, 0.05));
-                    border: 1px solid var(--admin-border-primary, rgba(255, 255, 255, 0.1));
-                    border-radius: var(--admin-radius-md, 8px);
-                    color: var(--admin-text-primary, #fff);
-                    cursor: pointer;
-                    transition: var(--admin-transition-normal, 250ms ease);
-                    text-align: left;
-                }
-
-                .model-selector-trigger:hover {
-                    border-color: var(--admin-primary, #8B5CF6);
-                    background: var(--admin-bg-card-hover, rgba(255, 255, 255, 0.08));
-                }
-
-                .selected-model {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 2px;
-                }
-
-                .selected-model .model-name {
-                    font-weight: 500;
-                    color: var(--admin-text-primary, #fff);
-                }
-
-                .selected-model .model-desc {
-                    font-size: 0.8rem;
-                    color: var(--admin-text-muted, rgba(255, 255, 255, 0.5));
-                }
-
-                .placeholder {
-                    color: rgba(255, 255, 255, 0.5);
-                    opacity: 1;
-                    background-color: rgba(255, 255, 255, 0);
-                }
-
-                .dropdown-arrow {
-                    font-size: 0.7rem;
-                    color: var(--admin-text-muted, rgba(255, 255, 255, 0.5));
-                }
-
-                .model-selector-dropdown {
-                    position: absolute;
-                    top: calc(100% + 4px);
-                    left: 0;
-                    right: 0;
-                    max-height: 450px;
-                    background: var(--admin-bg-secondary, #1A1A2E);
-                    border: 1px solid var(--admin-border-primary, rgba(255, 255, 255, 0.1));
-                    border-radius: var(--admin-radius-lg, 12px);
-                    box-shadow: var(--admin-shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.3));
-                    z-index: var(--admin-z-dropdown, 100);
-                    overflow: hidden;
-                    display: flex;
-                    flex-direction: column;
-                }
-
-                .dropdown-search {
-                    padding: var(--admin-spacing-sm, 8px);
-                    border-bottom: 1px solid var(--admin-border-secondary, rgba(255, 255, 255, 0.05));
-                }
-
-                .search-input {
-                    width: 100%;
-                    padding: var(--admin-spacing-sm, 8px) var(--admin-spacing-md, 12px);
-                    background: var(--admin-bg-input, rgba(255, 255, 255, 0.05));
-                    border: 1px solid var(--admin-border-secondary, rgba(255, 255, 255, 0.05));
-                    border-radius: var(--admin-radius-sm, 6px);
-                    color: var(--admin-text-primary, #fff);
-                    font-size: 0.9rem;
-                }
-
-                .search-input:focus {
-                    outline: none;
-                    border-color: var(--admin-primary, #8B5CF6);
-                }
-
-                .dropdown-controls {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: var(--admin-spacing-sm, 8px);
-                    gap: var(--admin-spacing-sm, 8px);
-                    border-bottom: 1px solid var(--admin-border-secondary, rgba(255, 255, 255, 0.05));
-                }
-
-                .filter-buttons {
-                    display: flex;
-                    gap: 4px;
-                }
-
-                .filter-btn {
-                    padding: 4px 10px;
-                    background: transparent;
-                    border: 1px solid var(--admin-border-secondary, rgba(255, 255, 255, 0.1));
-                    border-radius: var(--admin-radius-sm, 6px);
-                    color: var(--admin-text-secondary, rgba(255, 255, 255, 0.7));
-                    font-size: 0.75rem;
-                    cursor: pointer;
-                    transition: var(--admin-transition-fast, 150ms ease);
-                }
-
-                .filter-btn:hover {
-                    background: var(--admin-bg-card-hover, rgba(255, 255, 255, 0.08));
-                }
-
-                .filter-btn.active {
-                    background: var(--admin-primary, #8B5CF6);
-                    border-color: var(--admin-primary, #8B5CF6);
-                    color: white;
-                }
-
-                .filter-btn-clear {
-                    background: var(--admin-danger, #EF4444) !important;
-                    border-color: var(--admin-danger, #EF4444) !important;
-                    color: white !important;
-                    padding: 4px 8px !important;
-                }
-
-                .filter-btn-clear:hover {
-                    opacity: 0.8;
-                }
-
-                .sort-select {
-                    padding: 4px 8px;
-                    background: var(--admin-bg-input, rgba(255, 255, 255, 0.05));
-                    border: 1px solid var(--admin-border-secondary, rgba(255, 255, 255, 0.1));
-                    border-radius: var(--admin-radius-sm, 6px);
-                    color: var(--admin-text-primary, #fff);
-                    font-size: 0.75rem;
-                    cursor: pointer;
-                }
-
-                .model-list {
-                    overflow-y: auto;
-                    max-height: 350px;
-                }
-
-                .model-section {
-                    padding: var(--admin-spacing-xs, 4px) 0;
-                }
-
-                .section-header {
-                    padding: var(--admin-spacing-xs, 4px) var(--admin-spacing-md, 12px);
-                    font-size: 0.7rem;
-                    text-transform: uppercase;
-                    color: var(--admin-text-muted, rgba(255, 255, 255, 0.4));
-                    font-weight: 600;
-                    letter-spacing: 0.5px;
-                }
-
-                .model-item {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: var(--admin-spacing-sm, 10px) var(--admin-spacing-md, 12px);
-                    cursor: pointer;
-                    transition: var(--admin-transition-fast, 150ms ease);
-                }
-
-                .model-item:hover {
-                    background: var(--admin-bg-card-hover, rgba(255, 255, 255, 0.05));
-                }
-
-                .model-item.selected {
-                    background: var(--admin-primary-light, rgba(139, 92, 246, 0.15));
-                    border-left: 3px solid var(--admin-primary, #8B5CF6);
-                }
-
-                .model-item.default-item {
-                    border-bottom: 1px solid var(--admin-border-secondary, rgba(255, 255, 255, 0.05));
-                }
-
-                .model-info {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 2px;
-                    flex: 1;
-                    min-width: 0;
-                }
-
-                .model-info .model-name {
-                    font-weight: 500;
-                    color: var(--admin-text-primary, #fff);
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                }
-
-                .model-badge {
-                    font-size: 0.65rem;
-                    padding: 2px 6px;
-                    border-radius: 10px;
-                    text-transform: uppercase;
-                    font-weight: 600;
-                }
-
-                .badge-recommended { background: #10B981; color: white; }
-                .badge-quality { background: #8B5CF6; color: white; }
-                .badge-value { background: #F59E0B; color: black; }
-                .badge-free { background: #3B82F6; color: white; }
-                .badge-popular { background: #EC4899; color: white; }
-
-                .model-info .model-desc {
-                    font-size: 0.8rem;
-                    color: var(--admin-text-muted, rgba(255, 255, 255, 0.5));
-                }
-
-                .model-info .model-meta {
-                    display: flex;
-                    gap: 8px;
-                    font-size: 0.75rem;
-                    color: var(--admin-text-secondary, rgba(255, 255, 255, 0.6));
-                }
-
-                .meta-price {
-                    color: var(--admin-success, #10B981);
-                }
-
-                .meta-context {
-                    color: var(--admin-info, #3B82F6);
-                }
-
-                .model-id {
-                    font-size: 0.7rem;
-                    color: var(--admin-text-disabled, rgba(255, 255, 255, 0.3));
-                    font-family: monospace;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    max-width: 180px;
-                }
-
-                .custom-trigger {
-                    border-top: 1px solid var(--admin-border-secondary, rgba(255, 255, 255, 0.05));
-                }
-
-                .custom-input-wrapper {
-                    padding: var(--admin-spacing-sm, 8px) var(--admin-spacing-md, 12px);
-                }
-
-                .custom-input {
-                    width: 100%;
-                    padding: var(--admin-spacing-sm, 8px);
-                    background: var(--admin-bg-input, rgba(255, 255, 255, 0.05));
-                    border: 1px solid var(--admin-primary, #8B5CF6);
-                    border-radius: var(--admin-radius-sm, 6px);
-                    color: var(--admin-text-primary, #fff);
-                    margin-bottom: 8px;
-                }
-
-                .custom-actions {
-                    display: flex;
-                    gap: 8px;
-                }
-
-                .btn-apply, .btn-cancel {
-                    padding: 6px 12px;
-                    border-radius: var(--admin-radius-sm, 6px);
-                    font-size: 0.8rem;
-                    cursor: pointer;
-                    transition: var(--admin-transition-fast, 150ms ease);
-                }
-
-                .btn-apply {
-                    background: var(--admin-primary, #8B5CF6);
-                    border: none;
-                    color: white;
-                }
-
-                .btn-cancel {
-                    background: transparent;
-                    border: 1px solid var(--admin-border-primary, rgba(255, 255, 255, 0.2));
-                    color: var(--admin-text-secondary, rgba(255, 255, 255, 0.7));
-                }
-
-                .btn-apply:hover { opacity: 0.9; }
-                .btn-cancel:hover { background: var(--admin-bg-card-hover, rgba(255, 255, 255, 0.08)); }
-            `}</style>
         </div>
     );
 }

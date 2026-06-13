@@ -1,0 +1,12 @@
+/* === Design Tokens === */
+:root {
+  --pricing-primary: #7c3aed;
+  --pricing-primary-hover: #6d28d9;
+  --pricing-gradient: linear-gradient(135deg, #7c3aed, #6366f1);
+  --pricing-gradient-hero: linear-gradient(135deg, #4c1d95, #5b21b6, #7c3aed);
+  --pricing-gradient-gold: linear-gradient(135deg, #f59e0b, #d97706);
+  --pricing-glass-bg: rgba(255, 255, 255, 0.96);
+  --pricing-glass-border: rgba(124, 58, 237, 0.1);
+  --pricing-glass-shadow: 0 4px 20px rgba(124, 58, 237, 0.06);
+  --pricing-glass-shadow-hover: 0 15px 35px rgba(124, 58, 237, 0.1);
+}

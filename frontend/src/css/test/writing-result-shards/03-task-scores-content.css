@@ -1,0 +1,593 @@
+/* ============================================
+   Task Tabs
+   ============================================ */
+.result-task-tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 1.5rem;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.result-task-tabs .task-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1.1rem;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6b7280;
+    cursor: pointer;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.result-task-tabs .task-tab:hover {
+    background-color: #f9fafb;
+    color: #4b5563;
+}
+
+.result-task-tabs .task-tab.active {
+    color: #7c3aed;
+    border-bottom-color: #7c3aed;
+    font-weight: 600;
+}
+
+.task-band {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    background: #f3f4f6;
+    border-radius: 10px;
+}
+
+.result-task-tabs .task-tab.active .task-band {
+    background: #ede9fe;
+}
+
+/* Band Color Coding for Task Tabs and Scores */
+.task-band.band-9,
+.task-band.band-8,
+.task-band-mini .value.band-9,
+.task-band-mini .value.band-8,
+.task-band-summary .value.band-9,
+.task-band-summary .value.band-8 {
+    color: #16a34a;
+}
+
+.task-band.band-7,
+.task-band-mini .value.band-7,
+.task-band-summary .value.band-7 {
+    color: #22c55e;
+}
+
+.task-band.band-6,
+.task-band-mini .value.band-6,
+.task-band-summary .value.band-6 {
+    color: #ca8a04;
+}
+
+.task-band.band-5,
+.task-band-mini .value.band-5,
+.task-band-summary .value.band-5 {
+    color: #ea580c;
+}
+
+.task-band.band-4,
+.task-band.band-3,
+.task-band.band-2,
+.task-band.band-1,
+.task-band.band-0,
+.task-band-mini .value.band-4,
+.task-band-mini .value.band-3,
+.task-band-mini .value.band-2,
+.task-band-mini .value.band-1,
+.task-band-mini .value.band-0,
+.task-band-summary .value.band-4,
+.task-band-summary .value.band-3,
+.task-band-summary .value.band-2,
+.task-band-summary .value.band-1,
+.task-band-summary .value.band-0 {
+    color: #dc2626;
+}
+
+/* ============================================
+   Scores Bar (Horizontal at top)
+   ============================================ */
+.scores-bar-wrapper {
+    background: #f8fafc;
+    border-bottom: none;
+    padding: 0.5rem 1.5rem 0;
+    /* Top margin + Match main content side margins */
+}
+
+.scores-bar-toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 0.85rem;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    margin-bottom: 0.5rem;
+}
+
+.scores-bar-toggle:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.scores-bar-toggle .toggle-label {
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.scores-bar-toggle .toggle-label svg {
+    flex-shrink: 0;
+}
+
+/* When scores bar is expanded, toggle doesn't need bottom margin */
+.scores-bar-wrapper:not(.collapsed) .scores-bar-toggle {
+    margin-bottom: 0.4rem;
+}
+
+.scores-bar-wrapper.collapsed .scores-bar-toggle {
+    margin-bottom: 0.5rem;
+}
+
+.task-band-mini {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.7rem;
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    border-radius: 12px;
+    border: 1px solid #ddd6fe;
+}
+
+.task-band-mini .label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.task-band-mini .value {
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.scores-bar {
+    display: flex;
+    align-items: stretch;
+    padding: 0.5rem 1rem;
+    background: #ffffff;
+    gap: 0.75rem;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    margin-bottom: 0.5rem;
+}
+
+.scores-grid {
+    display: flex;
+    flex: 1;
+    gap: 0.75rem;
+}
+
+.score-criterion {
+    flex: 1;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.score-criterion.expanded {
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.score-criterion-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0.75rem;
+    background: transparent;
+    border: none;
+    font-family: 'Quicksand', sans-serif;
+    text-align: left;
+    cursor: pointer;
+}
+
+.score-criterion-header:hover {
+    background: rgba(124, 58, 237, 0.05);
+}
+
+.criterion-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.criterion-label {
+    display: block;
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin-bottom: 0.35rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.criterion-bar-container {
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.criterion-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.criterion-score {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: 0.75rem;
+}
+
+.score-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.expand-icon {
+    font-size: 0.7rem;
+    color: #9ca3af;
+}
+
+.criterion-comment {
+    padding: 0.75rem;
+    background: #f0fdf4;
+    border-top: 1px solid #e5e7eb;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #374151;
+}
+
+.task-band-summary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    border-radius: 10px;
+    border: 1px solid #ddd6fe;
+    min-width: 80px;
+}
+
+.task-band-summary .label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+.task-band-summary .value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* ============================================
+   Main Content - Resizable Panels
+   ============================================ */
+.result-main-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-height: 0;
+    /* Important for flex children to shrink */
+    padding: 0.75rem 1.5rem;
+    /* Add left/right margins */
+    background: #f8fafc;
+}
+
+.result-panel-group {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+}
+
+
+
+/* ============================================
+   Column Styles
+   ============================================ */
+.result-column {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    overflow: hidden;
+    position: relative;
+    /* For z-index context */
+}
+
+/* First column (left) - round top-left and bottom-left */
+.prompt-column {
+    border-radius: 12px 0 0 12px;
+}
+
+/* Last column (right) - round top-right and bottom-right */
+.analysis-column {
+    border-radius: 0 12px 12px 0;
+}
+
+.column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #f3f4f6 100%);
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+}
+
+.column-header h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #7c3aed;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.column-header h3 svg {
+    flex-shrink: 0;
+}
+
+/* Round corners for first column header */
+.prompt-column .column-header {
+    border-radius: 11px 0 0 0;
+}
+
+/* Round corners for last column header */
+.analysis-column .column-header {
+    border-radius: 0 11px 0 0;
+}
+
+.column-content {
+    flex: 1;
+    padding: 1rem 1.25rem;
+    overflow-y: auto;
+    min-height: 0;
+    /* Important for overflow to work in flex */
+}
+
+/* ============================================
+   Prompt Column
+   ============================================ */
+.task-prompt-text {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: #374151;
+    margin-bottom: 1rem;
+}
+
+.task-prompt-text p {
+    margin-bottom: 0.75rem;
+}
+
+.task-prompt-image {
+    margin: 1rem 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+}
+
+.task-prompt-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.word-requirement {
+    margin-top: 1rem;
+    padding: 0.6rem 0.75rem;
+    background: linear-gradient(135deg, #eff6ff, #f5f3ff);
+    border-radius: 6px;
+    border-left: 3px solid #7c3aed;
+    font-size: 0.9rem;
+    color: #4b5563;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.word-requirement strong {
+    color: #7c3aed;
+}
+
+/* ============================================
+   Essay Column
+   ============================================ */
+.word-count {
+    font-size: 0.85rem;
+    color: #6b7280;
+    padding: 0.15rem 0.5rem;
+    background: #f3f4f6;
+    border-radius: 10px;
+}
+
+/* Highlight Legend */
+.highlight-legend {
+    margin-bottom: 1.25rem;
+    padding: 0.75rem 1rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.legend-title {
+    display: block;
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin-bottom: 0.6rem;
+}
+
+.legend-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: #374151;
+    font-weight: 500;
+}
+
+.legend-item .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+/* Essay Text Container */
+.essay-text-container {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.25rem;
+}
+
+.essay-content {
+    font-size: 1rem;
+    line-height: 1.75;
+    color: #374151;
+}
+
+.essay-content p {
+    margin-bottom: 0.85rem;
+}
+
+.essay-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* Paragraph Rewrite Indicator - Vertical Bar */
+.essay-paragraph-rewrite {
+    position: relative;
+    padding-left: 1rem;
+    margin-bottom: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+}
+
+.essay-paragraph-rewrite:hover {
+    background-color: rgba(245, 158, 11, 0.08);
+}
+
+.essay-paragraph-rewrite:last-child {
+    margin-bottom: 0;
+}
+
+.essay-paragraph-rewrite p {
+    margin-bottom: 0;
+}
+
+.paragraph-rewrite-indicator {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #f59e0b, #fbbf24);
+    border-radius: 2px;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+    transition: all 0.2s ease;
+}
+
+.essay-paragraph-rewrite:hover .paragraph-rewrite-indicator {
+    width: 5px;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+}
+
+/* Essay Highlight Styles */
+.essay-highlight {
+    padding: 0 2px;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+}
+
+.essay-highlight:hover {
+    filter: brightness(0.95);
+    transform: scale(1.01);
+}
+
+/* Vocabulary highlight - good usage (green) */
+.essay-highlight[data-type="vocabulary_good"] {
+    background-color: #dcfce7 !important;
+    border-bottom: 2px solid #22c55e !important;
+}
+
+/* Vocabulary highlight - error (red) */
+.essay-highlight[data-type="vocabulary_error"] {
+    background-color: #fee2e2 !important;
+    border-bottom: 2px solid #f87171 !important;
+}
+
+/* Vocabulary highlight - neutral */
+.essay-highlight[data-type="vocabulary"] {
+    background-color: #faf5ff !important;
+    border-bottom: 2px solid #8b5cf6 !important;
+}
+
+/* Grading Error Notice */
+.grading-error-notice {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    color: #dc2626;
+}
+
+.grading-error-notice .error-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.grading-error-notice p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+

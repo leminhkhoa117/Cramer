@@ -1,0 +1,263 @@
+/* ==========================================================================
+   ADMIN MODAL OVERRIDES - Dark Theme
+   ========================================================================== */
+
+/* Override modal background for admin pages */
+.admin-modal.cm-content {
+  background: rgba(22, 20, 38, 0.98) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(24px);
+}
+
+.admin-modal .cm-header {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+.admin-modal .cm-footer {
+  border-top-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Modal form elements với dark theme */
+.admin-modal .form-input,
+.admin-modal .form-textarea {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 10px;
+}
+
+.admin-modal .form-input:focus,
+.admin-modal .form-textarea:focus {
+  border-color: var(--admin-primary, #8B5CF6);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.admin-modal .form-input::placeholder,
+.admin-modal .form-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* Current balance trong modal */
+.admin-modal .current-balance,
+.admin-modal .current-subscription {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+/* Preview balance */
+.admin-modal .preview-balance {
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 12px;
+  margin-top: 16px;
+}
+
+/* Action buttons trong modal */
+.admin-modal .action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.admin-modal .action-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.admin-modal .action-btn--active.action-btn--add {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #4ADE80;
+}
+
+.admin-modal .action-btn--active.action-btn--subtract {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #F87171;
+}
+
+/* Subscription options */
+.admin-modal .subscription-option {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.admin-modal .subscription-option:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.admin-modal .subscription-option--selected {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+.admin-modal .subscription-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--admin-primary, #8B5CF6);
+}
+
+/* Ban modal warning */
+.admin-modal .ban-modal-warning {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+}
+
+/* Form labels */
+.admin-modal .form-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+/* Form group spacing */
+.admin-modal .form-group {
+  margin-bottom: 18px;
+}
+
+.admin-modal .form-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Buttons trong footer modal */
+.admin-modal .cm-footer .admin-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  min-width: 100px;
+}
+
+.admin-modal .cm-footer .admin-btn--secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.admin-modal .cm-footer .admin-btn--secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.admin-modal .cm-footer .admin-btn--primary {
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+  border: none;
+  color: #fff;
+}
+
+.admin-modal .cm-footer .admin-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.35);
+  transform: translateY(-1px);
+}
+
+.admin-modal .cm-footer .admin-btn--danger {
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+  border: none;
+  color: #fff;
+}
+
+.admin-modal .cm-footer .admin-btn--danger:hover:not(:disabled) {
+  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.35);
+  transform: translateY(-1px);
+}
+
+.admin-modal .cm-footer .admin-btn--success {
+  background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
+  border: none;
+  color: #fff;
+}
+
+.admin-modal .cm-footer .admin-btn--success:hover:not(:disabled) {
+  box-shadow: 0 6px 18px rgba(34, 197, 94, 0.35);
+  transform: translateY(-1px);
+}
+
+.admin-modal .cm-footer .admin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* ==========================================================================
+   SUCCESS MODAL STYLES
+   ========================================================================== */
+
+.success-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--admin-spacing-lg) 0;
+}
+
+.success-modal-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--admin-spacing-lg);
+  animation: successPulse 0.6s ease-out;
+}
+
+.success-modal-icon svg {
+  color: #22C55E;
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.success-modal-message {
+  font-size: 1rem;
+  color: var(--admin-text-primary);
+  margin-bottom: var(--admin-spacing-lg);
+  line-height: 1.5;
+}
+
+.success-modal-btn {
+  min-width: 140px;
+  padding: 12px 32px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35);
+  transition: all 0.2s ease;
+}
+
+.success-modal-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.45);
+}
+
+.success-modal-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}

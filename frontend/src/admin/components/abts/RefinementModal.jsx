@@ -1,11 +1,11 @@
 /**
- * RefinementModal - Collapsible modal for Agent 2 refinement results
- * 
+ * RefinementModal - Loop controller for Agent 2 refinement
+ *
  * Displays near the warnings panel with:
  * - Streaming output from Agent 2
- * - Diff view of proposed changes
- * - Apply/Discard buttons
- * 
+ * - Round counter + proposed-change summary (per-hunk review lives in the Issue Rail Diff view)
+ * - A single Done control (Apply Accepted / Refine again live in the Issue Rail)
+ *
  * @since 2026-01-04
  */
 import React, { useState } from 'react';
@@ -17,27 +17,38 @@ const RefinementModal = () => {
         isRefining,
         refinementResult,
         refinementStream,
-        applyRefinement,
-        discardRefinement
+        refinement,
+        abtsStatus,
+        closeRefinement
     } = useABTSStore();
 
     const [isCollapsed, setIsCollapsed] = useState(false);
 
+    const hunks = refinement?.hunks || [];
+    const acceptedHunkIds = refinement?.acceptedHunkIds || [];
+    const round = refinement?.round || 0;
+    const hasHunks = hunks.length > 0;
+
     // Don't render if no refinement activity
-    if (!isRefining && !refinementResult) return null;
+    if (!isRefining && !refinementResult && !hasHunks) return null;
 
     const hasError = refinementResult?.error;
-    const patches = refinementResult?.patches || [];
+    // FIX 11: round cap comes from the backend status (config.maxRefinementRounds)
+    // instead of a hardcoded 5, so server + UI stay in sync.
+    const maxRounds = abtsStatus?.maxRefinementRounds || 5;
+    const atLimit = round >= maxRounds;
+    // FIX 10: refinement finished but proposed nothing for the selected issues.
+    const isEmptyResult = !isRefining && !hasHunks && !!refinementResult && !hasError;
 
     return (
         <div className={`refinement-modal ${isCollapsed ? 'collapsed' : ''}`}>
             <div className="refinement-modal__header" onClick={() => setIsCollapsed(!isCollapsed)}>
                 <span className="refinement-modal__title">
-                    🔧 Agent 2 - Refinement
-                    {isRefining && <span className="refinement-modal__status">Đang xử lý...</span>}
-                    {!isRefining && refinementResult && !hasError && (
+                    🔧 Refinement — Round {round || 1}
+                    {isRefining && <span className="refinement-modal__status">Processing…</span>}
+                    {!isRefining && hasHunks && (
                         <span className="refinement-modal__status success">
-                            ✓ {patches.length} thay đổi
+                            {hunks.length} change{hunks.length > 1 ? 's' : ''} proposed
                         </span>
                     )}
                 </span>
@@ -53,7 +64,7 @@ const RefinementModal = () => {
                         <div className="refinement-modal__streaming">
                             <div className="refinement-modal__progress">
                                 <span className="spinner"></span>
-                                <span>Đang phân tích và sửa lỗi...</span>
+                                <span>Analyzing and proposing fixes…</span>
                             </div>
                             {refinementStream.length > 0 && (
                                 <div className="refinement-modal__log">
@@ -70,55 +81,54 @@ const RefinementModal = () => {
                         </div>
                     )}
 
-                    {/* Error state */}
+                    {/* Error / limit state */}
                     {hasError && (
                         <div className="refinement-modal__error">
                             <span>❌ {refinementResult.error}</span>
-                            <button onClick={discardRefinement}>Đóng</button>
+                            <button onClick={closeRefinement}>Close</button>
                         </div>
                     )}
 
-                    {/* Success state with patches */}
-                    {!isRefining && refinementResult && !hasError && (
+                    {/* Ready state — hunks proposed, awaiting per-hunk review in the Issue Rail */}
+                    {!isRefining && hasHunks && (
                         <div className="refinement-modal__result">
-                            <div className="refinement-modal__patches">
-                                <h4>Thay đổi được đề xuất:</h4>
-                                {patches.map((patch, idx) => (
-                                    <div key={idx} className="patch-item">
-                                        <span className="patch-badge">
-                                            Q{patch.questionNumber || '?'}
-                                        </span>
-                                        <span className="patch-desc">
-                                            {patch.description}
-                                        </span>
-                                    </div>
-                                ))}
-                                {patches.length === 0 && (
-                                    <p className="no-patches">Không có thay đổi nào được thực hiện.</p>
+                            <p className="refinement-modal__hint">
+                                Review and toggle each change in the <strong>Issue Rail → Diff</strong> view,
+                                then click <strong>Apply Accepted</strong> in the rail to commit them.
+                            </p>
+                            <div className="refinement-modal__summary">
+                                <span className="refinement-modal__count">
+                                    {acceptedHunkIds.length} of {hunks.length} accepted
+                                </span>
+                                {atLimit && (
+                                    <span className="refinement-modal__limit">Refinement limit reached ({maxRounds} rounds)</span>
                                 )}
                             </div>
 
-                            {/* Show warning if no refinedJson */}
-                            {!refinementResult.refinedJson && refinementResult.errorMessage && (
-                                <div className="refinement-modal__warning">
-                                    ⚠️ {refinementResult.errorMessage}
-                                </div>
-                            )}
-
                             <div className="refinement-modal__actions">
                                 <button
-                                    className="btn-apply"
-                                    onClick={applyRefinement}
-                                    disabled={!refinementResult.refinedJson || !refinementResult.success}
-                                    title={!refinementResult.refinedJson ? 'JSON không hợp lệ' : ''}
+                                    className="btn-discard"
+                                    onClick={closeRefinement}
                                 >
-                                    ✓ Áp dụng
+                                    Done
                                 </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* FIX 10: empty result — refinement ran but proposed no changes */}
+                    {isEmptyResult && (
+                        <div className="refinement-modal__result">
+                            <p className="refinement-modal__hint">
+                                No changes proposed for the selected issues. Select different issues
+                                and use <strong>Refine again</strong> in the Issue Rail, or close this panel.
+                            </p>
+                            <div className="refinement-modal__actions">
                                 <button
                                     className="btn-discard"
-                                    onClick={discardRefinement}
+                                    onClick={closeRefinement}
                                 >
-                                    ✕ Hủy
+                                    Done
                                 </button>
                             </div>
                         </div>

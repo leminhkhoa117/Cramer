@@ -1,0 +1,643 @@
+/* ============================================
+   ReviewedQuestion.css
+   ============================================ */
+
+.reviewed-question-card {
+    background-color: var(--review-card-bg);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-left-width: 5px;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.reviewed-question-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+}
+
+.reviewed-question-card.correct {
+    border-left-color: var(--correct-color);
+}
+
+.reviewed-question-card.incorrect {
+    border-left-color: var(--incorrect-color);
+}
+
+.reviewed-question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.question-number {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--review-text-primary);
+}
+
+.status-icon {
+    font-size: 1.2rem;
+}
+
+.reviewed-question-card.correct .status-icon {
+    color: var(--correct-color);
+}
+
+.reviewed-question-card.incorrect .status-icon {
+    color: var(--incorrect-color);
+}
+
+.question-text {
+    font-size: 1rem;
+    color: var(--review-text-primary);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+}
+
+.answers-comparison {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.answer-item {
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.answer-item.your-answer {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.reviewed-question-card.incorrect .answer-item.your-answer {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.answer-item.correct-answer {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.answer-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--review-text-primary);
+}
+
+.answer-text {
+    font-weight: 500;
+}
+
+.answer-empty {
+    font-style: italic;
+    color: var(--review-text-secondary);
+}
+
+.explanation-section {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.explanation-section h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--review-text-primary);
+}
+
+.explanation-section p {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--review-text-secondary);
+}
+
+/* ============================================
+   TestReviewPage.css - Main Review Page Styles
+   (minus :root block - tokens now in tokens.css)
+   ============================================ */
+
+/* ============================================
+   Page Layout - Full Height
+   ============================================ */
+.review-page {
+    height: 100vh;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--review-bg);
+    overflow: hidden;
+    font-family: 'Quicksand', sans-serif;
+}
+
+/* ============================================
+   Header - Purple Glassmorphism Style (Compact)
+   ============================================ */
+.review-header {
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(102, 97, 241, 0.95), rgba(140, 82, 255, 0.95));
+    backdrop-filter: blur(16px);
+    color: white;
+    padding: 0.6rem 1.5rem;
+    box-shadow: 0 4px 20px rgba(102, 97, 241, 0.3);
+}
+
+.review-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+.review-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.review-header-left .back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-width: 125px;
+    background-color: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.review-header-left .back-btn:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+.review-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    color: white;
+    white-space: nowrap;
+}
+
+.review-header-center {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex: 1;
+    justify-content: center;
+}
+
+.review-header-center .summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+}
+
+.review-header-center .summary-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+}
+
+.review-header-center .summary-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: white;
+}
+
+.review-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.header-actions .btn {
+    border: none;
+    border-radius: 8px;
+    padding: 0.4rem 0.75rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
+}
+
+.header-actions .btn-primary {
+    background: white;
+    color: #5b21b6;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-actions .btn-primary:hover {
+    background: #f1f5f9;
+    transform: translateY(-1px);
+}
+
+.header-actions .btn-secondary {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.header-actions .btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Regrade Button */
+.header-actions .btn-regrade {
+    background: linear-gradient(135deg, rgba(224, 242, 254, 0.9), rgba(186, 230, 253, 0.9));
+    border: 1px solid rgba(125, 211, 252, 0.5);
+    color: #0369a1;
+}
+
+.header-actions .btn-regrade:hover {
+    background: linear-gradient(135deg, rgba(186, 230, 253, 0.95), rgba(125, 211, 252, 0.95));
+    box-shadow: 0 2px 8px rgba(3, 105, 161, 0.2);
+}
+
+.header-actions .btn-regrade svg.spinning {
+    animation: spin 1s linear infinite;
+}
+
+.band-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.band-badge .label {
+    font-size: 0.55rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.band-badge .value {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: white;
+    line-height: 1.2;
+}
+
+/* Band Color Coding - Unified Darker Palette */
+.band-9,
+.band-8 {
+    color: #16a34a !important;
+}
+
+.band-7 {
+    color: #22c55e !important;
+}
+
+.band-6 {
+    color: #ca8a04 !important;
+}
+
+.band-5 {
+    color: #ea580c !important;
+}
+
+.band-4,
+.band-3,
+.band-2,
+.band-1,
+.band-0 {
+    color: #dc2626 !important;
+}
+
+/* ============================================
+   Part Tabs - Compact Design
+   ============================================ */
+.review-part-tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 1.5rem;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+}
+
+.part-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1.1rem;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6b7280;
+    cursor: pointer;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.part-tab:hover {
+    background-color: #f9fafb;
+    color: #4b5563;
+}
+
+.part-tab.active {
+    color: var(--primary-purple);
+    border-bottom-color: var(--primary-purple);
+    font-weight: 600;
+}
+
+.part-questions-count {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+.part-tab.active .part-questions-count {
+    color: var(--primary-purple);
+}
+
+/* ============================================
+   Main Content - Three Panel Layout
+   ============================================ */
+.review-main-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-height: 0;
+    padding: 0.75rem 1rem;
+    background: var(--review-bg);
+}
+
+.review-panel-group {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+}
+
+.review-column {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.passage-column {
+    border-right: 1px solid #e5e7eb;
+}
+
+.image-column {
+    border-right: 1px solid #e5e7eb;
+}
+
+.answers-column {
+    border-right: 1px solid #e5e7eb;
+}
+
+.column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #f3f4f6 100%);
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+}
+
+.column-header h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary-purple);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.part-badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6b7280;
+    padding: 0.2rem 0.6rem;
+    background: #f3f4f6;
+    border-radius: 6px;
+}
+
+.column-content {
+    flex: 1;
+    padding: 1rem 1.25rem;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+/* ============================================
+   Passage Column Styling
+   ============================================ */
+.passage-text {
+    font-size: 0.92rem;
+    line-height: 1.85;
+    color: #374151;
+    white-space: pre-wrap;
+}
+
+.passage-text p {
+    margin-bottom: 1em;
+    text-align: justify;
+}
+
+.passage-image img {
+    max-width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.no-content {
+    color: #9ca3af;
+    font-style: italic;
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px dashed #e5e7eb;
+}
+
+/* ============================================
+   Middle Column - User Answers
+   ============================================ */
+.answers-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.75rem;
+    background: rgba(34, 197, 94, 0.1);
+    border-radius: 12px;
+}
+
+.answers-summary .correct-count {
+    font-weight: 600;
+    color: #16a34a;
+}
+
+.answers-summary .separator {
+    color: #9ca3af;
+}
+
+.answers-summary .total-count {
+    color: #6b7280;
+}
+
+.user-answers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.user-answer-card {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 0.875rem 1rem;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.user-answer-card:hover {
+    border-color: #c7d2fe;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+}
+
+.user-answer-card.selected {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+}
+
+.user-answer-card.correct {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #22c55e;
+}
+
+.user-answer-card.incorrect {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border-color: #fca5a5;
+}
+
+.user-answer-card.unanswered {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.user-answer-card .answer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.user-answer-card .question-number {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.85rem;
+}
+
+.user-answer-card .status-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.user-answer-card .status-icon.correct {
+    color: #22c55e;
+}
+
+.user-answer-card .status-icon.incorrect {
+    color: #ef4444;
+}
+
+.user-answer-card .status-icon.unanswered {
+    color: #9ca3af;
+}
+
+.user-answer-card .answer-content {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+}
+
+.user-answer-card .answer-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    flex-shrink: 0;
+}
+
+.user-answer-card .answer-text {
+    font-size: 0.9rem;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.user-answer-card .answer-text.correct {
+    color: #16a34a;
+}
+
+.user-answer-card .answer-text.incorrect {
+    color: #dc2626;
+    text-decoration: line-through;
+    text-decoration-color: rgba(220, 38, 38, 0.5);
+}
+
+.user-answer-card .correct-answer-hint {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed #fca5a5;
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+}
+
+.user-answer-card .hint-label {
+    font-size: 0.7rem;
+    color: #16a34a;
+    flex-shrink: 0;
+}
+
+.user-answer-card .hint-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #16a34a;
+}
+

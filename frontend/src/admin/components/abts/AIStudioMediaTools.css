@@ -1,0 +1,427 @@
+/**
+ * AIStudioMediaTools.css - Diagram upload and listening tool panels.
+ */
+
+/* ==========================================================================
+   DIAGRAM UPLOAD PANEL (for DIAGRAM_LABEL_COMPLETION)
+   ========================================================================== */
+.studio-diagram-panel {
+    margin: 12px 16px;
+    padding: 14px;
+    border-radius: var(--studio-radius-md);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(147, 51, 234, 0.08));
+}
+
+.studio-diagram-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--studio-border);
+}
+
+.studio-diagram-panel__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #93c5fd;
+}
+
+.studio-diagram-panel__badge {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 4px;
+    color: #93c5fd;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* Description Section */
+.studio-diagram-panel__description-section {
+    margin-bottom: 14px;
+}
+
+.studio-diagram-panel__description-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--studio-border);
+    border-radius: var(--studio-radius-sm);
+    color: var(--studio-text-secondary);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: var(--studio-transition);
+}
+
+.studio-diagram-panel__description-toggle:hover {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: var(--studio-border-hover);
+}
+
+.studio-diagram-panel__description {
+    margin-top: 10px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--studio-border);
+    border-left: 3px solid #93c5fd;
+    border-radius: var(--studio-radius-sm);
+}
+
+.studio-diagram-panel__description-hint {
+    margin: 0 0 8px 0;
+    font-size: 0.7rem;
+    color: var(--studio-text-muted);
+    font-style: italic;
+}
+
+.studio-diagram-panel__description-text {
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--studio-text-primary);
+    white-space: pre-wrap;
+}
+
+/* Warning (no description) */
+.studio-diagram-panel__warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(234, 179, 8, 0.08);
+    border: 1px solid rgba(234, 179, 8, 0.25);
+    border-radius: var(--studio-radius-sm);
+    margin-bottom: 14px;
+    font-size: 0.78rem;
+    color: var(--studio-warning);
+    line-height: 1.5;
+}
+
+/* Upload Section */
+.studio-diagram-panel__upload-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.studio-diagram-panel__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--studio-text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.studio-diagram-panel__label-hint {
+    font-weight: 400;
+    color: var(--studio-text-muted);
+    font-size: 0.7rem;
+}
+
+.studio-diagram-panel__input-row {
+    display: flex;
+    gap: 8px;
+}
+
+.studio-diagram-panel__input {
+    flex: 1;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--studio-border);
+    border-radius: var(--studio-radius-sm);
+    color: var(--studio-text-primary);
+    font-size: 0.82rem;
+    transition: var(--studio-transition);
+}
+
+.studio-diagram-panel__input::placeholder {
+    color: var(--studio-text-muted);
+}
+
+.studio-diagram-panel__input:focus {
+    outline: none;
+    border-color: var(--studio-accent);
+    box-shadow: 0 0 0 2px var(--studio-accent-glow);
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.studio-diagram-panel__save-btn {
+    padding: 8px 14px;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    border-radius: var(--studio-radius-sm);
+    color: #93c5fd;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: var(--studio-transition);
+    white-space: nowrap;
+}
+
+.studio-diagram-panel__save-btn:hover:not(:disabled) {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(59, 130, 246, 0.6);
+}
+
+.studio-diagram-panel__save-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.studio-diagram-panel__save-btn--saved {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #6ee7b7;
+}
+
+/* Preview */
+.studio-diagram-panel__preview {
+    margin-top: 12px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--studio-border);
+    border-radius: var(--studio-radius-sm);
+}
+
+.studio-diagram-panel__preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--studio-text-muted);
+    margin-bottom: 8px;
+}
+
+.studio-diagram-panel__preview-link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--studio-text-secondary);
+    text-decoration: none;
+    font-size: 0.68rem;
+    transition: color 0.2s;
+}
+
+.studio-diagram-panel__preview-link:hover {
+    color: var(--studio-text-primary);
+}
+
+.studio-diagram-panel__preview-image {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 4px;
+    display: block;
+}
+
+.studio-diagram-panel__preview-error {
+    padding: 12px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--studio-danger);
+    background: rgba(239, 68, 68, 0.08);
+    border-radius: 4px;
+}
+
+/* ==========================================================================
+   LISTENING TOOLS PANEL (Audio URLs + Transcript Copy)
+   ========================================================================== */
+.studio-listening-tools {
+    margin: 12px 16px;
+    padding: 14px;
+    border-radius: var(--studio-radius-md);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(6, 95, 70, 0.08));
+}
+
+.studio-listening-tools__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6ee7b7;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--studio-border);
+}
+
+.studio-listening-tools__audio {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.audio-url-input {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.audio-url-input label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--studio-text-muted);
+}
+
+.audio-url-input input {
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--studio-border);
+    border-radius: var(--studio-radius-sm);
+    color: var(--studio-text-primary);
+    font-size: 0.82rem;
+    transition: var(--studio-transition);
+}
+
+.audio-url-input input::placeholder {
+    color: var(--studio-text-muted);
+}
+
+.audio-url-input input:focus {
+    outline: none;
+    border-color: rgba(16, 185, 129, 0.6);
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.studio-listening-tools__actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--studio-border);
+}
+
+.studio-listening-tools__actions .studio-btn--success {
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #6ee7b7;
+}
+
+.studio-listening-tools__actions .active {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+.studio-listening-tools__transcript {
+    margin-top: 12px;
+    max-height: 300px;
+    overflow: auto;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--studio-border);
+    border-radius: var(--studio-radius-sm);
+}
+
+.transcript-section {
+    padding: 12px;
+    border-bottom: 1px solid var(--studio-border);
+}
+
+.transcript-section:last-child {
+    border-bottom: none;
+}
+
+.transcript-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.8rem;
+    color: #6ee7b7;
+}
+
+.transcript-section pre {
+    margin: 0;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    color: var(--studio-text-secondary);
+}
+
+/* Image/Map Section in Listening Tools */
+.studio-listening-tools__image-section {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--studio-border);
+}
+
+.studio-listening-tools__figure-desc {
+    margin: 8px 0;
+}
+
+.studio-listening-tools__figure-desc details {
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: var(--studio-radius-sm);
+    overflow: hidden;
+}
+
+.studio-listening-tools__figure-desc summary {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    color: #c4b5fd;
+    cursor: pointer;
+    user-select: none;
+}
+
+.studio-listening-tools__figure-desc summary:hover {
+    background: rgba(139, 92, 246, 0.12);
+}
+
+.studio-listening-tools__figure-desc pre {
+    margin: 0;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    color: var(--studio-text-secondary);
+    max-height: 200px;
+    overflow: auto;
+}
+
+.studio-listening-tools__url-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.studio-listening-tools__url-input input {
+    flex: 1;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--studio-border);
+    border-radius: var(--studio-radius-sm);
+    color: var(--studio-text-primary);
+    font-size: 0.8rem;
+}
+
+.studio-listening-tools__url-input input:focus {
+    outline: none;
+    border-color: rgba(139, 92, 246, 0.6);
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+}
+
+.studio-listening-tools__url-input input::placeholder {
+    color: var(--studio-text-muted);
+}
+
+.studio-listening-tools__url-preview {
+    font-size: 0.7rem;
+    color: #6ee7b7;
+    white-space: nowrap;
+}

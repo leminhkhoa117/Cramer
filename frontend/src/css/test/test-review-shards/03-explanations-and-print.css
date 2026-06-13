@@ -1,0 +1,338 @@
+/* ============================================
+   Right Column - Explanations
+   ============================================ */
+.explanations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.explanation-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+}
+
+.explanation-card.highlighted {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25), 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+
+.explanation-card.correct {
+    border-left: 4px solid #22c55e;
+}
+
+.explanation-card.incorrect {
+    border-left: 4px solid #ef4444;
+}
+
+.explanation-card.unanswered {
+    border-left: 4px solid #9ca3af;
+}
+
+.explanation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.explanation-header .question-number {
+    font-weight: 700;
+    color: #1f2937;
+    font-size: 0.95rem;
+}
+
+.result-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.result-badge.correct {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.result-badge.incorrect {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.result-badge.unanswered {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.question-content-box {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+    border: 1px solid #e2e8f0;
+}
+
+.question-content-box .question-text {
+    font-size: 0.9rem;
+    color: #374151;
+    line-height: 1.6;
+}
+
+.answer-comparison {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.comparison-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+}
+
+.comparison-row.your-answer {
+    background: #f9fafb;
+}
+
+.comparison-row.correct-answer {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.comparison-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    flex-shrink: 0;
+    min-width: 130px;
+}
+
+.comparison-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.comparison-value.correct {
+    color: #16a34a;
+}
+
+.comparison-value.incorrect {
+    color: #dc2626;
+}
+
+.comparison-value.empty {
+    color: #9ca3af;
+    font-style: italic;
+    font-weight: 400;
+}
+
+.explanation-content {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-radius: 8px;
+    padding: 0.875rem 1rem;
+    border: 1px solid #bfdbfe;
+}
+
+.explanation-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #1d4ed8;
+    margin-bottom: 0.5rem;
+}
+
+.explanation-text {
+    font-size: 0.875rem;
+    color: #1e40af;
+    line-height: 1.7;
+    margin: 0;
+}
+
+/* Structured Explanation Styles */
+.explanation-structured {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.explanation-detail {
+    font-size: 0.875rem;
+    color: #1e40af;
+    line-height: 1.7;
+    margin: 0;
+}
+
+.explanation-quote {
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 3px solid #3b82f6;
+    border-radius: 0 6px 6px 0;
+    font-size: 0.85rem;
+    color: #1e40af;
+}
+
+.explanation-strategy {
+    font-size: 0.825rem;
+    color: #1e40af;
+    line-height: 1.6;
+    margin: 0;
+    padding-top: 0.5rem;
+    border-top: 1px dashed rgba(30, 64, 175, 0.2);
+}
+
+/* ============================================
+   Resize Handle
+   ============================================ */
+.resize-handle {
+    background-color: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px !important;
+    transition: background-color 0.2s ease;
+}
+
+.resize-handle:hover {
+    background-color: #e5e7eb;
+}
+
+.resize-handle-icon-container {
+    width: 24px;
+    height: 24px;
+    background-color: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.resize-handle-icon {
+    color: #4b5563;
+    font-size: 12px;
+}
+
+/* ============================================
+   Scrollbar Styling
+   ============================================ */
+.column-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.column-content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.column-content::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.column-content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ============================================
+   Highlight Flash Animation
+   ============================================ */
+@keyframes highlightFlash {
+
+    0%,
+    100% {
+        background-color: inherit;
+    }
+
+    50% {
+        background-color: rgba(129, 140, 248, 0.3);
+    }
+}
+
+.highlight-flash {
+    animation: highlightFlash 0.75s ease-in-out 2;
+}
+
+/* ============================================
+   Loading & Error States
+   ============================================ */
+.review-loading,
+.review-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    text-align: center;
+    padding: 4rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    background: var(--review-bg);
+}
+
+.review-error {
+    color: var(--incorrect-color);
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 1200px) {
+    .review-header-center {
+        gap: 1.5rem;
+    }
+
+    .review-header-center .summary-value {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 1024px) {
+    .review-header-top {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .review-header-center {
+        order: 3;
+        width: 100%;
+        justify-content: space-around;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        margin-top: 0.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .review-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .review-title {
+        font-size: 0.95rem;
+    }
+
+    .review-main-content {
+        padding: 0.5rem;
+    }
+
+    .comparison-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .comparison-label {
+        min-width: auto;
+    }
+}

@@ -56,15 +56,19 @@ http://localhost:8080/swagger-ui.html (requires JWT token via Authorize button)
 
 ### Backend Structure (`backend/src/main/java/com/cramer/`)
 
-- `controller/` - REST endpoints (`/api/**` are authenticated)
-- `controller/admin/` - Admin-only endpoints (ABTSController, TestHierarchyController, etc.)
-- `service/` - Business logic
-- `service/abts/` - AI test generation (ABTSService, PromptBuilderService)
-- `service/implement/` - Service implementations
-- `entity/` - JPA entities with JSONB support (Hypersistence Utils)
-- `repository/` - Spring Data repositories
-- `config/` - SecurityConfig, JwtAuthFilter, WebConfig, PayOSConfig
-- `dto/` - Data transfer objects
+Vertical-slice modules (one bounded context each); **no** global controller/service/entity layers. Source of truth: `docs/specs/backend/` (SPEC-00…25).
+
+- `platform/` - Shared kernel: `web/` (GlobalExceptionHandler, WebConfig, HealthController), `security/` (SupabaseJwtConfig, SecurityConfig OAuth2 resource server, AdminAuthorizationService, CurrentUser), `error/`, `integration/` (openrouter, llm, supabase), `ratelimit/`, `config/`, `common/`
+- `identity/` - Supabase-JWT auth + profile
+- `catalog/` - test_sets/tests/sections/questions/hashtags; admin content CRUD; course browse; ContentDraftPort
+- `assessment/` - test_attempts, user_answers, scoring, review
+- `writing/` - writing_submissions + async DeepSeek grading
+- `speaking/` - sessions, blueprint, transcripts, async grading worker/watchdog, admin regrade
+- `billing/` - subscription, credit (Lúa), quota, payment (PayOS), feature gating, schedulers
+- `engagement/` - chat, vocabulary/translation, dashboard read-models, activity
+- `admin/` - cross-domain console (users, audit, dashboard, finance)
+- `abts/` - AI generation (OpenRouter): prompting, generation pipelines, validation, refinement, SSE streaming
+- Each module: `web/` (Controller + web/dto records) · `service/` (+ cross-module Ports) · `domain/` (Lombok entities/enums) · `repository/` · `config/`
 
 ### Frontend Structure (`frontend/src/`)
 

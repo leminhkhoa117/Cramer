@@ -62,16 +62,57 @@ function AnimatedOutlet() {
 
 function RouteError() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-page">
       <div className="text-center p-8">
-        <h1 className="text-4xl font-bold text-gray-800 mb-4">Lỗi tải trang</h1>
-        <p className="text-gray-600 mb-4">Không thể tải trang này. Vui lòng thử lại.</p>
+        <h1 className="text-3xl font-bold text-ink mb-2">Lỗi tải trang</h1>
+        <p className="text-base text-muted mb-5">Không thể tải trang này. Vui lòng thử lại.</p>
         <button
           onClick={() => window.location.reload()}
-          className="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+          className="inline-flex items-center rounded-lg bg-brand-600 px-5 py-2.5 text-base font-semibold text-white transition-colors hover:bg-brand-700"
         >
           Thử lại
         </button>
+      </div>
+    </div>
+  );
+}
+
+function RouteLoadingFallback() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-page">
+      <span className="inline-block h-7 w-7 rounded-full border-2 border-brand-200 border-t-brand-600 animate-[cr-spin_0.6s_linear_infinite]" />
+      <p className="text-base font-semibold text-muted">Đang tải…</p>
+    </div>
+  );
+}
+
+function AdminRouteLoadingFallback() {
+  return (
+    <div
+      className="admin-root"
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#0F0F23',
+        color: '#F8FAFC',
+      }}
+    >
+      <div style={{ textAlign: 'center' }}>
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            margin: '0 auto 14px',
+            border: '3px solid rgba(139, 92, 246, 0.25)',
+            borderTopColor: '#8B5CF6',
+            borderRadius: '50%',
+            animation: 'adminRouteSpin 0.9s linear infinite',
+          }}
+        />
+        <style>{`@keyframes adminRouteSpin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ fontSize: '0.95rem', fontWeight: 600 }}>Đang mở trang quản trị...</div>
       </div>
     </div>
   );
@@ -93,27 +134,19 @@ function RootLayout() {
     <>
       {navigation.state === 'loading' && (
         <div
-          className="fixed top-0 left-0 w-full h-0.5 z-[9999] bg-purple-100"
-          style={{ overflow: 'hidden' }}
+          className="fixed top-0 left-0 w-full h-0.5 bg-brand-100"
+          style={{ zIndex: 'var(--z-toast)', overflow: 'hidden' }}
         >
           <div
-            className="h-full bg-purple-600 animate-pulse"
-            style={{
-              width: '40%',
-              animation: 'navLoader 1.2s ease-in-out infinite',
-            }}
+            className="h-full bg-brand-600"
+            style={{ width: '40%', animation: 'navLoader 1.2s ease-in-out infinite' }}
           />
-          <style>{`
-            @keyframes navLoader {
-              0% { transform: translateX(-100%); }
-              100% { transform: translateX(350%); }
-            }
-          `}</style>
+          <style>{`@keyframes navLoader { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }`}</style>
         </div>
       )}
       {showHeader && <Header />}
       <main className={showHeader ? 'with-fixed-header' : ''}>
-        <AnimatedOutlet />
+        {navigation.state === 'loading' && isAdminPage ? <AdminRouteLoadingFallback /> : <AnimatedOutlet />}
       </main>
       {(isTestPage) && <SmallViewportWarning minWidth={768} />}
       {!isTestPage && !isReviewPage && !isAdminPage && <Footer />}
@@ -127,6 +160,7 @@ export const router = createBrowserRouter([
     path: '/',
     element: <RootLayout />,
     errorElement: <RouteError />,
+    HydrateFallback: RouteLoadingFallback,
     children: [
       // ============ PUBLIC ROUTES ============
       { index: true, element: <PageWrapper><Home /></PageWrapper> },
@@ -197,11 +231,11 @@ export const router = createBrowserRouter([
 
 function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-page">
       <div className="text-center p-8">
-        <h1 className="text-6xl font-bold text-gray-300 mb-4">404</h1>
-        <p className="text-xl text-gray-600 mb-6">Trang bạn tìm kiếm không tồn tại.</p>
-        <Link to="/" className="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition inline-block">
+        <h1 className="text-6xl font-bold text-brand-200 mb-2">404</h1>
+        <p className="text-lg text-muted mb-6">Trang bạn tìm kiếm không tồn tại.</p>
+        <Link to="/" className="inline-flex items-center rounded-lg bg-brand-600 px-5 py-2.5 text-base font-semibold text-white transition-colors hover:bg-brand-700">
           Về trang chủ
         </Link>
       </div>

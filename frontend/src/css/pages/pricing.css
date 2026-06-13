@@ -1,0 +1,8 @@
+/* ===================================
+   PRICING PAGE STYLES - import hub
+   Import order matters.
+   =================================== */
+@import './pricing-shards/01-root-and-tiers.css';
+@import './pricing-shards/02-demo.css';
+@import './pricing-shards/03-sections.css';
+@import './pricing-shards/04-responsive.css';

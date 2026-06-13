@@ -1,0 +1,259 @@
+/* ==========================================
+   RESPONSIVE — Tablet ≤ 992px
+   ========================================== */
+
+@media (max-width: 992px) {
+  .vocab-page__container {
+    padding: 1.25rem 1.5rem 1.5rem;
+  }
+
+  .vocab-page__header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.25rem;
+    padding: 1.25rem;
+  }
+
+  .vocab-page__header-right {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .vocab-page__controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .vocab-page__search {
+    max-width: none;
+  }
+
+  .vocab-page__filters {
+    justify-content: center;
+  }
+
+  .vocab-page__view-toggle {
+    align-self: center;
+  }
+
+  .vocab-page__grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+}
+
+/* ==========================================
+   RESPONSIVE — Mobile ≤ 640px
+   ========================================== */
+
+@media (max-width: 640px) {
+  .vocab-page__container {
+    padding: 1rem;
+  }
+
+  .vocab-page__header {
+    padding: 1.15rem;
+    border-radius: 20px;
+  }
+
+  .vocab-page__header-icon {
+    width: 46px;
+    height: 46px;
+    font-size: 1.25rem;
+    border-radius: 14px;
+  }
+
+  .vocab-page__header-title {
+    font-size: 1.4rem;
+  }
+
+  .vocab-page__header-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .vocab-page__header-right {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .vocab-page__stats {
+    justify-content: center;
+  }
+
+  .vocab-page__add-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .vocab-page__controls {
+    padding: 0.75rem 1rem;
+    border-radius: 14px;
+  }
+
+  .vocab-page__filters {
+    flex-wrap: wrap;
+  }
+
+  .vocab-page__filter-btn {
+    flex: 1;
+    min-width: 90px;
+    justify-content: center;
+  }
+
+  .vocab-page__grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* -- List view: stack vertically on mobile -- */
+  .vocab-page__grid--list .vocabulary-card {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "left"
+      "content"
+      "right";
+    gap: 0.6rem;
+    padding: 0.85rem 1rem;
+  }
+
+  .vocab-page__grid--list .vocabulary-card__header {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    max-width: none;
+    padding-right: 0;
+    padding-bottom: 0.6rem;
+    border-right: none;
+    border-bottom: 1px solid rgba(124, 58, 237, 0.08);
+  }
+
+  .vocab-page__grid--list .vocabulary-card__content {
+    overflow: visible;
+  }
+
+  .vocab-page__grid--list .vocabulary-card__translation,
+  .vocab-page__grid--list .vocabulary-card__definition,
+  .vocab-page__grid--list .vocabulary-card__example {
+    white-space: normal;
+  }
+
+  .vocab-page__grid--list .vocabulary-card__actions {
+    flex-direction: row;
+    padding-left: 0;
+    padding-top: 0.6rem;
+    border-left: none;
+    border-top: 1px solid rgba(124, 58, 237, 0.08);
+  }
+
+  /* Modal: bottom-sheet */
+  .vocabulary-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .vocabulary-modal {
+    max-height: 85vh;
+    border-radius: 24px 24px 0 0;
+    max-width: 100%;
+  }
+
+  .vocabulary-modal__row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .vocabulary-modal__input-group {
+    flex-direction: column;
+  }
+}
+
+/* ==========================================
+   RESPONSIVE — Small phone ≤ 480px
+   ========================================== */
+
+@media (max-width: 480px) {
+  .vocab-page__container {
+    padding: 0.75rem;
+  }
+
+  .vocab-page__header {
+    padding: 1rem;
+    border-radius: 16px;
+  }
+
+  .vocab-page__header-left {
+    gap: 0.75rem;
+  }
+
+  .vocab-page__header-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+    border-radius: 12px;
+  }
+
+  .vocab-page__header-title {
+    font-size: 1.2rem;
+  }
+
+  .vocab-page__header-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .vocab-page__stats {
+    gap: 0.5rem;
+  }
+
+  .vocab-page__stat {
+    min-width: 60px;
+    padding: 0.5rem 0.7rem;
+  }
+
+  .vocab-page__stat-value {
+    font-size: 1.1rem;
+  }
+
+  .vocab-page__stat-label {
+    font-size: 0.65rem;
+  }
+
+  .vocab-page__controls {
+    gap: 0.6rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 12px;
+  }
+
+  .vocab-page__search-input {
+    font-size: 0.85rem;
+  }
+
+  .vocab-page__filter-btn {
+    font-size: 0.78rem;
+    padding: 0.45rem 0.7rem;
+  }
+
+  .vocabulary-card {
+    padding: 0.9rem 1rem;
+    border-radius: 14px;
+  }
+
+  .vocabulary-card__word {
+    font-size: 1.1rem;
+  }
+
+  .vocabulary-card__label {
+    font-size: 0.65rem;
+  }
+
+  .vocabulary-card__value {
+    font-size: 0.85rem;
+  }
+
+  .vocabulary-modal__header {
+    padding: 1rem 1.25rem;
+  }
+
+  .vocabulary-modal__form {
+    padding: 1.25rem;
+  }
+}

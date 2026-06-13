@@ -1,0 +1,310 @@
+/* ============================================
+   test-header.css - Header Styles for Test Pages
+   ============================================ */
+
+.test-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+    height: 60px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    width: 100%;
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+.test-header-left, .test-header-center, .test-header-right {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.test-header-center {
+    justify-content: center;
+}
+
+.test-header-right {
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.test-header-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.test-timer {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #f3f4f6;
+    padding: 0.25rem 1rem;
+    border-radius: 6px;
+}
+
+.test-header-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.fullscreen-btn {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+.fullscreen-btn:hover {
+    background-color: #e5e7eb;
+}
+
+.submit-btn {
+    background-color: #7c3aed;
+    color: white;
+}
+
+.submit-btn:hover {
+    background-color: #6d28d9;
+}
+
+.exit-btn {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+
+.exit-btn:hover {
+    background-color: #fecaca;
+}
+
+/* ============================================
+   test-footer.css - Footer Styles for Test Pages
+   ============================================ */
+
+/* TestFooter.css - Unified Footer Styles for Test Pages */
+/* Supports both Questions mode (Reading/Listening) and WordCount mode (Writing) */
+
+/* ============================================
+   Base Footer Styles
+   ============================================ */
+.test-page-footer {
+    background-color: #ffffff;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-around;
+    padding: 0.6rem 0.75rem;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+    gap: 0;
+}
+
+/* ============================================
+   Part/Task Section Styles
+   ============================================ */
+.footer-part-section {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border-right: 1px solid #e5e7eb;
+    opacity: 0.65;
+    transition: all 0.15s ease;
+    border-top: 2px solid transparent;
+    margin-top: -0.6rem;
+    padding-top: calc(0.5rem + 0.6rem);
+    z-index: 2;
+}
+
+.footer-part-section:last-child {
+    border-right: none;
+}
+
+.footer-part-section:hover {
+    opacity: 0.85;
+    background-color: #faf5ff;
+}
+
+.footer-part-section.active {
+    opacity: 1;
+    background-color: #f5f3ff;
+    border-top-color: #7c3aed;
+    z-index: 2;
+}
+
+/* ============================================
+   Part Title Styles
+   ============================================ */
+.footer-part-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    color: #374151;
+    transition: color 0.15s ease;
+}
+
+.footer-part-section.active .footer-part-title {
+    color: #7c3aed;
+}
+
+.footer-part-title:hover {
+    color: #7c3aed;
+}
+
+/* ============================================
+   Questions Mode - Question Buttons Grid
+   ============================================ */
+.footer-question-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+}
+
+.question-nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid #d1d5db;
+    border-radius: 50%;
+    background-color: #fff;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.75rem;
+    transition: all 0.15s ease;
+}
+
+.question-nav-btn:hover {
+    background-color: #f0eaff;
+    border-color: #7c3aed;
+    transform: scale(1.08);
+}
+
+.question-nav-btn.answered {
+    background-color: #7c3aed;
+    color: white;
+    border-color: #7c3aed;
+}
+
+/* ============================================
+   Word Count Mode (Writing Test)
+   ============================================ */
+.test-page-footer.writing-footer {
+    cursor: default;
+    padding: 0;
+    gap: 0;
+}
+
+.writing-footer .footer-part-section {
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 0.6rem 1.5rem;
+    transition: all 0.15s ease;
+    border-top: 2px solid transparent;
+    opacity: 0.7;
+    /* Reset margin for writing mode */
+    margin-top: 0;
+    padding-top: 0.6rem;
+}
+
+.writing-footer .footer-part-section:hover {
+    background-color: #faf5ff;
+    opacity: 0.9;
+}
+
+.writing-footer .footer-part-section.active {
+    opacity: 1;
+    background-color: #f5f3ff;
+    border-top-color: #7c3aed;
+}
+
+.writing-footer .footer-part-title {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.writing-footer .footer-part-section.active .footer-part-title {
+    color: #7c3aed;
+}
+
+/* ============================================
+   Word Count Badge
+   ============================================ */
+.writing-task-info {
+    display: flex;
+    align-items: center;
+}
+
+.word-count-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.word-count-badge.incomplete {
+    background-color: #fef3c7;
+    color: #d97706;
+}
+
+.word-count-badge.complete {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+/* ============================================
+   question-nav-bar.css
+   ============================================ */
+
+.question-nav-bar {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+    margin-top: 1.5rem;
+}
+
+.question-nav-title {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.75rem;
+}
+
+.question-nav-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: 8px;
+}
+
+/* === question-nav-bar context overrides === */
+.question-nav-bar .question-nav-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.question-nav-bar .question-nav-btn:hover {
+    transform: scale(1.1);
+}

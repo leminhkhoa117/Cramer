@@ -4,18 +4,17 @@
  * V6.0: Refactored to reuse AdminPreviewContent for consistent UI
  * - Uses same test-taking UI as admin editor preview
  * - Removes ~200 lines of duplicate rendering code
- * - Adds MetadataBar, ValidationPanel, ReasoningPanel wrappers
+ * - Adds MetadataBar and ReasoningPanel wrappers
  * 
  * @since 2025-12-22
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { FiInfo, FiChevronUp, FiChevronDown, FiClock, FiCpu, FiFileText, FiAlertTriangle, FiCopy, FiHeadphones, FiCheck, FiImage } from 'react-icons/fi';
+import { FiInfo, FiChevronUp, FiChevronDown, FiClock, FiCpu, FiFileText, FiCopy, FiHeadphones, FiCheck, FiImage } from 'react-icons/fi';
 import useABTSStore from '../../stores/useABTSStore';
 import AdminPreviewContent from '../content/AdminPreviewContent';
 import StreamingDisplay from './StreamingDisplay';
 import QuestionEditModal from '../content/QuestionEditModal';
-import IssueSelector from './IssueSelector';
 import RefinementModal from './RefinementModal';
 import './AIStudio.css';
 
@@ -26,8 +25,11 @@ export default function StepPreview({ onBack }) {
     isGenerating,
     goToStep,
     streamEvents,
+    streamPreview,
+    streamChunkCount,
     generationProgress,
     generationError,
+    partErrors,
     reasoning,
     abortGeneration,
     updateGeneratedQuestion
@@ -41,7 +43,6 @@ export default function StepPreview({ onBack }) {
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [showTranscriptPanel, setShowTranscriptPanel] = useState(false);
   const [copiedTranscript, setCopiedTranscript] = useState(false);
-  const [isValidationExpanded, setIsValidationExpanded] = useState(null); // null = auto
   const [imageUrls, setImageUrls] = useState({}); // { partNumber: url }
 
   // Use onBack if provided, otherwise fallback to store's goToStep
@@ -60,8 +61,6 @@ export default function StepPreview({ onBack }) {
   };
 
   const content = generationResult?.content || {};
-  const warnings = generationResult?.warnings || [];
-  const validation = generationResult?.validation || null;
   const metadata = generationResult?.metadata || null;
   const isWriting = formData.skill === 'WRITING';
   const reasoningText = generationResult?.reasoning || reasoning;
@@ -204,8 +203,11 @@ export default function StepPreview({ onBack }) {
         <StreamingDisplay
           isActive={isGenerating}
           events={streamEvents}
+          streamPreview={streamPreview}
+          streamChunkCount={streamChunkCount}
           progress={generationProgress}
           error={generationError}
+          partErrors={partErrors}
           reasoning={reasoning}
           onAbort={abortGeneration}
           onBack={handleGoBack}
@@ -295,98 +297,6 @@ export default function StepPreview({ onBack }) {
       )}
     </div>
   );
-
-  // Validation Panel Component - Collapsible (uses parent state to prevent reset on re-render)
-  const ValidationPanel = () => {
-    const schemaErrors = validation?.schemaErrors || [];
-    const contentErrors = validation?.contentErrors || [];
-    const businessErrors = validation?.businessRuleErrors || [];
-    const allWarnings = warnings || [];
-
-    const totalIssues = schemaErrors.length + contentErrors.length + businessErrors.length + allWarnings.length;
-    // Use parent state, with auto-expand default based on issue count
-    const isExpanded = isValidationExpanded === null ? totalIssues <= 3 : isValidationExpanded;
-    const handleToggle = (e) => {
-      e.stopPropagation(); // Prevent event bubbling
-      setIsValidationExpanded(!isExpanded);
-    };
-
-    if (totalIssues === 0) {
-      return null;
-    }
-
-    return (
-      <div className="studio-alerts">
-        <div
-          className="studio-alerts__header"
-          onClick={handleToggle}
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            cursor: 'pointer',
-            padding: '8px 12px',
-            background: 'rgba(234, 179, 8, 0.1)',
-            borderRadius: '6px',
-            marginBottom: isExpanded ? '8px' : '0'
-          }}
-        >
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#ca8a04' }}>
-            <FiAlertTriangle size={14} />
-            {totalIssues} issue{totalIssues > 1 ? 's' : ''} found
-          </span>
-          <button
-            className="studio-meta__toggle"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ca8a04' }}
-          >
-            {isExpanded ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
-          </button>
-        </div>
-
-        {isExpanded && (
-          <>
-            {schemaErrors.length > 0 && (
-              <div className="studio-alerts__section">
-                <h4 className="studio-alerts__title"><FiAlertTriangle /> Schema Errors</h4>
-                <ul>
-                  {schemaErrors.map((err, idx) => <li key={`schema-${idx}`}>{err}</li>)}
-                </ul>
-              </div>
-            )}
-            {contentErrors.length > 0 && (
-              <div className="studio-alerts__section">
-                <h4 className="studio-alerts__title"><FiAlertTriangle /> Content Errors</h4>
-                <ul>
-                  {contentErrors.map((err, idx) => <li key={`content-${idx}`}>{err}</li>)}
-                </ul>
-              </div>
-            )}
-            {businessErrors.length > 0 && (
-              <div className="studio-alerts__section">
-                <h4 className="studio-alerts__title"><FiAlertTriangle /> Business Rule Errors</h4>
-                <ul>
-                  {businessErrors.map((err, idx) => <li key={`business-${idx}`}>{err}</li>)}
-                </ul>
-              </div>
-            )}
-            {allWarnings.length > 0 && (
-              <div className="studio-alerts__section studio-alerts__section--warning">
-                <h4 className="studio-alerts__title">Warnings</h4>
-                <ul>
-                  {allWarnings.map((warn, idx) => <li key={`warn-${idx}`}>{warn}</li>)}
-                </ul>
-                {/* Agent 2 Issue Selector */}
-                <IssueSelector
-                  issues={allWarnings.map((msg, idx) => ({ id: `warn-${idx}`, message: msg, type: 'WARNING' }))}
-                  type="warning"
-                />
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    );
-  };
 
   // Reasoning Panel Component
   const ReasoningPanel = () => {
@@ -496,7 +406,6 @@ export default function StepPreview({ onBack }) {
     return (
       <div className="studio-preview">
         <MetadataBar />
-        <ValidationPanel />
         <RefinementModal />
         <ReasoningPanel />
         <div className="studio-panel__content" style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
@@ -526,7 +435,6 @@ export default function StepPreview({ onBack }) {
   return (
     <div className="studio-preview">
       <MetadataBar />
-      <ValidationPanel />
       <ListeningToolsPanel />
       <RefinementModal />
       <ReasoningPanel />

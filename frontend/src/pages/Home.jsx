@@ -28,6 +28,9 @@ export default function Home() {
         <HeroSection />
       </Suspense>
       <Suspense fallback={<SectionLoader />}>
+        <DemoSection />
+      </Suspense>
+      <Suspense fallback={<SectionLoader />}>
         <FeaturesSection />
       </Suspense>
       <Suspense fallback={<SectionLoader />}>
@@ -35,9 +38,6 @@ export default function Home() {
       </Suspense>
       <Suspense fallback={<SectionLoader />}>
         <TestimonialsSection />
-      </Suspense>
-      <Suspense fallback={<SectionLoader />}>
-        <DemoSection />
       </Suspense>
       <Suspense fallback={<SectionLoader />}>
         <FAQSection />

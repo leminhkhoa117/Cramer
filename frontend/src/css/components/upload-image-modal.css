@@ -1,0 +1,164 @@
+/* ===================================
+   UPLOAD IMAGE MODAL - Cramer
+   
+   Extends shared Modal.css with upload-specific styles
+   =================================== */
+
+/* Tab Navigation within Modal */
+.upload-modal-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--modal-glass-border, rgba(255, 255, 255, 0.18));
+}
+
+.upload-modal-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: var(--modal-text-secondary, rgba(255, 255, 255, 0.9));
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.upload-modal-tab:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.upload-modal-tab.active {
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+}
+
+.upload-modal-tab svg {
+  font-size: 1rem;
+}
+
+/* Content Area */
+.upload-modal-content-area {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Upload Zone (from CroppableImageTab) */
+.upload-tab-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-drop-zone {
+  width: 100%;
+  min-height: 250px;
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.upload-drop-zone:hover {
+  border-color: rgba(167, 139, 250, 0.6);
+  background: rgba(167, 139, 250, 0.1);
+}
+
+.upload-placeholder {
+  text-align: center;
+  color: var(--modal-text-secondary, rgba(255, 255, 255, 0.9));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.upload-placeholder svg {
+  font-size: 2.5rem;
+  color: rgba(167, 139, 250, 0.7);
+}
+
+.upload-placeholder p {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--modal-text, #fff);
+}
+
+.upload-placeholder span {
+  font-size: 0.85rem;
+  color: var(--modal-text-muted, rgba(255, 255, 255, 0.7));
+}
+
+/* Image Preview & Cropper */
+.image-preview {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.cropper-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-change-image {
+  margin-top: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--modal-text-secondary, rgba(255, 255, 255, 0.9));
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-change-image:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .upload-modal-tabs {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .upload-modal-tab {
+    flex: 1 1 45%;
+    justify-content: center;
+    padding: 0.65rem 0.75rem;
+    font-size: 0.85rem;
+  }
+  
+  .upload-modal-tab span {
+    display: none;
+  }
+  
+  .upload-modal-tab svg {
+    font-size: 1.1rem;
+  }
+}

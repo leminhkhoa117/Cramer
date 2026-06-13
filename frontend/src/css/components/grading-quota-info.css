@@ -1,0 +1,238 @@
+/* GradingQuotaInfo Component Styles */
+
+/* Base styles */
+.grading-quota {
+    font-family: 'Quicksand', sans-serif;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+/* Compact variant - inline usage */
+.grading-quota--compact {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-radius: 6px;
+}
+
+.grading-quota--compact.success {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+}
+
+.grading-quota--compact.low {
+    background: rgba(234, 179, 8, 0.1);
+    color: #ca8a04;
+}
+
+.grading-quota--compact.warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+.grading-quota--compact.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+.grading-quota--compact .quota-icon {
+    flex-shrink: 0;
+    font-size: 0.9rem;
+}
+
+/* Card variant - full info */
+.grading-quota--card {
+    padding: 1rem;
+    border: 1px solid;
+    margin: 0.75rem 0;
+    background: #ffffff;
+    /* Force white background for readability on any surface */
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.grading-quota--card.success {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.grading-quota--card.low {
+    background: #fefce8;
+    border-color: #fde047;
+}
+
+.grading-quota--card.warning {
+    background: #fffbeb;
+    border-color: #fcd34d;
+}
+
+.grading-quota--card.error {
+    background: #fff1f2;
+    /* Very light rose/white */
+    border-color: #fda4af;
+}
+
+/* Header */
+.grading-quota .quota-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.grading-quota .quota-icon {
+    font-size: 1.25rem;
+}
+
+.grading-quota.success .quota-icon {
+    color: #16a34a;
+}
+
+.grading-quota.low .quota-icon {
+    color: #ca8a04;
+}
+
+.grading-quota.warning .quota-icon {
+    color: #d97706;
+}
+
+.grading-quota.error .quota-icon {
+    color: #e11d48;
+}
+
+.grading-quota .quota-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1f2937;
+    /* Dark gray for clear contrast */
+}
+
+/* Body */
+.grading-quota .quota-body {
+    margin-bottom: 0.75rem;
+}
+
+.grading-quota .quota-stats {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+}
+
+.grading-quota .quota-remaining {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #16a34a;
+}
+
+.grading-quota.low .quota-remaining {
+    color: #ca8a04;
+}
+
+.grading-quota .quota-separator {
+    font-size: 1rem;
+    color: #6b7280;
+    margin: 0 0.25rem;
+}
+
+.grading-quota .quota-limit {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #4b5563;
+}
+
+.grading-quota .quota-label {
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin-left: 0.25rem;
+}
+
+/* Messages */
+.grading-quota .quota-message {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0;
+    color: #374151;
+    /* Default dark text */
+}
+
+.grading-quota .quota-message.error {
+    color: #9f1239;
+    /* Deep rose - high contrast */
+    font-weight: 500;
+}
+
+.grading-quota .quota-message.blocked {
+    color: #881337;
+    /* Rose 900 */
+    font-weight: 600;
+}
+
+.grading-quota .quota-hint {
+    font-size: 0.85rem;
+    margin: 0.5rem 0 0 0;
+    color: #b45309;
+}
+
+/* Lúa option */
+.grading-quota .quota-lua-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #fff8e1;
+    /* Clear light amber */
+    border: 1px solid #fcd34d;
+    border-radius: 6px;
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: #92400e;
+    font-weight: 500;
+}
+
+.grading-quota .lua-icon {
+    color: #f59e0b;
+    font-size: 1.1rem;
+}
+
+/* Links */
+.grading-quota .quota-link {
+    color: #7c3aed;
+    font-weight: 600;
+    text-decoration: underline;
+    margin: 0 0.25rem;
+    cursor: pointer;
+}
+
+.grading-quota .quota-link:hover {
+    color: #6d28d9;
+}
+
+/* Progress bar */
+.grading-quota .quota-progress {
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.grading-quota .quota-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #16a34a, #22c55e);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.grading-quota.low .quota-progress-fill {
+    background: linear-gradient(90deg, #ca8a04, #eab308);
+}
+
+.grading-quota.warning .quota-progress-fill,
+.grading-quota.error .quota-progress-fill {
+    background: linear-gradient(90deg, #f43f5e, #e11d48);
+    /* Rose gradient */
+    width: 0% !important;
+}

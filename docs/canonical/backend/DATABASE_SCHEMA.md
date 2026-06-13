@@ -1,11 +1,11 @@
 # Cramer IELTS Platform - Database Schema Documentation
 
-> **Last Verified Against Live Supabase:** 17/05/2026
+> **Last Verified Against Live Supabase:** 03/06/2026
 > **Database:** Supabase PostgreSQL
-> **Public Schema Tables:** 34
+> **Public Schema Tables:** 35
 > **Active App Tables Documented Here:** 28
 > **Archived Legacy Tables:** 6 (`speaking_*_legacy`)
-> **Active App Tables with RLS:** 25
+> **Active App Tables with RLS:** 28
 > **Applied Migrations:** 52
 
 ---
@@ -70,8 +70,8 @@ The schema is designed to support:
 | `target` | ✅ | User IELTS score targets |
 | `test_sets` | ✅ | Test collections (e.g., Cambridge IELTS 17) |
 | `tests` | ✅ | Individual tests within sets |
-| `sections` | ❌ | Shared content sections for Reading, Listening, Writing, and Speaking |
-| `questions` | ❌ | Shared authored question/prompt pool |
+| `sections` | ✅ | Shared content sections for Reading, Listening, Writing, and Speaking |
+| `questions` | ✅ | Shared authored question/prompt pool |
 | `hashtags` | ✅ | Content categorization tags |
 | `test_hashtags` | ✅ | Many-to-many: tests ↔ hashtags |
 | `test_attempts` | ✅ | User test attempt records |
@@ -80,7 +80,7 @@ The schema is designed to support:
 | `speaking_sessions` | ✅ | Speaking session runtime lifecycle, blueprint, and grading state |
 | `speaking_transcripts` | ✅ | Turn-level Speaking runtime truth |
 | `vocabulary` | ✅ | User vocabulary notebook |
-| `subscription_tiers` | ❌ | Available subscription plans |
+| `subscription_tiers` | ✅ | Available subscription plans |
 | `user_subscriptions` | ✅ | User subscription records |
 | `user_credits` | ✅ | User Lúa balance |
 | `credit_transactions` | ✅ | Lúa transaction history |
@@ -96,6 +96,8 @@ The schema is designed to support:
 | `abts_templates` | ✅ | AI test generation templates |
 
 **Archived legacy tables retained in the live public schema:** `speaking_fixed_questions_legacy`, `speaking_questions_legacy`, `speaking_sessions_legacy`, `speaking_tests_legacy`, `speaking_topics_legacy`, `speaking_transcripts_legacy`
+
+**Live auxiliary table not used by current repo source:** `model_runtime_status`
 
 > Legacy Speaking tables are archive-only for traceability and are not part of the active runtime content path.
 
@@ -845,7 +847,7 @@ profiles
 
 ## Row Level Security (RLS) Policies
 
-### Active App Tables with RLS Enabled (25)
+### Active App Tables with RLS Enabled (28)
 
 | Table | Policies |
 |-------|----------|
@@ -871,19 +873,18 @@ profiles
 | `lua_packs` | Public read active; Service role full access |
 | `test_sets` | Public read published; Service role full access |
 | `tests` | Public read published; Service role full access |
+| `sections` | Public read published content; Service role full access |
+| `questions` | Public read published question content only; `correct_answer` and `explanation` not granted to anon/authenticated |
 | `hashtags` | Public read active; Service role full access |
 | `test_hashtags` | Public read; Service role full access |
 | `abts_templates` | Public read active; Admins insert/update |
+| `subscription_tiers` | Public read active; Service role full access |
 
 Archived `speaking_*_legacy` tables also retain RLS in the live schema but are excluded from the active app table list above. They are treated as archive-only and should not be used by active runtime paths.
 
-### Active App Tables without RLS (3)
+### Active App Tables without RLS (0)
 
-| Table | Reason |
-|-------|--------|
-| `sections` | Public content, no user-specific data |
-| `questions` | Public content, no user-specific data |
-| `subscription_tiers` | Public reference data |
+All active app tables now have RLS enabled. `sections`, `questions`, and `subscription_tiers` were enabled by `20260603_enable_content_tier_rls.sql`; direct anon/authenticated reads are limited to published content / active tiers, and sensitive `questions` answer columns remain server-side only.
 
 ---
 
@@ -982,6 +983,7 @@ Migration names are preserved from Supabase metadata. They are historical breadc
 | 20260103123837 | rename_explanation_keys_to_english | Rename keys to English |
 | 20260105085454 | fix_matching_options_format | Fix matching format |
 | 20260111023543 | fix_abts_templates_rls_policies | Fix ABTS template RLS policies |
+| 20260603 | enable_content_tier_rls | Enable RLS on sections, questions, and subscription_tiers |
 | 20260111023630 | fix_function_search_paths | Harden function search paths |
 | 20260111023811 | fix_check_and_award_achievement_overload | Fix achievement function overload |
 | 20260205063908 | create_speaking_tables | Create initial Speaking runtime tables |
@@ -1061,11 +1063,11 @@ Migration names are preserved from Supabase metadata. They are historical breadc
 
 | Metric | Value |
 |--------|-------|
-| **Public Schema Tables** | 34 |
+| **Public Schema Tables** | 35 |
 | **Active App Tables Documented** | 28 |
 | **Archived Legacy Tables** | 6 (`speaking_*_legacy`) |
-| **Active App Tables with RLS** | 25 |
-| **Active App Tables without RLS** | 3 |
+| **Active App Tables with RLS** | 28 |
+| **Active App Tables without RLS** | 0 |
 | **Total Migrations** | 52 |
 | **Total Indexes** | 100+ |
 | **Database Triggers** | 11 |
