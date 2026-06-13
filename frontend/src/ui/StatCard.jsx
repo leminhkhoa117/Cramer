@@ -6,7 +6,7 @@ import { Card } from './Card';
  */
 export function StatCard({ icon, label, value, delta, hint, className }) {
   return (
-    <Card padded className={cn('flex items-start gap-3', className)}>
+    <Card padded className={cn('flex h-full items-center gap-3', className)}>
       {icon && (
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand-600 text-lg">
           {icon}

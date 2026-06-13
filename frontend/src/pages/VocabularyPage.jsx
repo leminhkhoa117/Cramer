@@ -128,7 +128,7 @@ export default function VocabularyPage() {
           <Button iconLeft={<FiPlus size={16} />} onClick={() => { setEditing(null); setModalOpen(true); }}>Thêm từ mới</Button>
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="mt-5 grid grid-cols-2 gap-3 auto-rows-fr sm:grid-cols-3">
           <StatCard icon={<FiBook />} label="Tổng từ" value={total} />
           <StatCard icon={<FiStar />} label="Đã thuộc" value={mastered} />
           <StatCard icon={<FiStar />} label="Đang học" value={Math.max(0, total - mastered)} />

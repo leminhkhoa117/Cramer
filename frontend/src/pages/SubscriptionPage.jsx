@@ -133,9 +133,9 @@ export default function SubscriptionPage() {
             <div className="flex flex-col gap-6">
               <div>
                 <h3 className="mb-3 text-lg font-bold text-ink">Nâng cấp gói</h3>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 auto-rows-fr sm:grid-cols-2">
                   {tiers.filter((t) => t.priceVnd > 0).map((t) => (
-                    <Card key={t.code} className="flex flex-col gap-3">
+                    <Card key={t.code} className="flex h-full flex-col gap-3">
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">{TIER_EMOJI[t.code] || '🌻'}</span>
                         <h4 className="text-lg font-bold text-ink">{t.name}</h4>
@@ -146,7 +146,7 @@ export default function SubscriptionPage() {
                         <li className="flex items-center gap-2"><FiCheck className="text-success" size={15} />{t.includedAiGradings} lượt chấm AI</li>
                         <li className="flex items-center gap-2"><FiCheck className="text-success" size={15} />{t.monthlyLuaBonus} Lúa mỗi tháng</li>
                       </ul>
-                      <Button fullWidth loading={busy} disabled={t.code === tierCode} onClick={() => upgradeTier(t)}>
+                      <Button className="mt-auto" fullWidth loading={busy} disabled={t.code === tierCode} onClick={() => upgradeTier(t)}>
                         {t.code === tierCode ? 'Gói hiện tại' : 'Nâng cấp'}
                       </Button>
                     </Card>
@@ -156,14 +156,14 @@ export default function SubscriptionPage() {
               <div>
                 <h3 className="mb-3 text-lg font-bold text-ink">Mua thêm Lúa</h3>
                 {packs.length === 0 ? <EmptyState icon="🌾" title="Chưa có gói Lúa" /> : (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="grid gap-4 auto-rows-fr grid-cols-2 lg:grid-cols-3">
                     {packs.map((p) => (
-                      <Card key={p.code} className="flex flex-col gap-2 text-center">
+                      <Card key={p.code} className="flex h-full flex-col gap-2 text-center">
                         <div className="text-3xl">🌾</div>
                         <div className="text-xl font-bold text-ink">{p.luaAmount} Lúa</div>
                         {p.description && <div className="text-sm text-muted">{p.description}</div>}
                         <div className="text-lg font-bold text-brand-700">{fmtVnd(p.priceVnd)}</div>
-                        <Button fullWidth variant="outline" loading={busy} onClick={() => buyPack(p.code)}>Mua</Button>
+                        <Button className="mt-auto" fullWidth variant="outline" loading={busy} onClick={() => buyPack(p.code)}>Mua</Button>
                       </Card>
                     ))}
                   </div>

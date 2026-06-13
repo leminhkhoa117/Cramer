@@ -199,7 +199,7 @@ export default function Dashboard() {
               variants={containerVar}
               initial="hidden"
               animate="visible"
-              className="grid grid-cols-2 gap-4 lg:grid-cols-4"
+              className="grid grid-cols-2 gap-4 auto-rows-fr lg:grid-cols-4"
             >
               {initialLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (
@@ -207,16 +207,16 @@ export default function Dashboard() {
                 ))
               ) : (
                 <>
-                  <motion.div variants={itemVar}>
+                  <motion.div variants={itemVar} className="h-full">
                     <StatCard icon={<FiCheckCircle />} label="Bài đã hoàn thành" value={stats?.testsCompleted ?? 0} />
                   </motion.div>
-                  <motion.div variants={itemVar}>
+                  <motion.div variants={itemVar} className="h-full">
                     <StatCard icon={<FiHelpCircle />} label="Câu đã trả lời" value={stats?.questionsAnswered ?? 0} />
                   </motion.div>
-                  <motion.div variants={itemVar}>
+                  <motion.div variants={itemVar} className="h-full">
                     <StatCard icon={<FiAward />} label="Câu đúng" value={stats?.correctAnswers ?? 0} />
                   </motion.div>
-                  <motion.div variants={itemVar}>
+                  <motion.div variants={itemVar} className="h-full">
                     <StatCard icon={<FiTrendingUp />} label="Độ chính xác" value={fmtPct(stats?.accuracy)} />
                   </motion.div>
                 </>
