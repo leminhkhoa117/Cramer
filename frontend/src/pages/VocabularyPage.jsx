@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FiBook, FiPlus, FiSearch, FiStar, FiEdit2, FiTrash2, FiVolume2, FiGrid, FiList } from 'react-icons/fi';
 import { useVocabularyStore } from '../stores';
 import { toast } from '../ui/toast';
@@ -147,24 +147,26 @@ export default function VocabularyPage() {
           />
           <div className="flex items-center gap-3">
             <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-line bg-surface p-0.5">
-              <button
+              <motion.button
                 type="button"
+                whileTap={{ scale: 0.9 }}
                 aria-label="Xem dạng thẻ"
                 aria-pressed={view === 'card'}
                 onClick={() => setView('card')}
                 className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${view === 'card' ? 'bg-brand-soft text-brand-700' : 'text-muted hover:text-ink-2'}`}
               >
                 <FiGrid size={16} />
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 type="button"
+                whileTap={{ scale: 0.9 }}
                 aria-label="Xem dạng danh sách"
                 aria-pressed={view === 'list'}
                 onClick={() => setView('list')}
                 className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${view === 'list' ? 'bg-brand-soft text-brand-700' : 'text-muted hover:text-ink-2'}`}
               >
                 <FiList size={16} />
-              </button>
+              </motion.button>
             </div>
             <div className="w-full lg:w-64">
               <Input placeholder="Tìm từ vựng…" value={search} onChange={(e) => setSearch(e.target.value)} iconLeft={<FiSearch size={16} />} />
@@ -181,20 +183,29 @@ export default function VocabularyPage() {
             <EmptyState icon="📖" title="Chưa có từ nào" description="Bắt đầu xây dựng sổ tay của bạn bằng cách thêm từ mới hoặc lưu từ khi luyện đọc."
               action={<Button iconLeft={<FiPlus size={16} />} onClick={() => { setEditing(null); setModalOpen(true); }}>Thêm từ đầu tiên</Button>} />
           ) : (
-            <motion.div
-              className={view === 'list' ? 'flex flex-col gap-2.5' : 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3'}
-              initial="hidden"
-              animate="visible"
-              variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
-            >
-              {vocabulary.map((v) => (
-                <motion.div key={v.id} variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}>
-                  {view === 'list'
-                    ? <VocabRow v={v} onEdit={(x) => { setEditing(x); setModalOpen(true); }} onDelete={setDeletingId} onToggle={toggleMastered} />
-                    : <VocabCard v={v} onEdit={(x) => { setEditing(x); setModalOpen(true); }} onDelete={setDeletingId} onToggle={toggleMastered} />}
-                </motion.div>
-              ))}
-            </motion.div>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={view}
+                className={view === 'list' ? 'flex flex-col gap-2.5' : 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3'}
+                initial={{ opacity: 0, y: 8, scale: 0.99 }}
+                animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.22, ease: 'easeOut', staggerChildren: 0.035 } }}
+                exit={{ opacity: 0, y: -8, scale: 0.99, transition: { duration: 0.14, ease: 'easeIn' } }}
+              >
+                {vocabulary.map((v) => (
+                  <motion.div
+                    key={v.id}
+                    layout
+                    variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    {view === 'list'
+                      ? <VocabRow v={v} onEdit={(x) => { setEditing(x); setModalOpen(true); }} onDelete={setDeletingId} onToggle={toggleMastered} />
+                      : <VocabCard v={v} onEdit={(x) => { setEditing(x); setModalOpen(true); }} onDelete={setDeletingId} onToggle={toggleMastered} />}
+                  </motion.div>
+                ))}
+              </motion.div>
+            </AnimatePresence>
           )}
 
           {totalPages > 1 && <Pagination className="mt-6" page={page} totalPages={totalPages} onPageChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
