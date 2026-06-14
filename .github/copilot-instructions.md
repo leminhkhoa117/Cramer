@@ -47,10 +47,10 @@ http://localhost:8080/swagger-ui.html (requires JWT token via Authorize button)
 
 ### Tech Stack
 
-- **Backend**: Spring Boot 3.3, Java 17, Spring Data JPA, Spring Security
-- **Frontend**: React 18, Vite, Zustand (state), Tailwind CSS, React Bootstrap
+- **Backend**: Spring Boot 4.0.0, Java 25, Spring Data JPA, Spring Security (OAuth2 resource server)
+- **Frontend**: React 19, Vite 8, Zustand 5 (state), Tailwind CSS 4, React Bootstrap
 - **Database**: Supabase PostgreSQL with RLS policies
-- **AI Integration**: DeepSeek V3.2 (via OpenAI-compatible API) for writing grading, OpenRouter for ABTS
+- **AI Integration**: DeepSeek (`deepseek-reasoner` default, via OpenAI-compatible API at `api.deepseek.com`) for writing grading; OpenRouter (`deepseek/deepseek-v4-flash` default) for ABTS generation; Google Gemini for speaking evaluation
 
 ### Backend Structure (`backend/src/main/java/com/cramer/`)
 
@@ -83,18 +83,22 @@ Vertical-slice modules (one bounded context each); **no** global controller/serv
 ### Database Schema (Supabase)
 
 - `profiles` - User profile data linked to Supabase auth
-- `test_sets` -> `tests` -> `sections` -> `questions` - Content hierarchy
+- `test_sets` -> `tests` -> `sections` -> `questions` - Content hierarchy (+ `hashtags`, `test_hashtags`)
 - `test_attempts`, `user_answers` - User test progress (RLS enabled)
-- `subscription_tiers`, `user_subscriptions`, `user_credits` - Monetization
-- `payment_orders` - PayOS payment tracking
+- `writing_submissions` - Writing tasks + async grading; `speaking_sessions`, `speaking_transcripts` - Speaking (legacy `speaking_*_legacy` archived)
+- `subscription_tiers`, `user_subscriptions`, `user_credits`, `credit_transactions`, `lua_packs` - Monetization (Lúa)
+- `user_quotas`, `skill_quotas`, `chatbot_usage`, `translation_usage` - Quota/usage tracking
+- `chat_messages`, `vocabulary`, `user_activities` - Engagement
+- `payment_orders` - PayOS payment tracking; `admin_audit_log` - audit; `abts_templates` - ABTS; `model_runtime_status` - AI model health
 
 ## Key Patterns
 
 ### Authentication
 
-- JwtAuthFilter validates Supabase JWTs before UsernamePasswordAuthFilter
-- Extract user ID: `SecurityContextHolder.getContext().getAuthentication().getName()`
-- Frontend sets `Authorization: Bearer <token>` via setupApiClient in backendApi.js
+- Spring Security **OAuth2 resource server** validates Supabase HS256 JWTs via `NimbusJwtDecoder` (`platform/security/SupabaseJwtConfig`, wired in `platform/security/SecurityConfig`). There is **no** custom `JwtAuthFilter`.
+- Extract user ID (JWT subject): `SecurityContextHolder.getContext().getAuthentication().getName()`, or inject via `platform/security/CurrentUser`
+- Admin authorization via `platform/security/AdminAuthorizationService`
+- Frontend sets `Authorization: Bearer <token>` via the Axios client in `frontend/src/api/backendApi.js`
 
 ### State Management
 
@@ -120,8 +124,9 @@ Vertical-slice modules (one bounded context each); **no** global controller/serv
 Root `.env` file (loaded by run scripts):
 
 - `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`
-- `SUPABASE_JWT_SECRET`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-- `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY`
+- `SUPABASE_URL`, `SUPABASE_JWT_SECRET`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL`, `OPENROUTER_API_KEY`
+- `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY`, `PAYOS_RETURN_URL`, `PAYOS_CANCEL_URL`
 
 Frontend `.env`:
 
@@ -132,14 +137,17 @@ Frontend `.env`:
 
 - After backend changes: rebuild with `./mvnw clean package -DskipTests` and restart
 - Convert .env line endings if needed: `dos2unix .env` or `sed -i 's/\r$//' .env`
-- DB schema changes require migration files in `docs/backend/migrations/`
+- DB schema changes require migration files in `docs/ops/migrations/`
 - Keep PRs small and well-scoped; update docs when modifying schema
 
 ## Key Documentation
 
-- `docs/backend/supabase-backend.md` - Schema and operational guidance
-- `docs/CRAMER_ABTS_SPECS.md` - ABTS specification
-- `docs/CRAMER_CMS_ADMIN_SPECS.md` - Admin panel specs
+- `docs/specs/backend/README.md` - Backend architecture **source of truth** (SPEC-00…25)
+- `docs/canonical/README.md` - Canonical docs hub (backend + frontend references)
+- `docs/canonical/backend/DATABASE_SCHEMA.md` - Live Supabase schema reference
+- `docs/canonical/backend/{API_REFERENCE,SERVICES,ENTITIES}.md` - REST API, services, JPA entities
+- `docs/specs/backend/20-ai-generation/` - ABTS specification (SPEC-20…25)
+- `docs/specs/backend/10-modules/SPEC-17-admin.md` - Admin module spec
 - `backend/BUILD_INSTRUCTIONS.md` - Detailed build troubleshooting
 
 ## Google Workspace Sync Protocol

@@ -68,5 +68,5 @@ Upgrade Cramer's admin dashboard to provide control over AI providers and cost b
 
 ## Related Docs
 
-- `docs/library/backend/SERVICES.md` - Current AI service implementations
-- `docs/CRAMER_ABTS_SPECS.md` - ABTS generation specs
+- `docs/canonical/backend/SERVICES.md` - Current AI service implementations
+- `docs/specs/backend/20-ai-generation/` - ABTS generation specs (SPEC-20…25)

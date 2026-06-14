@@ -17,11 +17,10 @@ Align backend changes with documented entities, services, and API behavior.
 ## Workflow
 
 1. Read docs first:
-   - `docs/library/backend/ENTITIES.md`
-   - `docs/library/backend/SERVICES.md`
-   - `docs/library/backend/API_REFERENCE.md`
-2. Locate relevant code in `backend/src/main/java/com/cramer/`:
-   - `controller/`, `service/`, `repository/`, `entity/`, `dto/`, `mapper/`
+   - `docs/canonical/backend/ENTITIES.md`
+   - `docs/canonical/backend/SERVICES.md`
+   - `docs/canonical/backend/API_REFERENCE.md`
+2. Locate code under `backend/src/main/java/com/cramer/<module>/` where `<module>` is one of: identity, catalog, assessment, writing, speaking, billing, engagement, admin, abts (plus shared `platform/`). Each module owns `web/` (controllers + `web/dto` records), `service/` (+ cross-module `Port` interfaces), `domain/` (Lombok JPA entities/enums), `repository/`, and some `config/`.
 3. Propose changes with a clear rationale.
 4. Edit code and update docs where needed.
 5. Summarize updates and any follow-up tasks.

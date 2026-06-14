@@ -17,11 +17,11 @@ Deliver consistent UX and UI improvements across user and admin screens.
 ## Workflow
 
 1. Read docs first:
-   - `docs/library/frontend/UI_DESIGN_SYSTEM.md`
-   - `docs/library/frontend/COMPONENTS.md`
-   - `docs/library/frontend/PAGES.md`
-   - `docs/library/frontend/STATE_MANAGEMENT.md`
-   - `docs/library/frontend/API_CLIENT.md`
+   - `docs/canonical/frontend/UI_DESIGN_SYSTEM.md`
+   - `docs/canonical/frontend/COMPONENTS.md`
+   - `docs/canonical/frontend/PAGES.md`
+   - `docs/canonical/frontend/STATE_MANAGEMENT.md`
+   - `docs/canonical/frontend/API_CLIENT.md`
    - `docs/userflow/` (if relevant)
 2. Inspect relevant UI code:
    - `frontend/src/pages/` (user screens)

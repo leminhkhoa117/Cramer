@@ -2,7 +2,7 @@
 
 > **Version:** 1.0
 > **Last Updated:** 17/05/2026 (Round 1 fixes applied)
-> **Framework:** React 18 + Vite
+> **Framework:** React 19 + Vite 8
 > **UI Libraries:** Framer Motion, Zustand, React Icons
 
 This document describes the generic page structure patterns used across all Cramer frontend pages. It is **role-based** (not path-based) so it survives file refactors.

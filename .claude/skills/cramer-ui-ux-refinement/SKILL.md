@@ -17,9 +17,9 @@ Deliver consistent UX and UI improvements across user and admin screens.
 ## Workflow
 
 1. Read docs first:
-   - `docs/library/frontend/UI_DESIGN_SYSTEM.md` — design tokens, naming conventions, layout patterns
-   - `docs/library/frontend/COMPONENTS.md` (if exists)
-   - `docs/library/frontend/STATE_MANAGEMENT.md`
+   - `docs/canonical/frontend/UI_DESIGN_SYSTEM.md` — design tokens, naming conventions, layout patterns
+   - `docs/canonical/frontend/COMPONENTS.md`
+   - `docs/canonical/frontend/STATE_MANAGEMENT.md`
    - `docs/userflow/` (if relevant)
 2. Understand CSS structure (critical before any change):
    - `frontend/src/css/tokens.css` — ALL design tokens (single source of truth)

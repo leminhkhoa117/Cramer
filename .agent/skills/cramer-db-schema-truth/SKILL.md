@@ -18,9 +18,9 @@ Keep the documented schema and the live Supabase schema in sync.
 ## Workflow
 
 1. Read docs first:
-   - `docs/library/backend/DATABASE_SCHEMA.md`
-   - `docs/library/backend/ENTITIES.md`
-   - `docs/library/backend/API_REFERENCE.md`
+   - `docs/canonical/backend/DATABASE_SCHEMA.md`
+   - `docs/canonical/backend/ENTITIES.md`
+   - `docs/canonical/backend/API_REFERENCE.md`
 2. Query the live schema via MCP `supabase`.
 3. Compare docs vs live schema and list mismatches clearly.
 4. Recommend a resolution path:

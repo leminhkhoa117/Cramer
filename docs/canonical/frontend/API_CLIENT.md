@@ -856,5 +856,5 @@ await useDashboardStore.getState().fetchSummary();
 ## Related Documentation
 
 - [STATE_MANAGEMENT.md](STATE_MANAGEMENT.md) — Zustand stores documentation
-- [docs/backend/supabase-backend.md](../../backend/supabase-backend.md) — Backend API documentation
+- [API_REFERENCE.md](../backend/API_REFERENCE.md) — Backend API documentation
 - [backend/src/main/resources/application.properties](../../../backend/src/main/resources/application.properties) — Backend configuration

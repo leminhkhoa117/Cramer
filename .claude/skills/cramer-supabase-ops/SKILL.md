@@ -18,10 +18,10 @@ Enable safe, fast data operations in Supabase while keeping changes aligned with
 ## Workflow
 
 1. Read docs first:
-   - `docs/library/backend/DATABASE_SCHEMA.md`
-   - `docs/library/backend/ENTITIES.md`
-   - `docs/library/backend/SERVICES.md`
-   - `docs/library/backend/API_REFERENCE.md`
+   - `docs/canonical/backend/DATABASE_SCHEMA.md`
+   - `docs/canonical/backend/ENTITIES.md`
+   - `docs/canonical/backend/SERVICES.md`
+   - `docs/canonical/backend/API_REFERENCE.md`
 2. Verify schema live using MCP `supabase` before writing.
 3. Prefer direct table operations for routine edits.
 4. For any destructive operation, ask for explicit confirmation before executing:

@@ -74,4 +74,4 @@ Allow users to choose specific parts of any skill (Reading, Listening, Writing, 
 ## Related Docs
 
 - `docs/short_term_plans/lua_currency_management.md` - Credit pricing
-- `docs/library/frontend/PAGES.md` - Test entry UX
+- `docs/canonical/frontend/PAGES.md` - Test entry UX

@@ -1,966 +1,778 @@
-# Cramer Backend - JPA Entity Documentation
+# Cramer Backend — JPA Entity Reference
 
-> **Last Updated:** 17/05/2026  
-> **Spring Boot Version:** 3.x  
-> **Database:** PostgreSQL (Supabase)
+> **Last Updated:** 14/06/2026
+> **Version:** 2.0.0 (regenerated from vertical-slice code)
+> **Tech:** Spring Boot 4.0.0 · Java 25 · Hibernate ORM · Hypersistence/`SqlTypes.JSON` JSONB · Lombok
+> **Database:** PostgreSQL (Supabase), schema `public`
 
-This document provides a comprehensive reference for all JPA entities in the Cramer IELTS learning platform backend.
+This document is regenerated **directly from the `.java` source** of the vertical-slice
+backend (`backend/src/main/java/com/cramer/<module>/domain/`). Every class, table, column,
+type, and enum below was verified by reading the source.
+
+> **Supersedes the legacy `ENTITIES.md` (v1, 17/05/2026).** The old document described the
+> deleted `com.cramer.entity` package and classes such as `IeltsTest`, `TestAttempt`, and
+> `ChatbotUsage`, plus JPA association mappings (`@ManyToOne`/`@OneToMany`/`@ManyToMany`).
+> **None of that exists anymore.** Do not trust the legacy file.
 
 ---
 
 ## Table of Contents
 
-1. [Entity Overview](#entity-overview)
-2. [Test Content Domain](#test-content-domain)
-3. [User & Profile Domain](#user--profile-domain)
-4. [Test Attempt & Answers Domain](#test-attempt--answers-domain)
-5. [Subscription & Monetization Domain](#subscription--monetization-domain)
-6. [Quota & Billing Domain](#quota--billing-domain)
-7. [AI & Chat Domain](#ai--chat-domain)
-8. [Vocabulary Domain](#vocabulary-domain)
-9. [Activity & Audit Domain](#activity--audit-domain)
-10. [Entity Relationship Diagram](#entity-relationship-diagram)
+1. [Conventions](#conventions)
+2. [Entity → Table Mapping (summary)](#entity--table-mapping-summary)
+3. [Module: `identity`](#module-identity)
+4. [Module: `catalog`](#module-catalog)
+5. [Module: `assessment`](#module-assessment)
+6. [Module: `writing`](#module-writing)
+7. [Module: `speaking`](#module-speaking)
+8. [Module: `billing`](#module-billing)
+9. [Module: `engagement`](#module-engagement)
+10. [Module: `admin`](#module-admin)
+11. [Module: `platform` (shared enums)](#module-platform-shared-enums)
+12. [Module: `abts` (no entities)](#module-abts-no-entities)
+13. [Enum Catalogue](#enum-catalogue)
+14. [Known Tables Without a JPA Entity](#known-tables-without-a-jpa-entity)
+15. [Verification Notes](#verification-notes)
 
 ---
 
-## Entity Overview
+## Conventions
 
-| # | Entity | Table Name | Domain | Description |
-|---|--------|-----------|--------|-------------|
-| 1 | `TestSet` | `test_sets` | Test Content | Collection/folder of tests (e.g., Cambridge 17) |
-| 2 | `IeltsTest` | `tests` | Test Content | Individual IELTS test within a set |
-| 3 | `Section` | `sections` | Test Content | Exam sections (Reading passages, Listening parts) |
-| 4 | `Question` | `questions` | Test Content | Individual questions within sections |
-| 5 | `Hashtag` | `hashtags` | Test Content | Tags for categorizing tests |
-| 6 | `Profile` | `profiles` | User | User profile linked to Supabase auth |
-| 7 | `Target` | `target` | User | User's IELTS target scores and exam date |
-| 8 | `TestAttempt` | `test_attempts` | Attempt | User's test attempt session |
-| 9 | `UserAnswer` | `user_answers` | Attempt | Individual answers for questions |
-| 10 | `WritingSubmission` | `writing_submissions` | Attempt | Writing essays with AI grading results |
-| 10a | `SpeakingSession` | `speaking_sessions` | Attempt | Speaking runtime session lifecycle and grading state |
-| 10b | `SpeakingTranscript` | `speaking_transcripts` | Attempt | Turn-level Speaking runtime truth |
-| 11 | `SubscriptionTier` | `subscription_tiers` | Subscription | Tier definitions (Cramerie, Cramerich) |
-| 12 | `UserSubscription` | `user_subscriptions` | Subscription | User's active subscription |
-| 13 | `UserCredit` | `user_credits` | Subscription | User's Lua (credit) balance |
-| 14 | `CreditTransaction` | `credit_transactions` | Subscription | Credit movement history |
-| 15 | `PaymentOrder` | `payment_orders` | Subscription | PayOS payment order tracking |
-| 16 | `LuaPack` | `lua_packs` | Subscription | Purchasable Lua packages |
-| 17 | `UserQuota` | `user_quotas` | Quota | Global monthly quota usage |
-| 18 | `SkillQuota` | `skill_quotas` | Quota | Per-skill monthly quota usage |
-| 19 | `TranslationUsage` | `translation_usage` | Quota | Monthly translation usage |
-| 20 | `ChatMessage` | `chat_messages` | AI/Chat | Chat conversation messages |
-| 21 | `ChatbotUsage` | `chatbot_usage` | AI/Chat | Daily chatbot usage tracking |
-| 24 | `Vocabulary` | `vocabulary` | Vocabulary | User's saved vocabulary entries |
-| 25 | `UserActivity` | `user_activities` | Activity | User activity timeline |
-| 26 | `AdminAuditLog` | `admin_audit_log` | Audit | Admin action audit trail |
+These patterns hold across (nearly) every entity and are **not** repeated in each table:
 
-**Total implemented entities: 26**
-
-**Note:** `SpeakingSession` and `SpeakingTranscript` are implemented runtime entities that map to the active live Supabase Speaking tables.
+- **No JPA associations.** Verified: there are **zero** `@ManyToOne`, `@OneToMany`,
+  `@OneToOne`, `@ManyToMany`, `@JoinColumn`, or `@JoinTable` annotations in the entire
+  `com.cramer` tree. All relationships are modelled as **plain FK ID columns**
+  (`Long`/`UUID`), the "FK-first" rule. Relationship semantics in this doc are inferred from
+  column names, not from mapped associations.
+- **Lombok.** Entities use `@Getter @Setter` (no `@Builder`/`@*Constructor` on the entities
+  read). The composite-key `@Embeddable` adds `@NoArgsConstructor @AllArgsConstructor
+  @EqualsAndHashCode`.
+- **Primary keys.** Most use `@GeneratedValue(strategy = GenerationType.IDENTITY)` on a
+  `Long id`. Exceptions are called out (`Profile`, `Target`, `TestHashtag`).
+- **JSONB.** Stored via `@JdbcTypeCode(SqlTypes.JSON)` on a `com.fasterxml.jackson.databind.JsonNode`
+  field with `columnDefinition = "jsonb"`. (No entity uses `@Type(JsonType.class)`.)
+- **Timestamps.** `@CreationTimestamp` / `@UpdateTimestamp` (Hibernate) on `OffsetDateTime`
+  columns (`created_at`, `updated_at`, etc.).
+- **Schema.** Every `@Table` declares `schema = "public"`.
+- **Enums.** Default mapping is `@Enumerated(EnumType.STRING)`. Two columns instead use a
+  custom `AttributeConverter` to persist **lowercase** (`Section.skill`,
+  `SpeakingSession.status`).
 
 ---
 
-## Test Content Domain
+## Entity → Table Mapping (summary)
 
-### 1. TestSet
+26 `@Entity` classes + 1 `@Embeddable` composite key.
 
-Collection/folder of IELTS tests.
+| # | Module | Entity (class) | `@Table` | PK | Generation |
+|---|--------|----------------|----------|----|------------|
+| 1 | identity | `Profile` | `profiles` | `id` UUID | none (== `auth.users.id`) |
+| 2 | catalog | `TestSet` | `test_sets` | `id` Long | IDENTITY |
+| 3 | catalog | `Test` | `tests` | `id` Long | IDENTITY |
+| 4 | catalog | `Section` | `sections` | `id` Long | IDENTITY |
+| 5 | catalog | `Question` | `questions` | `id` Long | IDENTITY |
+| 6 | catalog | `Hashtag` | `hashtags` | `id` Long | IDENTITY |
+| 7 | catalog | `TestHashtag` | `test_hashtags` | `TestHashtagId` (composite) | `@EmbeddedId` |
+| 8 | assessment | `Attempt` | `test_attempts` | `id` Long | IDENTITY |
+| 9 | assessment | `UserAnswer` | `user_answers` | `id` Long | IDENTITY |
+| 10 | writing | `WritingSubmission` | `writing_submissions` | `id` Long | IDENTITY |
+| 11 | speaking | `SpeakingSession` | `speaking_sessions` | `id` Long | IDENTITY |
+| 12 | speaking | `SpeakingTranscript` | `speaking_transcripts` | `id` Long | IDENTITY |
+| 13 | billing | `SubscriptionTier` | `subscription_tiers` | `id` Long | IDENTITY |
+| 14 | billing | `UserSubscription` | `user_subscriptions` | `id` Long | IDENTITY |
+| 15 | billing | `UserCredit` | `user_credits` | `id` Long | IDENTITY |
+| 16 | billing | `CreditTransaction` | `credit_transactions` | `id` Long | IDENTITY |
+| 17 | billing | `PaymentOrder` | `payment_orders` | `id` Long | IDENTITY |
+| 18 | billing | `LuaPack` | `lua_packs` | `id` Long | IDENTITY |
+| 19 | billing | `UserQuota` | `user_quotas` | `id` Long | IDENTITY |
+| 20 | billing | `SkillQuota` | `skill_quotas` | `id` Long | IDENTITY |
+| 21 | billing | `TranslationUsage` | `translation_usage` | `id` Long | IDENTITY |
+| 22 | engagement | `Target` | `target` | `id` UUID | none (DB default) |
+| 23 | engagement | `ChatMessage` | `chat_messages` | `id` Long | IDENTITY |
+| 24 | engagement | `UserActivity` | `user_activities` | `id` Long | IDENTITY |
+| 25 | engagement | `Vocabulary` | `vocabulary` | `id` Long | IDENTITY |
+| 26 | admin | `AdminAuditLog` | `admin_audit_log` | `id` Long | IDENTITY |
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `code` | `code` | `String(50)` | NOT NULL, UNIQUE | Unique code (e.g., "cam17") |
-| `name` | `name` | `String(255)` | NOT NULL | Display name |
-| `description` | `description` | `TEXT` | | Description |
-| `coverImageUrl` | `cover_image_url` | `String(500)` | | Cover image URL |
-| `sourceType` | `source_type` | `String(50)` | Default: "custom" | 'cambridge', 'custom', 'ai_generated' |
-| `isPublished` | `is_published` | `Boolean` | Default: false | Publication status |
-| `displayOrder` | `display_order` | `Integer` | Default: 0 | Sort order |
-| `createdBy` | `created_by` | `UUID` | | Creator user ID |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
-| `updatedAt` | `updated_at` | `OffsetDateTime` | | Auto-updated |
+All 26 tables are present in the known live table set. No entity maps to an unknown table.
 
-**Relationships:**
-- `@OneToMany` → `IeltsTest` (tests)
-
----
-
-### 2. IeltsTest
-
-Individual IELTS test within a set.
-
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `testSet` | `set_id` | FK → TestSet | NOT NULL | Parent test set |
-| `testNumber` | `test_number` | `Integer` | NOT NULL | Test number within set |
-| `name` | `name` | `String(255)` | | Test name |
-| `description` | `description` | `TEXT` | | Description |
-| `difficulty` | `difficulty` | `String(30)` | Default: "INTERMEDIATE" | BEGINNER, INTERMEDIATE, ADVANCED |
-| `estimatedTimeMinutes` | `estimated_time_minutes` | `Integer` | Default: 170 | Full test duration |
-| `isPublished` | `is_published` | `Boolean` | Default: false | Publication status |
-| `isAiGenerated` | `is_ai_generated` | `Boolean` | Default: false | AI generation flag |
-| `generationMetadata` | `generation_metadata` | `JSONB` | | AI generation parameters |
-| `createdBy` | `created_by` | `UUID` | | Creator user ID |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
-| `updatedAt` | `updated_at` | `OffsetDateTime` | | Auto-updated |
-
-**Relationships:**
-- `@ManyToOne` → `TestSet` (testSet)
-- `@OneToMany` → `Section` (sections)
-- `@ManyToMany` → `Hashtag` (hashtags) via `test_hashtags`
-
-**Unique Constraint:** `(set_id, test_number)`
+**Entity count per module:** identity 1 · catalog 6 · assessment 2 · writing 1 · speaking 2
+· billing 9 · engagement 4 · admin 1 · platform 0 · abts 0 → **26 total**.
 
 ---
 
-### 3. Section
+## Module: `identity`
 
-Exam sections (Reading passages, Listening/Speaking parts, Writing tasks).
+`backend/src/main/java/com/cramer/identity/domain/`
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `ieltsTest` | `test_id` | FK → IeltsTest | | Parent test |
-| `examSource` | `exam_source` | `String` | | Source code (backward compat) |
-| `testNumber` | `test_number` | `Integer` | | Test number (backward compat) |
-| `skill` | `skill` | `String` | | "reading", "listening", "writing", "speaking" |
-| `partNumber` | `part_number` | `Integer` | | Part number (1, 2, 3, 4); Speaking uses 1-3 |
-| `displayContentUrl` | `display_content_url` | `String` | | Image/PDF URL |
-| `sectionLayout` | `section_layout` | `JSONB` | | Flexible block-based layouts |
-| `passageText` | `passage_text` | `TEXT` | | Full text for Reading passages |
-| `audioUrl` | `audio_url` | `String` | | Audio file URL for Listening |
-| `imageDescription` | `image_description` | `TEXT` | | Text description for Task 1 images |
-| `status` | `status` | `String(20)` | Default: "PUBLISHED" | PUBLISHED, DRAFT, ARCHIVED |
+### `Profile` → `profiles`
 
-**Relationships:**
-- `@ManyToOne` → `IeltsTest` (ieltsTest)
+FQN: `com.cramer.identity.domain.Profile` · File: `identity/domain/Profile.java`
+Mirror of the Supabase auth user; the backend never creates/deletes profiles.
 
-**Speaking Notes:**
-- Speaking content reuses the shared hierarchy: `test_sets` -> `tests` -> `sections` -> `questions`
-- Speaking sections use `skill = 'speaking'`
-- Speaking content tables from the legacy model were archived to `_legacy` tables in the database migration
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `UUID` | **PK**, not null, not updatable; `== auth.users.id` (no `@GeneratedValue`) |
+| `username` | `username` | `String` | not null, **unique** |
+| `fullName` | `full_name` | `String` | |
+| `phoneNumber` | `phone_number` | `String` | |
+| `address` | `address` | `String` | |
+| `avatarUrl` | `avatar_url` | `String` | |
+| `heroBackgroundUrl` | `hero_background_url` | `String` | |
+| `pageBackgroundUrl` | `page_background_url` | `String` | |
+| `llmApiKey` | `llm_api_key` | `String` | never exposed; `hasLlmApiKey()` helper |
+| `llmModel` | `llm_model` | `String` | |
+| `llmProvider` | `llm_provider` | `String` | default `"deepseek"` |
+| `isAdmin` | `is_admin` | `Boolean` | default `false` |
+| `accountStatus` | `account_status` | `AccountStatus` | `@Enumerated(STRING)`, default `ACTIVE` |
+| `statusReason` | `status_reason` | `String` | |
+| `lastLoginAt` | `last_login_at` | `OffsetDateTime` | |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
 
----
-
-### 4. Question
-
-Individual questions within sections, including Speaking authored prompts.
-
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `sectionId` | `section_id` | `Long` | FK → Section | Parent section |
-| `questionNumber` | `question_number` | `Integer` | | Sequential number |
-| `questionUid` | `question_uid` | `String` | UNIQUE | Unique ID (e.g., "cam17-t1-r-q1") |
-| `questionType` | `question_type` | `String` | | FILL_IN_BLANK, TRUE_FALSE_NOT_GIVEN, PART_1, PART_2, PART_3, etc. |
-| `questionContent` | `question_content` | `JSONB` | | Question text/options or Speaking prompt payload |
-| `correctAnswer` | `correct_answer` | `JSONB` | | Correct answer(s) as JSON array; may be null for Speaking |
-| `explanation` | `explanation` | `JSONB` | | Structured explanation |
-| `wordLimit` | `word_limit` | `String` | | Word limit constraint |
-| `imageUrl` | `image_url` | `String` | | Question-specific image |
-
-**Explanation JSONB Format:**
-```json
-{
-  "detail": "Detailed explanation in Vietnamese",
-  "quote": "Direct quote from passage/transcript",
-  "strategy": "Strategy tip for this question type"
-}
-```
-
-**Relationships:**
-- `@ManyToOne` → `Section` (section)
-
-**Speaking Notes:**
-- Speaking uses `question_type = PART_1 | PART_2 | PART_3`
-- Speaking `question_content` uses JSONB with base fields such as `schemaVersion`, `partType`, and `promptText`
-- Part 2 prompts can additionally include `cueCardBullets`, `prepTimeSeconds`, and `talkTimeSeconds`
+**Enums:** `AccountStatus` { `ACTIVE`, `BANNED`, `DEACTIVATED`, `DELETED` }.
 
 ---
 
-### 5. Hashtag
+## Module: `catalog`
 
-Tags for categorizing tests by topic, theme, or difficulty.
+`backend/src/main/java/com/cramer/catalog/domain/`
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `code` | `code` | `String(50)` | NOT NULL, UNIQUE | Unique code |
-| `name` | `name` | `String(100)` | NOT NULL | Display name |
-| `category` | `category` | `String(50)` | NOT NULL | 'topic', 'theme', 'difficulty' |
-| `icon` | `icon` | `String(10)` | | Emoji or icon code |
-| `color` | `color` | `String(20)` | | Hex color for UI |
-| `useCount` | `use_count` | `Integer` | Default: 0 | Usage count |
-| `isActive` | `is_active` | `Boolean` | Default: true | Active status |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
+Content hierarchy: `test_sets` → `tests` → `sections` → `questions`, plus `hashtags` and the
+`test_hashtags` junction. All cross-table links are plain ID columns.
 
-**Relationships:**
-- `@ManyToMany` → `IeltsTest` (tests) via `test_hashtags`
+### `TestSet` → `test_sets`
 
----
+FQN: `com.cramer.catalog.domain.TestSet` · File: `catalog/domain/TestSet.java`
 
-## User & Profile Domain
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `code` | `code` | `String` | not null, **unique** |
+| `name` | `name` | `String` | not null |
+| `description` | `description` | `String` | `columnDefinition = "TEXT"` |
+| `coverImageUrl` | `cover_image_url` | `String` | |
+| `sourceType` | `source_type` | `String` | default `"custom"` (cambridge/custom/ai_generated) |
+| `isPublished` | `is_published` | `Boolean` | default `false` |
+| `displayOrder` | `display_order` | `Integer` | default `0` |
+| `isSystem` | `is_system` | `Boolean` | |
+| `createdBy` | `created_by` | `UUID` | |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not updatable |
+| `updatedAt` | `updated_at` | `OffsetDateTime` | `@UpdateTimestamp` |
 
-### 6. Profile
+### `Test` → `tests`
 
-User profile linked to Supabase auth.users.
+FQN: `com.cramer.catalog.domain.Test` · File: `catalog/domain/Test.java`
+Unique `(set_id, test_number)`.
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `UUID` | PK | Mirrors auth.users.id |
-| `username` | `username` | `String` | NOT NULL, UNIQUE | Unique username |
-| `fullName` | `full_name` | `String` | | User's full name |
-| `phoneNumber` | `phone_number` | `String` | | Phone number |
-| `address` | `address` | `String` | | Address |
-| `avatarUrl` | `avatar_url` | `String` | | Profile picture URL |
-| `heroBackgroundUrl` | `hero_background_url` | `String` | | Hero section background |
-| `pageBackgroundUrl` | `page_background_url` | `String` | | Page background |
-| `llmApiKey` | `llm_api_key` | `String` | | User's DeepSeek API key |
-| `llmModel` | `llm_model` | `String` | | Preferred LLM model |
-| `llmProvider` | `llm_provider` | `String` | Default: "deepseek" | LLM provider |
-| `isAdmin` | `is_admin` | `Boolean` | Default: false | Admin flag |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `setId` | `set_id` | `Long` | not null — FK→`test_sets` (plain column) |
+| `testNumber` | `test_number` | `Integer` | not null |
+| `name` | `name` | `String` | |
+| `description` | `description` | `String` | TEXT |
+| `difficulty` | `difficulty` | `Difficulty` | `@Enumerated(STRING)`, default `INTERMEDIATE` |
+| `estimatedTimeMinutes` | `estimated_time_minutes` | `Integer` | default `170` |
+| `isPublished` | `is_published` | `Boolean` | default `false` |
+| `isAiGenerated` | `is_ai_generated` | `Boolean` | default `false` |
+| `generationMetadata` | `generation_metadata` | `JsonNode` | **JSONB** |
+| `createdBy` | `created_by` | `UUID` | |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not updatable |
+| `updatedAt` | `updated_at` | `OffsetDateTime` | `@UpdateTimestamp` |
 
----
+**Enums:** `Difficulty` { `BEGINNER`, `LOWER_INTERMEDIATE`, `INTERMEDIATE`, `UPPER_INTERMEDIATE`, `ADVANCED` } (stored uppercase, default `INTERMEDIATE`).
 
-### 7. Target
+### `Section` → `sections`
 
-User's IELTS target scores and exam date.
+FQN: `com.cramer.catalog.domain.Section` · File: `catalog/domain/Section.java`
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `UUID` | PK | Primary key |
-| `userId` | `user_id` | `UUID` | NOT NULL, UNIQUE | User reference |
-| `examName` | `exam_name` | `String` | | Exam name |
-| `examDate` | `exam_date` | `LocalDate` | | Target exam date |
-| `listening` | `listening` | `Double` | | Target listening score |
-| `reading` | `reading` | `Double` | | Target reading score |
-| `writing` | `writing` | `Double` | | Target writing score |
-| `speaking` | `speaking` | `Double` | | Target speaking score |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
-| `updatedAt` | `updated_at` | `OffsetDateTime` | NOT NULL | Auto-updated |
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `testId` | `test_id` | `Long` | FK→`tests` (plain column, nullable for legacy rows) |
+| `examSource` | `exam_source` | `String` | legacy lookup shim |
+| `testNumber` | `test_number` | `Integer` | legacy lookup shim |
+| `skill` | `skill` | `Skill` | **`@Convert(SkillConverter)`** → persists **lowercase** |
+| `partNumber` | `part_number` | `Integer` | |
+| `displayContentUrl` | `display_content_url` | `String` | |
+| `passageText` | `passage_text` | `String` | TEXT |
+| `audioUrl` | `audio_url` | `String` | |
+| `sectionLayout` | `section_layout` | `JsonNode` | **JSONB** |
+| `imageDescription` | `image_description` | `String` | TEXT |
+| `status` | `status` | `SectionStatus` | `@Enumerated(STRING)`, default `PUBLISHED` |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not updatable |
+| `updatedAt` | `updated_at` | `OffsetDateTime` | `@UpdateTimestamp` |
 
----
+**Enums:** `SectionStatus` { `DRAFT`, `PUBLISHED`, `ARCHIVED` } (default `PUBLISHED`).
+**Converter:** `SkillConverter` maps `Skill` ↔ lowercase `sections.skill` (reading/listening/writing/speaking).
 
-## Test Attempt & Answers Domain
+### `Question` → `questions`
 
-### 8. TestAttempt
+FQN: `com.cramer.catalog.domain.Question` · File: `catalog/domain/Question.java`
+`correct_answer` and `explanation` are answer-key material (never exposed by delivery reads).
 
-User's test attempt session.
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `sectionId` | `section_id` | `Long` | FK→`sections` (plain column) |
+| `questionNumber` | `question_number` | `Integer` | |
+| `questionUid` | `question_uid` | `String` | **unique** |
+| `questionType` | `question_type` | `QuestionType` | `@Enumerated(STRING)` |
+| `questionContent` | `question_content` | `JsonNode` | **JSONB** |
+| `correctAnswer` | `correct_answer` | `JsonNode` | **JSONB** (answer key) |
+| `explanation` | `explanation` | `JsonNode` | **JSONB** (answer key) |
+| `imageUrl` | `image_url` | `String` | |
+| `wordLimit` | `word_limit` | `String` | |
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `userId` | `user_id` | `UUID` | NOT NULL | User reference |
-| `examSource` | `exam_source` | `String` | NOT NULL | Source (e.g., "cam17") |
-| `testNumber` | `test_number` | `String` | NOT NULL | Test number |
-| `skill` | `skill` | `String` | NOT NULL | Skill type |
-| `status` | `status` | `String` | NOT NULL | IN_PROGRESS, COMPLETED, CANCELLED |
-| `score` | `score` | `Integer` | | Raw score |
-| `startedAt` | `started_at` | `OffsetDateTime` | NOT NULL | Start time |
-| `completedAt` | `completed_at` | `OffsetDateTime` | | Completion time |
-| `timeLeft` | `time_left` | `Integer` | | Remaining seconds |
-| `currentPart` | `current_part` | `Integer` | | Current part number |
+**Enums:** `QuestionType` — see [Enum Catalogue](#enum-catalogue). (Note: `Question` has **no**
+created/updated timestamps.)
 
-**RLS Enabled:** Yes (service_role policies for backend operations)
+### `Hashtag` → `hashtags`
 
----
+FQN: `com.cramer.catalog.domain.Hashtag` · File: `catalog/domain/Hashtag.java`
+Soft-deleted via `is_active = false`.
 
-### 9. UserAnswer
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `code` | `code` | `String` | not null, **unique** |
+| `name` | `name` | `String` | |
+| `category` | `category` | `String` | not null (topic/theme/difficulty/source/skill_focus) |
+| `icon` | `icon` | `String` | |
+| `color` | `color` | `String` | |
+| `useCount` | `use_count` | `Integer` | default `0` |
+| `isActive` | `is_active` | `Boolean` | default `true` |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not updatable |
 
-Individual answers for questions.
+### `TestHashtag` → `test_hashtags`
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `userId` | `user_id` | `UUID` | NOT NULL | User reference |
-| `attempt` | `attempt_id` | FK → TestAttempt | NOT NULL | Parent attempt |
-| `question` | `question_id` | FK → Question | NOT NULL | Question reference |
-| `answerContent` | `answer_content` | `JSONB` | NOT NULL | Submitted answer |
-| `userAnswer` | `user_answer` | `String` | | Simplified answer string |
-| `isCorrect` | `is_correct` | `Boolean` | | Correctness flag |
-| `submittedAt` | `submitted_at` | `OffsetDateTime` | NOT NULL | Submission time |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
+FQN: `com.cramer.catalog.domain.TestHashtag` · File: `catalog/domain/TestHashtag.java`
+Junction with an attribute, so modelled as an explicit entity (not a plain many-to-many).
 
-**Relationships:**
-- `@ManyToOne` → `TestAttempt` (attempt)
-- `@ManyToOne` → `Question` (question)
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | (composite) | `TestHashtagId` | **`@EmbeddedId`** |
+| `isPrimary` | `is_primary` | `Boolean` | default `false` |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not updatable |
 
-**RLS Enabled:** Yes
+**Composite key** `TestHashtagId` (`@Embeddable`, FQN `com.cramer.catalog.domain.TestHashtagId`,
+`implements Serializable`):
 
----
-
-### 10. WritingSubmission
-
-Writing essays with AI grading results.
-
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `attemptId` | `attempt_id` | `Long` | NOT NULL | Parent attempt |
-| `userId` | `user_id` | `UUID` | NOT NULL | User reference |
-| `taskNumber` | `task_number` | `Integer` | NOT NULL | Task 1 or Task 2 |
-| `essayText` | `essay_text` | `TEXT` | NOT NULL | Essay content |
-| `wordCount` | `word_count` | `Integer` | NOT NULL | Word count |
-| `gradingStatus` | `grading_status` | `String` | NOT NULL | PENDING, GRADING, COMPLETED, FAILED |
-| `overallBand` | `overall_band` | `BigDecimal(2,1)` | | Overall band score |
-| `bandScores` | `band_scores` | `JSONB` | | Detailed band scores |
-| `aiFeedback` | `ai_feedback` | `JSONB` | | AI feedback and corrections |
-| `submittedAt` | `submitted_at` | `OffsetDateTime` | NOT NULL | Submission time |
-| `gradedAt` | `graded_at` | `OffsetDateTime` | | Grading completion time |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
+| Field | Column | Java type |
+|-------|--------|-----------|
+| `testId` | `test_id` | `Long` |
+| `hashtagId` | `hashtag_id` | `Long` |
 
 ---
 
-### Speaking runtime
+## Module: `assessment`
 
-These tables are active in the live Supabase schema and are implemented in the backend runtime.
+`backend/src/main/java/com/cramer/assessment/domain/`
 
-### 10a. SpeakingSession
+### `Attempt` → `test_attempts`
 
-Runtime session record for IELTS Speaking.
+FQN: `com.cramer.assessment.domain.Attempt` · File: `assessment/domain/Attempt.java`
+Keyed on legacy `exam_source` / `test_number` (varchar) / `skill` (lowercase).
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `userId` | `user_id` | `UUID` | FK -> Profile, NOT NULL | Session owner |
-| `testId` | `test_id` | `Long` | FK -> IeltsTest, NOT NULL | Shared-hierarchy Speaking test |
-| `sessionMode` | `session_mode` | `String(20)` | NOT NULL | FULL, PART_1, PART_2, PART_3, PART_2_AND_3 |
-| `status` | `status` | `String(30)` | NOT NULL | in_progress, completed, grading, graded, grading_failed, abandoned, expired |
-| `accent` | `accent` | `String(20)` | NOT NULL | british, american, australian, neutral |
-| `speed` | `speed` | `BigDecimal` | NOT NULL | Examiner speed multiplier |
-| `sessionBlueprint` | `session_blueprint` | `JSONB` | NOT NULL | Runtime truth for planned turns |
-| `isFinalized` | `is_finalized` | `Boolean` | NOT NULL | Blocks further transcript writes |
-| `totalDurationSeconds` | `total_duration_seconds` | `Integer` | | Session duration |
-| `overallBand` | `overall_band` | `BigDecimal` | | Overall band |
-| `fluencyBand` | `fluency_band` | `BigDecimal` | | Fluency and coherence |
-| `lexicalBand` | `lexical_band` | `BigDecimal` | | Lexical resource |
-| `grammarBand` | `grammar_band` | `BigDecimal` | | Grammar range and accuracy |
-| `pronunciationBand` | `pronunciation_band` | `BigDecimal` | | Pronunciation |
-| `gradingResult` | `grading_result` | `JSONB` | | Detailed grading payload |
-| `luaCost` | `lua_cost` | `Integer` | NOT NULL | Session credit cost |
-| `luaDeducted` | `lua_deducted` | `Boolean` | NOT NULL | Credit deduction state |
-| `startedAt` | `started_at` | `OffsetDateTime` | NOT NULL | Session start |
-| `completedAt` | `completed_at` | `OffsetDateTime` | | Submission/finalization time |
-| `gradedAt` | `graded_at` | `OffsetDateTime` | | Grading completion time |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
-| `updatedAt` | `updated_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `userId` | `user_id` | `UUID` | not null |
+| `examSource` | `exam_source` | `String` | not null |
+| `testNumber` | `test_number` | `String` | not null (varchar) |
+| `skill` | `skill` | `String` | not null, stored **lowercase** (plain String, no converter) |
+| `status` | `status` | `AttemptStatus` | `@Enumerated(STRING)`, default `IN_PROGRESS` |
+| `score` | `score` | `Integer` | |
+| `currentPart` | `current_part` | `Integer` | |
+| `timeLeft` | `time_left` | `Integer` | |
+| `startedAt` | `started_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
+| `completedAt` | `completed_at` | `OffsetDateTime` | |
 
-**Relationships:**
-- Runtime owner reference via `user_id`
-- Runtime test reference via `test_id`
+**Enums:** `AttemptStatus` { `IN_PROGRESS`, `COMPLETED`, `CANCELLED` }.
 
-**Runtime Truth Notes:**
-- `sessionBlueprint` is the frozen runtime plan for a session
-- This table stores grading lifecycle, history metadata, and cleanup-related state
+### `UserAnswer` → `user_answers`
 
----
+FQN: `com.cramer.assessment.domain.UserAnswer` · File: `assessment/domain/UserAnswer.java`
 
-### 10b. SpeakingTranscript
-
-Turn-level runtime record for IELTS Speaking.
-
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `sessionId` | `session_id` | `Long` | FK -> SpeakingSession, NOT NULL | Parent session |
-| `sourceQuestionId` | `source_question_id` | `Long` | FK -> Question | Optional authored source question |
-| `partNumber` | `part_number` | `Integer` | NOT NULL | Speaking part 1-3 |
-| `turnIndex` | `turn_index` | `Integer` | NOT NULL, UNIQUE per session | Session turn order |
-| `questionSnapshot` | `question_snapshot` | `JSONB` | NOT NULL | Runtime truth for the exact prompt used |
-| `audioStoragePath` | `audio_storage_path` | `TEXT` | | Object key in storage bucket |
-| `audioDurationSeconds` | `audio_duration_seconds` | `Integer` | | Audio duration |
-| `transcriptText` | `transcript_text` | `TEXT` | | STT/manual transcript |
-| `transcriptConfidence` | `transcript_confidence` | `BigDecimal` | | Value from 0 to 1 |
-| `questionEvaluation` | `question_evaluation` | `JSONB` | | Optional turn-level evaluation |
-| `recordedAt` | `recorded_at` | `OffsetDateTime` | NOT NULL | Recording time |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
-| `updatedAt` | `updated_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
-
-**Relationships:**
-- Runtime session reference via `session_id`
-- Optional authored question reference via `source_question_id`
-
-**Runtime Truth Notes:**
-- `questionSnapshot` is the persisted runtime truth for each turn
-- `(session_id, turn_index)` is the stable upsert key expected by the Speaking API flow
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `attemptId` | `attempt_id` | `Long` | not null — FK→`test_attempts` (plain column) |
+| `questionId` | `question_id` | `Long` | not null — FK→`questions` (plain column) |
+| `userId` | `user_id` | `UUID` | not null |
+| `answerContent` | `answer_content` | `JsonNode` | **JSONB**, not null (`{"value": text}`) |
+| `userAnswer` | `user_answer` | `String` | not null |
+| `isCorrect` | `is_correct` | `Boolean` | |
+| `submittedAt` | `submitted_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
 
 ---
 
-## Subscription & Monetization Domain
+## Module: `writing`
 
-### 11. SubscriptionTier
+`backend/src/main/java/com/cramer/writing/domain/`
 
-Tier definitions (pricing, limits, features).
+### `WritingSubmission` → `writing_submissions`
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `code` | `code` | `String(50)` | NOT NULL, UNIQUE | Tier code (cramerie, cramerich) |
-| `name` | `name` | `String(100)` | NOT NULL | Display name |
-| `priceVnd` | `price_vnd` | `Integer` | NOT NULL | Monthly price in VND |
-| `monthlyAttemptLimit` | `monthly_attempt_limit` | `Integer` | NOT NULL, Default: 0 | Global attempt limit |
-| `monthlyAttemptAiLimit` | `monthly_attempt_ai_limit` | `Integer` | NOT NULL, Default: 0 | AI grading attempt limit |
-| `perSkillAttemptLimit` | `per_skill_attempt_limit` | `Integer` | NOT NULL, Default: 0 | Per-skill limit |
-| `perSkillAttemptAiLimit` | `per_skill_attempt_ai_limit` | `Integer` | NOT NULL, Default: 0 | Per-skill AI limit |
-| `attemptOverageCost` | `attempt_overage_cost` | `Integer` | NOT NULL, Default: 10 | Lúa cost per overage |
-| `attemptAiOverageCost` | `attempt_ai_overage_cost` | `Integer` | NOT NULL, Default: 20 | AI overage Lúa cost |
-| `includedAiGradings` | `included_ai_gradings` | `Integer` | NOT NULL, Default: 0 | Legacy AI gradings |
-| `dailyChatLimit` | `daily_chat_limit` | `Integer` | NOT NULL, Default: 20 | Daily chat messages |
-| `chatbotMonthlyLimit` | `chatbot_monthly_limit` | `Integer` | NOT NULL, Default: 0 | Monthly chatbot messages |
-| `monthlyTranslationLimit` | `monthly_translation_limit` | `Integer` | NOT NULL, Default: 0 | Monthly translations |
-| `chatbotOverageCost` | `chatbot_overage_cost` | `Integer` | NOT NULL, Default: 2 | Chat overage cost |
-| `translationOverageCost` | `translation_overage_cost` | `Integer` | NOT NULL, Default: 1 | Translation overage cost |
-| `vocabAiDailyLimit` | `vocab_ai_daily_limit` | `Integer` | NOT NULL, Default: 0 | Vocab AI daily limit |
-| `maxVocabularyEntries` | `max_vocabulary_entries` | `Integer` | NOT NULL, Default: 0 | Max vocab entries |
-| `monthlyLuaBonus` | `monthly_lua_bonus` | `Integer` | NOT NULL, Default: 0 | Monthly Lúa bonus |
-| `initialLua` | `initial_lua` | `Integer` | NOT NULL, Default: 0 | Initial Lúa on signup |
+FQN: `com.cramer.writing.domain.WritingSubmission` · File: `writing/domain/WritingSubmission.java`
+One row per task (1 or 2) of an attempt.
 
-**Tiers:**
-- 🌾 **Cramerie** (Free): Limited access, no AI grading
-- 🌻 **Cramerich** (69,000đ/month): Full access with ATTEMPT/ATTEMPT_AI system
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `attemptId` | `attempt_id` | `Long` | not null — FK→`test_attempts` (plain column) |
+| `userId` | `user_id` | `UUID` | not null |
+| `taskNumber` | `task_number` | `Integer` | not null (1 or 2) |
+| `essayText` | `essay_text` | `String` | TEXT, not null |
+| `wordCount` | `word_count` | `Integer` | not null, default `0` |
+| `gradingStatus` | `grading_status` | `WritingStatus` | `@Enumerated(STRING)`, default `PENDING` |
+| `overallBand` | `overall_band` | `BigDecimal` | |
+| `bandScores` | `band_scores` | `JsonNode` | **JSONB** |
+| `aiFeedback` | `ai_feedback` | `JsonNode` | **JSONB** |
+| `submittedAt` | `submitted_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
+| `gradedAt` | `graded_at` | `OffsetDateTime` | |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not updatable |
+
+**Enums:** `WritingStatus` { `PENDING`, `GRADING`, `COMPLETED`, `FAILED` } (terminal success = `COMPLETED`, not `GRADED`).
 
 ---
 
-### 12. UserSubscription
+## Module: `speaking`
 
-User's active subscription.
+`backend/src/main/java/com/cramer/speaking/domain/`
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `userId` | `user_id` | `UUID` | NOT NULL | User reference |
-| `tier` | `tier_id` | FK → SubscriptionTier | NOT NULL | Current tier |
-| `startedAt` | `started_at` | `OffsetDateTime` | NOT NULL | Subscription start |
-| `expiresAt` | `expires_at` | `OffsetDateTime` | | Expiration date |
-| `status` | `status` | `Enum` | NOT NULL, Default: ACTIVE | ACTIVE, EXPIRED, CANCELLED, PENDING |
-| `attemptsUsed` | `attempts_used` | `Integer` | NOT NULL, Default: 0 | Monthly attempts used |
-| `attemptAisUsed` | `attempt_ais_used` | `Integer` | NOT NULL, Default: 0 | AI attempts used |
-| `chatbotUsed` | `chatbot_used` | `Integer` | NOT NULL, Default: 0 | Chatbot messages used |
-| `paymentReference` | `payment_reference` | `String(255)` | | Payment order reference |
-| `autoRenew` | `auto_renew` | `Boolean` | Default: false | Auto-renewal flag |
-| `aiGradingEnabled` | `ai_grading_enabled` | `Boolean` | Default: true | AI grading toggle |
+### `SpeakingSession` → `speaking_sessions`
 
-**Relationships:**
-- `@ManyToOne` → `SubscriptionTier` (tier)
+FQN: `com.cramer.speaking.domain.SpeakingSession` · File: `speaking/domain/SpeakingSession.java`
 
----
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `userId` | `user_id` | `UUID` | not null |
+| `testId` | `test_id` | `Long` | not null — FK→`tests` (plain column) |
+| `sessionMode` | `session_mode` | `String` | not null |
+| `status` | `status` | `SpeakingSessionStatus` | **`@Convert(SpeakingSessionStatusConverter)`** → lowercase; default `IN_PROGRESS` |
+| `accent` | `accent` | `String` | not null |
+| `speed` | `speed` | `BigDecimal` | not null, default `1.00` |
+| `sessionBlueprint` | `session_blueprint` | `JsonNode` | **JSONB**, not null (frozen runtime plan) |
+| `isFinalized` | `is_finalized` | `Boolean` | not null, default `false` |
+| `totalDurationSeconds` | `total_duration_seconds` | `Integer` | |
+| `overallBand` | `overall_band` | `BigDecimal` | |
+| `fluencyBand` | `fluency_band` | `BigDecimal` | |
+| `lexicalBand` | `lexical_band` | `BigDecimal` | |
+| `grammarBand` | `grammar_band` | `BigDecimal` | |
+| `pronunciationBand` | `pronunciation_band` | `BigDecimal` | |
+| `gradingResult` | `grading_result` | `JsonNode` | **JSONB** |
+| `luaCost` | `lua_cost` | `Integer` | not null, default `0` |
+| `luaDeducted` | `lua_deducted` | `Boolean` | not null, default `false` |
+| `startedAt` | `started_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
+| `completedAt` | `completed_at` | `OffsetDateTime` | |
+| `gradedAt` | `graded_at` | `OffsetDateTime` | |
+| `gradingAttempts` | `grading_attempts` | `Integer` | not null, default `0` |
+| `lastGradingError` | `last_grading_error` | `String` | TEXT |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
+| `updatedAt` | `updated_at` | `OffsetDateTime` | `@UpdateTimestamp`, not null |
 
-### 13. UserCredit
+**Enums:** `SpeakingSessionStatus` { `IN_PROGRESS`, `COMPLETED`, `ABANDONED`, `EXPIRED`,
+`GRADING`, `GRADED`, `GRADING_FAILED` } (persisted **lowercase**).
+**Converter:** `SpeakingSessionStatusConverter` (enum ↔ lowercase DB string).
+**Other domain types (non-persistent):** `SpeakingSessionStateMachine` (state-transition helper —
+not an `@Entity`).
 
-User's Lúa (credit) balance.
+### `SpeakingTranscript` → `speaking_transcripts`
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `userId` | `user_id` | `UUID` | NOT NULL, UNIQUE | User reference |
-| `balance` | `balance` | `Integer` | NOT NULL, Default: 0 | Current balance |
-| `lifetimeEarned` | `lifetime_earned` | `Integer` | NOT NULL, Default: 0 | Total earned |
-| `lifetimeSpent` | `lifetime_spent` | `Integer` | NOT NULL, Default: 0 | Total spent |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
-| `updatedAt` | `updated_at` | `OffsetDateTime` | | Auto-updated |
+FQN: `com.cramer.speaking.domain.SpeakingTranscript` · File: `speaking/domain/SpeakingTranscript.java`
+Unique `(session_id, turn_index)`.
 
----
-
-### 14. CreditTransaction
-
-Credit movement history.
-
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `userId` | `user_id` | `UUID` | NOT NULL | User reference |
-| `amount` | `amount` | `Integer` | NOT NULL | Amount (+/- for earn/spend) |
-| `balanceAfter` | `balance_after` | `Integer` | NOT NULL | Balance after transaction |
-| `type` | `type` | `Enum` | NOT NULL | EARN, SPEND, BONUS, PURCHASE, REFUND |
-| `category` | `category` | `Enum` | NOT NULL | Transaction category |
-| `description` | `description` | `String(500)` | | Description |
-| `referenceId` | `reference_id` | `String(255)` | | External reference |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
-
-**Categories:**
-- Earning: INITIAL_BONUS, TIER_BONUS, STREAK_BONUS, MILESTONE_REWARD, PURCHASE, REFERRAL, PROMOTION, signup
-- Spending: AI_GRADING, VOCABULARY_TRANSLATION, PREMIUM_CONTENT, ESSAY_FEEDBACK, CHAT_EXTENSION, OTHER
-
----
-
-### 15. PaymentOrder
-
-PayOS payment order tracking.
-
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `userId` | `user_id` | `UUID` | NOT NULL | User reference |
-| `orderCode` | `order_code` | `Long` | NOT NULL, UNIQUE | PayOS order code |
-| `paymentLinkId` | `payment_link_id` | `String(255)` | | PayOS payment link ID |
-| `checkoutUrl` | `checkout_url` | `String(500)` | | Checkout URL |
-| `qrCode` | `qr_code` | `TEXT` | | QR code data |
-| `type` | `type` | `Enum` | NOT NULL | SUBSCRIPTION, LUA_PACK |
-| `tierId` | `tier_id` | `Long` | | Subscription tier ID |
-| `tierCode` | `tier_code` | `String(50)` | | Tier code for display |
-| `luaAmount` | `lua_amount` | `Integer` | | Lúa amount (for LUA_PACK) |
-| `priceVnd` | `price_vnd` | `Integer` | NOT NULL | Price in VND |
-| `status` | `status` | `Enum` | NOT NULL, Default: PENDING | PENDING, PAID, CANCELLED, EXPIRED, FAILED |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
-| `paidAt` | `paid_at` | `OffsetDateTime` | | Payment completion time |
-
-**Indexes:**
-- `idx_payment_orders_user_id` on (user_id)
-- `idx_payment_orders_order_code` UNIQUE on (order_code)
-- `idx_payment_orders_status` on (status)
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `sessionId` | `session_id` | `Long` | not null — FK→`speaking_sessions` (plain column) |
+| `sourceQuestionId` | `source_question_id` | `Long` | FK→`questions` (plain column, nullable) |
+| `partNumber` | `part_number` | `Integer` | not null |
+| `turnIndex` | `turn_index` | `Integer` | not null |
+| `questionSnapshot` | `question_snapshot` | `JsonNode` | **JSONB**, not null (frozen prompt) |
+| `audioStoragePath` | `audio_storage_path` | `String` | TEXT |
+| `audioDurationSeconds` | `audio_duration_seconds` | `Integer` | |
+| `transcriptText` | `transcript_text` | `String` | TEXT |
+| `transcriptConfidence` | `transcript_confidence` | `BigDecimal` | |
+| `questionEvaluation` | `question_evaluation` | `JsonNode` | **JSONB** |
+| `recordedAt` | `recorded_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
+| `updatedAt` | `updated_at` | `OffsetDateTime` | `@UpdateTimestamp`, not null |
 
 ---
 
-### 16. LuaPack
+## Module: `billing`
 
-Purchasable Lúa packages.
+`backend/src/main/java/com/cramer/billing/domain/`
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `code` | `code` | `String(50)` | NOT NULL, UNIQUE | Pack code (lua_100, lua_500) |
-| `name` | `name` | `String(100)` | NOT NULL | Display name |
-| `emoji` | `emoji` | `String(10)` | Default: "🌾" | Pack emoji |
-| `luaAmount` | `lua_amount` | `Integer` | NOT NULL | Base Lúa amount |
-| `priceVnd` | `price_vnd` | `Integer` | NOT NULL | Price in VND |
-| `discountPercent` | `discount_percent` | `Integer` | NOT NULL, Default: 0 | Discount percentage |
-| `bonusLua` | `bonus_lua` | `Integer` | NOT NULL, Default: 0 | Bonus Lúa amount |
-| `descriptionVi` | `description_vi` | `String` | | Vietnamese description |
-| `descriptionEn` | `description_en` | `String` | | English description |
-| `isActive` | `is_active` | `Boolean` | NOT NULL, Default: true | Active status |
-| `displayOrder` | `display_order` | `Integer` | Default: 0 | Sort order |
-| `createdAt` | `created_at` | `Instant` | | Creation time |
-| `updatedAt` | `updated_at` | `Instant` | | Update time |
+### `SubscriptionTier` → `subscription_tiers`
 
----
+FQN: `com.cramer.billing.domain.SubscriptionTier` · File: `billing/domain/SubscriptionTier.java`
+Premium when `price_vnd > 0` (`isPremium()` helper).
 
-## Quota & Billing Domain
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `code` | `code` | `String` | not null, **unique** |
+| `name` | `name` | `String` | |
+| `priceVnd` | `price_vnd` | `Integer` | not null, default `0` |
+| `includedAiGradings` | `included_ai_gradings` | `Integer` | default `0` |
+| `dailyChatLimit` | `daily_chat_limit` | `Integer` | |
+| `chatbotMonthlyLimit` | `chatbot_monthly_limit` | `Integer` | not null, default `0` |
+| `vocabAiDailyLimit` | `vocab_ai_daily_limit` | `Integer` | not null, default `0` |
+| `monthlyAttemptLimit` | `monthly_attempt_limit` | `Integer` | not null, default `0` |
+| `monthlyAttemptAiLimit` | `monthly_attempt_ai_limit` | `Integer` | not null, default `0` |
+| `perSkillAttemptLimit` | `per_skill_attempt_limit` | `Integer` | not null, default `0` |
+| `perSkillAttemptAiLimit` | `per_skill_attempt_ai_limit` | `Integer` | not null, default `0` |
+| `monthlyTranslationLimit` | `monthly_translation_limit` | `Integer` | not null, default `0` |
+| `maxVocabularyEntries` | `max_vocabulary_entries` | `Integer` | not null, default `0` |
+| `attemptOverageCost` | `attempt_overage_cost` | `Integer` | not null, default `10` |
+| `attemptAiOverageCost` | `attempt_ai_overage_cost` | `Integer` | not null, default `20` |
+| `chatbotOverageCost` | `chatbot_overage_cost` | `Integer` | not null, default `2` |
+| `translationOverageCost` | `translation_overage_cost` | `Integer` | not null, default `1` |
+| `initialLua` | `initial_lua` | `Integer` | not null, default `50` |
+| `monthlyLuaBonus` | `monthly_lua_bonus` | `Integer` | default `0` |
+| `features` | `features` | `JsonNode` | **JSONB** |
+| `isActive` | `is_active` | `Boolean` | default `true` |
+| `sortOrder` | `sort_order` | `Integer` | default `0` |
+| `displayOrder` | `display_order` | `Integer` | |
 
-### 17. UserQuota
+### `UserSubscription` → `user_subscriptions`
 
-Global monthly quota usage (Cramerie/free tier users).
+FQN: `com.cramer.billing.domain.UserSubscription` · File: `billing/domain/UserSubscription.java`
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `userId` | `user_id` | `UUID` | NOT NULL | User reference |
-| `quotaMonth` | `quota_month` | `LocalDate` | NOT NULL | First day of month |
-| `attemptCount` | `attempt_count` | `Integer` | NOT NULL, Default: 0 | Regular attempts used |
-| `attemptAiCount` | `attempt_ai_count` | `Integer` | NOT NULL, Default: 0 | AI attempts used |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
-| `updatedAt` | `updated_at` | `OffsetDateTime` | | Auto-updated |
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `userId` | `user_id` | `UUID` | not null |
+| `tierId` | `tier_id` | `Long` | not null — FK→`subscription_tiers` (plain column) |
+| `status` | `status` | `String` | **plain String**, default `"ACTIVE"` (not an enum) |
+| `startedAt` | `started_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
+| `expiresAt` | `expires_at` | `OffsetDateTime` | |
+| `autoRenew` | `auto_renew` | `Boolean` | default `false` |
+| `attemptsUsed` | `attempts_used` | `Integer` | not null, default `0` |
+| `attemptAisUsed` | `attempt_ais_used` | `Integer` | not null, default `0` |
+| `chatbotUsed` | `chatbot_used` | `Integer` | not null, default `0` |
+| `aiGradingEnabled` | `ai_grading_enabled` | `Boolean` | default `true` |
+| `paymentReference` | `payment_reference` | `String` | |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not updatable |
+| `updatedAt` | `updated_at` | `OffsetDateTime` | `@UpdateTimestamp` |
 
-**Unique Constraint:** `(user_id, quota_month)`
+### `UserCredit` → `user_credits`
 
-**Quota Caps (Cramerie):**
-- Global ATTEMPT: 60/month
-- Global ATTEMPT_AI: 30/month
+FQN: `com.cramer.billing.domain.UserCredit` · File: `billing/domain/UserCredit.java`
+One row per user; DB CHECK enforces `balance >= 0`.
 
----
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `userId` | `user_id` | `UUID` | not null, **unique** |
+| `balance` | `balance` | `Integer` | not null, default `0` |
+| `lifetimeEarned` | `lifetime_earned` | `Integer` | not null, default `0` |
+| `lifetimeSpent` | `lifetime_spent` | `Integer` | not null, default `0` |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not updatable |
+| `updatedAt` | `updated_at` | `OffsetDateTime` | `@UpdateTimestamp` |
 
-### 18. SkillQuota
+### `CreditTransaction` → `credit_transactions`
 
-Per-skill monthly quota usage.
+FQN: `com.cramer.billing.domain.CreditTransaction` · File: `billing/domain/CreditTransaction.java`
+Immutable ledger row; `amount` is signed; `reference_id` backs idempotency.
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `userId` | `user_id` | `UUID` | NOT NULL | User reference |
-| `skill` | `skill` | `Enum` | NOT NULL | READING, LISTENING, WRITING, SPEAKING |
-| `quotaMonth` | `quota_month` | `LocalDate` | NOT NULL | First day of month |
-| `attemptCount` | `attempt_count` | `Integer` | NOT NULL, Default: 0 | Attempts used |
-| `attemptAiCount` | `attempt_ai_count` | `Integer` | NOT NULL, Default: 0 | AI attempts used |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
-| `updatedAt` | `updated_at` | `OffsetDateTime` | | Auto-updated |
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `userId` | `user_id` | `UUID` | not null |
+| `amount` | `amount` | `Integer` | not null (signed) |
+| `balanceAfter` | `balance_after` | `Integer` | not null |
+| `type` | `type` | `TransactionType` | `@Enumerated(STRING)`, not null |
+| `category` | `category` | `String` | **plain String** (free varchar; see `CreditCategory` enum used at service layer) |
+| `description` | `description` | `String` | |
+| `referenceId` | `reference_id` | `String` | idempotency key |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not updatable |
 
-**Unique Constraint:** `(user_id, skill, quota_month)`
+**Enums:** `TransactionType` { `EARN`, `SPEND`, `PURCHASE`, `REFUND`, `BONUS`, `ADMIN` }.
+`CreditCategory` (see [Enum Catalogue](#enum-catalogue)) is **not** mapped on the entity — the
+`category` column is a plain String; the enum is applied in service logic.
 
-**Quota Caps (Cramerie, per skill):**
-- Local ATTEMPT: 20/month per skill
-- Local ATTEMPT_AI: 3/month per skill
+### `PaymentOrder` → `payment_orders`
 
----
+FQN: `com.cramer.billing.domain.PaymentOrder` · File: `billing/domain/PaymentOrder.java`
+PayOS order; PENDING→PAID claimed under a row lock for idempotent webhooks.
 
-### 19. TranslationUsage
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `userId` | `user_id` | `UUID` | not null |
+| `orderCode` | `order_code` | `Long` | not null, **unique** |
+| `paymentLinkId` | `payment_link_id` | `String` | |
+| `checkoutUrl` | `checkout_url` | `String` | |
+| `qrCode` | `qr_code` | `String` | TEXT |
+| `type` | `type` | `String` | **plain String** (SUBSCRIPTION / LUA_PACK), not null |
+| `tierId` | `tier_id` | `Long` | |
+| `tierCode` | `tier_code` | `String` | |
+| `luaAmount` | `lua_amount` | `Integer` | |
+| `amountVnd` | `amount_vnd` | `Integer` | not null |
+| `description` | `description` | `String` | |
+| `status` | `status` | `String` | **plain String**, default `"PENDING"` (PENDING/PAID/CANCELLED/EXPIRED/FAILED), not null |
+| `transactionDatetime` | `transaction_datetime` | `String` | |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
+| `paidAt` | `paid_at` | `OffsetDateTime` | |
+| `expiresAt` | `expires_at` | `OffsetDateTime` | |
 
-Monthly translation usage tracking.
+### `LuaPack` → `lua_packs`
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `userId` | `user_id` | `UUID` | NOT NULL | User reference |
-| `usageMonth` | `usage_month` | `LocalDate` | NOT NULL | First day of month |
-| `translationsUsed` | `translations_used` | `Integer` | NOT NULL, Default: 0 | Usage count |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
-| `updatedAt` | `updated_at` | `OffsetDateTime` | | Auto-updated |
+FQN: `com.cramer.billing.domain.LuaPack` · File: `billing/domain/LuaPack.java`
+Total granted on purchase = `lua_amount + bonus_lua` (`totalLua()` helper).
 
-**Unique Constraint:** `(user_id, usage_month)`
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `code` | `code` | `String` | not null, **unique** |
+| `name` | `name` | `String` | |
+| `emoji` | `emoji` | `String` | |
+| `luaAmount` | `lua_amount` | `Integer` | not null |
+| `priceVnd` | `price_vnd` | `Integer` | not null |
+| `discountPercent` | `discount_percent` | `Integer` | not null, default `0` |
+| `bonusLua` | `bonus_lua` | `Integer` | not null, default `0` |
+| `descriptionVi` | `description_vi` | `String` | |
+| `descriptionEn` | `description_en` | `String` | |
+| `isActive` | `is_active` | `Boolean` | not null, default `true` |
+| `displayOrder` | `display_order` | `Integer` | default `0` |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not updatable |
+| `updatedAt` | `updated_at` | `OffsetDateTime` | `@UpdateTimestamp` |
 
----
+### `UserQuota` → `user_quotas`
 
-## AI & Chat Domain
+FQN: `com.cramer.billing.domain.UserQuota` · File: `billing/domain/UserQuota.java`
+Unique `(user_id, quota_month)`; `quota_month` = first day of month.
 
-### 20. ChatMessage
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `userId` | `user_id` | `UUID` | not null |
+| `quotaMonth` | `quota_month` | `LocalDate` | not null |
+| `attemptCount` | `attempt_count` | `Integer` | not null, default `0` |
+| `attemptAiCount` | `attempt_ai_count` | `Integer` | not null, default `0` |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
+| `updatedAt` | `updated_at` | `OffsetDateTime` | `@UpdateTimestamp` |
 
-Chat conversation messages.
+### `SkillQuota` → `skill_quotas`
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `userId` | `user_id` | `UUID` | NOT NULL | User reference |
-| `role` | `role` | `String(20)` | NOT NULL | "user", "assistant", "system" |
-| `content` | `content` | `TEXT` | NOT NULL | Message content |
-| `tokensUsed` | `tokens_used` | `Integer` | Default: 0 | API token usage |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
+FQN: `com.cramer.billing.domain.SkillQuota` · File: `billing/domain/SkillQuota.java`
+Unique `(user_id, skill, quota_month)`; `skill` stored uppercase as a plain String.
 
----
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `userId` | `user_id` | `UUID` | not null |
+| `skill` | `skill` | `String` | not null (plain String, uppercase) |
+| `quotaMonth` | `quota_month` | `LocalDate` | not null |
+| `attemptCount` | `attempt_count` | `Integer` | not null, default `0` |
+| `attemptAiCount` | `attempt_ai_count` | `Integer` | not null, default `0` |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
+| `updatedAt` | `updated_at` | `OffsetDateTime` | `@UpdateTimestamp` |
 
-### 21. ChatbotUsage
+### `TranslationUsage` → `translation_usage`
 
-Daily chatbot usage tracking.
+FQN: `com.cramer.billing.domain.TranslationUsage` · File: `billing/domain/TranslationUsage.java`
+Unique `(user_id, usage_month)`; `usage_month` = first day of month.
 
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `userId` | `user_id` | `UUID` | NOT NULL | User reference |
-| `usageDate` | `usage_date` | `LocalDate` | NOT NULL | Usage date |
-| `messagesUsed` | `messages_used` | `Integer` | NOT NULL, Default: 0 | Messages used today |
-
-**Unique Constraint:** `(user_id, usage_date)`
-
----
-
-## Vocabulary Domain
-
-### 22. Vocabulary
-
-User's saved vocabulary entries.
-
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `userId` | `user_id` | `UUID` | NOT NULL | User reference |
-| `word` | `word` | `String(200)` | NOT NULL | The word |
-| `translation` | `translation` | `TEXT` | | Vietnamese translation |
-| `phonetic` | `phonetic` | `String(100)` | | Phonetic pronunciation |
-| `partOfSpeech` | `part_of_speech` | `String(50)` | | noun, verb, adj, etc. |
-| `definition` | `definition` | `TEXT` | | English definition |
-| `exampleSentence` | `example_sentence` | `TEXT` | | Example usage |
-| `sourceContext` | `source_context` | `TEXT` | | Context from test |
-| `sourceTestId` | `source_test_id` | `Long` | | Source test ID |
-| `sourceSectionId` | `source_section_id` | `Long` | | Source section ID |
-| `notes` | `notes` | `TEXT` | | User notes |
-| `isMastered` | `is_mastered` | `Boolean` | Default: false | Mastery status |
-| `reviewCount` | `review_count` | `Integer` | Default: 0 | Review count |
-| `lastReviewedAt` | `last_reviewed_at` | `OffsetDateTime` | | Last review time |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
-| `updatedAt` | `updated_at` | `OffsetDateTime` | | Auto-updated |
-
----
-
-## Activity & Audit Domain
-
-### 23. UserActivity
-
-User activity timeline.
-
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `userId` | `user_id` | `UUID` | NOT NULL | User reference |
-| `activityType` | `activity_type` | `String(50)` | NOT NULL | Activity type |
-| `title` | `title` | `String` | NOT NULL | Activity title |
-| `description` | `description` | `TEXT` | | Description |
-| `metadata` | `metadata` | `JSONB` | | Additional data |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
-
-**Activity Types:**
-- `TEST_COMPLETED` - User completed a test
-- `VOCAB_SAVED` - User saved vocabulary
-- `SUBSCRIPTION_CHANGED` - Subscription tier changed
-- `LOGIN` - User logged in
-- `ACHIEVEMENT_EARNED` - Badge earned
-- `PROFILE_UPDATED` - Profile updated
-- `CREDITS_CHANGED` - Lúa balance changed
-
----
-
-### 24. AdminAuditLog
-
-Admin action audit trail.
-
-| Field | Column | Type | Constraints | Description |
-|-------|--------|------|-------------|-------------|
-| `id` | `id` | `Long` | PK, auto-increment | Primary key |
-| `adminUserId` | `admin_user_id` | `UUID` | NOT NULL | Admin who performed action |
-| `adminEmail` | `admin_email` | `String` | | Admin's email |
-| `action` | `action` | `String(50)` | NOT NULL | Action type |
-| `targetType` | `target_type` | `String(50)` | NOT NULL | Target entity type |
-| `targetId` | `target_id` | `String` | NOT NULL | Target entity ID |
-| `oldValue` | `old_value` | `JSONB` | | Previous value |
-| `newValue` | `new_value` | `JSONB` | | New value |
-| `description` | `description` | `TEXT` | | Action description |
-| `ipAddress` | `ip_address` | `String(45)` | | Client IP address |
-| `userAgent` | `user_agent` | `TEXT` | | Client user agent |
-| `createdAt` | `created_at` | `OffsetDateTime` | NOT NULL | Auto-timestamped |
-
-**Action Types:**
-- `STATUS_CHANGE` - User status changed
-- `CREDITS_ADD` / `CREDITS_SUBTRACT` - Credit modifications
-- `SUBSCRIPTION_CHANGE` - Subscription tier changed
-- `PROFILE_UPDATE` - Profile modifications
-- `BAN` / `UNBAN` - User ban actions
-
-**Target Types:**
-- `USER` - User entity
-- `SUBSCRIPTION` - Subscription entity
-- `CREDITS` - Credit balance
-- `CONTENT` - Test content
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `userId` | `user_id` | `UUID` | not null |
+| `usageMonth` | `usage_month` | `LocalDate` | not null |
+| `translationsUsed` | `translations_used` | `Integer` | not null, default `0` |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
+| `updatedAt` | `updated_at` | `OffsetDateTime` | `@UpdateTimestamp` |
 
 ---
 
-## Entity Relationship Diagram
+## Module: `engagement`
 
-```mermaid
-erDiagram
-    %% Test Content Domain
-    TestSet ||--o{ IeltsTest : contains
-    IeltsTest ||--o{ Section : has
-    Section ||--o{ Question : contains
-    IeltsTest }o--o{ Hashtag : tagged_with
+`backend/src/main/java/com/cramer/engagement/domain/`
 
-    %% User Domain
-    Profile ||--o| Target : has
-    Profile ||--o{ UserSubscription : has
-    Profile ||--o| UserCredit : has
-    Profile ||--o{ CreditTransaction : owns
-    Profile ||--o{ PaymentOrder : creates
-    Profile ||--o{ UserActivity : logs
-    Profile ||--o{ Vocabulary : saves
-    Profile ||--o{ ChatMessage : sends
-    Profile ||--o{ ChatbotUsage : tracks
+### `Target` → `target`
 
-    %% Attempt Domain
-    Profile ||--o{ TestAttempt : creates
-    TestAttempt ||--o{ UserAnswer : contains
-    TestAttempt ||--o{ WritingSubmission : contains
-    Question ||--o{ UserAnswer : answered_in
+FQN: `com.cramer.engagement.domain.Target` · File: `engagement/domain/Target.java`
+One per user; bands 0–9 (DB check). PK is a DB-default-assigned UUID; service upserts by user.
 
-    %% Subscription Domain
-    SubscriptionTier ||--o{ UserSubscription : defines
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `UUID` | **PK**, not updatable (no `@GeneratedValue`; DB default) |
+| `userId` | `user_id` | `UUID` | not null, **unique** |
+| `examName` | `exam_name` | `String` | not null |
+| `examDate` | `exam_date` | `LocalDate` | |
+| `listening` | `listening` | `Double` | |
+| `reading` | `reading` | `Double` | |
+| `writing` | `writing` | `Double` | |
+| `speaking` | `speaking` | `Double` | |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
+| `updatedAt` | `updated_at` | `OffsetDateTime` | `@UpdateTimestamp`, not null |
 
-    %% Quota Domain
-    Profile ||--o{ UserQuota : has
-    Profile ||--o{ SkillQuota : has
-    Profile ||--o{ TranslationUsage : tracks
+### `ChatMessage` → `chat_messages`
 
-    %% Admin Domain
-    Profile ||--o{ AdminAuditLog : performs
+FQN: `com.cramer.engagement.domain.ChatMessage` · File: `engagement/domain/ChatMessage.java`
 
-    %% Entity Definitions
-    TestSet {
-        Long id PK
-        String code UK
-        String name
-        String sourceType
-        Boolean isPublished
-    }
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `userId` | `user_id` | `UUID` | not null |
+| `role` | `role` | `String` | not null (user/assistant/system) |
+| `content` | `content` | `String` | TEXT, not null |
+| `tokensUsed` | `tokens_used` | `Integer` | default `0` |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not updatable |
 
-    IeltsTest {
-        Long id PK
-        Long setId FK
-        Integer testNumber
-        String difficulty
-        Boolean isAiGenerated
-    }
+### `UserActivity` → `user_activities`
 
-    Section {
-        Long id PK
-        Long testId FK
-        String skill
-        Integer partNumber
-        String passageText
-    }
+FQN: `com.cramer.engagement.domain.UserActivity` · File: `engagement/domain/UserActivity.java`
 
-    Question {
-        Long id PK
-        Long sectionId FK
-        String questionUid UK
-        String questionType
-        JSONB questionContent
-        JSONB correctAnswer
-    }
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `userId` | `user_id` | `UUID` | not null |
+| `activityType` | `activity_type` | `String` | not null |
+| `title` | `title` | `String` | not null |
+| `description` | `description` | `String` | TEXT |
+| `metadata` | `metadata` | `JsonNode` | **JSONB** |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
 
-    Hashtag {
-        Long id PK
-        String code UK
-        String name
-        String category
-    }
+### `Vocabulary` → `vocabulary`
 
-    Profile {
-        UUID id PK
-        String username UK
-        String fullName
-        Boolean isAdmin
-    }
+FQN: `com.cramer.engagement.domain.Vocabulary` · File: `engagement/domain/Vocabulary.java`
+Unique per `(user_id, word)` (enforced in the service).
 
-    Target {
-        UUID id PK
-        UUID userId UK
-        LocalDate examDate
-        Double listening
-        Double reading
-        Double writing
-        Double speaking
-    }
-
-    TestAttempt {
-        Long id PK
-        UUID userId FK
-        String examSource
-        String skill
-        String status
-        Integer score
-    }
-
-    UserAnswer {
-        Long id PK
-        UUID userId FK
-        Long attemptId FK
-        Long questionId FK
-        Boolean isCorrect
-    }
-
-    WritingSubmission {
-        Long id PK
-        Long attemptId FK
-        UUID userId FK
-        Integer taskNumber
-        TEXT essayText
-        BigDecimal overallBand
-        JSONB aiFeedback
-    }
-
-    SubscriptionTier {
-        Long id PK
-        String code UK
-        String name
-        Integer priceVnd
-        Integer monthlyAttemptLimit
-    }
-
-    UserSubscription {
-        Long id PK
-        UUID userId FK
-        Long tierId FK
-        Status status
-        Integer attemptsUsed
-    }
-
-    UserCredit {
-        Long id PK
-        UUID userId UK
-        Integer balance
-        Integer lifetimeEarned
-    }
-
-    CreditTransaction {
-        Long id PK
-        UUID userId FK
-        Integer amount
-        Type type
-        Category category
-    }
-
-    PaymentOrder {
-        Long id PK
-        UUID userId FK
-        Long orderCode UK
-        Type type
-        Status status
-    }
-
-    LuaPack {
-        Long id PK
-        String code UK
-        Integer luaAmount
-        Integer priceVnd
-    }
-
-    UserQuota {
-        Long id PK
-        UUID userId FK
-        LocalDate quotaMonth
-        Integer attemptCount
-    }
-
-    SkillQuota {
-        Long id PK
-        UUID userId FK
-        Skill skill
-        LocalDate quotaMonth
-    }
-
-    TranslationUsage {
-        Long id PK
-        UUID userId FK
-        LocalDate usageMonth
-        Integer translationsUsed
-    }
-
-    ChatMessage {
-        Long id PK
-        UUID userId FK
-        String role
-        TEXT content
-    }
-
-    ChatbotUsage {
-        Long id PK
-        UUID userId FK
-        LocalDate usageDate
-        Integer messagesUsed
-    }
-
-    Vocabulary {
-        Long id PK
-        UUID userId FK
-        String word
-        TEXT translation
-        Boolean isMastered
-    }
-
-    UserActivity {
-        Long id PK
-        UUID userId FK
-        String activityType
-        String title
-    }
-
-    AdminAuditLog {
-        Long id PK
-        UUID adminUserId FK
-        String action
-        String targetType
-    }
-```
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `userId` | `user_id` | `UUID` | not null |
+| `word` | `word` | `String` | not null |
+| `translation` | `translation` | `String` | TEXT |
+| `phonetic` | `phonetic` | `String` | |
+| `partOfSpeech` | `part_of_speech` | `String` | |
+| `definition` | `definition` | `String` | TEXT |
+| `exampleSentence` | `example_sentence` | `String` | TEXT |
+| `sourceContext` | `source_context` | `String` | TEXT |
+| `sourceTestId` | `source_test_id` | `Long` | FK→`tests` (plain column) |
+| `sourceSectionId` | `source_section_id` | `Long` | FK→`sections` (plain column) |
+| `notes` | `notes` | `String` | TEXT |
+| `isMastered` | `is_mastered` | `Boolean` | default `false` |
+| `reviewCount` | `review_count` | `Integer` | default `0` |
+| `lastReviewedAt` | `last_reviewed_at` | `OffsetDateTime` | |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not updatable |
+| `updatedAt` | `updated_at` | `OffsetDateTime` | `@UpdateTimestamp` |
 
 ---
 
-## Key Business Domains Identified
+## Module: `admin`
 
-1. **Test Content Management** - TestSet, IeltsTest, Section, Question, Hashtag
-2. **User & Profile** - Profile, Target
-3. **Test Attempt & Grading** - TestAttempt, UserAnswer, WritingSubmission
-4. **Subscription & Monetization** - SubscriptionTier, UserSubscription, UserCredit, CreditTransaction, PaymentOrder, LuaPack
-5. **Quota & Billing** - UserQuota, SkillQuota, TranslationUsage
-6. **AI & Chat** - ChatMessage, ChatbotUsage
-7. **Vocabulary** - Vocabulary
-8. **Activity & Audit** - UserActivity, AdminAuditLog
+`backend/src/main/java/com/cramer/admin/domain/`
+
+### `AdminAuditLog` → `admin_audit_log`
+
+FQN: `com.cramer.admin.domain.AdminAuditLog` · File: `admin/domain/AdminAuditLog.java`
+Attribution comes from the authenticated admin principal (never a header).
+
+| Field | Column | Java type | Notes |
+|-------|--------|-----------|-------|
+| `id` | `id` | `Long` | **PK**, IDENTITY |
+| `adminUserId` | `admin_user_id` | `UUID` | not null |
+| `adminEmail` | `admin_email` | `String` | |
+| `action` | `action` | `String` | not null |
+| `targetType` | `target_type` | `String` | not null |
+| `targetId` | `target_id` | `String` | not null |
+| `oldValue` | `old_value` | `JsonNode` | **JSONB** |
+| `newValue` | `new_value` | `JsonNode` | **JSONB** |
+| `description` | `description` | `String` | TEXT |
+| `ipAddress` | `ip_address` | `String` | |
+| `userAgent` | `user_agent` | `String` | TEXT |
+| `createdAt` | `created_at` | `OffsetDateTime` | `@CreationTimestamp`, not null, not updatable |
 
 ---
 
-*Document generated automatically from entity analysis on January 6, 2026*
+## Module: `platform` (shared enums)
+
+`backend/src/main/java/com/cramer/platform/common/ielts/`
+
+No JPA entities. Houses the shared-kernel IELTS vocabulary referenced by entity columns:
+
+- **`Skill`** (FQN `com.cramer.platform.common.ielts.Skill`) — used by `Section.skill` (via
+  `SkillConverter`). Values: `READING`, `LISTENING`, `WRITING`, `SPEAKING`. DB value is
+  **lowercase** (`dbValue()`).
+- **`QuestionType`** (FQN `com.cramer.platform.common.ielts.QuestionType`) — used by
+  `Question.questionType` (`@Enumerated(STRING)`). See [Enum Catalogue](#enum-catalogue).
+- **`BandScale`** (FQN `com.cramer.platform.common.ielts.BandScale`) — present in the package;
+  not referenced by any mapped entity column (its values were not enumerated here).
+
+---
+
+## Module: `abts` (no entities)
+
+`backend/src/main/java/com/cramer/abts/domain/` — **no `@Entity` classes.** The ABTS pipeline
+persists nothing through these types; the domain folder is value objects (records) + enums:
+
+- **Records:** `GenerationResult`, `Hunk`, `TokenUsage`, `QuestionRange`, `StreamEvent`.
+- **Enums:** `GenerationStatus`, `FactsMode`, `StreamEventType`.
+
+(ABTS-generated content is persisted through the `catalog` entities — `tests`/`sections`/`questions`.)
+
+---
+
+## Enum Catalogue
+
+Enums that are mapped onto entity columns (or persisted via converters):
+
+| Enum | FQN | Mapped on | Storage | Values |
+|------|-----|-----------|---------|--------|
+| `AccountStatus` | `identity.domain.AccountStatus` | `Profile.accountStatus` | STRING (uppercase) | `ACTIVE`, `BANNED`, `DEACTIVATED`, `DELETED` |
+| `Difficulty` | `catalog.domain.Difficulty` | `Test.difficulty` | STRING (uppercase) | `BEGINNER`, `LOWER_INTERMEDIATE`, `INTERMEDIATE`, `UPPER_INTERMEDIATE`, `ADVANCED` |
+| `SectionStatus` | `catalog.domain.SectionStatus` | `Section.status` | STRING (uppercase) | `DRAFT`, `PUBLISHED`, `ARCHIVED` |
+| `Skill` | `platform.common.ielts.Skill` | `Section.skill` | Converter → **lowercase** | `READING`, `LISTENING`, `WRITING`, `SPEAKING` |
+| `QuestionType` | `platform.common.ielts.QuestionType` | `Question.questionType` | STRING | `FILL_IN_BLANK`, `SUMMARY_COMPLETION`, `SUMMARY_COMPLETION_OPTIONS`, `TRUE_FALSE_NOT_GIVEN`, `YES_NO_NOT_GIVEN`, `MATCHING_INFORMATION`, `MATCHING_HEADINGS`, `MATCHING_FEATURES`, `MATCHING_SENTENCE_ENDINGS`, `MULTIPLE_CHOICE`, `MULTIPLE_CHOICE_MULTIPLE_ANSWERS`, `TABLE_COMPLETION`, `FLOW_CHART_COMPLETION`, `DIAGRAM_LABEL_COMPLETION`, `MATCHING`, `PART_1`, `PART_2`, `PART_3` |
+| `AttemptStatus` | `assessment.domain.AttemptStatus` | `Attempt.status` | STRING (uppercase) | `IN_PROGRESS`, `COMPLETED`, `CANCELLED` |
+| `WritingStatus` | `writing.domain.WritingStatus` | `WritingSubmission.gradingStatus` | STRING (uppercase) | `PENDING`, `GRADING`, `COMPLETED`, `FAILED` |
+| `SpeakingSessionStatus` | `speaking.domain.SpeakingSessionStatus` | `SpeakingSession.status` | Converter → **lowercase** | `IN_PROGRESS`, `COMPLETED`, `ABANDONED`, `EXPIRED`, `GRADING`, `GRADED`, `GRADING_FAILED` |
+| `TransactionType` | `billing.domain.TransactionType` | `CreditTransaction.type` | STRING | `EARN`, `SPEND`, `PURCHASE`, `REFUND`, `BONUS`, `ADMIN` |
+
+Enum **not** mapped on an entity column (service-layer only):
+
+| Enum | FQN | Values |
+|------|-----|--------|
+| `CreditCategory` | `billing.domain.CreditCategory` | `INITIAL_BONUS`, `TIER_BONUS`, `PURCHASE`, `AI_GRADING`, `ATTEMPT_OVERAGE`, `VOCABULARY_TRANSLATION`, `CHAT_EXTENSION`, `SPEAKING_SESSION`, `SPEAKING_REFUND`, `ADMIN_ADJUSTMENT` (each carries a default `TransactionType`) |
+
+> Note: `UserSubscription.status`, `PaymentOrder.type`, `PaymentOrder.status`, `Attempt.skill`,
+> and `SkillQuota.skill` are persisted as **plain `String`** columns (no `@Enumerated`/converter),
+> even though their value sets are constrained at the application/DB level.
+
+---
+
+## Known Tables Without a JPA Entity
+
+The following tables from the known live set have **no** corresponding `@Entity` (verified: no
+references in `backend/src` except as noted). They are not mapped through Hibernate:
+
+| Table | Status |
+|-------|--------|
+| `chatbot_usage` | **Legacy** — referenced only in a comment in `billing/service/ChatBillingPort.java` ("the legacy daily `chatbot_usage` table"). Monthly counters live on `user_subscriptions.chatbot_used`. No entity. |
+| `abts_templates` | No entity and **no source reference** anywhere in `backend/src`. (ABTS templating is not persisted via JPA.) |
+| `model_runtime_status` | No entity and **no source reference** anywhere in `backend/src`. |
+| `speaking_*_legacy` (archived) | Archived legacy Speaking tables; intentionally unmapped. |
+
+No `@Entity` maps to a table **outside** the known set — nothing to flag in that direction.
+
+---
+
+## Verification Notes
+
+- **Sources read:** all 26 `@Entity` files + the `@Embeddable` (`TestHashtagId`) + every mapped
+  enum + both `AttributeConverter`s + the two shared platform enums (`Skill`, `QuestionType`).
+- **Cross-checks run:**
+  - `@Entity` count = 26; `@Table(name=…)` count = 26 (1:1).
+  - JPA-mapping annotations total = 27 (26 `@Entity` + 1 `@Embeddable`); **no `@MappedSuperclass`.**
+  - Association annotations (`@ManyToOne`/`@OneToMany`/`@OneToOne`/`@ManyToMany`/`@JoinColumn`/
+    `@JoinTable`) = **0** across `com.cramer`. All relationships are plain FK ID columns.
+  - JSONB always via `@JdbcTypeCode(SqlTypes.JSON)` on `JsonNode` (no `@Type(JsonType.class)`).
+- **Anti-hallucination:** anything not present in source was omitted. `BandScale` is listed as
+  present but its values were not read, so they are not enumerated here.

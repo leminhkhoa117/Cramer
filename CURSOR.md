@@ -21,16 +21,13 @@ Cramer is an IELTS practice platform. Treat the repository as the source of trut
 
 ### Backend
 
-- Controllers: `backend/src/main/java/com/cramer/controller/`
-- Admin controllers: `backend/src/main/java/com/cramer/controller/admin/`
-- Services: `backend/src/main/java/com/cramer/service/`
-- Service implementations: `backend/src/main/java/com/cramer/service/implement/`
-- ABTS generation: `backend/src/main/java/com/cramer/service/abts/`
-- Security: `SecurityConfig` and `JwtAuthFilter`
-- Entities: `backend/src/main/java/com/cramer/entity/`
-- Repositories: `backend/src/main/java/com/cramer/repository/`
-- DTOs: `backend/src/main/java/com/cramer/dto/`
-- Config: `backend/src/main/java/com/cramer/config/`
+- Modules (one bounded context each, **no** global layers): `identity/`, `catalog/`, `assessment/`, `writing/`, `speaking/`, `billing/`, `engagement/`, `admin/`, `abts/`
+- Each module owns: `web/` (controllers) + `web/dto/` (request/response records) · `service/` (+ cross-module `Port` interfaces) · `domain/` (Lombok JPA entities/enums) · `repository/` · some have `config/`
+- Shared kernel: `platform/` — `web/` (GlobalExceptionHandler, WebConfig, HealthController), `security/` (`SecurityConfig` OAuth2 resource server, `SupabaseJwtConfig` NimbusJwtDecoder, `AdminAuthorizationService`, `CurrentUser`), `error/`, `integration/` (`llm`, `openrouter`, `supabase`), `ratelimit/`, `common/`, `config/`
+- ABTS generation: `abts/` — `generation/` (+ `generation/prompt/`), `validation/`, `web/` (SSE streaming)
+- Admin content CRUD: `catalog/web/admin/`; cross-domain admin console: `admin/`
+- There is **no** global `controller/`, `service/implement/`, `entity/`, `dto/`, or `repository/` package anymore
+- Architecture source of truth: `docs/specs/backend/` (SPEC-00…25)
 
 ### Frontend
 

@@ -801,7 +801,7 @@ Vai trò: lưu từng turn thực tế trong 1 session.
 
 ## Migration skeleton SQL
 
-> Đây là skeleton để issue BE/DB triển khai tiếp; tên file migration thật có thể đổi theo convention hiện tại trong `docs/backend/migrations/`.
+> Đây là skeleton để issue BE/DB triển khai tiếp; tên file migration thật có thể đổi theo convention hiện tại trong `docs/ops/migrations/`.
 
 ### Bước A - Dọn legacy content tables Speaking cũ
 
@@ -1083,8 +1083,8 @@ order by s.part_number, q.question_type;
 
 ## Tài liệu phải update sau khi migration chốt
 
-- `docs/library/backend/DATABASE_SCHEMA.md`
-- `docs/library/backend/ENTITIES.md`
+- `docs/canonical/backend/DATABASE_SCHEMA.md`
+- `docs/canonical/backend/ENTITIES.md`
 - mọi docs Speaking mới nếu đang còn nhắc tới `speaking_topics`, `speaking_tests`, `speaking_questions`
 
 ## Deliverables
@@ -2726,7 +2726,7 @@ User speaks -> MediaRecorder -> audio chunks (250ms mỗi chunk)
 > - Retention values là **constants shared với Sub-issue 10** (không duplicate magic numbers).
 >
 > **4. Privacy / security (voice = PII / biometric)**
-> - Confirm Supabase AES-256 at-rest (document trong docs/backend/supabase-backend.md).
+> - Confirm Supabase AES-256 at-rest (document trong docs/canonical/backend/DATABASE_SCHEMA.md).
 > - RLS `INSERT` policy: `auth.uid()::text = (storage.foldername(name))[1]` → user A không write được folder user B.
 > - Signed read URL cho grading: TTL **≤ 300s**, one-shot nếu hỗ trợ, **không log**.
 > - `deleteUserAudio(userId)` hook wired vào account-deletion flow (GDPR Art.17).
@@ -2734,7 +2734,7 @@ User speaks -> MediaRecorder -> audio chunks (250ms mỗi chunk)
 >
 > **5. Ops & env separation**
 > - Bucket name environment-scoped: `speaking-audio-{env}` (dev/staging/prod). Fail-fast startup ở `prod` nếu `supabase.storage.speaking-bucket` unset.
-> - Migration `docs/backend/migrations/20260416_storage_buckets.sql`: create bucket + RLS + Dashboard fallback steps.
+> - Migration `docs/ops/migrations/20260416_storage_buckets.sql`: create bucket + RLS + Dashboard fallback steps.
 > - E2E test isolation: prefix `e2e/{runId}/...`; `@AfterAll` hook batch-delete via `/storage/v1/object/list` + `DELETE`. Guard: reject empty runId, bucket phải có suffix `-test`.
 > - Backup: nightly GitHub Action `supabase storage cp --recursive` → S3 Glacier (prod only); 30d retention; documented restore drill.
 > - Lint/grep check trong PR: `grep -R "\"speaking-audio\"" backend/src` chỉ hit property default.

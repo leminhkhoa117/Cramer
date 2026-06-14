@@ -86,4 +86,4 @@ Establish a testing foundation for Cramer with focus on critical paths. Friend i
 ## Related Docs
 
 - Friend's testing branch documentation (TBD)
-- `docs/library/backend/SERVICES.md` - Services to test
+- `docs/canonical/backend/SERVICES.md` - Services to test

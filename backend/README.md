@@ -1,11 +1,11 @@
 # Cramer - Backend
 
-This is a starter Spring Boot (Maven) backend for the Cramer IELTS site.
+Spring Boot (Maven) backend for the Cramer IELTS platform — vertical-slice modules under `com.cramer.*`. See `docs/specs/backend/` for the architecture (SPEC-00…25) and `BUILD_INSTRUCTIONS.md` for detailed build help.
 
 Prerequisites
 
-- Java 17+
-- Maven
+- Java 25
+- Maven (or use the bundled `./mvnw` wrapper)
 
 Run locally
 
@@ -17,7 +17,7 @@ Run locally
 
    mvn -f pom.xml spring-boot:run
 
-The app will be available at http://localhost:8080. Test endpoint: http://localhost:8080/api/ping
+The app will be available at http://localhost:8080. Health check: http://localhost:8080/api/health · Swagger UI: http://localhost:8080/swagger-ui.html
 
 Connecting to Supabase (Postgres)
 

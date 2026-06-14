@@ -2,58 +2,49 @@
 
 ## Overview
 
-Cramer is an English practice platform that delivers curated IELTS-style tests in a modern web experience. The project focuses on letting learners sign up, log in, and work through materials the team extracts from trusted sources. The development begins with IELTS Cambridge 17. The immediate goal of this codebase is to shape a dependable backend foundation before building rich application features.
+Cramer is an English practice platform that delivers curated IELTS-style tests in a modern web experience. Learners sign up, log in, and work through Reading, Listening, Writing, and Speaking materials, with AI-assisted grading and progress tracking. Content is built from trusted sources, starting with Cambridge IELTS.
 
-## Current Status
+## Architecture
 
-- Supabase project provisioned with managed PostgreSQL, authentication, and storage.
-- Initial `public` schema designed around profiles, sections, questions, and user answers.
-- Documentation for the backend stack lives in `docs/backend/supabase-backend.md`.
-- Frontend work is forthcoming once the data layer is stable and verified.
+- **Backend:** Spring Boot 4.0.0 (Java 25, Maven) — vertical-slice modules under `com.cramer.*` (`platform`, `identity`, `catalog`, `assessment`, `writing`, `speaking`, `billing`, `engagement`, `admin`, `abts`).
+- **Frontend:** React 19 + Vite 8, Zustand 5 for state, Tailwind CSS 4, React Bootstrap.
+- **Database / Auth / Storage:** Supabase (managed PostgreSQL with Row Level Security, Supabase Auth, storage).
+- **AI:** DeepSeek (writing grading, OpenAI-compatible API), OpenRouter (ABTS content generation), Google Gemini (speaking evaluation).
+- **Payments:** PayOS (Vietnam).
 
-## Key Features (planned)
+## Features
 
-- Secure email-based authentication powered by Supabase Auth.
-- Structured repository of IELTS practice content, starting with Cambridge 17 Test 1.
-- Question and answer tracking so learners can monitor progress over time.
-- Scalable architecture ready to ingest additional materials and skills.
-- Forthcoming expansion into automated scoring experiences powered by LLMs.
-
-## Architecture Snapshot
-
-- **Backend:** Supabase (PostgreSQL, Auth, Functions).
-- **Database Schema:**
-	- `profiles` links Supabase auth users to public profile data.
-	- `sections` organizes materials by exam source, test, skill, and part.
-	- `questions` stores question metadata and payloads using `jsonb` for flexibility.
-	- `user_answers` records every attempt for analytics and review.
-- **Docs:** See `docs/backend/supabase-backend.md` for detailed schema notes and operational guidance.
+- Authentication via Supabase Auth (JWT validated by the backend OAuth2 resource server).
+- IELTS practice across Reading, Listening, Writing, and Speaking, with timed sessions and auto-save.
+- AI-powered grading for Writing (DeepSeek) and Speaking (Gemini), plus attempt history and dashboards.
+- Subscription tiers (Cramerie / Cramerich / Cramerous) and the Lúa virtual-credit system.
+- Admin console and the AI-Based Test Generation System (ABTS) for authoring IELTS content.
 
 ## Getting Started
 
-1. Clone the repository and ensure you have access to the Supabase project credentials.
-2. Review `docs/backend/supabase-backend.md` to align your local environment or migrations with the managed schema.
-3. Set the required Supabase environment variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, etc.) when beginning frontend or integration work.
-4. Follow future instructions (to be documented) for running the application locally once the client is scaffolded.
+1. Clone the repository and obtain access to the Supabase project credentials and required API keys.
+2. Configure environment variables:
+   - Root `.env` (backend): `SPRING_DATASOURCE_*`, `SUPABASE_URL`, `SUPABASE_JWT_SECRET`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DEEPSEEK_API_KEY`, `OPENROUTER_API_KEY`, `PAYOS_*`.
+   - `frontend/.env`: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_BASE_URL` (optional).
+3. Run the backend: `cd backend && ./run-app.ps1` (Windows) or `./run-app.sh` (Linux/macOS). API at http://localhost:8080 (Swagger at `/swagger-ui.html`).
+4. Run the frontend: `cd frontend && npm install && npm run dev` (dev server on port 5173).
+
+See `AGENTS.md` for contributor/agent conventions, `docs/specs/backend/` for the authoritative backend architecture, and `docs/canonical/` for backend + frontend reference docs.
 
 ### Browser Compatibility
 
 **Recommended browsers:**
 - ✅ Google Chrome
-- ✅ Mozilla Firefox  
+- ✅ Mozilla Firefox
 - ✅ Zen Browser
 - ⚠️ Microsoft Edge (requires cookie settings adjustment)
 
-
-
 ## Roadmap
 
-- Finalize database constraints, indexes, and Row Level Security policies.
-- Build the first version of the reading practice frontend experience.
-- Add analytics dashboards for learner performance.
-- Expand content coverage to additional IELTS materials and other English skills.
-- Introduce new exams (IELTS Academic/General, TOEIC, and more) plus skills such as Writing and Speaking, leveraging LLM-based evaluation for high-accuracy automated marking.
+- Expand content coverage to additional IELTS materials and full Cambridge test banks.
+- Deepen analytics dashboards for learner performance.
+- Introduce additional exams (IELTS General, TOEIC, and more) and broaden AI-based marking accuracy.
 
 ## Contributing
 
-Contributions are welcome as the project matures. Open an issue or submit a pull request with a clear description of the problem or enhancement. Please coordinate schema changes with the team to keep the Supabase environment in sync.
+Contributions are welcome as the project matures. Open an issue or submit a pull request with a clear description of the problem or enhancement. Keep PRs small and well-scoped, and coordinate schema changes with the team to keep the Supabase environment in sync (migrations live in `docs/ops/migrations/`).

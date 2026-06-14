@@ -83,6 +83,6 @@ Improve the existing Lúa credit system with better admin controls, purchase flo
 
 ## Related Docs
 
-- `docs/library/backend/DATABASE_SCHEMA.md` - user_credits table
+- `docs/canonical/backend/DATABASE_SCHEMA.md` - user_credits table
 - `docs/short_term_plans/skill_part_selection.md` - Per-part pricing integration
 - `docs/short_term_plans/ai_speaking_session.md` - Speaking cost integration

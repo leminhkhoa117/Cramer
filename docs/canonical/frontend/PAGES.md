@@ -1,7 +1,7 @@
 # Cramer Frontend Pages Documentation
 
 > **Last Updated:** 17/05/2026  
-> **Framework:** React 18 + Vite + React Router v6.4+ (createBrowserRouter)  
+> **Framework:** React 19 + Vite 8 + React Router v7 (createBrowserRouter)  
 > **State Management:** Zustand
 
 This document catalogs all page components in the Cramer IELTS learning platform.

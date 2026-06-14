@@ -20,8 +20,8 @@ Runbook này mô tả cách vận hành, verify, và mở rộng dữ liệu Spe
 
 ## Files to use
 
-- Policy: `docs/library/backend/SPEAKING_DATA_POLICY.md` (Note: this file is planned but not yet created — policy details are in `docs/short_term_plans/speaking_github_issue.md`)
-- Migration artifact: `docs/backend/migrations/20260325_speaking_data_cleanup_backfill_v1.sql`
+- Policy: `docs/canonical/backend/SPEAKING_DATA_POLICY.md` (Note: this file now exists — policy details are in `docs/short_term_plans/speaking_github_issue.md`)
+- Migration artifact: `docs/ops/migrations/20260325_speaking_data_cleanup_backfill_v1.sql`
 - SQL verification pack: `docs/backend/queries/SPEAKING_DATA_VERIFICATION.sql`
 - Postman collection: `docs/backend/postman/Speaking_API.postman_collection.json`
 - API smoke test: `docs/backend/SPEAKING_API_SMOKE_TEST.md`

@@ -1,7 +1,7 @@
 # Cramer Frontend Components Documentation
 
 > **Last Updated:** 17/05/2026  
-> **Framework:** React 18 + Vite  
+> **Framework:** React 19 + Vite 8  
 > **UI Libraries:** Framer Motion, React Bootstrap, React Icons
 
 This document catalogs all reusable components in the Cramer IELTS learning platform.

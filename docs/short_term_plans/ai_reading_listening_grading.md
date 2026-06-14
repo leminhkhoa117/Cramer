@@ -80,5 +80,5 @@ Implement AI-powered grading for Reading and Listening tests. AI grades all answ
 
 ## Related Docs
 
-- `docs/library/backend/SERVICES.md` - Existing grading services
+- `docs/canonical/backend/SERVICES.md` - Existing grading services
 - Writing evaluation implementation (reference for feedback style)

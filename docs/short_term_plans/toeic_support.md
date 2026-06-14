@@ -81,5 +81,5 @@ Expand Cramer to support TOEIC Listening & Reading tests using the same infrastr
 
 ## Related Docs
 
-- `docs/library/backend/DATABASE_SCHEMA.md` - Schema extension
-- `docs/CRAMER_ABTS_SPECS.md` - ABTS prompt patterns
+- `docs/canonical/backend/DATABASE_SCHEMA.md` - Schema extension
+- `docs/specs/backend/20-ai-generation/` - ABTS prompt patterns (SPEC-20…25)

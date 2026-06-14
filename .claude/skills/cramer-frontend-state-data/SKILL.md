@@ -17,8 +17,8 @@ Keep frontend state and data flows consistent with the project’s Zustand and A
 ## Workflow
 
 1. Read docs first:
-   - `docs/library/frontend/STATE_MANAGEMENT.md`
-   - `docs/library/frontend/API_CLIENT.md`
+   - `docs/canonical/frontend/STATE_MANAGEMENT.md`
+   - `docs/canonical/frontend/API_CLIENT.md`
 2. Review implementation:
    - `frontend/src/stores/` — Zustand stores
    - `frontend/src/api/backendApi.js` — Axios client

@@ -513,5 +513,5 @@ Use this as a step-by-step list when generating SQL for a new IELTS Reading test
 ## Related Documentation
 
 - [Database Schema](./DATABASE_SCHEMA.md)
-- [Supabase Backend Setup](../../../docs/backend/supabase-backend.md)
+- [Database Schema](DATABASE_SCHEMA.md)
 - [Listening Test Ingestion Guide](./DATA_INGESTION_LISTENING.md)

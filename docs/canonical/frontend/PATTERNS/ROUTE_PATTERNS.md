@@ -2,7 +2,7 @@
 
 > **Version:** 1.0
 > **Last Updated:** 17/05/2026 (Round 1 fixes applied)
-> **Library:** React Router v6.4+
+> **Library:** React Router v7
 
 This document describes the routing patterns used in the Cramer frontend. It is **role-based** (not path-based) so it survives file refactors.
 
@@ -23,7 +23,7 @@ This document describes the routing patterns used in the Cramer frontend. It is 
 
 ## 1. Router Architecture
 
-- Uses `createBrowserRouter` (React Router v6.4+ data router)
+- Uses `createBrowserRouter` (React Router v7 data router)
 - Root layout component renders Header, AnimatedOutlet, Footer, FloatingAssistant conditionally
 - Routes are organized in 3 sections: public, protected, admin
 

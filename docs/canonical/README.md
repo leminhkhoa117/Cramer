@@ -12,8 +12,8 @@
 > [`docs/specs/backend/`](../specs/backend/README.md) (SPEC-00…25). All 10 modules are built
 > and tested (unit suite green; a `@SpringBootTest` boots the full context against the live
 > Supabase schema with `ddl-auto=validate`). The detailed backend docs below
-> (`ENTITIES.md`, `SERVICES.md`, `API_REFERENCE.md`) still describe the **legacy** layout and
-> are pending regeneration; `DATABASE_SCHEMA.md` remains accurate (schema is frozen/unchanged).
+> (`ENTITIES.md`, `SERVICES.md`, `API_REFERENCE.md`) were **regenerated from the vertical-slice
+> code** (v2.0.0, 14/06/2026); `DATABASE_SCHEMA.md` remains accurate (schema is frozen/unchanged).
 
 ---
 
@@ -34,11 +34,11 @@
 
 | Layer | Technologies |
 |-------|-------------|
-| **Frontend** | React 18, Vite, Tailwind CSS, Zustand, Framer Motion |
+| **Frontend** | React 19, Vite 8, Tailwind CSS 4, Zustand 5, Framer Motion |
 | **Backend** | Spring Boot 4.0, Java 25, Maven (vertical-slice modules) |
 | **Database** | PostgreSQL (Supabase) with RLS |
 | **Auth** | Supabase Auth with JWT |
-| **AI** | OpenRouter API (400+ models), DeepSeek V3.2 |
+| **AI** | OpenRouter (ABTS generation, `deepseek/deepseek-v4-flash`), DeepSeek (`deepseek-reasoner`, writing), Google Gemini (speaking) |
 | **Payments** | PayOS Gateway (Vietnam) |
 
 ---
@@ -49,12 +49,12 @@
 
 | Document | Description | Lines |
 |----------|-------------|-------|
-| [API_REFERENCE.md](backend/API_REFERENCE.md) | Complete REST API documentation with endpoints, request/response formats, and authentication details | 1054 |
-| [DATABASE_SCHEMA.md](backend/DATABASE_SCHEMA.md) | Canonical live Supabase schema reference with active tables, legacy archive notes, RLS policies, triggers, indexes, and ER diagrams | 1,050+ |
-| [ENTITIES.md](backend/ENTITIES.md) | JPA entity reference covering all domain models with field definitions and relationships | 878 |
-| [SERVICES.md](backend/SERVICES.md) | Service layer documentation with 38 services, ABTS system, and dependency diagrams | 1,279 |
-| [DATA_INGESTION_READING.md](backend/DATA_INGESTION_READING.md) | Guide for parsing and ingesting IELTS Reading test content via SQL | 518 |
-| [DATA_INGESTION_LISTENING.md](backend/DATA_INGESTION_LISTENING.md) | Guide for parsing and ingesting IELTS Listening test content with audio and question blocks | 376 |
+| [API_REFERENCE.md](backend/API_REFERENCE.md) | Complete REST API documentation with endpoints, request/response formats, and authentication details | 600 |
+| [DATABASE_SCHEMA.md](backend/DATABASE_SCHEMA.md) | Canonical live Supabase schema reference with active tables, legacy archive notes, RLS policies, triggers, indexes, and ER diagrams | 886 |
+| [ENTITIES.md](backend/ENTITIES.md) | JPA entity reference covering all domain models with field definitions and relationships | 624 |
+| [SERVICES.md](backend/SERVICES.md) | Service layer documentation with 76 services and 14 cross-module ports, ABTS system, and dependency diagrams | 578 |
+| [DATA_INGESTION_READING.md](backend/DATA_INGESTION_READING.md) | Guide for parsing and ingesting IELTS Reading test content via SQL | 432 |
+| [DATA_INGESTION_LISTENING.md](backend/DATA_INGESTION_LISTENING.md) | Guide for parsing and ingesting IELTS Listening test content with audio and question blocks | 316 |
 
 ### 🎨 Frontend Documentation
 
@@ -85,11 +85,11 @@
 
 | Category | Files | Total Lines |
 |----------|-------|-------------|
-| Backend | 6 | 5,044 |
+| Backend | 6 | 3,436 |
 | Frontend (existing) | 5 | 4,330 |
 | Frontend (patterns) | 6 | ~1,100 |
 | Frontend (speaking) | 7 | ~750 |
-| **Total** | **24** | **~11,224** |
+| **Total** | **24** | **~9,600** |
 
 ---
 
@@ -132,10 +132,11 @@ docs/
 │   ├── runbooks/                      # Operational runbooks
 │   └── bug-reports/                   # Bug and vulnerability reports
 │
-├── plans/                             # ★ Feature plans (was short_term_plans/)
-│   ├── speaking/                      # Speaking feature plans
-│   ├── ai/                            # AI feature plans
-│   └── ...                            # Other plans
+├── specs/                          # ★ Authoritative specs (backend SPEC-00...25 + frontend)
+│   ├── backend/                       # 00-foundation, 10-modules, 20-ai-generation
+│   └── frontend/
+│
+├── short_term_plans/                  # ★ Feature plans (flat; one .md per feature)
 │
 ├── architecture/                      # ★ System design docs
 │   ├── userflow/                      # PlantUML user flow diagrams
@@ -145,6 +146,14 @@ docs/
 │   ├── test_materials/                # Cambridge IELTS PDFs + audio
 │   ├── speaking/                      # Speaking foundations
 │   └── marking_criteria/              # IELTS band descriptors
+│
+├── ielts_specific/                  # ★ IELTS reference materials (test_materials/)
+│
+├── external/                          # ★ Third-party reference (deepseek/openrouter/auth emails)
+│
+├── backend/                           # Legacy notes/reports (+ queries/), consolidating into ops/ and test-reports/
+├── frontend/                          # Frontend notes (placeholder)
+├── userflow/                          # PlantUML user flow (mirrors architecture/userflow/)
 │
 ├── test-reports/                      # ★ Consolidated test reports
 │   ├── backend/
