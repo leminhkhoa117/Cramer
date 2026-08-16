@@ -10,13 +10,17 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param baseUrl                 endpoint (default {@code https://openrouter.ai/api/v1})
  * @param defaultGenerationModel  default model for ABTS generation
  * @param apiTimeoutMs            per-call timeout (ms)
+ * @param siteUrl                 HTTP-Referer attribution
+ * @param siteName                X-Title attribution
  */
 @ConfigurationProperties(prefix = "openrouter")
 public record OpenRouterProperties(
         String apiKey,
         String baseUrl,
         String defaultGenerationModel,
-        Integer apiTimeoutMs) {
+        Integer apiTimeoutMs,
+        String siteUrl,
+        String siteName) {
 
     public String resolvedBaseUrl() {
         return (baseUrl == null || baseUrl.isBlank()) ? "https://openrouter.ai/api/v1" : baseUrl.trim().replaceAll("/+$", "");
@@ -24,11 +28,19 @@ public record OpenRouterProperties(
 
     public String resolvedDefaultModel() {
         return (defaultGenerationModel == null || defaultGenerationModel.isBlank())
-                ? "deepseek/deepseek-chat" : defaultGenerationModel.trim();
+                ? "deepseek/deepseek-v4-flash" : defaultGenerationModel.trim();
     }
 
     public int resolvedTimeoutMs() {
         return (apiTimeoutMs == null || apiTimeoutMs <= 0) ? 120_000 : apiTimeoutMs;
+    }
+
+    public String resolvedSiteUrl() {
+        return (siteUrl == null || siteUrl.isBlank()) ? "https://cramer.vn" : siteUrl.trim();
+    }
+
+    public String resolvedSiteName() {
+        return (siteName == null || siteName.isBlank()) ? "Cramer ABTS" : siteName.trim();
     }
 
     public boolean hasApiKey() {

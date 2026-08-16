@@ -1,5 +1,6 @@
 package com.cramer.abts.generation;
 
+import com.cramer.abts.config.AbtsProperties;
 import com.cramer.abts.domain.GenerationResult;
 import com.cramer.abts.domain.GenerationStatus;
 import com.cramer.abts.service.ModelCapabilityRegistry;
@@ -46,10 +47,11 @@ class GenerationServiceTest {
         when(readingGenerator.skill()).thenReturn(Skill.READING);
         validator = mock(ContentValidator.class);
         QuestionRenumberer renumberer = new QuestionRenumberer();
-        OpenRouterProperties props = new OpenRouterProperties("key", null, "deepseek/deepseek-chat", 120_000);
+        OpenRouterProperties props = new OpenRouterProperties("key", null, "deepseek/deepseek-chat", 120_000, null, null);
         ModelResolver resolver = new ModelResolver(props, new ModelCapabilityRegistry());
         OpenRouterClient client = mock(OpenRouterClient.class);
-        service = new GenerationService(List.of(readingGenerator), validator, renumberer, resolver, client, props);
+        AbtsProperties abtsProps = new AbtsProperties(new AbtsProperties.Streaming(1_800_000, 600_000, 8, 4), 5);
+        service = new GenerationService(List.of(readingGenerator), validator, renumberer, resolver, client, props, abtsProps);
     }
 
     private ObjectNode readingContent(int... numbers) {

@@ -31,11 +31,14 @@ class RefinementServiceTest {
     @BeforeEach
     void setUp() {
         validator = mock(ContentValidator.class);
-        OpenRouterProperties props = new OpenRouterProperties("key", null, "deepseek/deepseek-chat", 120_000);
+        OpenRouterProperties props = new OpenRouterProperties("key", null, "deepseek/deepseek-chat", 120_000, null, null);
         ModelResolver resolver = new ModelResolver(props, new ModelCapabilityRegistry());
         OpenRouterClient client = mock(OpenRouterClient.class);
         AbtsProperties abtsProps = new AbtsProperties(new AbtsProperties.Streaming(1_800_000, 600_000, 8, 4), 5);
-        service = new RefinementService(client, resolver, validator, abtsProps);
+        service = new RefinementService(client, resolver, validator,
+                new com.cramer.abts.generation.prompt.RefinementPromptBuilder(),
+                new com.cramer.abts.generation.prompt.PromptSchemaBuilder(),
+                abtsProps);
     }
 
     private ObjectNode content() {

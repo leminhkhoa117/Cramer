@@ -69,7 +69,7 @@ public class SpeakingGradingWorker {
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             try {
                 OpenRouterChatRequest request = new OpenRouterChatRequest(
-                        model, system, user, "speaking_grading", null, 0.3, 0, null, false, false);
+                        model, system, user, "speaking_grading", null, 0.3, 0, null);
                 OpenRouterChatResult chat = openRouter.chat(request);
                 JsonNode raw = chat.content();
                 SpeakingGradingResult result = Json.mapper().treeToValue(raw, SpeakingGradingResult.class);

@@ -91,6 +91,12 @@
             <version>8.7.0</version>
         </dependency>
 
+        <!-- Observability: health + metrics endpoints -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- ==================== TESTING DEPENDENCIES ==================== -->
         <!-- Spring Boot Test Starter (JUnit 5, Mockito, AssertJ) -->
         <dependency>

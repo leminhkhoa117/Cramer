@@ -69,8 +69,7 @@ public class GenerationContext {
 
         OpenRouterChatRequest request = new OpenRouterChatRequest(
                 model, prompt.systemPrompt(), prompt.userPrompt(), prompt.schemaName(), prompt.schema(),
-                modelConfig.resolvedTemperature(), modelConfig.resolvedMaxTokens(), reasoningPayload,
-                false, modelConfig.cacheEnabled());
+                modelConfig.resolvedTemperature(), modelConfig.resolvedMaxTokens(), reasoningPayload);
 
         OpenRouterChatResult result;
         if (streaming) {

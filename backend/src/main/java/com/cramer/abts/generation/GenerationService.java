@@ -1,5 +1,6 @@
 package com.cramer.abts.generation;
 
+import com.cramer.abts.config.AbtsProperties;
 import com.cramer.abts.domain.GenerationResult;
 import com.cramer.abts.domain.GenerationStatus;
 import com.cramer.abts.domain.StreamEvent;
@@ -24,6 +25,7 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -31,12 +33,18 @@ import java.util.function.BooleanSupplier;
  * part through a ≤3-attempt validate-retry loop (phases cached across attempts), renumbers + merges
  * multi-part results, and aggregates partial success/usage. Used by both the synchronous and
  * streaming paths (the latter passes an emitter + cancellation flag).
+ *
+ * <p>Resilience: retries wait on an exponential backoff with jitter and honor the upstream
+ * Retry-After hint; each part has a deadline (SPEC-21 §6, {@code abts.streaming.part-timeout-ms})
+ * after which it fails with {@code PART_TIMEOUT}.</p>
  */
 @Service
 public class GenerationService {
 
     private static final Logger log = LoggerFactory.getLogger(GenerationService.class);
     private static final int MAX_ATTEMPTS = 3;
+    private static final long MAX_BACKOFF_MS = 10_000;
+    private static final long MAX_RETRY_AFTER_MS = 30_000;
 
     private final Map<Skill, PartGenerator> generators = new EnumMap<>(Skill.class);
     private final ContentValidator validator;
@@ -44,10 +52,12 @@ public class GenerationService {
     private final ModelResolver modelResolver;
     private final OpenRouterClient client;
     private final OpenRouterProperties props;
+    private final AbtsProperties abtsProps;
 
     public GenerationService(List<PartGenerator> generatorBeans, ContentValidator validator,
                              QuestionRenumberer renumberer, ModelResolver modelResolver,
-                             OpenRouterClient client, OpenRouterProperties props) {
+                             OpenRouterClient client, OpenRouterProperties props,
+                             AbtsProperties abtsProps) {
         for (PartGenerator g : generatorBeans) {
             generators.put(g.skill(), g);
         }
@@ -56,6 +66,7 @@ public class GenerationService {
         this.modelResolver = modelResolver;
         this.client = client;
         this.props = props;
+        this.abtsProps = abtsProps;
     }
 
     /** Synchronous generation (no streaming). */
@@ -146,7 +157,12 @@ public class GenerationService {
         String taskType = cfg == null ? null : cfg.taskType();
         ValidationResult lastValidation = null;
         JsonNode lastContent = null;
+        long deadlineNanos = System.nanoTime() + partTimeoutMs() * 1_000_000L;
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            if (System.nanoTime() > deadlineNanos) {
+                log.warn("Part {} exceeded the per-part timeout ({} ms)", part, partTimeoutMs());
+                return PartOutcome.failure(part, "PART_TIMEOUT", true, attempt);
+            }
             try {
                 JsonNode content = generator.generatePart(part, cfg, ctx);
                 ValidationResult validation = validator.validate(skill, part, taskType, content);
@@ -162,7 +178,10 @@ public class GenerationService {
             } catch (OpenRouterException e) {
                 log.warn("OpenRouter error on part {} attempt {}: {} ({})", part, attempt, e.getMessage(), e.error());
                 if (e.retryable() && attempt < MAX_ATTEMPTS) {
-                    ctx.emit(StreamEvent.retry(attempt, MAX_ATTEMPTS, "Upstream error; retrying part " + part));
+                    long delay = retryDelayMs(attempt, e.retryAfterMs());
+                    ctx.emit(StreamEvent.retry(attempt, MAX_ATTEMPTS,
+                            "Upstream error; retrying part " + part + " in " + delay + " ms"));
+                    sleep(delay);
                     continue;
                 }
                 return PartOutcome.failure(part, e.error().name(), e.retryable(), attempt);
@@ -173,6 +192,30 @@ public class GenerationService {
             return PartOutcome.success(part, lastContent, lastValidation, MAX_ATTEMPTS);
         }
         return PartOutcome.failure(part, "UPSTREAM_ERROR", true, MAX_ATTEMPTS);
+    }
+
+    // ---------------------------------------------------------------- retry policy
+
+    private static long retryDelayMs(int attempt, Long retryAfterMs) {
+        long backoff = Math.min(1_000L << (attempt - 1), MAX_BACKOFF_MS);
+        long withJitter = backoff + ThreadLocalRandom.current().nextLong(0, 500);
+        return retryAfterMs != null
+                ? Math.max(withJitter, Math.min(retryAfterMs, MAX_RETRY_AFTER_MS))
+                : withJitter;
+    }
+
+    private static void sleep(long delayMs) {
+        try {
+            Thread.sleep(delayMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new GenerationCancelledException("Interrupted while waiting to retry");
+        }
+    }
+
+    private int partTimeoutMs() {
+        int configured = abtsProps.streaming().partTimeoutMs();
+        return configured <= 0 ? 600_000 : configured;
     }
 
     // ---------------------------------------------------------------- aggregate

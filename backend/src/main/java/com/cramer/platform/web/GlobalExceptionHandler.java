@@ -7,6 +7,7 @@ import com.cramer.platform.error.RateLimitExceededException;
 import com.cramer.platform.error.ResourceAlreadyExistsException;
 import com.cramer.platform.error.ResourceNotFoundException;
 import com.cramer.platform.error.UpstreamServiceException;
+import com.cramer.platform.integration.openrouter.OpenRouterException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -115,6 +116,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleUpstream(UpstreamServiceException ex, HttpServletRequest req) {
         log.warn("Upstream dependency failure on {}: {}", req.getRequestURI(), ex.getMessage());
         return respond(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), req);
+    }
+
+    // ---- 503 (AI provider failure with a normalized error code, SPEC-24 §2) ----
+    @ExceptionHandler(OpenRouterException.class)
+    public ResponseEntity<ApiError> handleOpenRouter(OpenRouterException ex, HttpServletRequest req) {
+        log.warn("OpenRouter failure on {}: {} ({})", req.getRequestURI(), ex.getMessage(), ex.error());
+        ApiError body = new ApiError(Instant.now(), HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "Service Unavailable", ex.error().name() + ": " + ex.getMessage(), req.getRequestURI(),
+                null, ex.error().name(), null);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body);
     }
 
     // ---- Spring MVC exceptions that already carry a status (e.g. NoResourceFoundException → 404,

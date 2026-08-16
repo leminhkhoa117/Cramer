@@ -18,7 +18,7 @@ class ModelCatalogServiceTest {
 
     private final OpenRouterClient client = mock(OpenRouterClient.class);
     private final OpenRouterProperties props =
-            new OpenRouterProperties("key", null, "deepseek/deepseek-v4-flash", 120_000);
+            new OpenRouterProperties("key", null, "deepseek/deepseek-v4-flash", 120_000, null, null);
     private final ModelCatalogService catalog =
             new ModelCatalogService(client, new ModelCapabilityRegistry(), props);
 

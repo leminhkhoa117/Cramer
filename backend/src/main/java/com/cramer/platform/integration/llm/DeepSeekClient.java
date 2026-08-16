@@ -8,9 +8,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.net.http.HttpClient;
 import java.time.Duration;
 
 /**
@@ -28,7 +30,10 @@ public class DeepSeekClient {
 
     public DeepSeekClient(LlmProperties props) {
         this.props = props;
-        this.http = RestClient.builder().baseUrl(props.resolvedBaseUrl()).build();
+        HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
+        factory.setReadTimeout(Duration.ofMillis(props.resolvedTimeoutMs()));
+        this.http = RestClient.builder().baseUrl(props.resolvedBaseUrl()).requestFactory(factory).build();
     }
 
     public boolean isConfigured() {
@@ -78,9 +83,5 @@ public class DeepSeekClient {
             throw new UpstreamServiceException("DeepSeek returned no content");
         }
         return Json.readTree(content.asText());
-    }
-
-    Duration timeout() {
-        return Duration.ofMillis(props.resolvedTimeoutMs());
     }
 }

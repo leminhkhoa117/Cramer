@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -33,6 +34,7 @@ import java.util.function.BooleanSupplier;
 public class OpenRouterClient {
 
     private static final Logger log = LoggerFactory.getLogger(OpenRouterClient.class);
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(30);
 
     private final OpenRouterProperties props;
     private final RestClient http;
@@ -40,9 +42,15 @@ public class OpenRouterClient {
 
     public OpenRouterClient(OpenRouterProperties props) {
         this.props = props;
-        this.http = RestClient.builder().baseUrl(props.resolvedBaseUrl()).build();
+        // JDK client with explicit connect timeout; per-call read timeout comes
+        // from openrouter.api-timeout-ms so a hung upstream call cannot block
+        // a Tomcat thread forever.
+        HttpClient httpClient = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build();
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
+        factory.setReadTimeout(Duration.ofMillis(props.resolvedTimeoutMs()));
+        this.http = RestClient.builder().baseUrl(props.resolvedBaseUrl()).requestFactory(factory).build();
         this.streamHttp = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(30))
+                .connectTimeout(CONNECT_TIMEOUT)
                 .build();
     }
 
@@ -66,7 +74,7 @@ public class OpenRouterClient {
                     .retrieve()
                     .body(String.class);
         } catch (RestClientResponseException e) {
-            throw mapStatus(e.getStatusCode().value(), e);
+            throw mapStatus(e.getStatusCode().value(), e, retryAfter(e));
         } catch (Exception e) {
             throw new OpenRouterException(OpenRouterError.UPSTREAM_ERROR, "OpenRouter request failed", e);
         }
@@ -91,8 +99,8 @@ public class OpenRouterClient {
                 .timeout(Duration.ofMillis(props.resolvedTimeoutMs()))
                 .header("Authorization", "Bearer " + props.apiKey())
                 .header("Content-Type", "application/json")
-                .header("HTTP-Referer", "https://cramer.vn")
-                .header("X-Title", "Cramer ABTS")
+                .header("HTTP-Referer", props.resolvedSiteUrl())
+                .header("X-Title", props.resolvedSiteName())
                 .POST(HttpRequest.BodyPublishers.ofString(Json.toJson(body), StandardCharsets.UTF_8))
                 .build();
 
@@ -105,7 +113,8 @@ public class OpenRouterClient {
             if (response.statusCode() >= 400) {
                 String errBody = new String(response.body().readAllBytes(), StandardCharsets.UTF_8);
                 throw mapStatus(response.statusCode(),
-                        new IllegalStateException("OpenRouter stream HTTP " + response.statusCode() + ": " + errBody));
+                        new IllegalStateException("OpenRouter stream HTTP " + response.statusCode() + ": " + errBody),
+                        parseRetryAfter(response.headers().firstValue("Retry-After").orElse(null)));
             }
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(response.body(), StandardCharsets.UTF_8))) {
@@ -181,7 +190,7 @@ public class OpenRouterClient {
                     .body(String.class);
             return Json.readTree(raw).path("data");
         } catch (RestClientResponseException e) {
-            throw mapStatus(e.getStatusCode().value(), e);
+            throw mapStatus(e.getStatusCode().value(), e, retryAfter(e));
         } catch (Exception e) {
             throw new OpenRouterException(OpenRouterError.UPSTREAM_ERROR, "OpenRouter /models failed", e);
         }
@@ -197,8 +206,8 @@ public class OpenRouterClient {
 
     private void authHeaders(org.springframework.http.HttpHeaders headers) {
         headers.setBearerAuth(props.apiKey());
-        headers.add("HTTP-Referer", "https://cramer.vn");
-        headers.add("X-Title", "Cramer ABTS");
+        headers.add("HTTP-Referer", props.resolvedSiteUrl());
+        headers.add("X-Title", props.resolvedSiteName());
     }
 
     private ObjectNode buildBody(OpenRouterChatRequest request, boolean stream) {
@@ -229,10 +238,6 @@ public class OpenRouterClient {
         if (request.reasoning() != null && !request.reasoning().isMissingNode()) {
             body.set("reasoning", request.reasoning());
         }
-        if (request.webSearch()) {
-            ArrayNode plugins = body.putArray("plugins");
-            plugins.add(Json.mapper().createObjectNode().put("id", "web"));
-        }
         return body;
     }
 
@@ -257,9 +262,25 @@ public class OpenRouterClient {
                 root.path("model").asText(model));
     }
 
-    private OpenRouterException mapStatus(int status, Throwable cause) {
+    private OpenRouterException mapStatus(int status, Throwable cause, Long retryAfterMs) {
         OpenRouterError code = OpenRouterError.fromHttpStatus(status);
-        return new OpenRouterException(code, "OpenRouter HTTP " + status, cause);
+        return new OpenRouterException(code, "OpenRouter HTTP " + status, retryAfterMs, cause);
+    }
+
+    /** Parse a Retry-After header (seconds or HTTP-date) into milliseconds, or null. */
+    private static Long retryAfter(RestClientResponseException e) {
+        return parseRetryAfter(e.getResponseHeaders().getFirst("Retry-After"));
+    }
+
+    private static Long parseRetryAfter(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(raw.trim()) * 1000L;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     private static JsonNode tryParse(String text) {

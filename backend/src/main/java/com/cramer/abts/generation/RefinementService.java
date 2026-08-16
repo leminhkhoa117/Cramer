@@ -2,6 +2,9 @@ package com.cramer.abts.generation;
 
 import com.cramer.abts.config.AbtsProperties;
 import com.cramer.abts.domain.Hunk;
+import com.cramer.abts.domain.StreamEvent;
+import com.cramer.abts.generation.prompt.PromptSchemaBuilder;
+import com.cramer.abts.generation.prompt.RefinementPromptBuilder;
 import com.cramer.abts.validation.ContentValidator;
 import com.cramer.abts.validation.ValidationResult;
 import com.cramer.abts.web.dto.RefinementApplyRequest;
@@ -14,38 +17,49 @@ import com.cramer.platform.integration.openrouter.OpenRouterChatResult;
 import com.cramer.platform.integration.openrouter.OpenRouterClient;
 import com.cramer.platform.integration.openrouter.OpenRouterStreamListener;
 import com.cramer.platform.error.OperationNotAllowedException;
-import com.cramer.abts.domain.StreamEvent;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
 /**
  * Single, coherent refinement flow (SPEC-23 §5): the model proposes targeted patches for the
  * selected issues; patches are applied to a copy of the content and surfaced as diff
  * {@link Hunk}s for author accept/reject; accepted hunks are applied on {@code /refine/apply}.
- * Empty selection is rejected (400); the round counter is capped by {@code abts.max-refinement-rounds}.
+ * Empty selection is rejected (400); the round counter is tracked server-side per content and
+ * capped by {@code abts.max-refinement-rounds}.
  */
 @Service
 public class RefinementService {
 
     private static final Logger log = LoggerFactory.getLogger(RefinementService.class);
+    private static final int MAX_TRACKED_CONTENTS = 500;
 
     private final OpenRouterClient client;
     private final ModelResolver modelResolver;
     private final ContentValidator validator;
+    private final RefinementPromptBuilder prompts;
+    private final PromptSchemaBuilder schemas;
     private final int maxRounds;
 
+    /** Content-hash -> refine rounds so the cap cannot be bypassed by sending round: 0. */
+    private final Map<Integer, AtomicInteger> roundsByContent = new ConcurrentHashMap<>();
+
     public RefinementService(OpenRouterClient client, ModelResolver modelResolver,
-                             ContentValidator validator, AbtsProperties props) {
+                             ContentValidator validator, RefinementPromptBuilder prompts,
+                             PromptSchemaBuilder schemas, AbtsProperties props) {
         this.client = client;
         this.modelResolver = modelResolver;
         this.validator = validator;
+        this.prompts = prompts;
+        this.schemas = schemas;
         this.maxRounds = props.maxRefinementRounds();
     }
 
@@ -57,27 +71,22 @@ public class RefinementService {
         if (request.safeIssueIds().isEmpty()) {
             throw new IllegalArgumentException("Select at least one issue to refine");
         }
-        if (request.safeRound() >= maxRounds) {
+
+        int effectiveRound = resolveRound(request);
+        if (effectiveRound >= maxRounds) {
             throw new OperationNotAllowedException("Maximum refinement rounds (" + maxRounds + ") reached");
         }
 
         String model = modelResolver.resolve(request.safeModel().model());
         JsonNode reasoning = modelResolver.reasoningPayload(model, request.safeModel());
-        String system = "You are an IELTS content editor. Fix ONLY the selected issues with minimal, "
-                + "targeted edits. Return strictly JSON: { \"patches\": [ { \"op\": \"replace|insert|append\", "
-                + "\"questionNumber\": <n|null>, \"path\": \"/json/pointer\", \"value\": <new value> } ] }.";
-        String user = String.join("\n\n",
-                "Selected issue ids to fix: " + String.join(", ", request.safeIssueIds()),
-                "Current validation:\n" + (request.validation() == null ? "{}" : Json.toJson(request.validation())),
-                "Content to refine:\n" + Json.toJson(request.originalJson()),
-                "Each patch targets either a question (set questionNumber + a path relative to the question, "
-                        + "e.g. \"/correct_answer\") or an absolute document path (questionNumber null).");
 
-        OpenRouterChatRequest chatRequest = new OpenRouterChatRequest(model, system, user, "refinement_patches",
-                null, request.safeModel().resolvedTemperature(), request.safeModel().resolvedMaxTokens(),
-                reasoning, false, request.safeModel().cacheEnabled());
+        OpenRouterChatRequest chatRequest = new OpenRouterChatRequest(model,
+                prompts.systemPrompt(),
+                prompts.userPrompt(request.safeIssueIds(), request.validation(), request.originalJson()),
+                "refinement_patches", schemas.refinementPatchesSchema(),
+                request.safeModel().resolvedTemperature(), request.safeModel().resolvedMaxTokens(),
+                reasoning);
 
-        OpenRouterChatResult result;
         OpenRouterStreamListener listener = new OpenRouterStreamListener() {
             @Override
             public void onContentDelta(String delta) {
@@ -89,10 +98,13 @@ public class RefinementService {
                 emitter.emit(StreamEvent.aiThinking(delta, request.part()));
             }
         };
-        result = client.streamChat(chatRequest, listener, cancelled);
+        OpenRouterChatResult result = client.streamChat(chatRequest, listener, cancelled);
 
-        JsonNode patches = result.content().path("patches");
-        return buildHunks(request.originalJson(), patches);
+        List<Hunk> hunks = buildHunks(request.originalJson(), result.content().path("patches"));
+        if (!hunks.isEmpty()) {
+            incrementRound(request.originalJson());
+        }
+        return hunks;
     }
 
     /** Apply only the accepted hunks; per-hunk failures are skipped (SPEC-23 §5.2). */
@@ -112,6 +124,25 @@ public class RefinementService {
         }
         ValidationResult validation = revalidate(request, patched);
         return new RefinementApplyResponse(patched, skipped, validation.toView());
+    }
+
+    // ---------------------------------------------------------------- round tracking
+
+    private int resolveRound(RefinementRequest request) {
+        AtomicInteger tracked = roundsByContent.get(hashOf(request.originalJson()));
+        int trackedRound = tracked == null ? 0 : tracked.get();
+        return Math.max(request.safeRound(), trackedRound);
+    }
+
+    private void incrementRound(JsonNode content) {
+        if (roundsByContent.size() >= MAX_TRACKED_CONTENTS) {
+            roundsByContent.clear();
+        }
+        roundsByContent.computeIfAbsent(hashOf(content), h -> new AtomicInteger()).incrementAndGet();
+    }
+
+    private static int hashOf(JsonNode content) {
+        return Json.toJson(content).hashCode();
     }
 
     // ---------------------------------------------------------------- internals
@@ -196,7 +227,9 @@ public class RefinementService {
             int part = request.part() == null ? 1 : request.part();
             return validator.validate(skill, part, request.taskType(), patched);
         } catch (RuntimeException e) {
-            return new ValidationResult();
+            ValidationResult failed = new ValidationResult();
+            failed.addError("rv-revalidate-failed", "/", "Revalidation failed: " + e.getMessage());
+            return failed;
         }
     }
 

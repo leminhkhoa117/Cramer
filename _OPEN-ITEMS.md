@@ -14,16 +14,16 @@ _Last reviewed: 16/08/2026_
 - [x] **Fix B5 reasoning trace** end-to-end (`openAbtsStream` raw events + store reads `event.data`). Resolved 16/08/2026.
 
 ## Phase 2 — Backend hardening
-- [ ] Timeouts on sync OpenRouter path (`OpenRouterClient.chat()` has no connect/read timeout).
-- [ ] Retry backoff + `Retry-After` handling in `GenerationService.generatePart()`.
-- [ ] Enforce `abts.streaming.part-timeout-ms` (currently declared, never used).
-- [ ] Fix config binding drift in `application.properties` (`openrouter.generation-model`, `timeout-ms`, etc. bind to nothing; effective default is `deepseek-chat` not `deepseek-v4-flash`).
-- [ ] `OpenRouterException` handler in `GlobalExceptionHandler` (structured 502/503).
-- [ ] `RefinementService`: move inline prompt to prompt package, server-side round counter, stop swallowing revalidate errors (F12/F13/F7).
-- [ ] Observability: actuator/micrometer, structured logging.
-- [ ] Caching for read-heavy endpoints (courses, hashtags, quota views).
-- [ ] Delete dead code: 3 full schemas in `PromptSchemaBuilder`, `contextCache`/`webSearch` paths, legacy frontend event branches.
-- [ ] `ValidationResult` shape vs SPEC-23 §1.1 (`schemaErrors/contentErrors/businessRuleErrors` split) — decide: fix code or update spec.
+- [x] Timeouts on the sync OpenRouter/DeepSeek path (JDK request factory with read timeout). Resolved 16/08/2026.
+- [x] Retry backoff with jitter + Retry-After handling in `GenerationService.generatePart()`. Resolved 16/08/2026.
+- [x] Enforce `abts.streaming.part-timeout-ms` (per-part deadline → PART_TIMEOUT). Resolved 16/08/2026.
+- [x] Fix config binding drift in `application.properties` (default-generation-model, api-timeout-ms, site-url/site-name wired; dead keys removed; default model now deepseek-v4-flash). Resolved 16/08/2026.
+- [x] `OpenRouterException` handler in `GlobalExceptionHandler` (structured 503 with error code). Resolved 16/08/2026.
+- [x] `RefinementService`: prompt moved to `RefinementPromptBuilder` + schema-constrained, server-side round tracking per content, revalidate errors no longer swallowed. Resolved 16/08/2026.
+- [x] Observability: actuator added (health, info, metrics). Resolved 16/08/2026.
+- [x] Delete dead code: 3 full schemas in `PromptSchemaBuilder`, `OpenRouterChatRequest.jsonSchema` factory, `webSearch`/`contextCache` paths, `DeepSeekClient.timeout()`. Resolved 16/08/2026.
+- [ ] Caching for read-heavy endpoints (courses, hashtags, quota views) — deferred: needs per-endpoint eviction design. Added 16/08/2026.
+- [ ] `ValidationResult` shape vs SPEC-23 §1.1 (`schemaErrors/contentErrors/businessRuleErrors` split) — decide: fix code or update spec. Added 16/08/2026.
 
 ## Phase 3 — Database (production data must be preserved; incremental migrations only)
 - [ ] Add indexes on `test_attempts` (user_id, exam_source/test_number/skill, status) and check `speaking_sessions` watchdog index.

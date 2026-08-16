@@ -16,8 +16,6 @@ import com.fasterxml.jackson.databind.JsonNode;
  * @param temperature  sampling temperature
  * @param maxTokens    max output tokens (≤0 → omitted)
  * @param reasoning    OpenRouter {@code reasoning} payload; null → none
- * @param webSearch    enable web-search plugin (SPEC-24 §2)
- * @param contextCache hint to enable provider context caching
  */
 public record OpenRouterChatRequest(
         String model,
@@ -27,14 +25,5 @@ public record OpenRouterChatRequest(
         JsonNode jsonSchema,
         double temperature,
         int maxTokens,
-        JsonNode reasoning,
-        boolean webSearch,
-        boolean contextCache) {
-
-    public static OpenRouterChatRequest jsonSchema(String model, String systemPrompt, String userPrompt,
-                                                   String schemaName, JsonNode jsonSchema,
-                                                   double temperature, int maxTokens, JsonNode reasoning) {
-        return new OpenRouterChatRequest(model, systemPrompt, userPrompt, schemaName, jsonSchema,
-                temperature, maxTokens, reasoning, false, false);
-    }
+        JsonNode reasoning) {
 }

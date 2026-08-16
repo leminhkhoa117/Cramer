@@ -35,19 +35,6 @@ public class PromptSchemaBuilder {
         return root;
     }
 
-    public ObjectNode readingFullSchema() {
-        ObjectNode section = obj();
-        section.set("properties", props("passage_text", str()));
-        required(section, "passage_text");
-        ObjectNode root = obj();
-        ObjectNode p = Json.mapper().createObjectNode();
-        p.set("section", section);
-        p.set("questions", arrayOf(questionSchema(true)));
-        root.set("properties", p);
-        required(root, "section", "questions");
-        return root;
-    }
-
     // ---- Listening ----
 
     public ObjectNode listeningTranscriptSchema() {
@@ -81,18 +68,6 @@ public class PromptSchemaBuilder {
         ObjectNode root = obj();
         root.set("properties", props("answers", arrayOf(answer)));
         required(root, "answers");
-        return root;
-    }
-
-    public ObjectNode listeningFullSchema() {
-        ObjectNode root = obj();
-        ObjectNode p = Json.mapper().createObjectNode();
-        p.set("transcript", str());
-        p.set("audio_placeholder", str());
-        p.set("section_layout", sectionLayoutSchema());
-        p.set("questions", arrayOf(questionSchema(true)));
-        root.set("properties", p);
-        required(root, "transcript", "audio_placeholder", "section_layout", "questions");
         return root;
     }
 
@@ -130,22 +105,31 @@ public class PromptSchemaBuilder {
         return root;
     }
 
-    public ObjectNode writingFullSchema() {
+    // ---- Refinement ----
+
+    /** Schema for the refinement patch proposal (SPEC-23 §5): { patches: [ ... ] }. */
+    public ObjectNode refinementPatchesSchema() {
+        ObjectNode patch = obj();
+        ObjectNode pp = Json.mapper().createObjectNode();
+        ObjectNode opEnum = obj();
+        ArrayNode enumVals = opEnum.putArray("enum");
+        enumVals.add("replace");
+        enumVals.add("insert");
+        enumVals.add("append");
+        opEnum.put("type", "string");
+        pp.set("op", opEnum);
+        ObjectNode nullableInt = Json.mapper().createObjectNode();
+        ArrayNode intTypes = nullableInt.putArray("type");
+        intTypes.add("integer");
+        intTypes.add("null");
+        pp.set("questionNumber", nullableInt);
+        pp.set("path", str());
+        pp.set("value", Json.mapper().createObjectNode());
+        patch.set("properties", pp);
+        required(patch, "op", "path");
         ObjectNode root = obj();
-        ObjectNode p = Json.mapper().createObjectNode();
-        p.set("task_prompt", str());
-        p.set("word_requirement", str());
-        p.set("task_type", str());
-        p.set("chart_data", nullableObject(chartDataProps()));
-        p.set("letter_context", nullableStr());
-        p.set("essay_metadata", nullableObject(essayMetaProps()));
-        p.set("sample_answer", str());
-        p.set("band_breakdown", str());
-        p.set("key_phrases", arrStr());
-        p.set("grading_notes", str());
-        root.set("properties", p);
-        required(root, "task_prompt", "word_requirement", "task_type", "chart_data", "letter_context",
-                "essay_metadata", "sample_answer", "band_breakdown", "key_phrases", "grading_notes");
+        root.set("properties", props("patches", arrayOf(patch)));
+        required(root, "patches");
         return root;
     }
 
