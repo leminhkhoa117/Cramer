@@ -3,9 +3,9 @@
 _Last reviewed: 16/08/2026_
 
 ## Blocked on external input
-- [ ] **Supabase MCP sign-in (`supabase_cramer`).** Owner: user (Hugo). Needed before Phase 3 (DB cleanup: index, dead tables, data audit). User said they will sign in. Added 16/08/2026.
-- [ ] **Decide on secrets rotation.** Root `.env` + `frontend/.env` hold production secrets (SUPABASE keys, DEEPSEEK/OPENROUTER/PAYOS keys, `DEBUG_SECRET_KEY=12345678`). Owner: user — decide whether to rotate now or later; P0 hygiene. Added 16/08/2026.
-- [ ] **Decide fate of repo clutter dirs.** `.orig-ref/` (30 snapshot files), `fixes/*.md` (7 notes), `.tmp/` — delete or keep as recovery material? Owner: user. Added 16/08/2026.
+- [ ] **Supabase MCP sign-in (`supabase_cramer`).** Owner: user (Hugo). Done — user signed in on 16/08/2026; Phase 3 completed via MCP. Resolved 16/08/2026.
+- [ ] **Decide on secrets rotation.** Root `.env` + `frontend/.env` hold production secrets (SUPABASE keys, DEEPSEEK/OPENROUTER/PAYOS keys, `DEBUG_SECRET_KEY=12345678`). Owner: user — **deferred** ("để sau") per decision 16/08/2026. P0 hygiene, revisit later.
+- [x] **Decide fate of repo clutter dirs.** `.orig-ref/` (30 snapshot files), `fixes/*.md` (7 notes), `.tmp/` — deleted per user decision 16/08/2026. Resolved 16/08/2026.
 
 ## Phase 1 — ABTS rescue
 - [x] **Wire `frontend/src/lib/api/abts.js`** (contract-correct client) into `useABTSStore.js`; deleted old `admin/services/abtsApi.js`. Per user decision 16/08/2026. Resolved 16/08/2026.
