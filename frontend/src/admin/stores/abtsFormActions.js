@@ -84,13 +84,20 @@ export function createABTSFormActions(set, get, config) {
                 generationResult: null,
                 generationError: null,
                 currentStep: 1,
-                audioUrls: {}
+                audioUrls: {},
+                imageUrls: {}
             });
         },
 
         setAudioUrl: (partNumber, url) => {
             set(state => ({
                 audioUrls: { ...state.audioUrls, [partNumber]: url }
+            }));
+        },
+
+        setImageUrl: (partNumber, url) => {
+            set(state => ({
+                imageUrls: { ...state.imageUrls, [partNumber]: url }
             }));
         },
 
@@ -272,10 +279,26 @@ export function createABTSFormActions(set, get, config) {
             const { generationResult } = get();
             if (!generationResult?.content?.questions) return;
 
+            // QuestionEditModal emits camelCase field names; the raw generated
+            // questions use the backend snake_case schema.
+            const KEY_MAP = {
+                questionContent: 'question_content',
+                questionType: 'question_type',
+                correctAnswer: 'correct_answer',
+                explanation: 'explanation',
+                wordLimit: 'word_limit',
+                imageUrl: 'image_url',
+            };
+
+            const snakeUpdates = {};
+            Object.entries(updates || {}).forEach(([key, value]) => {
+                snakeUpdates[KEY_MAP[key] || key] = value;
+            });
+
             const updatedQuestions = generationResult.content.questions.map((question, index) => {
                 const syntheticId = `abts-q-${index}`;
                 if (questionId === question.id || questionId === syntheticId) {
-                    return { ...question, ...updates };
+                    return { ...question, ...snakeUpdates };
                 }
                 return question;
             });

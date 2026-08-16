@@ -31,7 +31,7 @@ class ReadingValidatorTest {
             q.append("{\"question_number\":").append(n).append(",\"question_type\":\"").append(type).append("\"}");
         }
         String passage = ("word ".repeat(720)).trim();
-        return json("{\"passage_text\":\"" + passage + "\",\"questions\":[" + q + "]}");
+        return json("{\"section\":{\"passage_text\":\"" + passage + "\"},\"questions\":[" + q + "]}");
     }
 
     @Test
@@ -56,7 +56,7 @@ class ReadingValidatorTest {
     void countAndRangeErrors() {
         // 3 questions, all MULTIPLE_CHOICE; q40 is out of Part 1 range; q5 duplicated
         JsonNode content = json("""
-                {"passage_text":"%s",
+                {"section":{"passage_text":"%s"},
                  "questions":[
                    {"question_number":5,"question_type":"MULTIPLE_CHOICE"},
                    {"question_number":5,"question_type":"MULTIPLE_CHOICE"},
@@ -82,7 +82,7 @@ class ReadingValidatorTest {
             String type = n <= 7 ? "MATCHING_HEADINGS" : "FILL_IN_BLANK";
             q.append("{\"question_number\":").append(n).append(",\"question_type\":\"").append(type).append("\"}");
         }
-        JsonNode content = json("{\"passage_text\":\"too short\",\"questions\":[" + q + "]}");
+        JsonNode content = json("{\"section\":{\"passage_text\":\"too short\"},\"questions\":[" + q + "]}");
         ValidationResult r = validator.validate(content, 1);
 
         assertThat(r.isValid()).isTrue(); // warning doesn't block

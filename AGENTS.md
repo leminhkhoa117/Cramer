@@ -2,6 +2,23 @@
 
 This file provides guidance when working with code in this repository.
 
+## Communication Standard: ASD-STE100 (Issue 9)
+
+All assistant communication with the user and all project documentation must follow ASD-STE100 (Simplified Technical English), Issue 9.
+
+Core rules applied:
+
+- Write short sentences. Use 20 words maximum for instructions. Use 25 words maximum for descriptions.
+- Use one word for one meaning. Prefer the approved STE dictionary over synonyms. For example, use "start", not "initiate", "begin", or "commence".
+- Use the active voice. Do not use gerunds in instructions ("turn the knob", not "turning the knob").
+- Use only simple verb tenses (past, present, future).
+- Use "must" for requirements. Use "can" for possibilities. Use "do not" for prohibitions.
+- Keep noun clusters short. Use 3 nouns maximum in one cluster.
+- Do not omit articles (a, an, the) or helper verbs.
+- Explain technical terms at first use.
+
+This rule applies to chat responses, documentation, and commit messages. Code and code comments keep existing project conventions.
+
 ## Verification Protocol (Anti-Hallucination)
 
 1. **Verify Paths**: Never assume a file exists based on common patterns. detailed directory structures often vary. Use `ls` or `find` to confirm.

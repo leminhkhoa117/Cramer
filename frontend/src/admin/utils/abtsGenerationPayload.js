@@ -1,56 +1,70 @@
 const hasItems = (value) => Array.isArray(value) && value.length > 0;
 const hasKeys = (value) => value && Object.keys(value).length > 0;
 
-const resolveWritingPartNumber = (formData) => {
+const resolveWritingParts = (formData) => {
     const types = formData.questionTypes || [];
     const hasTask1 = types.includes('TASK_1');
     const hasTask2 = types.includes('TASK_2');
-    if (hasTask2 && !hasTask1) return 2;
-    if (hasTask1 && !hasTask2) return 1;
-    return formData.partNumber;
+    const parts = [];
+    if (hasTask1) parts.push(1);
+    if (hasTask2) parts.push(2);
+    return parts.length > 0 ? parts : [1];
 };
 
-export function buildABTSGenerationRequest(formData = {}) {
-    const selectedParts = hasItems(formData.selectedParts) ? formData.selectedParts : [];
-    const isSingleSelectedPart = selectedParts.length === 1;
-    const partNumber = isSingleSelectedPart
-        ? selectedParts[0]
-        : formData.skill === 'WRITING'
-            ? resolveWritingPartNumber(formData)
-            : formData.partNumber;
-    const partConfig = isSingleSelectedPart ? formData.partConfigs?.[partNumber] || {} : {};
+const resolveSelectedParts = (formData) => {
+    if (hasItems(formData.selectedParts)) return formData.selectedParts;
+    if (formData.skill === 'WRITING') return resolveWritingParts(formData);
+    return [formData.partNumber || 1];
+};
 
-    const questionTypes = partConfig.questionTypes ?? formData.questionTypes ?? [];
-    const questionTypeCounts = partConfig.questionTypeCounts ?? formData.questionTypeCounts ?? {};
-    const totalQuestions = partConfig.totalQuestions ?? formData.totalQuestions;
-    const hasCustomCounts = hasKeys(questionTypeCounts);
-    const shouldSendTotalQuestions = hasCustomCounts
-        || questionTypes.length > 0
-        || (typeof totalQuestions === 'number' && totalQuestions !== 13);
+const writingTaskType = (formData, part) => {
+    if (part === 2) return 'TASK_2';
+    return formData.testType === 'GENERAL_TRAINING' ? 'GENERAL_TASK_1' : 'ACADEMIC_TASK_1';
+};
+
+const toModelConfig = (formData = {}) => ({
+    model: formData.model || null,
+    temperature: formData.temperature ?? null,
+    maxTokens: formData.maxTokens || null,
+    enableReasoning: formData.enableReasoning ?? null,
+    reasoningEffort: formData.reasoningEffort || null,
+    reasoningBudget: formData.reasoningBudget ?? null,
+    contextCache: null,
+});
+
+/**
+ * Build the backend GenerationRequest (SPEC-21 §1):
+ * { partsToGenerate, parts: {part: PartConfig}, model: ModelConfig,
+ *   explanationLanguage, customInstructions, existingPassageText }
+ */
+export function buildABTSGenerationRequest(formData = {}) {
+    const skill = formData.skill;
+    const parts = resolveSelectedParts(formData);
+    const partConfigs = formData.partConfigs || {};
+    const isWriting = skill === 'WRITING';
+
+    const partsMap = {};
+    parts.forEach((part) => {
+        const cfg = partConfigs[part] || {};
+        partsMap[String(part)] = {
+            topic: cfg.topic ?? formData.topic ?? null,
+            factsMode: formData.generationMode === 'CUSTOM_FACTS' ? 'STRICT' : 'AUTO',
+            facts: cfg.facts ?? formData.facts ?? [],
+            questionTypes: isWriting ? null : (hasItems(cfg.questionTypes) ? cfg.questionTypes : hasItems(formData.questionTypes) ? formData.questionTypes : null),
+            questionTypeCounts: isWriting ? null : (hasKeys(cfg.questionTypeCounts) ? cfg.questionTypeCounts : hasKeys(formData.questionTypeCounts) ? formData.questionTypeCounts : null),
+            totalQuestions: isWriting ? null : (cfg.totalQuestions ?? formData.totalQuestions ?? null),
+            passageLength: cfg.passageLength ?? formData.passageLength ?? null,
+            difficulty: cfg.difficulty ?? formData.difficulty ?? null,
+            taskType: isWriting ? writingTaskType(formData, part) : null,
+        };
+    });
 
     return {
-        skill: formData.skill,
-        scope: isSingleSelectedPart ? 'SINGLE_PART' : formData.scope,
-        partNumber,
-        topic: partConfig.topic ?? formData.topic,
-        hashtags: partConfig.hashtags ?? formData.hashtags,
-        facts: partConfig.facts ?? formData.facts,
-        difficulty: partConfig.difficulty ?? formData.difficulty,
-        explanationLanguage: formData.explanationLanguage,
-        testType: formData.testType,
-        questionTypes: questionTypes.length > 0 ? questionTypes : null,
-        model: formData.model,
-        enableReasoning: formData.enableReasoning,
-        reasoningEffort: formData.reasoningEffort,
-        reasoningBudget: formData.reasoningBudget ?? null,
-        temperature: formData.temperature,
-        questionTypeCounts: hasCustomCounts ? questionTypeCounts : null,
-        passageLength: partConfig.passageLength ?? formData.passageLength,
-        customInstructions: (partConfig.customInstructions ?? formData.customInstructions) || null,
-        maxTokens: formData.maxTokens,
-        totalQuestions: shouldSendTotalQuestions ? totalQuestions : null,
-        writingEssayType: formData.writingEssayType || null,
-        partsToGenerate: selectedParts.length > 1 ? selectedParts : null,
-        partConfigs: selectedParts.length > 1 && hasKeys(formData.partConfigs) ? formData.partConfigs : null,
+        partsToGenerate: parts,
+        parts: partsMap,
+        model: toModelConfig(formData),
+        explanationLanguage: String(formData.explanationLanguage || 'en').toLowerCase(),
+        customInstructions: formData.customInstructions || null,
+        existingPassageText: formData.existingPassageText || null,
     };
 }

@@ -7,12 +7,6 @@ export const AI_STUDIO_STEPS = [
     { id: 'save', label: 'Save' },
 ];
 
-const issueGroups = [
-    { key: 'schemaErrors', idPrefix: 'schema', label: 'Schema errors', severity: 'error' },
-    { key: 'contentErrors', idPrefix: 'content', label: 'Content errors', severity: 'error' },
-    { key: 'businessRuleErrors', idPrefix: 'business', label: 'Business rule errors', severity: 'error' },
-];
-
 function formatIssueMessage(issue) {
     if (typeof issue === 'string') return issue;
     if (issue?.message) return issue.message;
@@ -21,6 +15,11 @@ function formatIssueMessage(issue) {
     return JSON.stringify(issue);
 }
 
+/**
+ * Bucket the backend ValidationView (SPEC-23 §1.1) into the rail's display
+ * groups. Backend shape: { valid, issues:[{id,severity,path,message}],
+ * errors[], warnings[], errorCount, warningCount }.
+ */
 function toIssueList(items, { idPrefix, label, severity }) {
     if (!Array.isArray(items)) return [];
 
@@ -28,6 +27,7 @@ function toIssueList(items, { idPrefix, label, severity }) {
         .map((item, index) => ({
             id: item?.id || `${idPrefix}-${index}`,
             message: formatIssueMessage(item),
+            path: item?.path ?? null,
             label,
             severity,
             sourceIndex: index,
@@ -38,16 +38,22 @@ function toIssueList(items, { idPrefix, label, severity }) {
 
 export function getAIStudioValidationBuckets(generationResult) {
     const validation = generationResult?.validation || {};
-    const buckets = issueGroups.reduce((acc, group) => {
-        acc[group.key] = toIssueList(validation[group.key], group);
-        return acc;
-    }, {});
+    const issues = Array.isArray(validation.issues) ? validation.issues : [];
 
-    buckets.warnings = toIssueList(generationResult?.warnings, {
+    const errorIssues = issues.filter((issue) => String(issue?.severity).toUpperCase() !== 'WARNING');
+    const warningIssues = issues.filter((issue) => String(issue?.severity).toUpperCase() === 'WARNING');
+
+    const buckets = {};
+    buckets.contentErrors = toIssueList(errorIssues, {
+        idPrefix: 'error',
+        label: 'Content errors',
+        severity: 'error',
+    });
+    buckets.warnings = toIssueList(warningIssues, {
         idPrefix: 'warn',
         label: 'Warnings',
         severity: 'warning',
-    }).map((issue) => ({ ...issue, id: `warn-${issue.sourceIndex}`, type: 'WARNING' }));
+    });
 
     return buckets;
 }
@@ -55,16 +61,14 @@ export function getAIStudioValidationBuckets(generationResult) {
 export function getAIStudioIssues(generationResult) {
     const buckets = getAIStudioValidationBuckets(generationResult);
     return [
-        ...buckets.schemaErrors,
         ...buckets.contentErrors,
-        ...buckets.businessRuleErrors,
         ...buckets.warnings,
     ];
 }
 
 export function getAIStudioIssueCounts(generationResult) {
     const buckets = getAIStudioValidationBuckets(generationResult);
-    const errorCount = buckets.schemaErrors.length + buckets.contentErrors.length + buckets.businessRuleErrors.length;
+    const errorCount = buckets.contentErrors.length;
     const warningCount = buckets.warnings.length;
 
     return {
@@ -160,11 +164,16 @@ function formatSkill(skill) {
 export function getAIStudioSaveTargetSummary({ formData = {}, generationResult } = {}) {
     const content = generationResult?.content;
     const selectedParts = Array.isArray(formData.selectedParts) ? formData.selectedParts : [];
-    const contentPart = content?.section?.partNumber || content?.section?.part_number;
+    const rawSections = Array.isArray(content?.sections) ? content.sections : [content];
+    const contentPart = rawSections[0]?.part ?? content?.section?.part ?? content?.part;
     const partsLabel = selectedParts.length > 0
         ? selectedParts.map(part => `Part ${part}`).join(', ')
         : `Part ${formData.partNumber || contentPart || 1}`;
-    const questionCount = Array.isArray(content?.questions) ? content.questions.length : 0;
+    const questionCount = Array.isArray(content?.questions)
+        ? content.questions.length
+        : Array.isArray(content?.sections)
+            ? content.sections.reduce((sum, sec) => sum + (sec.questions?.length || 0), 0)
+            : 0;
 
     return {
         examSource: 'AI-GEN',

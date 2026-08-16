@@ -35,9 +35,7 @@ export default function AIStudioIssueRail({ generationResult, isGenerating, isCo
     const atLimit = round >= maxRounds;
 
     const errorGroups = [
-        { key: 'schemaErrors', title: 'Schema Errors', issues: buckets.schemaErrors },
         { key: 'contentErrors', title: 'Content Errors', issues: buckets.contentErrors },
-        { key: 'businessRuleErrors', title: 'Business Rule Errors', issues: buckets.businessRuleErrors },
     ];
     const toggleCollapsed = () => {
         const nextCollapsed = !isCollapsed;

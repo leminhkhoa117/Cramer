@@ -18,6 +18,14 @@ import QuestionEditModal from '../content/QuestionEditModal';
 import RefinementModal from './RefinementModal';
 import './AIStudio.css';
 
+// Format correct answer for display
+function formatCorrectAnswer(answer) {
+  if (!answer) return '';
+  if (Array.isArray(answer)) return answer.join(', ');
+  if (typeof answer === 'object') return JSON.stringify(answer);
+  return String(answer);
+}
+
 export default function StepPreview({ onBack }) {
   const {
     formData,
@@ -32,7 +40,9 @@ export default function StepPreview({ onBack }) {
     partErrors,
     reasoning,
     abortGeneration,
-    updateGeneratedQuestion
+    updateGeneratedQuestion,
+    imageUrls,
+    setImageUrl
   } = useABTSStore();
 
   const [showMetadata, setShowMetadata] = useState(false);
@@ -43,7 +53,6 @@ export default function StepPreview({ onBack }) {
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [showTranscriptPanel, setShowTranscriptPanel] = useState(false);
   const [copiedTranscript, setCopiedTranscript] = useState(false);
-  const [imageUrls, setImageUrls] = useState({}); // { partNumber: url }
 
   // Use onBack if provided, otherwise fallback to store's goToStep
   const handleGoBack = onBack || (() => goToStep(1));
@@ -66,19 +75,30 @@ export default function StepPreview({ onBack }) {
   const reasoningText = generationResult?.reasoning || reasoning;
 
   // Extract figure/image description from content (for map/plan labeling)
-  const figureDescription = content.figureDescription;
+  const figureDescription = content.figure_description ?? content.figureDescription;
 
-  // Transform ABTS data to AdminPreviewContent format
+  // Transform ABTS data to AdminPreviewContent format.
+  // Backend raw shapes: reading {section:{passage_text}, questions}, listening
+  // {transcript, section_layout, questions}, writing {task_prompt,...}, and
+  // multi-part {sections:[{part,...}]}.
   const { previewSections, previewQuestions } = useMemo(() => {
-    const rawSections = content.sections || (content.section ? [content.section] : []);
-    const rawQuestions = content.questions || [];
+    let rawSections = [];
+    if (Array.isArray(content.sections)) {
+      rawSections = content.sections;
+    } else if (content.section) {
+      rawSections = [content.section];
+    } else {
+      rawSections = [content];
+    }
+
+    const fallbackPart = formData.selectedParts?.[0] ?? formData.partNumber ?? 1;
 
     // Transform sections: ABTS format -> AdminPreviewContent format
     const transformedSections = rawSections.map((sec, idx) => {
       // Filter out blocks with invalid/missing question_numbers
-      let filteredLayout = sec.sectionLayout;
-      if (sec.sectionLayout?.blocks && Array.isArray(sec.sectionLayout.blocks)) {
-        const validBlocks = sec.sectionLayout.blocks.filter(block => {
+      let filteredLayout = sec.section_layout ?? sec.sectionLayout ?? null;
+      if (filteredLayout?.blocks && Array.isArray(filteredLayout.blocks)) {
+        const validBlocks = filteredLayout.blocks.filter((block) => {
           // Block must have question_numbers array with at least one element
           if (!block.question_numbers || !Array.isArray(block.question_numbers) || block.question_numbers.length === 0) {
             console.warn('[StepPreview] Filtering out block with missing question_numbers:', block);
@@ -94,28 +114,33 @@ export default function StepPreview({ onBack }) {
         });
 
         // If all blocks were invalid, set layout to null to trigger fallback grouping
-        filteredLayout = validBlocks.length > 0 ? { ...sec.sectionLayout, blocks: validBlocks } : null;
+        filteredLayout = validBlocks.length > 0 ? { ...filteredLayout, blocks: validBlocks } : null;
       }
 
-      const partNum = sec.partNumber || idx + 1;
+      const partNum = sec.part ?? sec.partNumber ?? (rawSections.length === 1 ? fallbackPart : idx + 1);
 
       return {
         id: `abts-section-${idx}`,
         partNumber: partNum,
-        passageText: sec.passageText || sec.taskText || sec.transcript || '',
+        passageText: sec.passage_text ?? sec.passageText ?? sec.transcript ?? sec.task_prompt ?? '',
         sectionLayout: filteredLayout,
-        wordCount: sec.wordCount,
+        wordCount: sec.wordCount ?? null,
         displayContentUrl: imageUrls[partNum] || null, // User-entered image URL
         audioUrl: null
       };
     });
 
-    // Transform questions: ABTS format -> AdminPreviewContent format  
-    const transformedQuestions = rawQuestions.map((q, idx) => {
+    // Transform questions: ABTS format -> AdminPreviewContent format.
+    // Multi-part content nests questions inside each section entry.
+    const transformedQuestions = (content.questions ?? (
+        Array.isArray(content.sections)
+            ? content.sections.flatMap((section) => section.questions || [])
+            : []
+    )).map((q, idx) => {
       // Determine which section this question belongs to (by question number range)
       let sectionId = transformedSections[0]?.id;
       if (transformedSections.length > 1) {
-        const qNum = q.questionNumber || q.question_number || idx + 1;
+        const qNum = q.question_number ?? q.questionNumber ?? idx + 1;
         // Reading: Part 1 = Q1-13, Part 2 = Q14-26, Part 3 = Q27-40
         // Listening: Part 1 = Q1-10, Part 2 = Q11-20, Part 3 = Q21-30, Part 4 = Q31-40
         if (formData.skill === 'READING') {
@@ -133,25 +158,33 @@ export default function StepPreview({ onBack }) {
       return {
         id: `abts-q-${idx}`,
         sectionId,
-        questionNumber: q.questionNumber || q.question_number || idx + 1,
-        questionType: q.questionType || q.question_type || 'UNKNOWN',
-        questionContent: q.questionContent || q.question_content || {},
-        correctAnswer: formatCorrectAnswer(q.correctAnswer || q.correct_answer),
+        questionNumber: q.question_number ?? q.questionNumber ?? idx + 1,
+        questionType: q.question_type ?? q.questionType ?? 'UNKNOWN',
+        questionContent: q.question_content ?? q.questionContent ?? {},
+        correctAnswer: formatCorrectAnswer(q.correct_answer ?? q.correctAnswer),
         explanation: q.explanation || ''
       };
     });
 
     return { previewSections: transformedSections, previewQuestions: transformedQuestions };
-  }, [content, formData.skill]);
+  }, [content, formData.skill, formData.selectedParts, formData.partNumber, imageUrls]);
 
   // Get combined transcripts for all parts (MUST be before early returns)
   const allTranscripts = useMemo(() => {
-    const rawSections = content.sections || (content.section ? [content.section] : []);
+    let rawSections = [];
+    if (Array.isArray(content.sections)) {
+      rawSections = content.sections;
+    } else if (content.section) {
+      rawSections = [content.section];
+    } else {
+      rawSections = [content];
+    }
+    const fallbackPart = formData.selectedParts?.[0] ?? formData.partNumber ?? 1;
     return rawSections.map((sec, idx) => ({
-      partNumber: sec.partNumber || idx + 1,
-      transcript: sec.transcript || sec.passageText || ''
+      partNumber: sec.part ?? sec.partNumber ?? (rawSections.length === 1 ? fallbackPart : idx + 1),
+      transcript: sec.transcript || sec.passage_text || sec.passageText || ''
     })).filter(s => s.transcript);
-  }, [content]);
+  }, [content, formData.selectedParts, formData.partNumber]);
 
   // Copy transcript handler (MUST be before early returns)
   const handleCopyTranscript = useCallback(async () => {
@@ -185,16 +218,8 @@ export default function StepPreview({ onBack }) {
 
   // Handle image URL change (MUST be before early returns)
   const handleImageUrlChange = useCallback((url) => {
-    setImageUrls(prev => ({ ...prev, [currentPartNumber]: url }));
-  }, [currentPartNumber]);
-
-  // Format correct answer for display
-  function formatCorrectAnswer(answer) {
-    if (!answer) return '';
-    if (Array.isArray(answer)) return answer.join(', ');
-    if (typeof answer === 'object') return JSON.stringify(answer);
-    return String(answer);
-  }
+    setImageUrl(currentPartNumber, url);
+  }, [currentPartNumber, setImageUrl]);
 
   // 1. Loading / Streaming State
   if (isGenerating) {
@@ -402,7 +427,7 @@ export default function StepPreview({ onBack }) {
 
   // Writing has special layout (no AdminPreviewContent for now)
   if (isWriting) {
-    const taskText = content.section?.taskText || content.section?.passageText || '';
+    const taskText = content.section?.task_prompt || content.section?.taskText || content.task_prompt || '';
     return (
       <div className="studio-preview">
         <MetadataBar />
@@ -411,18 +436,18 @@ export default function StepPreview({ onBack }) {
         <div className="studio-panel__content" style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
           <h3>Writing Task</h3>
           <div dangerouslySetInnerHTML={{ __html: taskText }} />
-          {(content.chartData || content.figureDescription || content.letterContext || content.essayMetadata) && (
+          {(content.chart_data || content.figure_description || content.letter_context || content.essay_metadata) && (
             <div className="studio-json-panel" style={{ marginTop: '16px' }}>
               <div className="studio-json-header">
                 <span className="studio-json-header__title">Writing Details</span>
               </div>
               <div className="studio-json-content">
-                {content.taskType && <pre>task_type: {content.taskType}</pre>}
-                {content.wordRequirement && <pre>word_requirement: {content.wordRequirement}</pre>}
-                {content.chartData && <pre>{JSON.stringify(content.chartData, null, 2)}</pre>}
-                {content.figureDescription && <pre>{JSON.stringify(content.figureDescription, null, 2)}</pre>}
-                {content.letterContext && <pre>{JSON.stringify(content.letterContext, null, 2)}</pre>}
-                {content.essayMetadata && <pre>{JSON.stringify(content.essayMetadata, null, 2)}</pre>}
+                {content.task_type && <pre>task_type: {content.task_type}</pre>}
+                {content.word_requirement && <pre>word_requirement: {content.word_requirement}</pre>}
+                {content.chart_data && <pre>{JSON.stringify(content.chart_data, null, 2)}</pre>}
+                {content.figure_description && <pre>{JSON.stringify(content.figure_description, null, 2)}</pre>}
+                {content.letter_context && <pre>{JSON.stringify(content.letter_context, null, 2)}</pre>}
+                {content.essay_metadata && <pre>{JSON.stringify(content.essay_metadata, null, 2)}</pre>}
               </div>
             </div>
           )}

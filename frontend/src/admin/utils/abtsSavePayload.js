@@ -1,60 +1,33 @@
-const QUESTION_RANGES = {
-    READING: {
-        1: [1, 13],
-        2: [14, 26],
-        3: [27, 40],
-    },
-    LISTENING: {
-        1: [1, 10],
-        2: [11, 20],
-        3: [21, 30],
-        4: [31, 40],
-    },
-};
+import useHashtagStore from '../stores/useHashtagStore';
 
-const getQuestionNumber = (question) => question?.questionNumber ?? question?.question_number;
+const WRITING_META_KEYS = [
+    'task_type',
+    'word_requirement',
+    'chart_data',
+    'letter_context',
+    'essay_metadata',
+    'sample_answer',
+    'band_breakdown',
+    'key_phrases',
+    'grading_notes',
+];
 
-export function buildPartsToSave(content, skill, selectedParts) {
-    if (!content?.sections?.length) return null;
+const hasItems = (value) => Array.isArray(value) && value.length > 0;
 
-    const skillUpper = String(skill || '').toUpperCase();
-    const questions = Array.isArray(content.questions) ? content.questions : [];
-    const selectedPartSet = Array.isArray(selectedParts) && selectedParts.length > 0
-        ? new Set(selectedParts)
-        : null;
-    const { sections, questions: allQuestions, ...sharedContent } = content;
-
-    return sections
-        .filter((section) => {
-            if (!selectedPartSet) return true;
-            const partNumber = section.partNumber ?? section.part_number;
-            return selectedPartSet.has(partNumber);
-        })
-        .map((section) => {
-        const partNumber = section.partNumber ?? section.part_number;
-        const range = QUESTION_RANGES[skillUpper]?.[partNumber];
-        const filteredQuestions = range
-            ? questions.filter((question) => {
-                const questionNumber = getQuestionNumber(question);
-                return questionNumber >= range[0] && questionNumber <= range[1];
-            })
-            : questions;
-
-        return {
-            partNumber,
-            content: {
-                ...sharedContent,
-                section,
-                questions: filteredQuestions,
-            },
-        };
-    });
+/** Resolve hashtag IDs (TagInput select mode) to codes via the hashtag store cache. */
+function resolveHashtagCodes(hashtagIds) {
+    if (!hasItems(hashtagIds)) return [];
+    const hashtags = useHashtagStore.getState().hashtags || [];
+    const byId = new Map(hashtags.map((tag) => [String(tag.id), tag]));
+    return hashtagIds
+        .map((id) => byId.get(String(id))?.code)
+        .filter(Boolean);
 }
 
+/** Reproducibility metadata recorded on the created test. */
 export function buildGenerationConfig(formData = {}) {
-    const selectedParts = formData.selectedParts?.length ? formData.selectedParts : formData.partsToGenerate;
-
     return {
+        skill: formData.skill,
         scope: formData.scope,
         partNumber: formData.partNumber,
         topic: formData.topic,
@@ -66,11 +39,81 @@ export function buildGenerationConfig(formData = {}) {
         model: formData.model,
         temperature: formData.temperature,
         writingEssayType: formData.writingEssayType || null,
-        partsToGenerate: selectedParts,
+        partsToGenerate: formData.selectedParts,
         partConfigs: formData.partConfigs,
     };
 }
 
+const writingSectionLayout = (raw) => {
+    const layout = {};
+    WRITING_META_KEYS.forEach((key) => {
+        if (raw && raw[key] !== undefined && raw[key] !== null) {
+            layout[key] = raw[key];
+        }
+    });
+    return Object.keys(layout).length > 0 ? layout : null;
+};
+
+/**
+ * Convert one generated part (raw backend shape) into a SaveSectionInput.
+ * Backend shapes:
+ * - reading:  { section: { passage_text }, questions: [...] }
+ * - listening: { transcript, audio_placeholder, section_layout, questions: [...] }
+ * - writing:  { task_prompt, task_type, word_requirement, ... }
+ * - multi-part entry: { part, ...<per-skill shape> }
+ */
+function toSectionInput(skillLower, partNumber, raw, audioUrls, imageUrls) {
+    const base = {
+        skill: skillLower,
+        partNumber,
+        passageText: null,
+        audioUrl: audioUrls?.[partNumber] ?? null,
+        sectionLayout: null,
+        imageDescription: imageUrls?.[partNumber] ?? null,
+        questions: [],
+    };
+
+    if (skillLower === 'reading') {
+        base.passageText = raw?.section?.passage_text ?? raw?.passage_text ?? null;
+        base.questions = hasItems(raw?.questions) ? raw.questions : [];
+    } else if (skillLower === 'listening') {
+        base.passageText = raw?.transcript ?? raw?.passage_text ?? null;
+        base.sectionLayout = raw?.section_layout ?? null;
+        base.questions = hasItems(raw?.questions) ? raw.questions : [];
+    } else if (skillLower === 'writing') {
+        base.passageText = raw?.task_prompt ?? null;
+        base.sectionLayout = writingSectionLayout(raw);
+        base.questions = [];
+    }
+
+    return base;
+}
+
+/**
+ * Split raw generated content into per-part SaveSectionInputs.
+ */
+export function buildPartsToSave(content, skill, { audioUrls = {}, imageUrls = {} } = {}) {
+    const skillLower = String(skill || 'reading').toLowerCase();
+    const sections = [];
+
+    if (Array.isArray(content?.sections)) {
+        content.sections.forEach((section, idx) => {
+            const partNumber = section.part ?? section.partNumber ?? idx + 1;
+            sections.push(toSectionInput(skillLower, partNumber, section, audioUrls, imageUrls));
+        });
+        return sections;
+    }
+
+    const partNumber = content?.part ?? content?.section?.part ?? 1;
+    sections.push(toSectionInput(skillLower, partNumber, content, audioUrls, imageUrls));
+    return sections;
+}
+
+/**
+ * Build the backend SaveContentRequest (SPEC-24 §4):
+ * { setCode, setId, testNumber, testId, testName, difficulty, hashtags,
+ *   generationMetadata, sections: [SaveSectionInput...] }
+ */
 export function buildABTSSaveRequest({
     content,
     formData = {},
@@ -78,31 +121,33 @@ export function buildABTSSaveRequest({
     selectedSetId,
     selectedSetCode,
     selectedTestId,
+    audioUrls = {},
+    imageUrls = {},
 } = {}) {
     if (!content) {
         throw new Error('No generated content to save');
     }
 
-    const skill = formData.skill || content.skill || 'reading';
-    const skillLower = String(skill).toLowerCase();
-    const topic = formData.topic || content.metadata?.topic || 'AI Generated';
+    const skill = String(formData.skill || 'reading').toLowerCase();
+    const sections = buildPartsToSave(content, skill, {
+        audioUrls: saveConfig.audioUrls || audioUrls,
+        imageUrls,
+    });
+    if (sections.length === 0) {
+        throw new Error('No sections to save');
+    }
+
+    const hashtagCodes = resolveHashtagCodes(saveConfig.hashtags || saveConfig.hashtagIds);
 
     return {
-        examSource: saveConfig.examSource || 'AI-GEN',
-        testNumber: saveConfig.testNumber || null,
-        skill: skillLower,
-        partNumber: formData.partNumber || content.section?.partNumber || 1,
-        topic,
-        difficulty: saveConfig.difficulty || formData.difficulty || 'INTERMEDIATE',
-        content,
-        setId: saveConfig.setId ?? selectedSetId,
         setCode: saveConfig.setCode ?? selectedSetCode ?? 'ai_generated',
-        setName: saveConfig.setName || saveConfig.setNameVi || null,
-        testId: saveConfig.existingTestId || saveConfig.testId || selectedTestId,
-        testName: saveConfig.testName || saveConfig.testNameVi || null,
-        hashtagCodes: saveConfig.hashtagCodes || formData.hashtags || [],
-        hashtagIds: saveConfig.hashtagIds,
-        generationConfig: buildGenerationConfig(formData),
-        partsToSave: buildPartsToSave(content, skillLower, formData.selectedParts),
+        setId: saveConfig.setId ?? selectedSetId ?? null,
+        testNumber: saveConfig.testNumber ?? null,
+        testId: saveConfig.existingTestId ?? saveConfig.testId ?? selectedTestId ?? null,
+        testName: saveConfig.testName ?? null,
+        difficulty: saveConfig.difficulty ?? formData.difficulty ?? 'INTERMEDIATE',
+        hashtags: hashtagCodes,
+        generationMetadata: buildGenerationConfig(formData),
+        sections,
     };
 }

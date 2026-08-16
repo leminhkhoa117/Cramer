@@ -5,7 +5,7 @@ import {
     FiHeadphones, FiImage, FiInfo, FiLayers, FiPlus, FiRefreshCw,
     FiSettings, FiShuffle, FiSliders, FiThermometer, FiX
 } from 'react-icons/fi';
-import { SKILL_TYPES, DIFFICULTY_LEVELS } from '../../services/abtsApi';
+import { SKILL_TYPES, DIFFICULTY_LEVELS } from '../../utils/abtsConstants';
 import ModelSelector from './ModelSelector';
 import ReasoningControls from './ReasoningControls';
 import StudioMultiPartConfig from './StudioMultiPartConfig';

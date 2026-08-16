@@ -7,11 +7,11 @@ _Last reviewed: 16/08/2026_
 - [ ] **Decide on secrets rotation.** Root `.env` + `frontend/.env` hold production secrets (SUPABASE keys, DEEPSEEK/OPENROUTER/PAYOS keys, `DEBUG_SECRET_KEY=12345678`). Owner: user — decide whether to rotate now or later; P0 hygiene. Added 16/08/2026.
 - [ ] **Decide fate of repo clutter dirs.** `.orig-ref/` (30 snapshot files), `fixes/*.md` (7 notes), `.tmp/` — delete or keep as recovery material? Owner: user. Added 16/08/2026.
 
-## Phase 1 — ABTS rescue (next up)
-- [ ] **Wire `frontend/src/lib/api/abts.js`** (contract-correct client) into `useABTSStore.js`; delete old `admin/services/abtsApi.js` after migration. Per user decision 16/08/2026.
-- [ ] **Fix contract breaks B1-B12**: save payload (`sections[]` snake_case + audioUrl), `?skill=` on validate/regenerate, `AI_THINKING` delta from `event.data`, refine `issueIds`/`ModelConfig`/hunks-array, apply `acceptedHunks`.
-- [ ] **Fix backend F1**: `ReadingValidator` reads `section.passage_text` not root `passage_text`.
-- [ ] **Fix B5 reasoning trace** end-to-end (`abtsApi` + store read `event.data`).
+## Phase 1 — ABTS rescue
+- [x] **Wire `frontend/src/lib/api/abts.js`** (contract-correct client) into `useABTSStore.js`; deleted old `admin/services/abtsApi.js`. Per user decision 16/08/2026. Resolved 16/08/2026.
+- [x] **Fix contract breaks B1-B12**: save payload (`sections[]` snake_case + audioUrl), `?skill=` on validate/regenerate, `AI_THINKING` delta from `event.data`, refine `issueIds`/`ModelConfig`/hunks-array, apply `acceptedHunks`. Resolved 16/08/2026.
+- [x] **Fix backend F1**: `ReadingValidator` reads `section.passage_text`. Resolved 16/08/2026.
+- [x] **Fix B5 reasoning trace** end-to-end (`openAbtsStream` raw events + store reads `event.data`). Resolved 16/08/2026.
 
 ## Phase 2 — Backend hardening
 - [ ] Timeouts on sync OpenRouter path (`OpenRouterClient.chat()` has no connect/read timeout).
@@ -47,10 +47,14 @@ _Last reviewed: 16/08/2026_
 - [ ] **Dead config keys** (`openrouter.regeneration-model`, `json-fix-model`, `streaming-enabled`, `site-url/site-name`) — remove or wire. Added 16/08/2026.
 
 ## Watch items
+- [ ] **Backend saveDraft drops testName/difficulty/hashtags.** `AbtsSaveService` only passes setCode/setId/testNumber/testId/generationMetadata to `ContentDraftPort`; test is named "AI Test N" regardless of the modal's testName. Wire testName/difficulty/hashtags through the port. Added 16/08/2026.
+- [ ] **Regenerate single part >1 numbers questions 1..N (no canonical renumber).** `regenerateQuestions` uses `aggregate(..., totalParts=1)` so parts 2/3 produce local numbering. Open item if UI exposes per-part regeneration. Added 16/08/2026.
+- [ ] **Multi-part validation.** `RefinementService.revalidate` validates the whole document; multi-part `{sections:[...]}` has no root `questions[]`, so revalidation reports phantom errors. Added 16/08/2026.
 - [ ] **Spring Boot 4.0.x OSS support ends Dec 2026.** Plan 4.1.x upgrade before EOL. Watching. Added 16/08/2026.
 - [ ] **AGENTS.md env-var list incomplete** (GEMINI_API_KEY, PAYOS_WEBHOOK_URL, DEBUG_*, SPEAKING_* missing) — update during docs sync. Added 16/08/2026.
 
 ## Resolved
+- [x] **Phase 1 — ABTS rescue.** Wired lib/api client, fixed all contract breaks B1-B12, backend validator F1, snake_case content adaptation (StepPreview/contentAdapter/aiStudioStatus), store-backed imageUrls, multi-part question aggregation, refinement loop end-to-end. Frontend 275 tests pass, build OK; backend 145 tests pass. Resolved 16/08/2026.
 - [x] **Phase 0 — dead code sweep.** 22 dead files deleted (verified by grep), `__patch_probe.tmp` removed, `frontend/html/` + Eclipse files untracked. Resolved 16/08/2026.
 - [x] **Phase 0 — dep bumps/removals.** Spring Boot 4.0.0→4.0.7, axios→1.19.0, React→19.2.8, Vite→8.2.1, Zustand→5.0.15, Tailwind→4.3.3; removed jjwt/totp/sendgrid/mail/hypersistence/websocket (backend), bootstrap/react-bootstrap/maath/baseline-browser-mapping (frontend); npm audit 0 vulns. Resolved 16/08/2026.
 - [x] **Phase 0 — Docker/CI.** Dockerfiles fixed (JDK 25, node 24, postcss copy), docker-compose env complete + nginx port fix, CI frontend job added. Resolved 16/08/2026.

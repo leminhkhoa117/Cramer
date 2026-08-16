@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FiX, FiSave, FiFolder, FiType, FiBarChart2, FiHash, FiEye, FiPlus, FiAlertCircle, FiLink } from 'react-icons/fi';
 import useTestSetStore from '../../stores/useTestSetStore';
+import useHashtagStore from '../../stores/useHashtagStore';
 import { testsApi } from '../../api/adminApi';
 import TagInput from './TagInput';
 import '../../components/common/AdminModal.css';
@@ -33,6 +34,7 @@ export default function SaveAIContentModal({
     onAudioUrlChange = null // Callback for audio URL updates
 }) {
     const { testSets, fetchTestSets, isLoading } = useTestSetStore();
+    const { hashtags, fetchHashtags } = useHashtagStore();
 
     const [formData, setFormData] = useState({
         setId: '',
@@ -99,6 +101,7 @@ export default function SaveAIContentModal({
     useEffect(() => {
         if (isOpen) {
             fetchTestSets(true);
+            fetchHashtags();
             setFormData({
                 setId: '',
                 setCode: '',
@@ -114,7 +117,7 @@ export default function SaveAIContentModal({
             setAppendToExistingTest(false);
             setSelectedExistingTestId('');
         }
-    }, [isOpen, fetchTestSets]);
+    }, [isOpen, fetchTestSets, fetchHashtags]);
 
     // Fetch tests when a test set is selected & auto-increment test number
     useEffect(() => {
@@ -207,16 +210,21 @@ export default function SaveAIContentModal({
 
         setIsSubmitting(true);
         try {
+            // TagInput select mode stores hashtag IDs; the backend expects codes.
+            const hashtagById = new Map((hashtags || []).map((tag) => [String(tag.id), tag]));
+            const hashtagCodes = (formData.hashtags || [])
+                .map((id) => hashtagById.get(String(id))?.code)
+                .filter(Boolean);
+
             const saveConfig = {
                 setId: formData.createNewSet ? null : (formData.setId || null),
                 setCode: formData.createNewSet ? formData.setCode.trim() : null,
-                setNameVi: formData.createNewSet ? formData.setName.trim() : null,
                 testNumber: appendToExistingTest ? null : formData.testNumber,
                 testName: appendToExistingTest ? null : formData.testName.trim(),
                 difficulty: appendToExistingTest ? null : formData.difficulty,
-                hashtagIds: appendToExistingTest ? null : formData.hashtags,
+                hashtags: appendToExistingTest ? [] : hashtagCodes,
                 audioUrls: suggestedSkill?.toLowerCase() === 'listening' ? audioUrls : null,
-                // NEW: Append to existing test
+                // Append to existing test
                 existingTestId: appendToExistingTest ? selectedExistingTestId : null
             };
             await onSave(saveConfig);

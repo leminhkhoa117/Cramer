@@ -1,4 +1,4 @@
-import { get, post } from './client';
+import { get, post, currentAuthToken } from './client';
 import { http } from './client';
 
 /* ABTS — AI generation (SPEC-20..25). Admin-gated under /api/admin/abts. */
@@ -19,13 +19,32 @@ export const abtsApi = {
 
 /**
  * Open an SSE stream (generation or refinement) via fetch + ReadableStream.
- * Calls onEvent(parsedJson) for each `data:` line. Returns an abort function.
- * Token is taken from the provided getToken() (pass () => session.access_token).
+ * Parses `data:` frames and calls onEvent(parsedJson) for each.
+ *
+ * Guarantees: onEvent is never called after the stream closes; exactly one of
+ * {terminal event, onError, onDone} finishes a stream. Abort (via the returned
+ * function or an AbortError) triggers onError with an AbortError instance.
+ *
+ * @param {string} path SSE endpoint path (e.g. /admin/abts/generate/reading/stream)
+ * @param {object} body JSON request body
+ * @param {object} [opts]
+ * @param {() => string|null} [opts.getToken] bearer-token provider (defaults to the shared client token)
+ * @param {(event: object) => void} [opts.onEvent] one call per parsed SSE data frame
+ * @param {(error: Error) => void} [opts.onError] transport/HTTP/abort errors
+ * @param {() => void} [opts.onDone] called once when the stream closes cleanly (no terminal event)
+ * @returns {() => void} abort function
  */
 export function openAbtsStream(path, body, { getToken, onEvent, onError, onDone } = {}) {
   const controller = new AbortController();
   const base = http.defaults.baseURL || '/api';
-  const token = getToken?.();
+  const token = (getToken ?? currentAuthToken)?.();
+  let closed = false;
+
+  const finish = (fn) => {
+    if (closed) return;
+    closed = true;
+    fn?.();
+  };
 
   (async () => {
     try {
@@ -39,7 +58,8 @@ export function openAbtsStream(path, body, { getToken, onEvent, onError, onDone 
         signal: controller.signal,
       });
       if (!res.ok || !res.body) {
-        onError?.(new Error(`Stream failed: HTTP ${res.status}`));
+        const text = await res.text().catch(() => '');
+        finish(() => onError?.(new Error(`Stream failed: HTTP ${res.status} ${text.slice(0, 200)}`)));
         return;
       }
       const reader = res.body.getReader();
@@ -56,12 +76,16 @@ export function openAbtsStream(path, body, { getToken, onEvent, onError, onDone 
           if (!line) continue;
           const json = line.slice(5).trim();
           if (!json || json === '[DONE]') continue;
-          try { onEvent?.(JSON.parse(json)); } catch { /* ignore partial */ }
+          try {
+            onEvent?.(JSON.parse(json));
+          } catch {
+            /* ignore malformed frame */
+          }
         }
       }
-      onDone?.();
+      finish(onDone);
     } catch (err) {
-      if (err?.name !== 'AbortError') onError?.(err);
+      finish(() => onError?.(err?.name === 'AbortError' ? err : (err instanceof Error ? err : new Error(String(err)))));
     }
   })();
 

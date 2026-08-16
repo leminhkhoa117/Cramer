@@ -107,13 +107,19 @@ function extractContent(result) {
 
 /**
  * Transform section data to database format.
+ * Accepts both the new backend snake_case shape
+ * ({ section: { passage_text }, transcript, task_prompt }) and the legacy
+ * camelCase shape ({ section: { passageText } }).
  */
 function transformSection(content, skill) {
     const section = content.section || {};
 
     // Get passage text from various possible locations
-    let passageText = section.taskText
+    let passageText = section.passage_text
+        || section.taskText
         || section.passageText
+        || content.transcript
+        || content.task_prompt
         || content.passageText
         || content.passage?.text
         || content.passage
@@ -127,11 +133,11 @@ function transformSection(content, skill) {
     return {
         passageText: passageText,
         audioUrl: section.audioUrl || content.audioUrl || null,
-        sectionLayout: section.sectionLayout || content.sectionLayout || null,
-        audioPlaceholder: section.audioPlaceholder || content.audioPlaceholder || null,
-        imageDescription: section.imageDescription || content.imageDescription || null,
+        sectionLayout: section.section_layout || section.sectionLayout || content.section_layout || content.sectionLayout || null,
+        audioPlaceholder: section.audioPlaceholder || content.audioPlaceholder || content.audio_placeholder || null,
+        imageDescription: section.imageDescription || content.imageDescription || content.image_description || null,
         displayContentUrl: section.displayContentUrl || content.displayContentUrl || null,
-        partNumber: section.partNumber || content.partNumber || 1,
+        partNumber: section.partNumber || section.part || content.partNumber || 1,
         wordCount: section.wordCount || content.wordCount || countWords(passageText),
         skill: skill
     };
@@ -163,15 +169,17 @@ function transformQuestions(content) {
 
 /**
  * Transform a single question to database format.
+ * Accepts both backend snake_case (question_number, question_type,
+ * question_content, correct_answer) and legacy camelCase fields.
  */
 function transformQuestion(question, index) {
     // Normalize question type
     const questionType = normalizeQuestionType(
-        question.questionType || question.type || 'FILL_IN_BLANK'
+        question.question_type || question.questionType || question.type || 'FILL_IN_BLANK'
     );
 
     // Get question content
-    let questionContent = question.questionContent || question.content || {};
+    let questionContent = question.question_content || question.questionContent || question.content || {};
 
     // If questionContent is a string, try to parse it or wrap it
     if (typeof questionContent === 'string') {
@@ -183,7 +191,7 @@ function transformQuestion(question, index) {
     }
 
     // Get correct answer in consistent format
-    let correctAnswer = question.correctAnswer || question.answer || '';
+    let correctAnswer = question.correct_answer || question.correctAnswer || question.answer || '';
 
     // Ensure it's a string for storage
     if (typeof correctAnswer === 'object') {
@@ -192,11 +200,11 @@ function transformQuestion(question, index) {
         correctAnswer = JSON.stringify(correctAnswer);
     }
 
-    const wordLimit = question.wordLimit || question.word_limit || null;
-    const imageUrl = question.imageUrl || question.image_url || null;
+    const wordLimit = question.word_limit || question.wordLimit || null;
+    const imageUrl = question.image_url || question.imageUrl || null;
 
     return {
-        questionNumber: question.questionNumber || index + 1,
+        questionNumber: question.question_number || question.questionNumber || index + 1,
         questionType: questionType,
         questionContent: JSON.stringify(questionContent),
         correctAnswer: correctAnswer,

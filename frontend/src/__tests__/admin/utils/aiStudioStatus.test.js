@@ -7,32 +7,46 @@ import {
 } from '../../../admin/components/abts/aiStudioStatus';
 
 describe('aiStudioStatus', () => {
-    it('builds validation buckets from current generation result data', () => {
+    it('builds validation buckets from the backend ValidationView shape', () => {
         const buckets = getAIStudioValidationBuckets({
             validation: {
-                schemaErrors: ['Missing section'],
-                contentErrors: [{ message: 'Question 2 has no answer' }],
-                businessRuleErrors: [],
+                valid: false,
+                issues: [
+                    { id: 'rd-passage-missing', severity: 'ERROR', path: '/section/passage_text', message: 'Reading section.passage_text is required' },
+                    { id: 'rd-passage-short', severity: 'WARNING', path: '/section/passage_text', message: 'Passage is shorter than 700 words' },
+                ],
+                errors: ['Reading section.passage_text is required'],
+                warnings: ['Passage is shorter than 700 words'],
+                errorCount: 1,
+                warningCount: 1,
             },
-            warnings: [{ id: 'backend-warning-1', message: 'Low word count' }],
         });
 
-        expect(buckets.schemaErrors[0]).toMatchObject({ id: 'schema-0', message: 'Missing section', severity: 'error' });
-        expect(buckets.contentErrors[0]).toMatchObject({ id: 'content-0', message: 'Question 2 has no answer' });
-        expect(buckets.warnings[0]).toMatchObject({ id: 'warn-0', message: 'Low word count', type: 'WARNING' });
+        expect(buckets.contentErrors[0]).toMatchObject({
+            id: 'rd-passage-missing',
+            message: 'Reading section.passage_text is required',
+            severity: 'error',
+        });
+        expect(buckets.warnings[0]).toMatchObject({
+            id: 'rd-passage-short',
+            message: 'Passage is shorter than 700 words',
+            severity: 'warning',
+        });
     });
 
     it('counts validation errors and warnings separately', () => {
         const counts = getAIStudioIssueCounts({
             validation: {
-                schemaErrors: ['A'],
-                contentErrors: ['B'],
-                businessRuleErrors: ['C'],
+                issues: [
+                    { id: 'a', severity: 'ERROR', message: 'A' },
+                    { id: 'b', severity: 'ERROR', message: 'B' },
+                    { id: 'd', severity: 'WARNING', message: 'D' },
+                    { id: 'e', severity: 'WARNING', message: 'E' },
+                ],
             },
-            warnings: ['D', 'E'],
         });
 
-        expect(counts).toEqual({ errorCount: 3, warningCount: 2, total: 5 });
+        expect(counts).toEqual({ errorCount: 2, warningCount: 2, total: 4 });
     });
 
     it('keeps config readiness aligned with multi-part generate requirements', () => {

@@ -36,11 +36,11 @@ public class ReadingValidator {
         ValidationResult result = new ValidationResult();
         QuestionRange range = QuestionRange.of(Skill.READING, part);
 
-        JsonNode passage = content.path("passage_text");
+        JsonNode passage = content.path("section").path("passage_text");
         if (passage.isMissingNode() || passage.asText("").isBlank()) {
-            result.addError("rd-passage-missing", "/passage_text", "Reading passage_text is required");
+            result.addError("rd-passage-missing", "/section/passage_text", "Reading section.passage_text is required");
         } else if (wordCount(passage.asText()) < 700) {
-            result.addWarning("rd-passage-short", "/passage_text",
+            result.addWarning("rd-passage-short", "/section/passage_text",
                     "Passage is shorter than a typical IELTS reading passage (~700+ words)");
         }
 

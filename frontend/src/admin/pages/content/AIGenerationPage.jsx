@@ -1,12 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StudioConfigView from '../../components/abts/StudioConfigView';
 import StepPreview from '../../components/abts/StepPreview';
 import AIStudioTopBar from '../../components/abts/AIStudioTopBar';
 import AIStudioIssueRail from '../../components/abts/AIStudioIssueRail';
 import useABTSStore from '../../stores/useABTSStore';
-import { saveGeneratedTest } from '../../services/abtsApi';
-import { buildABTSSaveRequest } from '../../utils/abtsSavePayload';
 import { useToast } from '../../components/Toast';
 import SaveAIContentModal from '../../components/abts/SaveAIContentModal';
 import {
@@ -25,6 +23,7 @@ export default function AIGenerationPage() {
         generationResult,
         abortGeneration,
         clearResult,
+        saveGeneratedContent,
         formData,
         audioUrls,
         setAudioUrl
@@ -35,6 +34,12 @@ export default function AIGenerationPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [isRailCollapsed, setIsRailCollapsed] = useState(true);
+    const navigateTimeoutRef = useRef(null);
+
+    // Cancel the post-save navigate timeout if the user leaves early.
+    useEffect(() => () => {
+        if (navigateTimeoutRef.current) clearTimeout(navigateTimeoutRef.current);
+    }, []);
 
     const configReadiness = useMemo(() => getAIStudioConfigReadiness(formData), [formData]);
     const issueCounts = useMemo(() => getAIStudioIssueCounts(generationResult), [generationResult]);
@@ -60,14 +65,12 @@ export default function AIGenerationPage() {
         }
     }, [view, issueCounts.total, isGenerating]);
 
-    const handleGenerate = async () => {
+    const handleGenerate = () => {
         setView('preview');
-        try {
-            await generateStreaming();
-        } catch (error) {
+        generateStreaming().catch((error) => {
             console.error(error);
             setView('config');
-        }
+        });
     };
 
     const handleBack = () => {
@@ -93,40 +96,34 @@ export default function AIGenerationPage() {
         if (!generationResult?.content) return;
         setShowSaveModal(false);
         setIsSaving(true);
-        const generatedContent = generationResult.content;
 
         try {
-            const saveRequest = buildABTSSaveRequest({
-                content: generatedContent,
-                formData,
-                saveConfig,
-            });
-            const result = await saveGeneratedTest(saveRequest);
+            const result = await saveGeneratedContent(saveConfig);
 
-            if (result.success) {
-                toast.success(`✅ Saved! Section ID: ${result.sectionId}, ${result.questionsCreated} questions created.`);
-                if (result.warnings?.length > 0) result.warnings.forEach(w => toast.warning(w));
+            if (result?.success) {
+                const sectionCount = result.sectionIds?.length ?? 0;
+                toast.success(`Saved! ${sectionCount} section(s), ${result.questionCount ?? 0} questions created.`);
                 clearResult();
-                setTimeout(() => {
+                navigateTimeoutRef.current = setTimeout(() => {
                     setIsSaving(false);
                     navigate('/admin/content', {
                         state: {
                             refreshList: true,
                             savedSection: {
-                                id: result.sectionId,
-                                examSource: result.examSource,
+                                testId: result.testId,
+                                setCode: result.setCode,
                                 testNumber: result.testNumber
                             }
                         }
                     });
                 }, 1500);
             } else {
-                toast.error(`Save failed: ${result.message}`);
+                toast.error(`Save failed: ${result?.message || 'unknown error'}`);
                 setIsSaving(false);
             }
         } catch (error) {
             console.error('Error saving content:', error);
-            toast.error('Error saving content: ' + error.message);
+            toast.error('Error saving content: ' + (error?.response?.data?.message || error.message));
             setIsSaving(false);
         }
     };
@@ -188,7 +185,12 @@ export default function AIGenerationPage() {
                 suggestedSkill={formData.skill}
                 partNumber={formData.partNumber || 1}
                 selectedParts={formData.selectedParts}
-                questionCount={generationResult?.content?.questions?.length || 0}
+                questionCount={
+                    generationResult?.content?.questions?.length
+                    ?? (Array.isArray(generationResult?.content?.sections)
+                        ? generationResult.content.sections.reduce((sum, sec) => sum + (sec.questions?.length || 0), 0)
+                        : 0)
+                }
                 audioUrls={audioUrls}
                 onAudioUrlChange={setAudioUrl}
             />

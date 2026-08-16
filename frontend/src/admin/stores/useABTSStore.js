@@ -3,30 +3,15 @@
  * 
  * Manages state for the generation wizard, API calls, and results.
  * Includes caching for templates and models.
+ * API calls go through the shared lib/api client (contract-correct
+ * against the backend AbtsController, SPEC-25).
  * 
  * @since 2025-12-20 - ABTS v2.0
+ * @updated 2026-08 - wired to lib/api abtsApi + openAbtsStream
  */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import {
-    generateReading,
-    generateListening,
-    generateWriting,
-    regenerateQuestions,
-    generateReadingStream,
-    generateListeningStream,
-    generateWritingStream,
-    getAvailableModels,
-    getTemplateCategories,
-    getTemplatesByCategory,
-    getStatus,
-    saveGeneratedTest,
-    refineContentStream,
-    applyRefinementHunks,
-    validateContent,
-    SKILL_TYPES,
-    GENERATION_SCOPES
-} from '../services/abtsApi';
+import { abtsApi, openAbtsStream } from '../../lib/api';
 import { buildABTSGenerationRequest } from '../utils/abtsGenerationPayload';
 import { buildABTSSaveRequest } from '../utils/abtsSavePayload';
 import { createABTSFormActions } from './abtsFormActions';
@@ -56,7 +41,7 @@ export const QUESTION_COUNTS = {
 // Recommended default model (capability-driven picker falls back to this on first load)
 export const DEFAULT_MODEL_ID = 'deepseek/deepseek-v4-flash';
 
-// FIX 2: canonical "clean slate" for the loopable-refinement slice. Used by
+// Canonical "clean slate" for the loopable-refinement slice. Used by
 // resetRefinementState() so every lifecycle entry point (new generation, clear
 // result, open/close wizard) starts from an identical, known-good state and no
 // stale hunks / round counters / in-flight flags leak between runs.
@@ -67,22 +52,9 @@ const REFINEMENT_RESET = {
     appliedHistory: [],
     isApplying: false,
     isLooping: false,
-    lastSkippedHunks: [], // FIX 9: [{id, reason}] from the most recent apply
-    lastError: null,      // FIX 5: surfaced apply/refine failure message
+    lastSkippedHunks: [], // [{id, reason}] from the most recent apply
+    lastError: null,      // surfaced apply/refine failure message
 };
-
-// Helper to extract issue category from warning message
-function extractCategory(message) {
-    if (!message) return 'UNKNOWN';
-    const lower = message.toLowerCase();
-    if (lower.includes('word count') || lower.includes('word limit')) return 'WORD_LIMIT';
-    if (lower.includes('placeholder') || lower.includes('____')) return 'MISSING_PLACEHOLDER';
-    if (lower.includes('options') || lower.includes('choices')) return 'INCONSISTENT_OPTIONS';
-    if (lower.includes('answer') && lower.includes('passage')) return 'ANSWER_NOT_IN_PASSAGE';
-    if (lower.includes('diagram') || lower.includes('label')) return 'DIAGRAM_NO_LABELS';
-    if (lower.includes('format')) return 'INVALID_WORD_LIMIT_FORMAT';
-    return 'GENERAL';
-}
 
 // Initial form state
 const initialFormState = {
@@ -107,7 +79,6 @@ const initialFormState = {
 
     // Power-user settings (v5.0)
     questionTypeCounts: {}, // { 'TRUE_FALSE_NOT_GIVEN': 3, 'MULTIPLE_CHOICE': 2 }
-    // partNumber is defined above (line 31)
     passageLength: 'MEDIUM', // 'SHORT' (800-900) | 'MEDIUM' (900-1000) | 'LONG' (1000-1200)
     customInstructions: '', // Custom prompt additions
     showJsonPreview: false, // Toggle JSON preview panel
@@ -124,6 +95,9 @@ const initialFormState = {
     enableRefinementReasoning: false, // Enable reasoning/thinking tokens for refinement (default OFF for speed)
 };
 
+/** Stream events the UI synthesizes locally before the server stream opens. */
+const localConnectingEvent = (message, progress) => ({ type: 'CONNECTING', message, progress, data: null, timestamp: Date.now() });
+
 const useABTSStore = create(persist((set, get) => ({
     // ==================== WIZARD STATE ====================
     currentStep: 1,
@@ -137,7 +111,7 @@ const useABTSStore = create(persist((set, get) => ({
     generationResult: null,
     generationError: null,
     generationProgress: 0,
-    partErrors: null,       // FIX 12: per-part error map on PARTIAL_SUCCESS / all-parts-failed
+    partErrors: null,       // per-part error map on PARTIAL_SUCCESS / all-parts-failed
     streamEvents: [],       // Array of streaming events for UI display
     streamPreview: '',      // Accumulated AI response chunks for live preview
     streamChunkCount: 0,    // Number of response chunks received
@@ -178,18 +152,18 @@ const useABTSStore = create(persist((set, get) => ({
     // ==================== LOOPABLE REFINEMENT (per-hunk approval) ====================
     refinement: {
         round: 0,                // Current refinement round (server caps at maxRefinementRounds)
-        hunks: [],               // Proposed hunks: {id, op, path, before, after, issueIds, summary, severity}
+        hunks: [],               // Proposed hunks: {id, op, path, before, after, description}
         acceptedHunkIds: [],     // Hunk IDs the user has accepted (default: all)
         appliedHistory: [],      // [{ round, appliedCount, rejectedCount, at }]
         isApplying: false,       // Apply-accepted request in flight
         isLooping: false,        // Refine-again request in flight
-        lastSkippedHunks: [],    // FIX 9: [{id, reason}] from the most recent apply
-        lastError: null,         // FIX 5: surfaced apply/refine failure message
+        lastSkippedHunks: [],    // [{id, reason}] from the most recent apply
+        lastError: null,         // surfaced apply/refine failure message
     },
 
-
-    // ==================== AUDIO URLS (Listening) ====================
+    // ==================== MEDIA URLS ====================
     audioUrls: {},               // { partNumber: url } - Audio URLs for Listening parts
+    imageUrls: {},               // { partNumber: url } - Figure/image URLs (map/plan labeling)
 
     // ==================== WIZARD ACTIONS ====================
 
@@ -197,7 +171,7 @@ const useABTSStore = create(persist((set, get) => ({
      * Open the generation wizard
      */
     openWizard: () => {
-        get().resetRefinementState(); // FIX 2: never inherit a prior run's hunks
+        get().resetRefinementState();
         set({
             isWizardOpen: true,
             currentStep: 1,
@@ -213,7 +187,7 @@ const useABTSStore = create(persist((set, get) => ({
      * Close the generation wizard
      */
     closeWizard: () => {
-        get().resetRefinementState(); // FIX 2
+        get().resetRefinementState();
         set({
             isWizardOpen: false,
             currentStep: 1,
@@ -287,7 +261,7 @@ const useABTSStore = create(persist((set, get) => ({
     // ==================== GENERATION ACTIONS ====================
 
     /**
-     * Generate content based on current form data
+     * Generate content based on current form data (synchronous API).
      */
     generate: async () => {
         const { formData } = get();
@@ -299,50 +273,36 @@ const useABTSStore = create(persist((set, get) => ({
 
         try {
             const request = buildABTSGenerationRequest(formData);
-
             set({ generationProgress: 30 });
 
-            // Call appropriate API based on skill
-            let result;
-            switch (formData.skill) {
-                case SKILL_TYPES.READING:
-                    result = await generateReading(request);
-                    break;
-                case SKILL_TYPES.LISTENING:
-                    result = await generateListening(request);
-                    break;
-                case SKILL_TYPES.WRITING:
-                    result = await generateWriting(request);
-                    break;
-                default:
-                    throw new Error('Unsupported skill type');
-            }
+            const skill = String(formData.skill || '').toLowerCase();
+            const result = await abtsApi.generate(skill, request);
 
             set({ generationProgress: 90 });
 
-            // Handle result
             if (result.status === 'SUCCESS' || result.status === 'PARTIAL_SUCCESS') {
                 set({
                     generationResult: result,
                     isGenerating: false,
                     generationProgress: 100,
+                    partErrors: result.partErrors ?? null,
                     currentStep: 5 // Auto-advance to preview
                 });
             } else {
                 set({
                     generationResult: result,
-                    generationError: result.errors?.join(', ') || 'Generation failed',
+                    generationError: result.errorCode || 'Generation failed',
                     isGenerating: false,
                     generationProgress: 0
                 });
             }
 
             return result;
-
         } catch (error) {
             console.error('Generation failed:', error);
+            const message = error?.response?.data?.message || error.message || 'Failed to generate content';
             set({
-                generationError: error.message || 'Failed to generate content',
+                generationError: message,
                 isGenerating: false,
                 generationProgress: 0
             });
@@ -351,109 +311,124 @@ const useABTSStore = create(persist((set, get) => ({
     },
 
     /**
-     * Generate content with streaming progress updates
+     * Generate content with streaming progress updates.
      */
     generateStreaming: async () => {
         const { formData } = get();
 
-        get().resetRefinementState(); // FIX 2: a fresh generation must start with no carried-over hunks
+        get().resetRefinementState();
         set({
             isGenerating: true,
             generationError: null,
             generationProgress: 0,
-            partErrors: null, // FIX 12: clear stale per-part errors from a prior run
+            partErrors: null,
             streamEvents: [],
             generationResult: null,
             streamPreview: '',
             streamChunkCount: 0,
-            reasoning: '' // Reset accumulated reasoning
+            reasoning: ''
         });
 
         const request = buildABTSGenerationRequest(formData);
+        const skill = String(formData.skill || '').toLowerCase();
+        let terminalEventReceived = false;
 
-        // Callbacks for streaming events
-        const callbacks = {
-            onProgress: (event) => {
-                // AI_THINKING: Only accumulate reasoning, don't add to log (prevents flooding)
-                if (event.type === 'AI_THINKING' && event.message) {
-                    set(state => ({
-                        reasoning: state.reasoning + event.message
+        const onProgress = (event) => {
+            if (event.type === 'AI_THINKING') {
+                const delta = typeof event.data === 'string' ? event.data : '';
+                if (delta) {
+                    set((state) => ({
+                        reasoning: state.reasoning + delta
                     }));
-                    return; // Don't add to streamEvents
                 }
+                return;
+            }
 
-                // AI_CHUNK: Keep content chunks out of the event log, but surface them in the live preview.
-                if (event.type === 'AI_CHUNK') {
-                    const chunk = typeof event.data === 'string'
-                        ? event.data
-                        : event.data == null
-                            ? ''
-                            : JSON.stringify(event.data);
+            if (event.type === 'AI_CHUNK') {
+                const chunk = typeof event.data === 'string'
+                    ? event.data
+                    : event.data == null
+                        ? ''
+                        : JSON.stringify(event.data);
 
-                    if (chunk) {
-                        set(state => ({
-                            streamPreview: state.streamPreview + chunk,
-                            streamChunkCount: state.streamChunkCount + 1
-                        }));
-                    }
-                    return; // Don't add to streamEvents
+                if (chunk) {
+                    set((state) => ({
+                        streamPreview: state.streamPreview + chunk,
+                        streamChunkCount: state.streamChunkCount + 1
+                    }));
                 }
+                return;
+            }
 
-                // All other events: add to log normally
-                set(state => ({
-                    streamEvents: [...state.streamEvents, event],
-                    // FIX 3: progress must never move backwards (parts report local 0-100 ranges).
-                    generationProgress: Math.max(state.generationProgress ?? 0, event.progress ?? 0)
-                }));
-            },
-            onComplete: (result) => {
+            if (event.type === 'COMPLETED') {
+                terminalEventReceived = true;
                 set({
-                    generationResult: result,
+                    generationResult: event.data,
                     isGenerating: false,
                     generationProgress: 100,
-                    // FIX 12: capture per-part errors so the UI can show a PARTIAL_SUCCESS banner.
-                    partErrors: result?.partErrors ?? null,
-                    currentStep: 5 // Auto-advance to preview
+                    partErrors: event.data?.partErrors ?? null,
+                    currentStep: 5
                 });
-            },
-            onError: (errorMessage, data) => {
+                return;
+            }
+
+            if (event.type === 'FAILED') {
+                terminalEventReceived = true;
                 set({
-                    generationError: errorMessage,
-                    // FIX 11/12: a FAILED event may carry a per-part errors map in its data payload.
-                    partErrors: (data && typeof data === 'object') ? data : null,
+                    generationError: event.message || event.errorCode || 'Generation failed',
                     isGenerating: false,
                     generationProgress: 0
                 });
-            },
-            // Abort function is provided immediately via this callback
-            onAbort: (abortFn) => {
-                set({ abortStream: abortFn });
+                return;
+            }
+
+            if (event.type === 'ABORTED') {
+                terminalEventReceived = true;
+                set({
+                    isGenerating: false,
+                    generationProgress: 0,
+                    streamEvents: [...get().streamEvents, event]
+                });
+                return;
+            }
+
+            set((state) => ({
+                streamEvents: [...state.streamEvents, event],
+                generationProgress: Math.max(state.generationProgress ?? 0, event.progress ?? 0)
+            }));
+        };
+
+        const onError = (error) => {
+            terminalEventReceived = true;
+            if (error?.name === 'AbortError') return; // abortGeneration handles state
+            set({
+                generationError: error?.message || 'Stream failed',
+                isGenerating: false,
+                generationProgress: 0
+            });
+        };
+
+        const onDone = () => {
+            if (!terminalEventReceived) {
+                set({
+                    generationError: 'Stream ended before the server reported a result',
+                    isGenerating: false,
+                    generationProgress: 0
+                });
             }
         };
 
         try {
-            // Route to skill-specific streaming function
-            switch (formData.skill) {
-                case SKILL_TYPES.READING:
-                    await generateReadingStream(request, callbacks);
-                    break;
-                case SKILL_TYPES.LISTENING:
-                    await generateListeningStream(request, callbacks);
-                    break;
-                case SKILL_TYPES.WRITING:
-                    await generateWritingStream(request, callbacks);
-                    break;
-                default:
-                    // Fallback to non-streaming for unsupported skills (e.g., Speaking)
-                    return get().generate();
-            }
+            set({ streamEvents: [localConnectingEvent(`Requesting ${skill} generation...`, 5)] });
+            const abortFn = openAbtsStream(`/admin/abts/generate/${skill}/stream`, request, {
+                onEvent: onProgress,
+                onError,
+                onDone,
+            });
+            set({ abortStream: abortFn });
         } catch (error) {
             console.error('Streaming generation failed:', error);
-            set({
-                generationError: error.message || 'Streaming failed',
-                isGenerating: false,
-                generationProgress: 0
-            });
+            onError(error);
         }
     },
 
@@ -463,7 +438,6 @@ const useABTSStore = create(persist((set, get) => ({
     abortGeneration: () => {
         const { abortStream } = get();
 
-        // Call the abort function if available
         if (abortStream) {
             try {
                 abortStream();
@@ -472,7 +446,6 @@ const useABTSStore = create(persist((set, get) => ({
             }
         }
 
-        // ALWAYS reset state, even if abortStream was null
         set({
             isGenerating: false,
             generationProgress: 0,
@@ -482,12 +455,20 @@ const useABTSStore = create(persist((set, get) => ({
     },
 
     /**
-     * Regenerate specific questions
+     * Regenerate questions against the existing passage/transcript.
+     * The backend regenerates the whole first part (SPEC-21 §9); the result
+     * replaces that part's content.
      */
-    regenerateQuestions: async (questionNumbers) => {
+    regenerateQuestions: async () => {
         const { formData, generationResult } = get();
+        const content = generationResult?.content;
 
-        if (!generationResult?.content?.section?.passageText) {
+        if (!content) {
+            throw new Error('No generated content to regenerate from');
+        }
+
+        const existingPassage = content?.section?.passage_text ?? content?.transcript ?? null;
+        if (!existingPassage) {
             throw new Error('No existing passage to regenerate questions for');
         }
 
@@ -495,47 +476,40 @@ const useABTSStore = create(persist((set, get) => ({
 
         try {
             const request = {
-                ...formData,
-                existingPassageText: generationResult.content.section.passageText,
-                questionsToRegenerate: questionNumbers
+                ...buildABTSGenerationRequest(formData),
+                existingPassageText: existingPassage,
             };
-
-            const result = await regenerateQuestions(request);
+            const skill = String(formData.skill || '').toLowerCase();
+            const result = await abtsApi.generateQuestions(skill, request);
 
             if (result.status === 'SUCCESS' || result.status === 'PARTIAL_SUCCESS') {
-                // Merge regenerated questions with existing
-                const existingQuestions = generationResult.content.questions || [];
-                const newQuestions = result.content?.questions || [];
+                const firstPart = request.partsToGenerate?.[0] ?? formData.partNumber ?? 1;
+                let nextContent = result.content;
 
-                // Replace only the regenerated questions
-                const mergedQuestions = existingQuestions.map(q => {
-                    const regenerated = newQuestions.find(nq => nq.questionNumber === q.questionNumber);
-                    return regenerated || q;
-                });
+                if (Array.isArray(content.sections)) {
+                    const sections = content.sections.map((section) =>
+                        (section.part ?? section.partNumber) === firstPart ? result.content : section
+                    );
+                    nextContent = { ...content, sections };
+                }
 
                 set({
-                    generationResult: {
-                        ...generationResult,
-                        content: {
-                            ...generationResult.content,
-                            questions: mergedQuestions
-                        }
-                    },
+                    generationResult: { ...generationResult, content: nextContent, status: result.status },
+                    partErrors: result.partErrors ?? null,
                     isGenerating: false
                 });
             } else {
                 set({
-                    generationError: result.errors?.join(', ') || 'Regeneration failed',
+                    generationError: result.errorCode || 'Regeneration failed',
                     isGenerating: false
                 });
             }
 
             return result;
-
         } catch (error) {
             console.error('Question regeneration failed:', error);
             set({
-                generationError: error.message,
+                generationError: error?.response?.data?.message || error.message,
                 isGenerating: false
             });
             throw error;
@@ -546,7 +520,7 @@ const useABTSStore = create(persist((set, get) => ({
      * Clear generation result
      */
     clearResult: () => {
-        get().resetRefinementState(); // FIX 2
+        get().resetRefinementState();
         set({
             generationResult: null,
             generationError: null,
@@ -555,21 +529,20 @@ const useABTSStore = create(persist((set, get) => ({
     },
 
     /**
-     * Update the generated passage text
+     * Update the generated passage text (raw snake_case shape).
      */
     updateGeneratedPassage: (newText) => {
         const { generationResult } = get();
-        if (generationResult?.content?.section) {
+        const section = generationResult?.content?.section;
+        if (section) {
             set({
                 generationResult: {
                     ...generationResult,
                     content: {
                         ...generationResult.content,
                         section: {
-                            ...generationResult.content.section,
-                            passageText: newText,
-                            // Invalidate word count since text changed
-                            wordCountValid: null
+                            ...section,
+                            passage_text: newText
                         }
                     }
                 }
@@ -577,17 +550,13 @@ const useABTSStore = create(persist((set, get) => ({
         }
     },
 
-    // NOTE: updateGeneratedQuestion is defined earlier in the file (around line 571)
-    // It handles both questionId string matching (e.g., 'abts-q-0') and partial updates
-    // DO NOT add a duplicate here - the one above handles StepPreview editing correctly
-
     // ==================== SAVE ACTIONS ====================
 
     /**
      * Set save target options (TestSet, Test, etc.)
      */
     setSaveOptions: (options) => {
-        set(state => ({
+        set((state) => ({
             selectedSetId: options.setId ?? state.selectedSetId,
             selectedSetCode: options.setCode ?? state.selectedSetCode,
             selectedTestId: options.testId ?? state.selectedTestId
@@ -598,7 +567,7 @@ const useABTSStore = create(persist((set, get) => ({
      * Save the generated content to the database using the test hierarchy.
      */
     saveGeneratedContent: async (options = {}) => {
-        const { generationResult, formData, selectedSetId, selectedSetCode, selectedTestId } = get();
+        const { generationResult, formData, selectedSetId, selectedSetCode, selectedTestId, audioUrls, imageUrls } = get();
 
         if (!generationResult?.content) {
             throw new Error('No generated content to save');
@@ -614,15 +583,15 @@ const useABTSStore = create(persist((set, get) => ({
                 selectedSetId,
                 selectedSetCode,
                 selectedTestId,
+                audioUrls,
+                imageUrls,
             });
 
-            const result = await saveGeneratedTest(saveRequest);
+            const result = await abtsApi.save(saveRequest);
 
-            // Invalidate test set cache so new content appears in lists immediately
             try {
                 const { default: useTestSetStore } = await import('./useTestSetStore');
                 useTestSetStore.getState().invalidateCache();
-                console.log('[ABTS] Test set cache invalidated after save');
             } catch (cacheError) {
                 console.warn('[ABTS] Could not invalidate cache:', cacheError);
             }
@@ -634,12 +603,11 @@ const useABTSStore = create(persist((set, get) => ({
             });
 
             return result;
-
         } catch (error) {
             console.error('Failed to save generated content:', error);
             set({
                 isSaving: false,
-                saveError: error.message || 'Failed to save content'
+                saveError: error?.response?.data?.message || error.message || 'Failed to save content'
             });
             throw error;
         }
@@ -664,16 +632,14 @@ const useABTSStore = create(persist((set, get) => ({
         const { lastModelsFetch, isLoadingModels } = get();
         const now = Date.now();
 
-        // Skip if loading or cache valid (5 min)
         if (isLoadingModels) return;
         if (!force && lastModelsFetch && (now - lastModelsFetch) < 5 * 60 * 1000) return;
 
         set({ isLoadingModels: true });
 
         try {
-            const models = await getAvailableModels();
+            const models = await abtsApi.models();
 
-            // Build id -> capability descriptor map from the catalog payload.
             const capabilities = {};
             (models || []).forEach((model) => {
                 if (model && model.id && model.capabilities) {
@@ -681,8 +647,6 @@ const useABTSStore = create(persist((set, get) => ({
                 }
             });
 
-            // Pick a sensible default model the first time the catalog loads:
-            // prefer the recommended deepseek/deepseek-v4-flash, else the first model.
             const { formData } = get();
             let nextModel = formData.model;
             if (!nextModel && Array.isArray(models) && models.length > 0) {
@@ -727,7 +691,7 @@ const useABTSStore = create(persist((set, get) => ({
         set({ isLoadingTemplates: true });
 
         try {
-            const categories = await getTemplateCategories();
+            const categories = await abtsApi.templates();
             set({
                 templateCategories: categories,
                 isLoadingTemplates: false
@@ -744,13 +708,12 @@ const useABTSStore = create(persist((set, get) => ({
     fetchTemplates: async (categoryId) => {
         const { templatesCache } = get();
 
-        // Return cached if exists
         if (templatesCache[categoryId]) {
             return templatesCache[categoryId];
         }
 
         try {
-            const templates = await getTemplatesByCategory(categoryId);
+            const templates = await abtsApi.templatesByCategory(categoryId);
             set({
                 templatesCache: {
                     ...templatesCache,
@@ -777,7 +740,7 @@ const useABTSStore = create(persist((set, get) => ({
         set({ isLoadingStatus: true });
 
         try {
-            const status = await getStatus();
+            const status = await abtsApi.status();
             set({
                 abtsStatus: status,
                 isLoadingStatus: false,
@@ -850,7 +813,7 @@ const useABTSStore = create(persist((set, get) => ({
     toggleIssueSelection: (issueId) => {
         const { selectedIssues } = get();
         const newSelection = selectedIssues.includes(issueId)
-            ? selectedIssues.filter(id => id !== issueId)
+            ? selectedIssues.filter((id) => id !== issueId)
             : [...selectedIssues, issueId];
         set({ selectedIssues: newSelection });
     },
@@ -870,7 +833,7 @@ const useABTSStore = create(persist((set, get) => ({
     },
 
     /**
-     * Start refinement with Agent 2
+     * Start refinement with Agent 2 (streams proposed hunks).
      */
     startRefinement: async () => {
         const { selectedIssues, generationResult, formData, isRefining } = get();
@@ -888,92 +851,100 @@ const useABTSStore = create(persist((set, get) => ({
             refinementStream: []
         });
 
-        try {
-            // Build validation result with proper issue objects
-            // Selected issues are from warnings, so we need to construct matching objects
-            const warnings = generationResult?.warnings || [];
-            const validationIssues = warnings.map((msg, idx) => ({
-                id: `warn-${idx}`,
-                type: 'WARNING',
-                message: typeof msg === 'string' ? msg : msg.message,
-                questionNumber: typeof msg === 'object' ? msg.questionNumber : null,
-                category: extractCategory(typeof msg === 'string' ? msg : msg.message)
+        let terminalEventReceived = false;
+
+        const request = {
+            originalJson: generationResult?.content ?? null,
+            issueIds: selectedIssues,
+            skill: String(formData.skill || 'reading').toLowerCase(),
+            part: formData.partNumber ?? null,
+            taskType: null,
+            model: {
+                model: formData.refinementModel ?? null,
+                temperature: null,
+                maxTokens: null,
+                enableReasoning: formData.enableRefinementReasoning === true,
+                reasoningEffort: null,
+                reasoningBudget: null,
+                contextCache: formData.enableRefinementCaching !== false,
+            },
+            round: get().refinement?.round || 0,
+            validation: generationResult?.validation ?? null,
+        };
+
+        const onEvent = (event) => {
+            if (event.type === 'REFINEMENT_COMPLETED') {
+                terminalEventReceived = true;
+                set({ isRefining: false });
+                get().setRefinementResponse(event.data);
+                return;
+            }
+            if (event.type === 'FAILED') {
+                terminalEventReceived = true;
+                set({
+                    isRefining: false,
+                    refinementResult: { error: event.message || event.errorCode || 'Refinement failed' }
+                });
+                return;
+            }
+            set((state) => ({
+                refinementStream: [...state.refinementStream, event]
             }));
+        };
 
-            // Build request with model and caching settings for cost optimization
-            const request = {
-                originalJson: JSON.stringify(generationResult.content),
-                selectedIssueIds: selectedIssues,
-                originalPrompt: generationResult.metadata?.fullPrompt || null,
-                skill: formData.skill,
-                partNumber: formData.partNumber,
-                model: formData.refinementModel, // User-selected model for refinement
-                enableCaching: formData.enableRefinementCaching !== false, // Default to true
-                enableReasoning: formData.enableRefinementReasoning === true, // Default to false
-                round: get().refinement?.round || 0, // Loopable refinement round (server caps at 5)
-                validationResult: {
-                    errors: [],
-                    warnings: validationIssues
-                }
-            };
-
-            // Create abort controller
-            const abortController = new AbortController();
-            set({ abortRefinement: () => abortController.abort() });
-
-            // Call streaming refinement API
-            const callbacks = {
-                onProgress: (event) => {
-                    set(state => ({
-                        refinementStream: [...state.refinementStream, event]
-                    }));
-                },
-                onComplete: (result) => {
-                    set({
-                        refinementResult: result,
-                        isRefining: false
-                    });
-                    // Loopable refinement: ingest hunks + round into refinement state
-                    get().setRefinementResponse(result);
-                },
-                onError: (error) => {
-                    console.error('Refinement error:', error);
-                    set({
-                        isRefining: false,
-                        refinementResult: { error: error.message || 'Refinement failed' }
-                    });
-                }
-            };
-
-            await refineContentStream(request, callbacks, abortController.signal);
-
-        } catch (error) {
-            console.error('Refinement failed:', error);
+        const onError = (error) => {
+            terminalEventReceived = true;
+            if (error?.name === 'AbortError') return; // resetRefinementState handles aborts
+            console.error('Refinement error:', error);
             set({
                 isRefining: false,
-                refinementResult: { error: error.message || 'Refinement failed' }
+                refinementResult: { error: error?.message || 'Refinement failed' }
             });
+        };
+
+        const onDone = () => {
+            if (!terminalEventReceived) {
+                set({
+                    isRefining: false,
+                    refinementResult: { error: 'Refinement stream ended before a result arrived' }
+                });
+            }
+        };
+
+        try {
+            const abortFn = openAbtsStream('/admin/abts/refine/stream', request, {
+                onEvent,
+                onError,
+                onDone,
+            });
+            set({ abortRefinement: abortFn });
+        } catch (error) {
+            onError(error);
         }
     },
 
     // ==================== LOOPABLE REFINEMENT ACTIONS ====================
 
     /**
-     * Ingest a refinement stream result into per-hunk approval state.
+     * Ingest the refinement result (a bare hunks array from
+     * REFINEMENT_COMPLETED data) into per-hunk approval state.
      * Defaults to ALL hunks accepted (opt-out model).
      */
     setRefinementResponse: (response) => {
         if (!response || response.error) return;
-        const hunks = Array.isArray(response.hunks) ? response.hunks : [];
-        const round = typeof response.round === 'number'
-            ? response.round
-            : (get().refinement?.round || 0) + 1;
+        const rawHunks = Array.isArray(response) ? response : [];
+        const hunks = rawHunks.map((hunk, index) => ({
+            ...hunk,
+            id: hunk.id || `hunk-${index}`,
+            summary: hunk.description ?? hunk.summary ?? null,
+        }));
         set((state) => ({
+            refinementResult: { hunks },
             refinement: {
                 ...state.refinement,
-                round,
+                round: (state.refinement.round || 0) + 1,
                 hunks,
-                acceptedHunkIds: hunks.map((h) => h.id),
+                acceptedHunkIds: hunks.map((hunk) => hunk.id),
                 isLooping: false,
             }
         }));
@@ -1027,38 +998,30 @@ const useABTSStore = create(persist((set, get) => ({
         set((state) => ({ refinement: { ...state.refinement, isApplying: true } }));
 
         try {
-            const result = await applyRefinementHunks({
-                originalJson: JSON.stringify(generationResult.content),
-                hunks,
-                acceptedHunkIds,
+            const skill = String(formData.skill || 'reading').toLowerCase();
+            const partNumber = formData.partNumber || 1;
+            const acceptedHunks = hunks.filter((hunk) => acceptedHunkIds.includes(hunk.id));
+
+            const result = await abtsApi.applyRefinement({
+                originalJson: generationResult.content,
+                acceptedHunks,
+                skill,
+                part: partNumber,
+                taskType: null,
             });
 
-            if (!result?.success || !result?.patchedJson) {
-                const failMsg = result?.errorMessage || 'Failed to apply hunks';
-                set((state) => ({
-                    refinement: { ...state.refinement, isApplying: false, lastError: failMsg },
-                    refinementResult: {
-                        ...(state.refinementResult || {}),
-                        error: failMsg,
-                    }
-                }));
-                return;
-            }
-
-            const patchedContent = JSON.parse(result.patchedJson);
             const historyEntry = {
                 round: refinement.round,
-                appliedCount: result.appliedCount ?? acceptedHunkIds.length,
-                rejectedCount: result.rejectedCount ?? (hunks.length - acceptedHunkIds.length),
+                appliedCount: acceptedHunks.length - (result.skipped?.length ?? 0),
+                rejectedCount: hunks.length - acceptedHunks.length,
                 at: Date.now(),
             };
 
-            // Apply patched content; clear current hunk batch + streaming/selection
             set((state) => ({
                 generationResult: {
                     ...state.generationResult,
-                    content: patchedContent,
-                    warnings: [],
+                    content: result.content,
+                    validation: result.validation ?? state.generationResult?.validation ?? null,
                 },
                 refinementResult: null,
                 refinementStream: [],
@@ -1069,34 +1032,13 @@ const useABTSStore = create(persist((set, get) => ({
                     acceptedHunkIds: [],
                     appliedHistory: [...state.refinement.appliedHistory, historyEntry],
                     isApplying: false,
-                    lastError: null, // FIX 5: clear any prior error on success
-                    lastSkippedHunks: result.skippedHunks || [], // FIX 9: surface skipped hunks + reasons
+                    lastError: null,
+                    lastSkippedHunks: (result.skipped || []).map((id) => ({ id, reason: 'backend-skip' })),
                 }
             }));
-
-            // Revalidate patched content via the canonical helper.
-            // FIX 1 (silent bug): post the content object directly so the
-            // backend infers the correct skill from its top-level keys.
-            try {
-                const validationResult = await validateContent(patchedContent);
-                set((state) => ({
-                    generationResult: {
-                        ...state.generationResult,
-                        warnings: validationResult.warnings || [],
-                        validationIssues: validationResult.issues || [], // FIX 3
-                    }
-                }));
-            } catch (validationError) {
-                console.warn('Revalidation after apply failed:', validationError);
-            }
         } catch (error) {
             console.error('Apply accepted hunks failed:', error);
-            // FIX 5: prefer a structured backend message (400 malformed body, etc.)
-            // over the bare axios message so the user sees something actionable.
-            const apiMsg = error?.data?.errorMessage
-                || error?.response?.data?.errorMessage
-                || error?.message
-                || 'Failed to apply hunks';
+            const apiMsg = error?.response?.data?.message || error?.message || 'Failed to apply hunks';
             set((state) => ({
                 refinement: { ...state.refinement, isApplying: false, lastError: apiMsg },
                 refinementResult: {
@@ -1109,14 +1051,12 @@ const useABTSStore = create(persist((set, get) => ({
 
     /**
      * Run another refinement round on the still-selected issues.
-     * Server caps at 5; guard client-side too.
+     * Server caps at maxRefinementRounds; guard client-side too.
      */
     refineAgain: async () => {
         const { refinement, isRefining, startRefinement, abtsStatus } = get();
-        // FIX 4: also block while an apply is mid-flight.
         if (isRefining || refinement.isLooping || refinement.isApplying) return;
 
-        // FIX 11: round cap comes from backend status, not a hardcoded 5.
         const maxRounds = abtsStatus?.maxRefinementRounds || 5;
         const nextRound = (refinement.round || 0) + 1;
         if (nextRound > maxRounds) {
@@ -1141,7 +1081,7 @@ const useABTSStore = create(persist((set, get) => ({
     },
 
     /**
-     * FIX 2: single source of truth for tearing down ALL refinement state.
+     * Single source of truth for tearing down ALL refinement state.
      * Aborts any in-flight stream and resets both the legacy Agent-2 slice and
      * the loopable per-hunk slice to a clean baseline. Call this on every
      * lifecycle boundary (new generation, clear result, open/close wizard) so
@@ -1166,7 +1106,7 @@ const useABTSStore = create(persist((set, get) => ({
         });
     }
 }), {
-    // FIX 12: persist only the user's last model + skill choice across reloads.
+    // Persist only the user's last model + skill choice across reloads.
     // Everything else (cache, streaming, results) is intentionally NOT persisted.
     name: 'abts-form-v1',
     partialize: (state) => ({
@@ -1191,7 +1131,7 @@ const useABTSStore = create(persist((set, get) => ({
 }));
 
 /**
- * FIX 9: resolve the recommended/default generation model id.
+ * Resolve the recommended/default generation model id.
  * Prefers the backend-advertised default (abtsStatus.defaultGenerationModel) and
  * falls back to the local DEFAULT_MODEL_ID constant when status is unavailable.
  *

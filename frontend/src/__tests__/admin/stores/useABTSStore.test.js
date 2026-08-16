@@ -11,14 +11,21 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { act } from '@testing-library/react';
 
-// Mock the abtsApi
-vi.mock('../../../api/abtsApi', () => ({
-    default: {
-        generateTest: vi.fn(),
-        getModels: vi.fn(),
-        getTemplates: vi.fn(),
-        refineContent: vi.fn(),
-    }
+// Mock the lib/api client (openAbtsStream/abtsApi) so store actions that
+// touch the network are inert in these form-state tests.
+vi.mock('../../lib/api', () => ({
+    abtsApi: {
+        generate: vi.fn(),
+        generateQuestions: vi.fn(),
+        validate: vi.fn(),
+        applyRefinement: vi.fn(),
+        save: vi.fn(),
+        models: vi.fn(),
+        templates: vi.fn(),
+        templatesByCategory: vi.fn(),
+        status: vi.fn(),
+    },
+    openAbtsStream: vi.fn(() => () => {}),
 }));
 
 import useABTSStore, { 

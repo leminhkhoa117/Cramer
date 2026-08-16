@@ -1,79 +1,114 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { buildABTSSaveRequest, buildPartsToSave } from '../../../admin/utils/abtsSavePayload';
 
-describe('abtsSavePayload', () => {
-    it('builds reading partsToSave using IELTS question ranges', () => {
-        const content = {
-            metadata: { model: 'deepseek' },
-            sections: [
-                { partNumber: 1, passageText: 'Part 1' },
-                { partNumber: 2, passageText: 'Part 2' },
+vi.mock('../../../admin/stores/useHashtagStore', () => ({
+    default: {
+        getState: () => ({
+            hashtags: [
+                { id: 1, code: 'ielts' },
+                { id: 2, code: 'academic' },
             ],
-            questions: [
-                { questionNumber: 1 },
-                { questionNumber: 13 },
-                { questionNumber: 14 },
-                { questionNumber: 26 },
-                { questionNumber: 27 },
+        }),
+    },
+}));
+
+describe('abtsSavePayload', () => {
+    it('builds reading sections from the backend multi-part shape', () => {
+        const content = {
+            sections: [
+                {
+                    part: 1,
+                    section: { passage_text: 'Part 1' },
+                    questions: [{ question_number: 1 }, { question_number: 13 }],
+                },
+                {
+                    part: 2,
+                    section: { passage_text: 'Part 2' },
+                    questions: [{ question_number: 14 }, { question_number: 26 }],
+                },
             ],
         };
 
         const parts = buildPartsToSave(content, 'reading');
 
         expect(parts).toHaveLength(2);
-        expect(parts[0].content.questions.map(q => q.questionNumber)).toEqual([1, 13]);
-        expect(parts[1].content.questions.map(q => q.questionNumber)).toEqual([14, 26]);
-        expect(parts[0].content.metadata).toEqual({ model: 'deepseek' });
+        expect(parts[0]).toMatchObject({
+            skill: 'reading',
+            partNumber: 1,
+            passageText: 'Part 1',
+        });
+        expect(parts[0].questions.map(q => q.question_number)).toEqual([1, 13]);
+        expect(parts[1].questions.map(q => q.question_number)).toEqual([14, 26]);
     });
 
-    it('filters partsToSave to selected parts', () => {
+    it('builds a single-part reading section from the backend single-part shape', () => {
         const content = {
-            sections: [
-                { partNumber: 1, passageText: 'Part 1' },
-                { partNumber: 2, passageText: 'Part 2' },
-                { partNumber: 3, passageText: 'Part 3' },
-            ],
-            questions: [
-                { questionNumber: 1 },
-                { questionNumber: 14 },
-                { questionNumber: 27 },
-            ],
+            section: { passage_text: 'Single passage' },
+            questions: [{ question_number: 1 }],
         };
 
-        const parts = buildPartsToSave(content, 'reading', [2]);
+        const parts = buildPartsToSave(content, 'READING');
 
         expect(parts).toHaveLength(1);
-        expect(parts[0].partNumber).toBe(2);
-        expect(parts[0].content.questions.map(q => q.questionNumber)).toEqual([14]);
+        expect(parts[0].partNumber).toBe(1);
+        expect(parts[0].passageText).toBe('Single passage');
     });
 
-    it('builds listening partsToSave using IELTS question ranges', () => {
+    it('builds listening sections with transcript + section_layout + audio urls', () => {
         const content = {
             sections: [
-                { partNumber: 3, transcript: 'Part 3' },
-                { partNumber: 4, transcript: 'Part 4' },
-            ],
-            questions: [
-                { questionNumber: 20 },
-                { questionNumber: 21 },
-                { questionNumber: 30 },
-                { questionNumber: 31 },
-                { questionNumber: 40 },
+                {
+                    part: 3,
+                    transcript: 'Part 3 transcript',
+                    section_layout: { blocks: [] },
+                    questions: [{ question_number: 21 }],
+                },
+                {
+                    part: 4,
+                    transcript: 'Part 4 transcript',
+                    section_layout: { blocks: [] },
+                    questions: [{ question_number: 31 }],
+                },
             ],
         };
 
-        const parts = buildPartsToSave(content, 'LISTENING');
+        const parts = buildPartsToSave(content, 'LISTENING', {
+            audioUrls: { 3: 'https://audio/part3.mp3' },
+        });
 
-        expect(parts[0].content.questions.map(q => q.questionNumber)).toEqual([21, 30]);
-        expect(parts[1].content.questions.map(q => q.questionNumber)).toEqual([31, 40]);
+        expect(parts[0].passageText).toBe('Part 3 transcript');
+        expect(parts[0].audioUrl).toBe('https://audio/part3.mp3');
+        expect(parts[0].sectionLayout).toEqual({ blocks: [] });
+        expect(parts[1].audioUrl).toBeNull();
     });
 
-    it('builds save request with generationConfig from form data', () => {
+    it('builds a writing section with section_layout metadata', () => {
+        const content = {
+            task_prompt: 'Write about charts',
+            task_type: 'ACADEMIC_TASK_1',
+            word_requirement: 150,
+            chart_data: { type: 'pie' },
+            sample_answer: 'Model answer',
+        };
+
+        const parts = buildPartsToSave(content, 'writing');
+
+        expect(parts).toHaveLength(1);
+        expect(parts[0].passageText).toBe('Write about charts');
+        expect(parts[0].questions).toEqual([]);
+        expect(parts[0].sectionLayout).toMatchObject({
+            task_type: 'ACADEMIC_TASK_1',
+            word_requirement: 150,
+            chart_data: { type: 'pie' },
+            sample_answer: 'Model answer',
+        });
+    });
+
+    it('builds the backend save request shape with generation metadata + hashtag codes', () => {
         const request = buildABTSSaveRequest({
             content: {
-                metadata: { topic: 'Fallback topic' },
-                section: { partNumber: 2 },
-                questions: [],
+                section: { passage_text: 'Passage' },
+                questions: [{ question_number: 1 }],
             },
             formData: {
                 skill: 'READING',
@@ -85,7 +120,7 @@ describe('abtsSavePayload', () => {
                 questionTypeCounts: { MATCHING_INFORMATION: 6 },
                 model: 'deepseek-chat',
                 temperature: 0.7,
-                selectedParts: [1, 2],
+                selectedParts: [1],
                 scope: 'MULTI_PART',
                 partNumber: 1,
                 partConfigs: { 1: { topic: 'Part 1' } },
@@ -93,31 +128,27 @@ describe('abtsSavePayload', () => {
             saveConfig: {
                 setId: 10,
                 existingTestId: 20,
-                setNameVi: 'AI Set',
-                testNameVi: 'AI Test',
+                testName: 'AI Test',
+                difficulty: 'ADVANCED',
                 hashtagIds: [1, 2],
             },
         });
 
         expect(request).toMatchObject({
-            examSource: 'AI-GEN',
-            skill: 'reading',
-            topic: 'Transport',
-            difficulty: 'ADVANCED',
             setId: 10,
             testId: 20,
-            setName: 'AI Set',
             testName: 'AI Test',
-            hashtagIds: [1, 2],
+            difficulty: 'ADVANCED',
+            hashtags: ['ielts', 'academic'],
         });
-        expect(request.generationConfig).toMatchObject({
+        expect(request.setCode).toBe('ai_generated');
+        expect(request.sections).toHaveLength(1);
+        expect(request.sections[0].skill).toBe('reading');
+        expect(request.generationMetadata).toMatchObject({
             topic: 'Transport',
             facts: ['Fact A'],
             model: 'deepseek-chat',
             questionTypeCounts: { MATCHING_INFORMATION: 6 },
-            partsToGenerate: [1, 2],
-            scope: 'MULTI_PART',
-            partNumber: 1,
         });
     });
 });

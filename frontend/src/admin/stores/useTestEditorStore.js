@@ -7,7 +7,8 @@
 
 import { create } from 'zustand';
 import adminApi from '../api/adminApi';
-import abtsApi from '../services/abtsApi';
+import { abtsApi } from '../../lib/api';
+import { buildABTSGenerationRequest } from '../utils/abtsGenerationPayload';
 
 const useTestEditorStore = create((set, get) => ({
     // ==================== STATE ====================
@@ -480,23 +481,9 @@ const useTestEditorStore = create((set, get) => ({
         }, 1500);
 
         try {
-            // Select API based on skill
-            let result;
-            const skill = generationParams.skill?.toUpperCase() || 'READING';
-
-            switch (skill) {
-                case 'READING':
-                    result = await abtsApi.generateReading(generationParams);
-                    break;
-                case 'LISTENING':
-                    result = await abtsApi.generateListening(generationParams);
-                    break;
-                case 'WRITING':
-                    result = await abtsApi.generateWriting(generationParams);
-                    break;
-                default:
-                    result = await abtsApi.generateReading(generationParams);
-            }
+            const skill = String(generationParams?.skill || 'reading').toLowerCase();
+            const request = buildABTSGenerationRequest(generationParams);
+            const result = await abtsApi.generate(skill, request);
 
             clearInterval(progressInterval);
             set({
@@ -510,7 +497,7 @@ const useTestEditorStore = create((set, get) => ({
             clearInterval(progressInterval);
             console.error('AI generation failed:', error);
             set({
-                generationError: error.message || 'Generation failed',
+                generationError: error?.response?.data?.message || error.message || 'Generation failed',
                 isGenerating: false,
                 generationProgress: 0
             });

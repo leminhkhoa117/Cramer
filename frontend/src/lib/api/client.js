@@ -13,6 +13,11 @@ export const http = axios.create({
 let getAuthToken = () => null;
 let onUnauthorized = null;
 
+/** Current bearer token (or null). */
+export function currentAuthToken() {
+    return getAuthToken();
+}
+
 /** Wire the bearer-token provider (called from useAuthStore). */
 export function setupApiClient(provider) {
   getAuthToken = provider || (() => null);
