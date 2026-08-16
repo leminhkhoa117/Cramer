@@ -7,6 +7,8 @@ import com.cramer.catalog.repository.QuestionRepository;
 import com.cramer.catalog.repository.SectionRepository;
 import com.cramer.catalog.web.dto.SectionAdminView;
 import com.cramer.catalog.web.dto.SectionRequest;
+import com.cramer.platform.config.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
 import com.cramer.platform.error.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,18 +34,21 @@ public class SectionService {
         return SectionAdminView.of(load(id));
     }
 
+        @CacheEvict(value = CacheConfig.CACHE_COURSES, allEntries = true)
     public SectionAdminView create(SectionRequest req) {
         Section s = new Section();
         apply(s, req);
         return SectionAdminView.of(sections.save(s));
     }
 
+        @CacheEvict(value = CacheConfig.CACHE_COURSES, allEntries = true)
     public SectionAdminView update(Long id, SectionRequest req) {
         Section s = load(id);
         apply(s, req);
         return SectionAdminView.of(sections.save(s));
     }
 
+        @CacheEvict(value = CacheConfig.CACHE_COURSES, allEntries = true)
     public void delete(Long id) {
         Section s = load(id);
         questions.deleteBySectionId(id);

@@ -14,8 +14,14 @@ import com.cramer.catalog.web.dto.CreateTestRequest;
 import com.cramer.catalog.web.dto.SectionAdminView;
 import com.cramer.catalog.web.dto.TestView;
 import com.cramer.catalog.web.dto.UpdateTestRequest;
+import com.cramer.platform.config.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
 import com.cramer.platform.error.OperationNotAllowedException;
+import com.cramer.platform.config.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
 import com.cramer.platform.error.ResourceAlreadyExistsException;
+import com.cramer.platform.config.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
 import com.cramer.platform.error.ResourceNotFoundException;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
@@ -73,6 +79,7 @@ public class TestAdminService {
         return TestView.of(t, hashtagCodes(t.getId()));
     }
 
+        @CacheEvict(value = CacheConfig.CACHE_COURSES, allEntries = true)
     public TestView create(Long setId, CreateTestRequest req) {
         if (!testSets.existsById(setId)) {
             throw ResourceNotFoundException.of("TestSet", setId);
@@ -93,6 +100,7 @@ public class TestAdminService {
         return TestView.of(tests.save(t));
     }
 
+        @CacheEvict(value = CacheConfig.CACHE_COURSES, allEntries = true)
     public TestView update(Long id, UpdateTestRequest req) {
         Test t = load(id);
         if (req.testNumber() != null && !req.testNumber().equals(t.getTestNumber())) {
@@ -120,6 +128,7 @@ public class TestAdminService {
     }
 
     /** Publish/unpublish a test and cascade its sections' status (SPEC-11 §4.1). */
+        @CacheEvict(value = CacheConfig.CACHE_COURSES, allEntries = true)
     public TestView setPublished(Long id, boolean publish) {
         Test t = load(id);
         t.setIsPublished(publish);
@@ -173,6 +182,7 @@ public class TestAdminService {
     }
 
     /** Delete a test; blocked with 409 if it has user data unless {@code force} (SPEC-11 §4.1). */
+        @CacheEvict(value = CacheConfig.CACHE_COURSES, allEntries = true)
     public void delete(Long id, boolean force) {
         Test t = load(id);
         if (!force) {

@@ -5,7 +5,11 @@ import com.cramer.catalog.repository.TestRepository;
 import com.cramer.catalog.repository.TestSetRepository;
 import com.cramer.catalog.web.dto.CreateTestSetRequest;
 import com.cramer.catalog.web.dto.TestSetView;
+import com.cramer.platform.config.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
 import com.cramer.platform.error.ResourceAlreadyExistsException;
+import com.cramer.platform.config.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
 import com.cramer.platform.error.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +52,7 @@ public class TestSetService {
         return TestSetView.of(s, tests.countBySetId(s.getId()));
     }
 
+        @CacheEvict(value = CacheConfig.CACHE_COURSES, allEntries = true)
     public TestSetView create(CreateTestSetRequest req, UUID userId) {
         if (testSets.existsByCode(req.code())) {
             throw new ResourceAlreadyExistsException("TestSet code already exists: " + req.code());
@@ -64,6 +69,7 @@ public class TestSetService {
         return TestSetView.of(testSets.save(s), 0L);
     }
 
+        @CacheEvict(value = CacheConfig.CACHE_COURSES, allEntries = true)
     public TestSetView update(Long id, CreateTestSetRequest req) {
         TestSet s = load(id);
         if (!s.getCode().equals(req.code()) && testSets.existsByCode(req.code())) {
@@ -85,17 +91,20 @@ public class TestSetService {
         return TestSetView.of(testSets.save(s), tests.countBySetId(id));
     }
 
+        @CacheEvict(value = CacheConfig.CACHE_COURSES, allEntries = true)
     public void delete(Long id) {
         TestSet s = load(id);
         testSets.delete(s);
     }
 
+        @CacheEvict(value = CacheConfig.CACHE_COURSES, allEntries = true)
     public TestSetView publish(Long id, boolean publish) {
         TestSet s = load(id);
         s.setIsPublished(publish);
         return TestSetView.of(testSets.save(s), tests.countBySetId(id));
     }
 
+        @CacheEvict(value = CacheConfig.CACHE_COURSES, allEntries = true)
     public void reorder(List<Long> orderedIds) {
         int order = 0;
         for (Long id : orderedIds) {

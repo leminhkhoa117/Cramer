@@ -15,17 +15,23 @@ Validation runs in layers; each layer can add findings without aborting the next
 
 ### 1.1 ValidationResult
 
+> **Doc sync (16/08/2026):** the implemented shape is the `ValidationView` record —
+> `issues[]` is the structured contract; `errors`/`warnings` are flat message lists.
+> The old `schemaErrors`/`contentErrors`/`businessRuleErrors` split is not implemented;
+> per-skill validators report structured findings directly.
+
 ```jsonc
 { "valid": false,
-  "schemaErrors": ["..."], "contentErrors": ["..."],
-  "businessRuleErrors": ["..."], "warnings": ["..."],
-  "issues": [ { "id": "rd-q5-missing-answer", "severity": "ERROR",
-                "path": "/questions/4/correct_answer", "message": "..." } ] }
+  "issues": [ { "id": "rd-passage-missing", "severity": "ERROR",
+                "path": "/section/passage_text", "message": "..." } ],
+  "errors": ["..."], "warnings": ["..."],
+  "errorCount": 1, "warningCount": 0 }
 ```
 
-- `issues[]` are **structured** with a **stable id** and best-effort **JSON-pointer path** so
-  the UI can target a specific finding for refinement.
-- `valid = (no schema/content/business errors)`. Warnings do not block.
+- `issues[]` are **structured** with a **stable id**, a **severity** (`ERROR` | `WARNING`),
+  and a best-effort **JSON-pointer path** so the UI can target a specific finding for
+  refinement (the refinement `issueIds` reference these ids).
+- `valid = no ERROR issues`. Warnings do not block.
 
 ## 2. Reading rules
 

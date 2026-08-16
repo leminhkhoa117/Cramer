@@ -4,8 +4,11 @@ import com.cramer.catalog.domain.Hashtag;
 import com.cramer.catalog.repository.HashtagRepository;
 import com.cramer.catalog.web.dto.HashtagRequest;
 import com.cramer.catalog.web.dto.HashtagView;
+import com.cramer.platform.config.CacheConfig;
 import com.cramer.platform.error.ResourceAlreadyExistsException;
 import com.cramer.platform.error.ResourceNotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,11 +34,13 @@ public class HashtagService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(CacheConfig.CACHE_HASHTAGS)
     public List<HashtagView> listActive() {
         return hashtags.findByIsActiveTrueOrderByUseCountDesc().stream().map(HashtagView::of).toList();
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(CacheConfig.CACHE_HASHTAGS)
     public List<HashtagView> byCategory(String category) {
         return hashtags.findByCategoryAndIsActiveTrueOrderByUseCountDesc(category).stream()
                 .map(HashtagView::of).toList();
@@ -48,12 +53,14 @@ public class HashtagService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(CacheConfig.CACHE_HASHTAGS)
     public List<HashtagView> popular(int limit) {
         return hashtags.findByIsActiveTrueOrderByUseCountDesc().stream()
                 .limit(Math.max(0, limit)).map(HashtagView::of).toList();
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(CacheConfig.CACHE_HASHTAGS)
     public List<String> categories() {
         return hashtags.findByIsActiveTrueOrderByUseCountDesc().stream()
                 .map(Hashtag::getCategory).filter(c -> c != null).distinct().toList();
@@ -68,6 +75,7 @@ public class HashtagService {
         return hashtags.findAllById(ids).stream().map(Hashtag::getCode).toList();
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_HASHTAGS, allEntries = true)
     public HashtagView create(HashtagRequest req) {
         if (hashtags.findByCode(req.code()).isPresent()) {
             throw new ResourceAlreadyExistsException("Hashtag code already exists: " + req.code());
@@ -83,6 +91,7 @@ public class HashtagService {
         return HashtagView.of(hashtags.save(h));
     }
 
+    @CacheEvict(value = CacheConfig.CACHE_HASHTAGS, allEntries = true)
     public HashtagView update(Long id, HashtagRequest req) {
         Hashtag h = load(id);
         if (!h.getCode().equals(req.code()) && hashtags.findByCode(req.code()).isPresent()) {
@@ -97,6 +106,7 @@ public class HashtagService {
     }
 
     /** Soft delete (SPEC-11 §4.1): mark inactive, never hard-delete. */
+    @CacheEvict(value = CacheConfig.CACHE_HASHTAGS, allEntries = true)
     public void softDelete(Long id) {
         Hashtag h = load(id);
         h.setIsActive(false);
@@ -107,6 +117,7 @@ public class HashtagService {
      * Resolve hashtag codes to entities, creating any missing as category {@code topic}
      * (SPEC-11 §4.1). Preserves the requested order and dedupes. Enforces the max-per-test cap.
      */
+    @CacheEvict(value = CacheConfig.CACHE_HASHTAGS, allEntries = true)
     public List<Hashtag> findOrCreateByCodes(List<String> codes) {
         if (codes == null || codes.isEmpty()) {
             return List.of();

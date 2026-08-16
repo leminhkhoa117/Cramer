@@ -3,6 +3,7 @@ package com.cramer.abts.service;
 import com.cramer.abts.web.dto.SaveContentRequest;
 import com.cramer.abts.web.dto.SaveContentResponse;
 import com.cramer.catalog.service.ContentDraftPort;
+import com.cramer.platform.common.ielts.QuestionType;
 import com.cramer.platform.common.ielts.Skill;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,9 @@ public class AbtsSaveService {
         for (SaveContentRequest.SaveSectionInput in : request.safeSections()) {
             sections.add(toSection(in));
         }
+        if (sections.isEmpty()) {
+            throw new IllegalArgumentException("At least one section is required");
+        }
         ContentDraftPort.SaveDraftCommand command = new ContentDraftPort.SaveDraftCommand(
                 request.setCode(), request.setId(), request.testNumber(), request.testId(),
                 request.generationMetadata(), sections);
@@ -45,14 +49,28 @@ public class AbtsSaveService {
                 questions.add(toQuestion(q));
             }
         }
+        if (skill != Skill.WRITING && questions.isEmpty()) {
+            throw new IllegalArgumentException("Sections for " + skill.name().toLowerCase()
+                    + " must contain at least one question");
+        }
         return new ContentDraftPort.DraftSection(skill, in.partNumber(), in.passageText(), in.audioUrl(),
                 in.sectionLayout(), in.imageDescription(), null, questions);
     }
 
     private ContentDraftPort.DraftQuestion toQuestion(JsonNode q) {
+        int number = q.path("question_number").asInt(-1);
+        if (number <= 0) {
+            throw new IllegalArgumentException("Every question needs a positive question_number");
+        }
+        String type = q.path("question_type").asText("");
+        try {
+            QuestionType.from(type);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Unknown question_type for question " + number + ": " + type);
+        }
         return new ContentDraftPort.DraftQuestion(
-                q.path("question_number").asInt(),
-                q.path("question_type").asText(""),
+                number,
+                type,
                 q.path("question_content"),
                 q.path("correct_answer"),
                 q.path("explanation"),

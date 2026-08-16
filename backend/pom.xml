@@ -97,6 +97,16 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- Caching for read-heavy endpoints (courses, hashtags) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+
         <!-- ==================== TESTING DEPENDENCIES ==================== -->
         <!-- Spring Boot Test Starter (JUnit 5, Mockito, AssertJ) -->
         <dependency>

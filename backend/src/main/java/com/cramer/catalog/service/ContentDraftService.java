@@ -11,6 +11,8 @@ import com.cramer.catalog.repository.TestRepository;
 import com.cramer.catalog.repository.TestSetRepository;
 import com.cramer.platform.common.ielts.QuestionType;
 import com.cramer.platform.common.ielts.Skill;
+import com.cramer.platform.config.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +47,7 @@ public class ContentDraftService implements ContentDraftPort {
     }
 
     @Override
+    @CacheEvict(value = CacheConfig.CACHE_COURSES, allEntries = true)
     public SaveDraftResult saveDraft(SaveDraftCommand cmd) {
         TestSet set = resolveSet(cmd);
         Test test = resolveTest(cmd, set);

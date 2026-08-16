@@ -22,8 +22,8 @@ _Last reviewed: 16/08/2026_
 - [x] `RefinementService`: prompt moved to `RefinementPromptBuilder` + schema-constrained, server-side round tracking per content, revalidate errors no longer swallowed. Resolved 16/08/2026.
 - [x] Observability: actuator added (health, info, metrics). Resolved 16/08/2026.
 - [x] Delete dead code: 3 full schemas in `PromptSchemaBuilder`, `OpenRouterChatRequest.jsonSchema` factory, `webSearch`/`contextCache` paths, `DeepSeekClient.timeout()`. Resolved 16/08/2026.
-- [ ] Caching for read-heavy endpoints (courses, hashtags, quota views) — deferred: needs per-endpoint eviction design. Added 16/08/2026.
-- [ ] `ValidationResult` shape vs SPEC-23 §1.1 (`schemaErrors/contentErrors/businessRuleErrors` split) — decide: fix code or update spec. Added 16/08/2026.
+- [x] Caching for read-heavy endpoints: Caffeine + Spring Cache on course browse (`listPublishedSets`, `testsForCourse`, `setDetails`) and hashtag reads; evictions on admin/draft mutations. Resolved 16/08/2026.
+- [x] `ValidationResult` shape vs SPEC-23 §1.1: synced the spec to the implemented `ValidationView` shape (`issues[]` + `errors`/`warnings` + counts). Resolved 16/08/2026.
 
 ## Phase 3 — Database (production data must be preserved; incremental migrations only)
 - [x] Add indexes on `test_attempts` (user+status, lock-key), `user_answers` (user), `speaking_sessions` (status+updated_at for watchdog). Applied 16/08/2026 via migration `performance_indexes_20260816`. Resolved 16/08/2026.
@@ -45,9 +45,9 @@ _Last reviewed: 16/08/2026_
 
 ## Deferred polish
 - [ ] **Coverage gate.** Removed aspirational 50/40/50/50 thresholds (Vitest 4 format drift + actual ~0.6% coverage). Restore thresholds once suites grow; CI currently reports coverage without failing. Added 16/08/2026.
-- [ ] **springdoc Swagger UI public in prod** (`swagger-ui.enabled=true` unconditional) — gate behind profile. Added 16/08/2026.
-- [ ] **`SAVE` endpoint has no server-side validation** (`AbtsSaveService` trusts client payloads; `parseType` can write NULL question_type). Added 16/08/2026.
-- [ ] **Dead config keys** (`openrouter.regeneration-model`, `json-fix-model`, `streaming-enabled`, `site-url/site-name`) — remove or wire. Added 16/08/2026.
+- [x] **springdoc Swagger UI public in prod** — now gated by `SWAGGER_ENABLED` (default true; set false in prod). Resolved 16/08/2026.
+- [x] **`SAVE` endpoint has no server-side validation** — `AbtsSaveService` now rejects unknown question types, missing/zero question numbers, and question-less reading/listening sections (400). Plus 3 new tests. Resolved 16/08/2026.
+- [x] **Dead config keys** — removed with the Phase 2 binding fix. Resolved 16/08/2026.
 
 ## Watch items
 - [ ] **Backend saveDraft drops testName/difficulty/hashtags.** `AbtsSaveService` only passes setCode/setId/testNumber/testId/generationMetadata to `ContentDraftPort`; test is named "AI Test N" regardless of the modal's testName. Wire testName/difficulty/hashtags through the port. Added 16/08/2026.
