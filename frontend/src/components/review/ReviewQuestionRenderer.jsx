@@ -1,4 +1,3 @@
-import React from 'react';
 import { sanitizeHtml } from '../../utils/sanitize';
 import '../../css/review-question-renderer.css';
 

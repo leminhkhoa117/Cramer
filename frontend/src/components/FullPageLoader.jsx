@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import '../css/full-page-loader.css';
 import cramerLoadingGif from '../../pictures/anim/cramer_loading.gif';

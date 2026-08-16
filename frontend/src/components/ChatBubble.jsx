@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FiUser, FiCpu, FiCopy, FiCheck } from 'react-icons/fi';
-import ReactMarkdown from 'react-markdown';
+import Markdown from 'react-markdown';
 import '../css/floating-assistant.css';
 
 /**

@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+﻿import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+
 import {
   FaClock, FaCheckCircle, FaTimesCircle, FaRobot,
   FaToggleOn, FaToggleOff, FaInfoCircle, FaCreditCard,
   FaStar, FaComments, FaChevronRight, FaArrowUp
 } from 'react-icons/fa';
 import { FiLoader } from 'react-icons/fi';
+
 import {
   TIER_INFO, TIERS, LIMITS, ATTEMPT_COSTS, TERMINOLOGY,
   formatVnd

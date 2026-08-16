@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { FaGoogle, FaCheckCircle, FaRocket, FaShieldAlt, FaClock } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FiUser, FiImage, FiBox } from 'react-icons/fi';
 import 'react-image-crop/dist/ReactCrop.css';
 import CroppableImageTab from './CroppableImageTab';

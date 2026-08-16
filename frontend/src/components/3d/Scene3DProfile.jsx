@@ -1,7 +1,7 @@
-import React, { useRef, useMemo, Suspense } from 'react';
+﻿import React, { useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { 
-  Float, 
+import {
+  Float,
   MeshDistortMaterial,
   Sphere,
   Icosahedron,
@@ -15,7 +15,7 @@ import * as THREE from 'three';
 // Orbiting security icon representation
 const SecurityOrb = ({ radius = 3, speed = 0.5, offset = 0, color = '#7c3aed' }) => {
   const meshRef = useRef();
-  
+
   useFrame((state) => {
     const t = state.clock.elapsedTime * speed + offset;
     if (meshRef.current) {
@@ -34,8 +34,8 @@ const SecurityOrb = ({ radius = 3, speed = 0.5, offset = 0, color = '#7c3aed' })
     >
       <mesh ref={meshRef}>
         <icosahedronGeometry args={[0.2, 0]} />
-        <meshStandardMaterial 
-          color={color} 
+        <meshStandardMaterial
+          color={color}
           emissive={color}
           emissiveIntensity={0.5}
           metalness={0.8}
@@ -49,7 +49,7 @@ const SecurityOrb = ({ radius = 3, speed = 0.5, offset = 0, color = '#7c3aed' })
 // Shield shape for security theme
 const Shield3D = ({ position = [0, 0, 0], scale = 1 }) => {
   const meshRef = useRef();
-  
+
   useFrame((state) => {
     if (meshRef.current) {
       meshRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.2;
@@ -79,9 +79,9 @@ const Shield3D = ({ position = [0, 0, 0], scale = 1 }) => {
 
   return (
     <Float speed={2} rotationIntensity={0.3} floatIntensity={0.5}>
-      <mesh 
-        ref={meshRef} 
-        position={position} 
+      <mesh
+        ref={meshRef}
+        position={position}
         scale={scale}
         rotation={[0, 0, 0]}
       >
@@ -103,7 +103,7 @@ const Shield3D = ({ position = [0, 0, 0], scale = 1 }) => {
 // Lock icon 3D representation
 const Lock3D = ({ position = [0, 0, 0], scale = 0.5 }) => {
   const groupRef = useRef();
-  
+
   useFrame((state) => {
     if (groupRef.current) {
       groupRef.current.rotation.y = state.clock.elapsedTime * 0.3;
@@ -116,18 +116,18 @@ const Lock3D = ({ position = [0, 0, 0], scale = 0.5 }) => {
         {/* Lock body */}
         <mesh position={[0, -0.3, 0]}>
           <boxGeometry args={[1, 0.8, 0.4]} />
-          <meshStandardMaterial 
-            color="#6366f1" 
-            metalness={0.8} 
+          <meshStandardMaterial
+            color="#6366f1"
+            metalness={0.8}
             roughness={0.2}
           />
         </mesh>
         {/* Lock shackle */}
         <mesh position={[0, 0.3, 0]}>
           <torusGeometry args={[0.35, 0.1, 16, 32, Math.PI]} />
-          <meshStandardMaterial 
-            color="#8b5cf6" 
-            metalness={0.9} 
+          <meshStandardMaterial
+            color="#8b5cf6"
+            metalness={0.9}
             roughness={0.1}
           />
         </mesh>
@@ -139,7 +139,7 @@ const Lock3D = ({ position = [0, 0, 0], scale = 0.5 }) => {
 // Floating key
 const Key3D = ({ position = [0, 0, 0], scale = 0.4 }) => {
   const groupRef = useRef();
-  
+
   useFrame((state) => {
     if (groupRef.current) {
       groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime) * 0.3;
@@ -153,35 +153,35 @@ const Key3D = ({ position = [0, 0, 0], scale = 0.4 }) => {
         {/* Key head (ring) */}
         <mesh position={[0, 0.8, 0]}>
           <torusGeometry args={[0.4, 0.12, 16, 32]} />
-          <meshStandardMaterial 
-            color="#a78bfa" 
-            metalness={0.9} 
+          <meshStandardMaterial
+            color="#a78bfa"
+            metalness={0.9}
             roughness={0.1}
           />
         </mesh>
         {/* Key shaft */}
         <mesh position={[0, -0.2, 0]}>
           <boxGeometry args={[0.15, 1.2, 0.08]} />
-          <meshStandardMaterial 
-            color="#a78bfa" 
-            metalness={0.9} 
+          <meshStandardMaterial
+            color="#a78bfa"
+            metalness={0.9}
             roughness={0.1}
           />
         </mesh>
         {/* Key teeth */}
         <mesh position={[0.15, -0.6, 0]}>
           <boxGeometry args={[0.2, 0.12, 0.08]} />
-          <meshStandardMaterial 
-            color="#a78bfa" 
-            metalness={0.9} 
+          <meshStandardMaterial
+            color="#a78bfa"
+            metalness={0.9}
             roughness={0.1}
           />
         </mesh>
         <mesh position={[0.12, -0.8, 0]}>
           <boxGeometry args={[0.15, 0.1, 0.08]} />
-          <meshStandardMaterial 
-            color="#a78bfa" 
-            metalness={0.9} 
+          <meshStandardMaterial
+            color="#a78bfa"
+            metalness={0.9}
             roughness={0.1}
           />
         </mesh>
@@ -194,7 +194,7 @@ const Key3D = ({ position = [0, 0, 0], scale = 0.4 }) => {
 const ParticleRing = ({ count = 50, radius = 2.5 }) => {
   const meshRef = useRef();
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  
+
   const particles = useMemo(() => {
     const temp = [];
     for (let i = 0; i < count; i++) {
@@ -213,7 +213,7 @@ const ParticleRing = ({ count = 50, radius = 2.5 }) => {
 
   useFrame((state) => {
     if (!meshRef.current) return;
-    
+
     particles.forEach((particle, i) => {
       const t = state.clock.elapsedTime * particle.speed;
       const angle = particle.angle + t * 0.2;
@@ -232,11 +232,11 @@ const ParticleRing = ({ count = 50, radius = 2.5 }) => {
   return (
     <instancedMesh ref={meshRef} args={[null, null, count]}>
       <sphereGeometry args={[0.08, 8, 8]} />
-      <meshStandardMaterial 
-        color="#7c3aed" 
+      <meshStandardMaterial
+        color="#7c3aed"
         emissive="#7c3aed"
         emissiveIntensity={0.3}
-        transparent 
+        transparent
         opacity={0.7}
       />
     </instancedMesh>
@@ -246,18 +246,18 @@ const ParticleRing = ({ count = 50, radius = 2.5 }) => {
 // Adaptive performance
 const AdaptivePerformance = () => {
   const { gl } = useThree();
-  
+
   React.useEffect(() => {
     const pixelRatio = Math.min(window.devicePixelRatio, 2);
     gl.setPixelRatio(pixelRatio);
   }, [gl]);
-  
+
   return null;
 };
 
 // Main Profile 3D Scene
-const Scene3DProfile = ({ 
-  className = '', 
+const Scene3DProfile = ({
+  className = '',
   style = {},
   variant = 'full' // 'full', 'minimal', 'security'
 }) => {
@@ -268,7 +268,7 @@ const Scene3DProfile = ({
 
   if (prefersReducedMotion) {
     return (
-      <div 
+      <div
         className={className}
         style={{
           ...style,
@@ -284,7 +284,7 @@ const Scene3DProfile = ({
         camera={{ position: [0, 0, 6], fov: 50 }}
         dpr={[1, 2]}
         performance={{ min: 0.5 }}
-        gl={{ 
+        gl={{
           antialias: true,
           alpha: true,
           powerPreference: 'high-performance'
@@ -293,13 +293,13 @@ const Scene3DProfile = ({
       >
         <Suspense fallback={null}>
           <AdaptivePerformance />
-          
+
           {/* Lighting */}
           <ambientLight intensity={0.4} />
           <directionalLight position={[10, 10, 5]} intensity={1} />
           <pointLight position={[-5, 5, 5]} intensity={0.8} color="#7c3aed" />
           <pointLight position={[5, -5, 5]} intensity={0.5} color="#6366f1" />
-          
+
           {variant === 'security' ? (
             <>
               {/* Security-themed scene */}
@@ -307,7 +307,7 @@ const Scene3DProfile = ({
               <Lock3D position={[-2.5, 1, -1]} scale={0.6} />
               <Key3D position={[2.5, -0.5, -1]} scale={0.5} />
               <ParticleRing count={40} radius={2.5} />
-              
+
               {/* Orbiting elements */}
               <SecurityOrb radius={3} speed={0.4} offset={0} color="#7c3aed" />
               <SecurityOrb radius={3} speed={0.4} offset={Math.PI} color="#6366f1" />
@@ -350,33 +350,33 @@ const Scene3DProfile = ({
               <Lock3D position={[-3, 1.5, -2]} scale={0.5} />
               <Key3D position={[3, -1, -2]} scale={0.4} />
               <ParticleRing count={60} radius={3} />
-              
+
               <Float speed={1.5} rotationIntensity={0.3} floatIntensity={0.4}>
                 <Sphere args={[0.3, 16, 16]} position={[-2, -1.5, 0]}>
-                  <meshStandardMaterial 
-                    color="#a78bfa" 
-                    metalness={0.9} 
+                  <meshStandardMaterial
+                    color="#a78bfa"
+                    metalness={0.9}
                     roughness={0.1}
                     transparent
                     opacity={0.8}
                   />
                 </Sphere>
               </Float>
-              
+
               <SecurityOrb radius={3.5} speed={0.3} offset={0} color="#7c3aed" />
               <SecurityOrb radius={3.5} speed={0.3} offset={Math.PI * 2/3} color="#6366f1" />
               <SecurityOrb radius={3.5} speed={0.3} offset={Math.PI * 4/3} color="#8b5cf6" />
             </>
           )}
-          
+
           {/* Background stars */}
-          <Stars 
-            radius={30} 
-            depth={30} 
-            count={500} 
-            factor={3} 
-            saturation={0} 
-            fade 
+          <Stars
+            radius={30}
+            depth={30}
+            count={500}
+            factor={3}
+            saturation={0}
+            fade
             speed={0.3}
           />
         </Suspense>

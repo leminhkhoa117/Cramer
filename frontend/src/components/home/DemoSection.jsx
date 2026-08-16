@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+﻿import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence, useInView, useMotionValue, useSpring, useTransform, useMotionTemplate } from 'framer-motion';
+
 import {
     FaPlay,
     FaClock,

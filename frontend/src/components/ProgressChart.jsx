@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+﻿import { useMemo } from 'react';
+
 import {
   LineChart,
   Line,
@@ -39,8 +40,8 @@ const CustomTooltip = ({ active, payload, label }) => {
         <div className="tooltip-content">
           {payload.map((entry, index) => (
             <div key={index} className="tooltip-row">
-              <span 
-                className="tooltip-dot" 
+              <span
+                className="tooltip-dot"
                 style={{ backgroundColor: entry.color }}
               />
               <span className="tooltip-skill">{entry.name}</span>
@@ -60,8 +61,8 @@ const CustomLegend = ({ payload }) => {
     <div className="progress-chart-legend">
       {payload.map((entry, index) => (
         <div key={index} className="legend-item">
-          <span 
-            className="legend-dot" 
+          <span
+            className="legend-dot"
             style={{ backgroundColor: entry.color }}
           />
           <span className="legend-label">{entry.value}</span>
@@ -90,11 +91,11 @@ const ProgressChart = ({ data }) => {
     completedAttempts.forEach(item => {
       const date = new Date(item.lastAttempt).toLocaleDateString('vi-VN');
       const skill = item.skill?.toLowerCase();
-      
+
       if (!dateMap.has(date)) {
         dateMap.set(date, { date });
       }
-      
+
       const dateEntry = dateMap.get(date);
       // If multiple attempts on same date for same skill, use the latest/highest
       if (!dateEntry[skill] || item.bandScore > dateEntry[skill]) {
@@ -134,7 +135,7 @@ const ProgressChart = ({ data }) => {
         </div>
         <h4>Chưa có dữ liệu tiến độ</h4>
         <p>
-          Hoàn thành một bài test để bắt đầu theo dõi tiến độ của bạn. 
+          Hoàn thành một bài test để bắt đầu theo dõi tiến độ của bạn.
           Biểu đồ sẽ hiển thị điểm số theo thời gian cho từng kỹ năng.
         </p>
       </div>
@@ -162,32 +163,32 @@ const ProgressChart = ({ data }) => {
               </linearGradient>
             ))}
           </defs>
-          <CartesianGrid 
-            strokeDasharray="3 3" 
-            stroke="rgba(124, 58, 237, 0.1)" 
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="rgba(124, 58, 237, 0.1)"
             vertical={false}
           />
-          <XAxis 
-            dataKey="date" 
+          <XAxis
+            dataKey="date"
             tick={{ fill: '#64748b', fontSize: 12 }}
             tickLine={{ stroke: 'rgba(124, 58, 237, 0.2)' }}
             axisLine={{ stroke: 'rgba(124, 58, 237, 0.2)' }}
           />
-          <YAxis 
-            domain={[0, 9]} 
+          <YAxis
+            domain={[0, 9]}
             tick={{ fill: '#64748b', fontSize: 12 }}
             tickLine={{ stroke: 'rgba(124, 58, 237, 0.2)' }}
             axisLine={{ stroke: 'rgba(124, 58, 237, 0.2)' }}
-            label={{ 
-              value: 'Band Score', 
-              angle: -90, 
+            label={{
+              value: 'Band Score',
+              angle: -90,
               position: 'insideLeft',
               style: { fill: '#64748b', fontSize: 12 }
             }}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend content={<CustomLegend />} />
-          
+
           {/* Render a line for each active skill */}
           {activeSkills.map(skill => (
             <Line
@@ -197,14 +198,14 @@ const ProgressChart = ({ data }) => {
               name={SKILL_LABELS[skill]}
               stroke={SKILL_COLORS[skill]}
               strokeWidth={3}
-              dot={{ 
-                r: 5, 
+              dot={{
+                r: 5,
                 fill: SKILL_COLORS[skill],
                 strokeWidth: 2,
                 stroke: '#fff'
               }}
-              activeDot={{ 
-                r: 8, 
+              activeDot={{
+                r: 8,
                 fill: SKILL_COLORS[skill],
                 stroke: '#fff',
                 strokeWidth: 3

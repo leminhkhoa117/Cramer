@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import ReviewQuestionGroup from './ReviewQuestionGroup';
 import '../../css/review-answer-column.css';
 

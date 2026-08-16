@@ -1,10 +1,26 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { create } from 'zustand';
 import { FiCheck, FiX, FiAlertTriangle, FiInfo } from 'react-icons/fi';
-import { registerToastHandler, unregisterToastHandler } from '../../../utils/toast';
 import './Toast.css';
 
-// Toast Context
-const ToastContext = createContext(null);
+// Admin toast store (was a React Context; now Zustand, same API).
+const useToastStore = create((set, get) => ({
+    toasts: [],
+    addToast: (toast) => {
+        const id = Date.now() + Math.random();
+        const newToast = { id, ...toast };
+        set((state) => ({ toasts: [...state.toasts, newToast] }));
+        const duration = toast.duration || 4000;
+        setTimeout(() => get().removeToast(id), duration);
+        return id;
+    },
+    removeToast: (id) => set((state) => ({
+        toasts: state.toasts.filter((toast) => toast.id !== id),
+    })),
+    success: (message, title) => get().addToast({ type: 'success', message, title }),
+    error: (message, title) => get().addToast({ type: 'error', message, title, duration: 6000 }),
+    warning: (message, title) => get().addToast({ type: 'warning', message, title }),
+    info: (message, title) => get().addToast({ type: 'info', message, title }),
+}));
 
 /**
  * Toast item component
@@ -34,59 +50,19 @@ function ToastItem({ id, type, message, title, onClose }) {
 }
 
 /**
- * ToastProvider - Wrap ứng dụng để sử dụng toast
+ * ToastProvider - Mount once near the admin app root. Renders the toast container.
  */
 export function ToastProvider({ children }) {
-    const [toasts, setToasts] = useState([]);
-
-    const addToast = useCallback((toast) => {
-        const id = Date.now() + Math.random();
-        const newToast = { id, ...toast };
-
-        setToasts(prev => [...prev, newToast]);
-
-        // Auto remove after duration
-        const duration = toast.duration || 4000;
-        setTimeout(() => {
-            removeToast(id);
-        }, duration);
-
-        return id;
-    }, []);
-
-    const removeToast = useCallback((id) => {
-        setToasts(prev => prev.filter(toast => toast.id !== id));
-    }, []);
-
-    const success = useCallback((message, title) => {
-        return addToast({ type: 'success', message, title });
-    }, [addToast]);
-
-    const error = useCallback((message, title) => {
-        return addToast({ type: 'error', message, title, duration: 6000 });
-    }, [addToast]);
-
-    const warning = useCallback((message, title) => {
-        return addToast({ type: 'warning', message, title });
-    }, [addToast]);
-
-    const info = useCallback((message, title) => {
-        return addToast({ type: 'info', message, title });
-    }, [addToast]);
-
-    // Register this provider as the global toast handler
-    useEffect(() => {
-        registerToastHandler({ success, error, warning, info });
-        return () => unregisterToastHandler();
-    }, [success, error, warning, info]);
+    const toasts = useToastStore((state) => state.toasts);
+    const removeToast = useToastStore((state) => state.removeToast);
 
     return (
-        <ToastContext.Provider value={{ success, error, warning, info, addToast, removeToast }}>
+        <>
             {children}
 
             {/* Toast Container */}
             <div className="toast-container">
-                {toasts.map(toast => (
+                {toasts.map((toast) => (
                     <ToastItem
                         key={toast.id}
                         {...toast}
@@ -94,24 +70,27 @@ export function ToastProvider({ children }) {
                     />
                 ))}
             </div>
-        </ToastContext.Provider>
+        </>
     );
 }
 
 /**
  * useToast - Hook để sử dụng toast
- * 
+ *
  * @example
  * const toast = useToast();
  * toast.success('Đã lưu thành công!');
  * toast.error('Có lỗi xảy ra!');
  */
 export function useToast() {
-    const context = useContext(ToastContext);
-    if (!context) {
-        throw new Error('useToast must be used within a ToastProvider');
-    }
-    return context;
+    return {
+        success: useToastStore((s) => s.success),
+        error: useToastStore((s) => s.error),
+        warning: useToastStore((s) => s.warning),
+        info: useToastStore((s) => s.info),
+        addToast: useToastStore((s) => s.addToast),
+        removeToast: useToastStore((s) => s.removeToast),
+    };
 }
 
 export default ToastProvider;

@@ -1,4 +1,3 @@
-import React from 'react';
 import './../css/toggle-switch.css';
 
 const ToggleSwitch = ({ id, checked, onChange, label }) => {

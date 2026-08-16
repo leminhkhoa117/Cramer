@@ -12,7 +12,7 @@
  * Updated 2025-12-26 - Support for Hashtag Management System
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { FiX, FiHash } from 'react-icons/fi';
 import './TagInput.css';
 import useHashtagStore from "../../stores/useHashtagStore"; // Import store to fetch hashtags

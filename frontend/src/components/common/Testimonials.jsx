@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaQuoteLeft, FaChevronLeft, FaChevronRight, FaStar } from 'react-icons/fa';
 import '../../css/common/testimonials.css';
 
 /**
  * Reusable Testimonials Component (Carousel or Grid)
- * 
+ *
  * @param {Object} props
  * @param {Array<{quote: string, author: string, role?: string, avatar?: string, rating?: number, detail?: string}>} props.items - Testimonial items
  * @param {string} [props.title] - Optional section title
@@ -166,15 +166,15 @@ const Testimonials = ({
               </AnimatePresence>
 
               {/* Navigation arrows */}
-              <button 
-                className="testimonial-nav testimonial-nav--prev" 
+              <button
+                className="testimonial-nav testimonial-nav--prev"
                 onClick={handlePrev}
                 aria-label="Previous testimonial"
               >
                 <FaChevronLeft />
               </button>
-              <button 
-                className="testimonial-nav testimonial-nav--next" 
+              <button
+                className="testimonial-nav testimonial-nav--next"
                 onClick={handleNext}
                 aria-label="Next testimonial"
               >

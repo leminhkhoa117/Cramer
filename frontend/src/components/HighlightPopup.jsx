@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaHighlighter, FaStrikethrough, FaUnderline, FaTrashAlt } from 'react-icons/fa';
 import '../css/highlight-popup.css'; // Local styles for popup controls

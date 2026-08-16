@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiCheck, FiInfo, FiPlus, FiTrash2 } from 'react-icons/fi';
 import { parseOptionsFromStrings } from './questionParsers';
 

@@ -9,7 +9,6 @@
  * @since 2025-12-22
  */
 
-import React from 'react';
 import { FiRefreshCw } from 'react-icons/fi';
 import QuestionRenderer from '../../../components/QuestionRenderer';
 import { sanitizeHtml } from '../../utils/htmlSanitizer';

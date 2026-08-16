@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+﻿import { useMemo } from 'react';
+
 import {
   Radar,
   RadarChart,
@@ -40,8 +41,8 @@ const CustomTooltip = ({ active, payload, label }) => {
         <div className="tooltip-content">
           {payload.map((entry, index) => (
             <div key={index} className="tooltip-row">
-              <span 
-                className="tooltip-indicator" 
+              <span
+                className="tooltip-indicator"
                 style={{ backgroundColor: entry.color }}
               />
               <span className="tooltip-label">{entry.name}:</span>
@@ -61,8 +62,8 @@ const CustomLegend = ({ payload }) => {
     <div className="skill-analysis-legend">
       {payload.map((entry, index) => (
         <div key={index} className="legend-item">
-          <span 
-            className="legend-indicator" 
+          <span
+            className="legend-indicator"
             style={{ backgroundColor: entry.color }}
           />
           <span className="legend-label">{entry.value}</span>
@@ -76,23 +77,23 @@ const CustomLegend = ({ payload }) => {
 const CustomAngleTick = ({ payload, x, y, cx, cy }) => {
   const skill = payload.value;
   const meta = Object.values(SKILL_META).find(s => s.label === skill);
-  
+
   // Calculate position offset based on angle
   const radius = 20;
   const angle = Math.atan2(y - cy, x - cx);
   const offsetX = Math.cos(angle) * radius;
   const offsetY = Math.sin(angle) * radius;
-  
+
   return (
     <g transform={`translate(${x + offsetX}, ${y + offsetY})`}>
-      <text 
-        textAnchor="middle" 
+      <text
+        textAnchor="middle"
         dominantBaseline="middle"
         className="skill-axis-label"
-        style={{ 
-          fill: '#1f2937', 
-          fontSize: '13px', 
-          fontWeight: 600 
+        style={{
+          fill: '#1f2937',
+          fontSize: '13px',
+          fontWeight: 600
         }}
       >
         {meta?.icon} {skill}
@@ -124,8 +125,8 @@ const SkillAnalysis = ({ courseData, targets }) => {
     // Calculate averages and format for radar chart
     return Object.keys(skillScores).map(skill => {
       const scores = skillScores[skill];
-      const avg = scores.length > 0 
-        ? scores.reduce((a, b) => a + b, 0) / scores.length 
+      const avg = scores.length > 0
+        ? scores.reduce((a, b) => a + b, 0) / scores.length
         : 0;
       const target = targets?.find(t => t.id === skill);
       const targetValue = target ? parseFloat(target.value) : 0;
@@ -153,7 +154,7 @@ const SkillAnalysis = ({ courseData, targets }) => {
         </div>
         <h4>Chưa có dữ liệu phân tích</h4>
         <p>
-          Hoàn thành các bài test và đặt mục tiêu để xem biểu đồ phân tích 
+          Hoàn thành các bài test và đặt mục tiêu để xem biểu đồ phân tích
           kỹ năng của bạn. Radar chart sẽ so sánh điểm hiện tại với mục tiêu.
         </p>
       </div>
@@ -198,25 +199,25 @@ const SkillAnalysis = ({ courseData, targets }) => {
                 <stop offset="100%" stopColor={COLORS.target} stopOpacity={0.2} />
               </linearGradient>
             </defs>
-            <PolarGrid 
-              stroke="rgba(124, 58, 237, 0.15)" 
+            <PolarGrid
+              stroke="rgba(124, 58, 237, 0.15)"
               gridType="polygon"
             />
-            <PolarAngleAxis 
-              dataKey="skill" 
+            <PolarAngleAxis
+              dataKey="skill"
               tick={<CustomAngleTick />}
               tickLine={false}
             />
-            <PolarRadiusAxis 
-              angle={90} 
-              domain={[0, 9]} 
+            <PolarRadiusAxis
+              angle={90}
+              domain={[0, 9]}
               tick={{ fill: '#64748b', fontSize: 11 }}
               tickCount={5}
               axisLine={false}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend content={<CustomLegend />} />
-            
+
             {/* Target polygon (behind) */}
             {hasTargetData && (
               <Radar
@@ -229,7 +230,7 @@ const SkillAnalysis = ({ courseData, targets }) => {
                 dot={{ r: 4, fill: COLORS.target, stroke: '#fff', strokeWidth: 2 }}
               />
             )}
-            
+
             {/* Current scores polygon (front) */}
             {hasCurrentData && (
               <Radar

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
 import { FiEye, FiEyeOff, FiInfo, FiChevronDown, FiChevronUp, FiMousePointer } from 'react-icons/fi';
 import { computeParagraphDiffs, getDiffStats } from '../utils/textDiff';
 import PropTypes from 'prop-types';

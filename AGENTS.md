@@ -53,7 +53,7 @@ cd backend && ./mvnw spring-boot:run
 
 ```bash
 cd frontend && npm install
-npm run dev          # Dev server on port 5173
+npm run dev          # Dev server on port 3000
 npm run build        # Production build
 npm run preview      # Preview production build
 ```
@@ -109,10 +109,10 @@ Vertical-slice modules (one bounded context each); **no** global controller/serv
 ### CSS Import Patterns
 
 ```
-styles.css  →  tokens.css  (global, via main.jsx)
+styles.css  →  styles/app.css (global, via main.jsx)
 pages       →  shared/layout.css + pages/{page}.css
 test pages  →  test/test-base.css + test/test-header-footer.css + test/{skill}.css + test/test-question.css
-admin       →  admin/css/admin.css → admin/css/tokens.css
+admin       →  admin/css/admin.css → admin/css/admin-variables.css
 ```
 
 ### Database Schema (Supabase)

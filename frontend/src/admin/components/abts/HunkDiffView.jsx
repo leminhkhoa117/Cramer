@@ -6,7 +6,6 @@
  *
  * @since 2026-01-07
  */
-import React from 'react';
 import { FiCheck, FiX } from 'react-icons/fi';
 import './HunkDiffView.css';
 

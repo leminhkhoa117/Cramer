@@ -1,4 +1,3 @@
-import React from 'react';
 import './../css/question-nav-bar.css';
 
 const QuestionNavBar = ({ allQuestions, answers, onQuestionSelect }) => {

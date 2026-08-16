@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Subscription System Constants
- * 
+ *
  * Single source of truth for subscription tiers, Lúa packs, and pricing.
  * Updated: 2025-12-14
- * 
+ *
  * IMPORTANT: This file defines the frontend display. The actual limits
  * are stored in the database (subscription_tiers, lua_packs tables).
  */

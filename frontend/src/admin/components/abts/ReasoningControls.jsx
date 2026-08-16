@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { FiCpu } from 'react-icons/fi';
 import './ReasoningControls.css';
 

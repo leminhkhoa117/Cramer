@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaChevronDown, FaQuestionCircle } from 'react-icons/fa';
 import '../../css/common/faq.css';
 
 /**
  * Reusable FAQ Component
- * 
+ *
  * @param {Object} props
  * @param {Array<{question: string, answer: string}>} props.items - FAQ items array
  * @param {string} [props.title] - Optional section title (default: "Câu hỏi thường gặp")

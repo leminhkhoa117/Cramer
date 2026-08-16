@@ -1,11 +1,10 @@
-import React from 'react';
-import { FiCheck, FiX, FiLoader } from 'react-icons/fi';
+﻿import { FiCheck, FiX, FiLoader } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 
 /**
  * TierCard - Subscription tier card component
  * Displays tier details with glassmorphic styling
- * 
+ *
  * @param {Object} props
  * @param {Object} props.tier - Tier data
  * @param {boolean} props.isCurrentTier - Whether this is user's current tier

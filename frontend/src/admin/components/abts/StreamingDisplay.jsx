@@ -1,13 +1,14 @@
-/**
+﻿/**
  * StreamingDisplay - Real-time ABTS generation workbench.
  *
  * Shows streamed response chunks, compact run metrics, model trace,
  * and recent generation events while AI content is being produced.
- * 
+ *
  * @since 2025-12-21 - Cat C Feature
  */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
 import {
     FiActivity,
     FiAlertTriangle,

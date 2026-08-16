@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FiLoader, FiChevronDown } from 'react-icons/fi';
 import { creditsApi } from '../api/backendApi';
 

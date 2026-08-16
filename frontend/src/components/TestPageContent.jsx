@@ -1,5 +1,5 @@
 import ExitTestModal from './ExitTestModal';
-import React, { useMemo, useRef, useCallback } from 'react';
+import { useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTestStore, useTestSessionStore } from '../stores';
 import TestHeader from './TestHeader';

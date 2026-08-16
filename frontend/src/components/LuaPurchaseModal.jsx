@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiLoader, FiCreditCard } from 'react-icons/fi';
 import '../css/common/modal.css';

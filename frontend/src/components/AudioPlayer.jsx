@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useImperativeHandle, forwardRef, useState } from 'react';
+import { useRef, useEffect, useImperativeHandle, forwardRef, useState } from 'react';
 import '../css/audio-player.css';
 
 const formatTime = (timeInSeconds) => {

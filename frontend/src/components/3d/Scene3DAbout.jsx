@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, Suspense } from 'react';
+﻿import React, { useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import {
   Float,
@@ -156,7 +156,7 @@ const GradientBackground = () => {
         uniform vec3 uColor2;
         uniform vec3 uColor3;
         varying vec2 vUv;
-        
+
         void main() {
           float mixFactor = vUv.y + sin(vUv.x * 3.0 + uTime * 0.2) * 0.1;
           vec3 color = mix(uColor1, uColor2, mixFactor);

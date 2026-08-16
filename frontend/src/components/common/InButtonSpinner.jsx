@@ -1,4 +1,3 @@
-import React from 'react';
 
 /**
  * InButtonSpinner — Hiển thị spinner trong nút khi đang tải.

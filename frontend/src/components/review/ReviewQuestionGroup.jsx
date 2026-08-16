@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { sanitizeHtml } from '../../utils/sanitize';
 import ReviewQuestionRenderer from './ReviewQuestionRenderer';
 import '../../css/review-question-group.css';

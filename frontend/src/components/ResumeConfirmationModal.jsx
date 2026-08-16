@@ -1,4 +1,3 @@
-import React from 'react';
 import BaseModal from './common/BaseModal';
 import InButtonSpinner from './common/InButtonSpinner';
 

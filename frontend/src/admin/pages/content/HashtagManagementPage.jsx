@@ -10,7 +10,7 @@
  * @since 2025-12-26 - Phase 5.5: Test Storage Management System Overhaul
  */
 
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import useHashtagStore from '../../stores/useHashtagStore';
 import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiTag, FiCheck, FiX, FiRefreshCw } from 'react-icons/fi';
 import '../../css/pages/content/HashtagManagementPage.css';

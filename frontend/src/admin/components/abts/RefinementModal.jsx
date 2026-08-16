@@ -8,7 +8,7 @@
  *
  * @since 2026-01-04
  */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import useABTSStore from '../../stores/useABTSStore';
 import './RefinementModal.css';
 

@@ -5,7 +5,7 @@
  * @since 2025-12-21 - Content Upload Feature
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { FiUpload, FiMusic, FiX, FiCheck, FiAlertTriangle, FiTrash2 } from 'react-icons/fi';
 import '../../css/common/modal.css';
 

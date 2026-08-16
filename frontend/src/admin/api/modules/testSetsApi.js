@@ -1,81 +1,21 @@
-import axios from 'axios';
-import { API_BASE_URL, getAuthHeaders } from './core';
+import { del, get, post, put } from '../../../lib/api';
 
 const testSetsApi = {
-    getAll: async () => {
-        const headers = await getAuthHeaders();
-        const response = await axios.get(
-            `${API_BASE_URL}/api/admin/test-sets`,
-            { headers }
-        );
-        return response.data;
-    },
+    getAll: async () => get('/admin/test-sets'),
 
-    getById: async (id) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.get(
-            `${API_BASE_URL}/api/admin/test-sets/${id}`,
-            { headers }
-        );
-        return response.data;
-    },
+    getById: async (id) => get(`/admin/test-sets/${id}`),
 
-    getByCode: async (code) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.get(
-            `${API_BASE_URL}/api/admin/test-sets/code/${code}`,
-            { headers }
-        );
-        return response.data;
-    },
+    getByCode: async (code) => get(`/admin/test-sets/code/${code}`),
 
-    create: async (data) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.post(
-            `${API_BASE_URL}/api/admin/test-sets`,
-            data,
-            { headers }
-        );
-        return response.data;
-    },
+    create: async (data) => post('/admin/test-sets', data),
 
-    update: async (id, data) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.put(
-            `${API_BASE_URL}/api/admin/test-sets/${id}`,
-            data,
-            { headers }
-        );
-        return response.data;
-    },
+    update: async (id, data) => put(`/admin/test-sets/${id}`, data),
 
-    delete: async (id) => {
-        const headers = await getAuthHeaders();
-        await axios.delete(
-            `${API_BASE_URL}/api/admin/test-sets/${id}`,
-            { headers }
-        );
-    },
+    delete: async (id) => del(`/admin/test-sets/${id}`),
 
-    publish: async (id) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.post(
-            `${API_BASE_URL}/api/admin/test-sets/${id}/publish`,
-            null,
-            { headers }
-        );
-        return response.data;
-    },
+    publish: async (id) => post(`/admin/test-sets/${id}/publish`),
 
-    unpublish: async (id) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.post(
-            `${API_BASE_URL}/api/admin/test-sets/${id}/unpublish`,
-            null,
-            { headers }
-        );
-        return response.data;
-    },
+    unpublish: async (id) => post(`/admin/test-sets/${id}/unpublish`),
 };
 
 export default testSetsApi;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 // Note: shallow import removed - using direct destructuring pattern for stable references
 import { sanitizeHtml } from '../utils/sanitize';

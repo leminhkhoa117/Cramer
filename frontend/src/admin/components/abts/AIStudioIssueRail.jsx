@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FiAlertCircle, FiAlertTriangle, FiCheckCircle, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import IssueSelector from './IssueSelector';
 import HunkDiffView from './HunkDiffView';

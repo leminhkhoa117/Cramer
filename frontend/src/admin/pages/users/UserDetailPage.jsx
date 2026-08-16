@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import ActivityTimeline from '../../components/ActivityTimeline';
 import adminApi from '../../api/adminApi';
+
 import {
     FiArrowLeft,
     FiUser,
@@ -62,7 +63,7 @@ export default function UserDetailPage() {
         updateUserStatus,
         updateUserCredits,
         updateUserSubscription,
-        subscriptionUpdating  
+        subscriptionUpdating
     } = useAdminUsersStore();
 
     // Define fetch functions first (before useEffect)
@@ -225,20 +226,20 @@ export default function UserDetailPage() {
         try {
             // Map frontend tier value to backend tier code
             const tierCode = newSubscription === 'FREE' ? 'cramerie' : 'cramerich';
-            
+
             // For free tier, duration doesn't matter; for paid tier, use selected duration
             const duration = newSubscription === 'FREE' ? 1 : subscriptionDuration;
-            
+
             await updateUserSubscription(userId, tierCode, duration, subscriptionReason);
-            
+
             setSubscriptionModalOpen(false);
             setNewSubscription('');
             setSubscriptionReason('');
             setSubscriptionDuration(1);
-            
+
             // Refresh user data to get updated subscription info
             await fetchUserById(userId);
-            
+
             // Show success notification
             setSuccessMessage('Đã cập nhật gói đăng ký thành công!');
             setSuccessModalOpen(true);
@@ -790,7 +791,7 @@ export default function UserDetailPage() {
         {newSubscription === 'CRAMERICH' && (
             <div className="subscription-notice subscription-notice--info">
                 <FiAlertTriangle size={16} />
-                <span>Gói Cramerich sẽ có hiệu lực trong <strong>{subscriptionDuration} tháng</strong> kể từ bây giờ. 
+                <span>Gói Cramerich sẽ có hiệu lực trong <strong>{subscriptionDuration} tháng</strong> kể từ bây giờ.
                 Sau khi hết hạn, tài khoản sẽ tự động chuyển về gói Free.</span>
             </div>
         )}
@@ -811,7 +812,7 @@ export default function UserDetailPage() {
         {user.subscription === 'CRAMERICH' && newSubscription === 'FREE' && (
             <div className="subscription-notice subscription-notice--warning">
                 <FiAlertTriangle size={16} />
-                <span>Khi chuyển về gói Free, người dùng sẽ mất các quyền lợi của gói Cramerich 
+                <span>Khi chuyển về gói Free, người dùng sẽ mất các quyền lợi của gói Cramerich
                 và tất cả usage counters sẽ được reset.</span>
             </div>
         )}
@@ -830,7 +831,7 @@ export default function UserDetailPage() {
             <FiCheckCircle size={48} />
         </div>
         <p className="success-modal-message">{successMessage}</p>
-        <button 
+        <button
             className="admin-btn admin-btn--primary success-modal-btn"
             onClick={() => setSuccessModalOpen(false)}
         >

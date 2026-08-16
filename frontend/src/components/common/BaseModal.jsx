@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
@@ -6,7 +6,7 @@ import '../../css/common/modal.css';
 
 /**
  * BaseModal - Reusable modal component with glassmorphic styling
- * 
+ *
  * @param {boolean} isOpen - Controls modal visibility
  * @param {function} onClose - Callback when modal should close
  * @param {string} title - Modal title (optional)
@@ -24,27 +24,27 @@ const backdropVariants = {
 };
 
 const modalVariants = {
-  hidden: { 
-    y: -30, 
-    opacity: 0, 
-    scale: 0.95 
+  hidden: {
+    y: -30,
+    opacity: 0,
+    scale: 0.95
   },
-  visible: { 
-    y: 0, 
-    opacity: 1, 
+  visible: {
+    y: 0,
+    opacity: 1,
     scale: 1,
-    transition: { 
-      type: 'spring', 
-      stiffness: 300, 
-      damping: 28 
-    } 
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 28
+    }
   },
-  exit: { 
-    y: 30, 
-    opacity: 0, 
+  exit: {
+    y: 30,
+    opacity: 0,
     scale: 0.95,
-    transition: { 
-      duration: 0.2 
+    transition: {
+      duration: 0.2
     }
   },
 };

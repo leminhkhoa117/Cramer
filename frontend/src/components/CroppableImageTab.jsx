@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
-import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
+import { useState, useRef, useEffect } from 'react';
+import Crop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import { FiUploadCloud, FiTrash2, FiRefreshCw } from 'react-icons/fi';
 import 'react-image-crop/dist/ReactCrop.css';
-import { showErrorToast } from '../utils/toast';
+import { toast } from '../ui/toast';
 
 // Helper to get the cropped image
 function getCroppedImg(image, crop, fileName) {
@@ -69,7 +69,7 @@ const CroppableImageTab = ({ onFileCropped, aspectRatio = 1, minWidth = 100, max
 
             // 1. Validate Size
             if (file.size > maxSizeMB * 1024 * 1024) {
-                showErrorToast(`File quá lớn! Vui lòng chọn ảnh dưới ${maxSizeMB}MB.`);
+                toast.error(`File quá lớn! Vui lòng chọn ảnh dưới ${maxSizeMB}MB.`);
                 return;
             }
 
@@ -104,7 +104,7 @@ const CroppableImageTab = ({ onFileCropped, aspectRatio = 1, minWidth = 100, max
             img.onerror = () => {
                 URL.revokeObjectURL(objectUrl);
                 setIsProcessing(false);
-                showErrorToast('Không thể đọc ảnh. Vui lòng thử lại.');
+                toast.error('Không thể đọc ảnh. Vui lòng thử lại.');
             };
         }
     };

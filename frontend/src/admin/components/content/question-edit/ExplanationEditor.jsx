@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FiChevronDown, FiChevronUp, FiHelpCircle } from 'react-icons/fi';
 import { explanationToString, parseExplanation } from './questionParsers';
 

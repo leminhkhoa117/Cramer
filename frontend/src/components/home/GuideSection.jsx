@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { FaUserPlus, FaClipboardCheck, FaGraduationCap, FaArrowRight, FaArrowLeft, FaCheck } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';

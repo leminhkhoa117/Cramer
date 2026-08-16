@@ -1,23 +1,23 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { FiBook, FiLoader, FiX, FiVolume2 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVocabularyStore } from '../stores';
-import { showSuccessToast, showErrorToast } from '../utils/toast';
+import { toast } from '../ui/toast';
 
-const WordPopup = ({ 
-  isOpen, 
-  word, 
-  context = null, 
+const WordPopup = ({
+  isOpen,
+  word,
+  context = null,
   position = { x: 0, y: 0 },
   onClose,
   onSaveComplete,
 }) => {
   const { translateWord, translating, addWord } = useVocabularyStore();
-  
+
   const [translation, setTranslation] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  
+
   const popupRef = useRef(null);
 
   // Calculate popup position
@@ -29,7 +29,7 @@ const WordPopup = ({
       const rect = popup.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
-      
+
       let x = position.x;
       let y = position.y + 10; // 10px below the click
 
@@ -37,12 +37,12 @@ const WordPopup = ({
       if (x + rect.width > viewportWidth - 20) {
         x = viewportWidth - rect.width - 20;
       }
-      
+
       // Prevent overflow on left
       if (x < 20) {
         x = 20;
       }
-      
+
       // Prevent overflow on bottom - show above if needed
       if (y + rect.height > viewportHeight - 20) {
         y = position.y - rect.height - 10;
@@ -89,13 +89,13 @@ const WordPopup = ({
 
   const handleTranslate = useCallback(async () => {
     if (!word) return;
-    
+
     setError(null);
     try {
       const result = await translateWord(word, context);
       setTranslation(result);
     } catch (err) {
-      setError('Kh√¥ng th·ªÉ d·ªãch t·ª´ n√†y');
+      setError('KhÙng th? d?ch t? n‡y');
     }
   }, [word, context, translateWord]);
 
@@ -110,10 +110,10 @@ const WordPopup = ({
 
   const handleSaveToNotebook = async () => {
     if (!word) return;
-    
+
     setSaving(true);
     setError(null);
-    
+
     try {
       const wordData = {
         word: word,
@@ -124,15 +124,15 @@ const WordPopup = ({
         exampleSentence: translation?.exampleSentence || '',
         sourceContext: context || '',
       };
-      
+
       await addWord(wordData);
-      showSuccessToast(`ƒê√£ th√™m "${word}" v√†o s·ªï tay`);
+      toast.success(`–„ thÍm "${word}" v‡o s? tay`);
       onClose();
       onSaveComplete?.();
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Kh√¥ng th·ªÉ l∆∞u t·ª´ n√†y';
+      const errorMsg = err.response?.data?.message || 'KhÙng th? luu t? n‡y';
       setError(errorMsg);
-      showErrorToast(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setSaving(false);
     }
@@ -163,7 +163,7 @@ const WordPopup = ({
           <button
             className="word-popup__close"
             onClick={onClose}
-            aria-label="ƒê√≥ng"
+            aria-label="–Ûng"
           >
             <FiX />
           </button>
@@ -174,8 +174,8 @@ const WordPopup = ({
             <button
               className="word-popup__speak"
               onClick={handleSpeak}
-              title="Ph√°t √¢m"
-              aria-label="Ph√°t √¢m"
+              title="Ph·t ‚m"
+              aria-label="Ph·t ‚m"
             >
               <FiVolume2 />
             </button>
@@ -186,7 +186,7 @@ const WordPopup = ({
             {translating ? (
               <div className="word-popup__loading">
                 <FiLoader className="word-popup__spin" />
-                <span>ƒêang d·ªãch...</span>
+                <span>–ang d?ch...</span>
               </div>
             ) : error ? (
               <div className="word-popup__error">
@@ -215,7 +215,7 @@ const WordPopup = ({
               </div>
             ) : (
               <div className="word-popup__empty">
-                Click ƒë·ªÉ d·ªãch
+                Click d? d?ch
               </div>
             )}
           </div>
@@ -230,12 +230,12 @@ const WordPopup = ({
               {saving ? (
                 <>
                   <FiLoader className="word-popup__spin" />
-                  <span>ƒêang l∆∞u...</span>
+                  <span>–ang luu...</span>
                 </>
               ) : (
                 <>
                   <FiBook />
-                  <span>L∆∞u v√†o s·ªï tay</span>
+                  <span>Luu v‡o s? tay</span>
                 </>
               )}
             </button>

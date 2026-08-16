@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiEye } from 'react-icons/fi';
 import { parseOptionsFromStrings } from './questionParsers';
 

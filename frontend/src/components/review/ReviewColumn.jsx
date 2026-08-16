@@ -1,4 +1,3 @@
-import React from 'react';
 import '../../css/review-column.css';
 
 /**

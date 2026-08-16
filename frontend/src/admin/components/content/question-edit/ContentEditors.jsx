@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiChevronDown, FiChevronUp, FiFileText, FiInfo, FiPlus, FiTrash2 } from 'react-icons/fi';
 import { getNextLetter, optionsToStrings, parseOptionsFromStrings } from './questionParsers';
 

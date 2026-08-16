@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import '../css/home/index.css';
 
 // Lazy load all sections for better performance

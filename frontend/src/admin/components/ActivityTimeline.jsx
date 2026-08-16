@@ -1,4 +1,3 @@
-import React from 'react';
 import '../css/pages/activity/ActivityTimeline.css';
 
 // Emoji icons cho từng loại activity - đẹp và trực quan hơn

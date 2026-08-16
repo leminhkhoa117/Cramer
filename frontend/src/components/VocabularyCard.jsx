@@ -1,5 +1,4 @@
-import React from 'react';
-import { FiStar, FiEdit3, FiTrash2, FiVolume2, FiBookOpen } from 'react-icons/fi';
+﻿import { FiStar, FiEdit3, FiTrash2, FiVolume2, FiBookOpen } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 
 const VocabularyCard = ({

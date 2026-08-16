@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { FiX, FiZap, FiArrowLeft, FiCheck } from 'react-icons/fi';
 import StudioConfigView from './StudioConfigView';
 import StepPreview from './StepPreview';

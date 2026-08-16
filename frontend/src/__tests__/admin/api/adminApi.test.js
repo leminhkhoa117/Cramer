@@ -1,38 +1,40 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('axios', () => ({
-    default: {
-        get: vi.fn(),
-        post: vi.fn(),
-        put: vi.fn(),
-        patch: vi.fn(),
-        delete: vi.fn(),
-    },
+vi.mock('../../../lib/api', () => ({
+    http: { defaults: { baseURL: '/api' } },
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    del: vi.fn(),
+    getApiError: (error) => ({ message: error?.message || 'Unknown error' }),
+    setupApiClient: vi.fn(),
+    setUnauthorizedHandler: vi.fn(),
+    currentAuthToken: vi.fn(() => null),
+    authApi: {},
+    profileApi: {},
+    courseApi: {},
+    testApi: {},
+    attemptApi: {},
+    writingApi: {},
+    speakingApi: {},
+    subscriptionApi: {},
+    quotaApi: {},
+    paymentApi: {},
+    creditApi: {},
+    chatApi: {},
+    dashboardApi: {},
+    vocabularyApi: {},
+    abtsApi: {},
+    openAbtsStream: vi.fn(),
 }));
 
-vi.mock('../../../api/supabaseClient', () => ({
-    supabase: {
-        auth: {
-            getSession: vi.fn(),
-        },
-    },
-}));
-
-import axios from 'axios';
+import { del, get, post, put } from '../../../lib/api';
 import adminApi, { hashtagsApi, testSetsApi, testsApi } from '../../../admin/api/adminApi';
-import { supabase } from '../../../api/supabaseClient';
 
 describe('adminApi compatibility exports', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        supabase.auth.getSession.mockResolvedValue({
-            data: {
-                session: {
-                    access_token: 'test-token',
-                    user: { id: 'admin-user-id' },
-                },
-            },
-        });
     });
 
     it('keeps facade domain shape and compatibility aliases on default export', () => {
@@ -48,41 +50,34 @@ describe('adminApi compatibility exports', () => {
         expect(adminApi.hashtagsApi).toBe(hashtagsApi);
     });
 
-    it('calls a representative default facade endpoint with auth headers', async () => {
+    it('calls a representative default facade endpoint through the shared client', async () => {
         const responseData = { totalTests: 12 };
-        axios.get.mockResolvedValue({ data: responseData });
+        get.mockResolvedValueOnce(responseData);
 
         const result = await adminApi.content.getOverview();
 
         expect(result).toEqual(responseData);
-        expect(axios.get).toHaveBeenCalledWith(
-            'http://localhost:8080/api/admin/content/overview',
-            {
-                headers: {
-                    Authorization: 'Bearer test-token',
-                    'Content-Type': 'application/json',
-                },
-            }
-        );
+        expect(get).toHaveBeenCalledWith('/admin/content/overview');
     });
 
     it('creates tests through the test set hierarchy endpoint', async () => {
         const payload = { testNumber: 5, name: 'AI Test 5' };
         const responseData = { id: 42, ...payload };
-        axios.post.mockResolvedValue({ data: responseData });
+        post.mockResolvedValueOnce(responseData);
 
         const result = await testsApi.create(7, payload);
 
         expect(result).toEqual(responseData);
-        expect(axios.post).toHaveBeenCalledWith(
-            'http://localhost:8080/api/admin/test-sets/7/tests',
-            payload,
-            {
-                headers: {
-                    Authorization: 'Bearer test-token',
-                    'Content-Type': 'application/json',
-                },
-            }
-        );
+        expect(post).toHaveBeenCalledWith('/admin/test-sets/7/tests', payload);
+    });
+
+    it('uses the shared verb helpers for every module', async () => {
+        put.mockResolvedValueOnce({ ok: true });
+        await testSetsApi.update(1, { name: 'X' });
+        expect(put).toHaveBeenCalledWith('/admin/test-sets/1', { name: 'X' });
+
+        del.mockResolvedValueOnce(undefined);
+        await testSetsApi.delete(1);
+        expect(del).toHaveBeenCalledWith('/admin/test-sets/1');
     });
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { dashboardApi } from '../api/backendApi.js';
 import BaseModal from './common/BaseModal';
 

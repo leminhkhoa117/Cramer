@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FiKey, FiEye, FiEyeOff } from 'react-icons/fi';
 import { supabase } from '../api/supabaseClient';
-import { showSuccessToast, showErrorToast } from '../utils/toast';
+import { toast } from '../ui/toast';
 import { useAuthStore } from '../stores';
 import BaseModal from './common/BaseModal';
 import '../css/change-password-modal.css';
@@ -25,11 +25,11 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
     if (newPassword.length < 6) {
-      showErrorToast('Mật khẩu mới phải có ít nhất 6 ký tự.');
+      toast.error('Mật khẩu mới phải có ít nhất 6 ký tự.');
       return;
     }
     if (newPassword !== confirmPassword) {
-      showErrorToast('Mật khẩu xác nhận không khớp.');
+      toast.error('Mật khẩu xác nhận không khớp.');
       return;
     }
 
@@ -54,11 +54,11 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
         throw updateError;
       }
 
-      showSuccessToast('Cập nhật mật khẩu thành công!');
+      toast.success('Cập nhật mật khẩu thành công!');
       handleClose();
     } catch (error) {
       console.error('Error updating password:', error);
-      showErrorToast(error.message || 'Lỗi khi cập nhật mật khẩu.');
+      toast.error(error.message || 'Lỗi khi cập nhật mật khẩu.');
     } finally {
       setIsUpdating(false);
     }

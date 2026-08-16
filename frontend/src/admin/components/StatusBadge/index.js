@@ -1,7 +1,7 @@
-export { 
-  default, 
-  AccountStatusBadge, 
-  SubscriptionBadge, 
+﻿export {
+  default,
+  AccountStatusBadge,
+  SubscriptionBadge,
   SubscriptionStatusBadge,
-  TransactionStatusBadge 
+  TransactionStatusBadge
 } from './StatusBadge';

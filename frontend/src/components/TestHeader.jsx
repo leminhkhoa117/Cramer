@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { FiMaximize, FiMinimize } from 'react-icons/fi';
 import './../css/test-header.css';
 

@@ -1,76 +1,19 @@
-import axios from 'axios';
-import { API_BASE_URL, getAuthHeaders } from './core';
+import { del, get, post, put } from '../../../lib/api';
 
 const hashtagsApi = {
-    getAll: async () => {
-        const headers = await getAuthHeaders();
-        const response = await axios.get(
-            `${API_BASE_URL}/api/admin/hashtags`,
-            { headers }
-        );
-        return response.data;
-    },
+    getAll: async () => get('/admin/hashtags'),
 
-    getByCategory: async (category) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.get(
-            `${API_BASE_URL}/api/admin/hashtags/category/${category}`,
-            { headers }
-        );
-        return response.data;
-    },
+    getByCategory: async (category) => get(`/admin/hashtags/category/${category}`),
 
-    search: async (query) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.get(
-            `${API_BASE_URL}/api/admin/hashtags/search`,
-            {
-                headers,
-                params: { q: query }
-            }
-        );
-        return response.data;
-    },
+    search: async (query) => get('/admin/hashtags/search', { params: { q: query } }),
 
-    getPopular: async (limit = 10) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.get(
-            `${API_BASE_URL}/api/admin/hashtags/popular`,
-            {
-                headers,
-                params: { limit }
-            }
-        );
-        return response.data;
-    },
+    getPopular: async (limit = 10) => get('/admin/hashtags/popular', { params: { limit } }),
 
-    create: async (data) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.post(
-            `${API_BASE_URL}/api/admin/hashtags`,
-            data,
-            { headers }
-        );
-        return response.data;
-    },
+    create: async (data) => post('/admin/hashtags', data),
 
-    update: async (id, data) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.put(
-            `${API_BASE_URL}/api/admin/hashtags/${id}`,
-            data,
-            { headers }
-        );
-        return response.data;
-    },
+    update: async (id, data) => put(`/admin/hashtags/${id}`, data),
 
-    delete: async (id) => {
-        const headers = await getAuthHeaders();
-        await axios.delete(
-            `${API_BASE_URL}/api/admin/hashtags/${id}`,
-            { headers }
-        );
-    },
+    delete: async (id) => del(`/admin/hashtags/${id}`),
 };
 
 export default hashtagsApi;

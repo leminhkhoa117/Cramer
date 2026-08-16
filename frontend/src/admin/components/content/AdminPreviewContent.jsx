@@ -13,7 +13,7 @@
  * - Click-to-Edit: Click on a question to open the question editor
  */
 
-import React, { useMemo, useRef, useCallback, useState } from 'react';
+import { useMemo, useRef, useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FiEye, FiEyeOff, FiEdit3 } from 'react-icons/fi';
 import TestLayout from '../../../components/TestLayout';

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+﻿import { useEffect, useRef } from 'react';
 
 const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
 const smoothstep = (value) => value * value * (3 - 2 * value);

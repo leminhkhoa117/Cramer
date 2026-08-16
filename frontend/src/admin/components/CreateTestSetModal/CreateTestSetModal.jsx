@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { FiX, FiFolder, FiType, FiTag, FiHash, FiClock } from 'react-icons/fi';
 import { useToast } from '../Toast';
 import useAdminContentStore from '../../stores/useAdminContentStore';

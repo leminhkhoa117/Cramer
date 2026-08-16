@@ -33,12 +33,15 @@ _Last reviewed: 16/08/2026_
 - [ ] `sections.exam_source/test_number` legacy shim + dual-path repositories — plan removal (big; moves to Phase 4). Added 16/08/2026.
 
 ## Phase 4 — Deep refactor (optional later)
-- [ ] Merge 3 API client stacks (`lib/api`, `admin/api`, `admin/services/abtsApi`) into one token-acquisition path.
+- [x] Merge the admin API stack into `lib/api` (all 8 admin modules use the shared client; `core.js` deleted; 401 handling + token injection now shared). Resolved 16/08/2026.
+- [x] Unify admin CSS tokens: deleted the dead duplicate `admin/css/tokens.css`; `admin-variables.css` is the single loaded file. Resolved 16/08/2026.
+- [x] Remove ~100 unused default React imports (verified: the 22 remaining files all use the `React.` identifier). Resolved 16/08/2026.
+- [x] Convert the 2 remaining Contexts to Zustand: `HighlightContext` and the admin `Toast` context. Resolved 16/08/2026.
+- [x] Delete the `utils/toast.js` shim; 3 consumers now use `ui/toast` directly. Resolved 16/08/2026.
+- [x] `AdminRouteGuard` hardcoded `ADMIN_USER_IDS` → `VITE_ADMIN_USER_IDS` env var; remove the inline `<style>` injection. Resolved 16/08/2026.
+- [x] Port story: dev server is 3000 everywhere (vite.config, .env PayOS URLs, AGENTS.md). Resolved 16/08/2026.
 - [ ] Consolidate the 3 overlapping usage counters (`user_quotas`, `skill_quotas`, `user_subscriptions` counters). Needs a data-audit + design decision first. Added 16/08/2026.
-- [ ] Unify admin CSS tokens (`admin-variables.css` vs dead `tokens.css`), kill duplicate modal systems.
-- [ ] Remove ~100 default React imports; convert 2 remaining Contexts to Zustand.
-- [ ] Port story: reconcile 3000 vs 5173 across `vite.config.js`, `docker-compose.yml`, `.env`, AGENTS.md.
-- [ ] `AdminRouteGuard` hardcoded `ADMIN_USER_IDS` → env var.
+- [ ] `sections.exam_source/test_number` legacy shim + dual-path repositories — plan removal (touches attempts resume/lock + publish cascade). Added 16/08/2026.
 
 ## Deferred polish
 - [ ] **Coverage gate.** Removed aspirational 50/40/50/50 thresholds (Vitest 4 format drift + actual ~0.6% coverage). Restore thresholds once suites grow; CI currently reports coverage without failing. Added 16/08/2026.

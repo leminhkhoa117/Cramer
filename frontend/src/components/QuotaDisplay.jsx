@@ -1,4 +1,3 @@
-import React from 'react';
 import useQuotaStore from '../stores/useQuotaStore';
 import '../css/quota-display.css';
 

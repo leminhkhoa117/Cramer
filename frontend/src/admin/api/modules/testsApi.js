@@ -1,125 +1,37 @@
-import axios from 'axios';
-import { API_BASE_URL, getAuthHeaders } from './core';
+import { del, get, patch, post, put } from '../../../lib/api';
 
 const testsApi = {
-    create: async (setId, data) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.post(
-            `${API_BASE_URL}/api/admin/test-sets/${setId}/tests`,
-            data,
-            { headers }
-        );
-        return response.data;
-    },
+    create: async (setId, data) => post(`/admin/test-sets/${setId}/tests`, data),
 
-    getBySetId: async (setId, options = {}) => {
-        const headers = await getAuthHeaders();
-        const queryParams = new URLSearchParams();
+    getBySetId: async (setId, options = {}) =>
+        get(`/admin/test-sets/${setId}/tests`, {
+            params: {
+                ...(options.sortBy ? { sortBy: options.sortBy } : {}),
+                ...(options.sortDir ? { sortDir: options.sortDir } : {}),
+            },
+        }),
 
-        if (options.sortBy) queryParams.append('sortBy', options.sortBy);
-        if (options.sortDir) queryParams.append('sortDir', options.sortDir);
+    getById: async (id) => get(`/admin/tests/${id}`),
 
-        const queryString = queryParams.toString();
-        const url = queryString
-            ? `${API_BASE_URL}/api/admin/test-sets/${setId}/tests?${queryString}`
-            : `${API_BASE_URL}/api/admin/test-sets/${setId}/tests`;
-        const response = await axios.get(url, { headers });
-        return response.data;
-    },
+    getBySetCodeAndNumber: async (setCode, testNumber) =>
+        get('/admin/tests/lookup', { params: { setCode, testNumber } }),
 
-    getById: async (id) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.get(
-            `${API_BASE_URL}/api/admin/tests/${id}`,
-            { headers }
-        );
-        return response.data;
-    },
+    delete: async (id) => del(`/admin/tests/${id}`),
 
-    getBySetCodeAndNumber: async (setCode, testNumber) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.get(
-            `${API_BASE_URL}/api/admin/tests/lookup`,
-            {
-                headers,
-                params: { setCode, testNumber }
-            }
-        );
-        return response.data;
-    },
+    update: async (id, data) => put(`/admin/tests/${id}`, data),
 
-    delete: async (id) => {
-        const headers = await getAuthHeaders();
-        await axios.delete(
-            `${API_BASE_URL}/api/admin/tests/${id}`,
-            { headers }
-        );
-    },
+    publish: async (id) => post(`/admin/tests/${id}/publish`),
 
-    update: async (id, data) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.put(
-            `${API_BASE_URL}/api/admin/tests/${id}`,
-            data,
-            { headers }
-        );
-        return response.data;
-    },
+    unpublish: async (id) => post(`/admin/tests/${id}/unpublish`),
 
-    publish: async (id) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.post(
-            `${API_BASE_URL}/api/admin/tests/${id}/publish`,
-            null,
-            { headers }
-        );
-        return response.data;
-    },
+    updateHashtags: async (id, hashtagCodes) =>
+        put(`/admin/tests/${id}/hashtags`, { hashtagCodes: hashtagCodes || [] }),
 
-    unpublish: async (id) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.post(
-            `${API_BASE_URL}/api/admin/tests/${id}/unpublish`,
-            null,
-            { headers }
-        );
-        return response.data;
-    },
+    duplicate: async (id, newTestNumber) =>
+        post(`/admin/tests/${id}/duplicate`, null, { params: { newTestNumber } }),
 
-    updateHashtags: async (id, hashtagCodes) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.put(
-            `${API_BASE_URL}/api/admin/tests/${id}/hashtags`,
-            { hashtagCodes: hashtagCodes || [] },
-            { headers }
-        );
-        return response.data;
-    },
-
-    duplicate: async (id, newTestNumber) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.post(
-            `${API_BASE_URL}/api/admin/tests/${id}/duplicate`,
-            null,
-            {
-                headers,
-                params: { newTestNumber }
-            }
-        );
-        return response.data;
-    },
-
-    getSections: async (id, skill) => {
-        const headers = await getAuthHeaders();
-        const response = await axios.get(
-            `${API_BASE_URL}/api/admin/tests/${id}/sections`,
-            {
-                headers,
-                params: { skill }
-            }
-        );
-        return response.data;
-    },
+    getSections: async (id, skill) =>
+        get(`/admin/tests/${id}/sections`, { params: { skill } }),
 };
 
 export default testsApi;

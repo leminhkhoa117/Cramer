@@ -1,4 +1,4 @@
-/**
+﻿/**
  * COMPAT SHIM. The real API client now lives in `src/lib/api/`. This file re-exports it so
  * existing `import { xxxApi } from '../api/backendApi'` keeps resolving during the rewrite.
  * New code should import from `../lib/api`. Deleted in the cleanup phase.

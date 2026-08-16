@@ -10,7 +10,6 @@
  * @since 2026-01-04
  * @updated 2026-01-06 - Added model selection for cost optimization
  */
-import React from 'react';
 import useABTSStore from '../../stores/useABTSStore';
 import ModelSelector from './ModelSelector';
 import './IssueSelector.css';
