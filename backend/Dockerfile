@@ -1,5 +1,5 @@
-# Multi-stage Dockerfile: build with Maven, run on a slim Eclipse Temurin JRE 21 image
-FROM maven:3.9.11-eclipse-temurin-21 AS build
+# Multi-stage Dockerfile: build with Maven, run on a slim Eclipse Temurin JRE 25 image
+FROM maven:3.9.11-eclipse-temurin-25 AS build
 
 WORKDIR /workspace
 
@@ -11,7 +11,7 @@ COPY src ./src
 RUN mvn -B -DskipTests package
 
 ## Runtime image
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:25-jre-jammy
 
 WORKDIR /app
 

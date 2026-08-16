@@ -10,7 +10,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.0</version>
+        <version>4.0.7</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -64,25 +64,6 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
         
-        <!-- JWT for token handling -->
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-api</artifactId>
-            <version>0.13.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-impl</artifactId>
-            <version>0.13.0</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId>
-            <version>0.13.0</version>
-            <scope>runtime</scope>
-        </dependency>
-
         <!-- Spring Security OAuth2 for JWT processing in controllers -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -95,33 +76,6 @@
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <optional>true</optional>
-        </dependency>
-
-        <!-- Hypersistence Utils for advanced Hibernate types like JSONB -->
-        <dependency>
-            <groupId>io.hypersistence</groupId>
-            <artifactId>hypersistence-utils-hibernate-70</artifactId>
-            <version>3.15.2</version>
-        </dependency>
-
-        <!-- TOTP for Two-Factor Authentication -->
-        <dependency>
-            <groupId>dev.samstevens.totp</groupId>
-            <artifactId>totp</artifactId>
-            <version>1.7.1</version>
-        </dependency>
-
-        <!-- Spring Mail for email sending -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>
-
-        <!-- SendGrid for email delivery -->
-        <dependency>
-            <groupId>com.sendgrid</groupId>
-            <artifactId>sendgrid-java</artifactId>
-            <version>4.10.2</version>
         </dependency>
 
         <!-- Validation -->
@@ -180,13 +134,6 @@
             <artifactId>awaitility</artifactId>
             <version>4.3.0</version>
             <scope>test</scope>
-        </dependency>
-
-        <!-- ==================== WEBSOCKET DEPENDENCIES ==================== -->
-        <!-- Spring WebSocket for real-time communication -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
         <!-- NOTE: java-websocket, google-cloud-speech, grpc-netty-shaded, and google-cloud-vertexai

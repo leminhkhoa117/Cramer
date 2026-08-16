@@ -49,3 +49,16 @@ coverage/
 gha-creds-*.json
 .claude/settings.local.json
 opencode.json
+
+# Frontend build & test artifacts
+dist/
+html/
+coverage/
+node_modules/
+
+
+# Eclipse IDE files
+.classpath
+.factorypath
+.settings/
+

@@ -60,7 +60,6 @@ describe('adminApi compatibility exports', () => {
             {
                 headers: {
                     Authorization: 'Bearer test-token',
-                    'X-User-Id': 'admin-user-id',
                     'Content-Type': 'application/json',
                 },
             }
@@ -81,7 +80,6 @@ describe('adminApi compatibility exports', () => {
             {
                 headers: {
                     Authorization: 'Bearer test-token',
-                    'X-User-Id': 'admin-user-id',
                     'Content-Type': 'application/json',
                 },
             }

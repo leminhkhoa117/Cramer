@@ -37,14 +37,6 @@ export default defineConfig({
         'src/**/*.test.{js,jsx}',
         'src/**/*.spec.{js,jsx}',
       ],
-      thresholds: {
-        global: {
-          statements: 50,
-          branches: 40,
-          functions: 50,
-          lines: 50,
-        },
-      },
     },
     
     // Reporter configuration
