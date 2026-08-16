@@ -1,12 +1,12 @@
-# Cramer IELTS Platform - Database Schema Documentation
+﻿# Cramer IELTS Platform - Database Schema Documentation
 
-> **Last Verified Against Live Supabase:** 03/06/2026
+> **Last Verified Against Live Supabase:** 16/08/2026
 > **Database:** Supabase PostgreSQL
-> **Public Schema Tables:** 35
-> **Active App Tables Documented Here:** 28
-> **Archived Legacy Tables:** 6 (`speaking_*_legacy`)
-> **Active App Tables with RLS:** 28
-> **Applied Migrations:** 52
+> **Public Schema Tables:** 26
+> **Active App Tables Documented Here:** 26
+> **Archived Tables:** 9 (in the `archive` schema: 6 `speaking_*_legacy`, `chatbot_usage`, `abts_templates`, `model_runtime_status`)
+> **Active App Tables with RLS:** 26
+> **Applied Migrations:** 66
 
 ---
 
@@ -89,17 +89,15 @@ The schema is designed to support:
 | `user_quotas` | ✅ | Global monthly quota tracking |
 | `skill_quotas` | ✅ | Per-skill monthly quotas |
 | `translation_usage` | ✅ | AI translation usage tracking |
-| `chatbot_usage` | ✅ | Daily chatbot message usage |
 | `chat_messages` | ✅ | Chat conversation history |
 | `user_activities` | ✅ | User activity timeline |
 | `admin_audit_log` | ✅ | Admin action audit trail |
-| `abts_templates` | ✅ | AI test generation templates |
 
-**Archived legacy tables retained in the live public schema:** `speaking_fixed_questions_legacy`, `speaking_questions_legacy`, `speaking_sessions_legacy`, `speaking_tests_legacy`, `speaking_topics_legacy`, `speaking_transcripts_legacy`
+**Archived tables (moved to the `archive` schema on 16/08/2026, data preserved, RLS stays enforced):**
 
-**Live auxiliary table not used by current repo source:** `model_runtime_status`
+- Legacy Speaking hierarchy: `speaking_topics_legacy`, `speaking_tests_legacy`, `speaking_questions_legacy`, `speaking_fixed_questions_legacy`, `speaking_sessions_legacy`, `speaking_transcripts_legacy`
 
-> Legacy Speaking tables are archive-only for traceability and are not part of the active runtime content path.
+Restore with: `ALTER TABLE archive.<name> SET SCHEMA public;`
 
 ---
 
@@ -118,7 +116,7 @@ The schema is designed to support:
 | `source_type` | varchar | YES | 'custom' | Source type: cambridge, custom, ai_generated |
 | `is_published` | boolean | YES | false | Publication status |
 | `display_order` | integer | YES | 0 | Sort order |
-| `is_system` | boolean | YES | - | System-owned set flag retained in live schema |
+| `is_system` | boolean | YES | - | System-owned set flag (mapped by JPA but unused by services) |
 | `created_by` | uuid | YES | - | FK → auth.users |
 | `created_at` | timestamptz | YES | now() | - |
 | `updated_at` | timestamptz | YES | now() | - |
@@ -193,7 +191,7 @@ The schema is designed to support:
 | `section_id` | bigint | YES | - | FK → sections.id |
 | `question_number` | integer | YES | - | Question number within section |
 | `question_uid` | varchar | YES | - | Unique identifier (UNIQUE) |
-| `question_type` | varchar | YES | - | Type: MCQ, FILL_BLANK, TRUE_FALSE_NG, MATCHING, PART_1, PART_2, PART_3, etc. |
+| `question_type` | varchar | YES | - | Type: FILL_IN_BLANK, MULTIPLE_CHOICE, TRUE_FALSE_NOT_GIVEN, MATCHING, etc. (matches `QuestionType` enum) |
 | `question_content` | jsonb | YES | - | Authored payload (prompt, options, Speaking prompt JSON, etc.) |
 | `correct_answer` | jsonb | YES | - | Correct answer(s); may be NULL for Speaking |
 | `image_url` | varchar | YES | - | Question image URL |
@@ -386,7 +384,7 @@ The schema is designed to support:
 | `task_number` | integer | NO | - | Task 1 or 2 |
 | `essay_text` | text | NO | - | Essay content |
 | `word_count` | integer | NO | 0 | Word count |
-| `grading_status` | varchar | NO | 'PENDING' | PENDING, GRADING, GRADED, FAILED |
+| `grading_status` | varchar | NO | 'PENDING' | PENDING, GRADING, COMPLETED, FAILED (entity enum `WritingStatus`) |
 | `overall_band` | numeric | YES | - | Overall band score |
 | `band_scores` | jsonb | YES | - | Detailed band scores (TR, CC, LR, GRA) |
 | `ai_feedback` | jsonb | YES | - | AI feedback and suggestions |
@@ -720,8 +718,7 @@ The schema is designed to support:
 
 ---
 
-### `chatbot_usage`
-> Daily chatbot usage tracking
+> Dead daily chatbot usage counter, superseded by `user_subscriptions.chatbot_used`
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
@@ -730,7 +727,6 @@ The schema is designed to support:
 | `usage_date` | date | NO | CURRENT_DATE | Usage date |
 | `messages_used` | integer | YES | 0 | Messages sent |
 
-**Indexes:** `chatbot_usage_pkey`, `chatbot_usage_user_id_usage_date_key` (UNIQUE), `idx_chatbot_usage_user_date`
 
 ---
 
@@ -777,8 +773,8 @@ The schema is designed to support:
 
 ## AI & Templates Tables
 
-### `abts_templates`
-> AI-Based Test Studio templates for test generation
+### `abts_templates` — ARCHIVED (moved to `archive` schema on 16/08/2026)
+> Dead template table; ABTS serves templates from hardcoded Java (`TemplateService`)
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
@@ -832,7 +828,6 @@ auth.users
     │       └── subscription_tiers (tier_id → subscription_tiers.id)
     ├── user_credits (user_id → auth.users.id)
     ├── credit_transactions (user_id → auth.users.id)
-    ├── chatbot_usage (user_id → auth.users.id)
     ├── chat_messages (user_id → auth.users.id)
     ├── user_quotas (user_id → auth.users.id)
     ├── skill_quotas (user_id → auth.users.id)
@@ -862,7 +857,6 @@ profiles
 | `user_subscriptions` | Users can view own; Service role full access |
 | `user_credits` | Users can view own; Service role full access |
 | `credit_transactions` | Users can view own; Service role full access |
-| `chatbot_usage` | Users can view own; Service role full access |
 | `chat_messages` | Users can view own; Service role full access |
 | `user_quotas` | Users can view own; Service role full access |
 | `skill_quotas` | Users can view own; Service role full access |
@@ -877,10 +871,8 @@ profiles
 | `questions` | Public read published question content only; `correct_answer` and `explanation` not granted to anon/authenticated |
 | `hashtags` | Public read active; Service role full access |
 | `test_hashtags` | Public read; Service role full access |
-| `abts_templates` | Public read active; Admins insert/update |
 | `subscription_tiers` | Public read active; Service role full access |
 
-Archived `speaking_*_legacy` tables also retain RLS in the live schema but are excluded from the active app table list above. They are treated as archive-only and should not be used by active runtime paths.
 
 ### Active App Tables without RLS (0)
 
@@ -894,7 +886,7 @@ All active app tables now have RLS enabled. `sections`, `questions`, and `subscr
 |---------|-------|-------|----------|
 | `on_profile_created_init_credits` | profiles | INSERT | `initialize_user_credits()` |
 | `set_timestamp` | target | UPDATE | `trigger_set_timestamp()` |
-| `trigger_abts_templates_updated_at` | abts_templates | UPDATE | `update_abts_templates_updated_at()` |
+| `trigger_abts_templates_updated_at` | abts_templates (archived) | UPDATE | `update_abts_templates_updated_at()` |
 | `trigger_skill_quotas_updated_at` | skill_quotas | UPDATE | `update_skill_quotas_updated_at()` |
 | `update_speaking_sessions_updated_at` | speaking_sessions | UPDATE | `update_updated_at_column()` |
 | `update_speaking_transcripts_updated_at` | speaking_transcripts | UPDATE | `update_updated_at_column()` |
@@ -938,7 +930,7 @@ Key indexes by category:
 
 ## Migration History
 
-**Total Migrations:** 52
+**Total Migrations:** 66
 
 Migration names are preserved from Supabase metadata. They are historical breadcrumbs, not the schema contract by themselves; the live table definitions in this document are authoritative.
 
@@ -960,7 +952,7 @@ Migration names are preserved from Supabase metadata. They are historical breadc
 | 20251214072921 | add_ai_grading_enabled | AI grading toggle |
 | 20251215062812 | migrate_ai_grading_to_attempt_ais | Migrate grading column |
 | 20251216045457 | add_is_admin_column | Add admin flag |
-| 20251216053933 | remove_is_admin_column | Remove (moved) |
+| 20251216053933 | remove_is_admin_column | Remove (moved); re-added later without a listed migration — `profiles.is_admin` exists live and drives admin auth |
 | 20251217071201 | add_account_status_and_last_login | Account status tracking |
 | 20251219055613 | add_admin_rls_policies | Admin access policies |
 | 20251219110431 | add_status_to_sections | Section status column |
@@ -997,6 +989,16 @@ Migration names are preserved from Supabase metadata. They are historical breadc
 | 20260225091103 | migrate_existing_questions_to_speaking_tests | Backfill legacy Speaking content migration |
 | 20260311033550 | migrate_speaking_to_shared_hierarchy_runtime_v1 | Move Speaking authored content to shared hierarchy and normalize runtime tables |
 | 20260311033637 | fix_speaking_transcripts_updated_at_column | Add/update Speaking transcript `updated_at` support |
+| 20260322090942 | create_public_healthcheck_rpc | Create public healthcheck RPC |
+| 20260322091017 | tighten_public_healthcheck_grants | Tighten healthcheck grants |
+| 20260322091317 | create_api_healthcheck_wrapper | Create API healthcheck wrapper |
+| 20260416170007 | speaking_mark_mock_sections_draft | Mark mock Speaking sections as draft (content-leak fix) |
+| 20260416170102 | speaking_legacy_tables_lock_archive | Lock legacy Speaking tables (RLS fail-closed) |
+| 20260425030500 | model_runtime_status | Create model runtime status table |
+| 20260428090033 | add_grading_retry_columns | Add Speaking grading hardening columns |
+| 20260602232946 | 20260603_enable_content_tier_rls | Content-tier RLS on sections/questions/tiers |
+| 20260816020827 | performance_indexes_20260816 | Hot-path indexes: test_attempts, user_answers, speaking_sessions |
+| 20260816020828 | archive_dead_tables_20260816 | Move 9 dead tables to the `archive` schema |
 
 ---
 
@@ -1053,7 +1055,6 @@ Migration names are preserved from Supabase metadata. They are historical breadc
          ├───────► user_quotas
          ├───────► skill_quotas
          ├───────► translation_usage
-         ├───────► chatbot_usage
          └───────► user_activities
 ```
 
@@ -1063,12 +1064,12 @@ Migration names are preserved from Supabase metadata. They are historical breadc
 
 | Metric | Value |
 |--------|-------|
-| **Public Schema Tables** | 35 |
-| **Active App Tables Documented** | 28 |
-| **Archived Legacy Tables** | 6 (`speaking_*_legacy`) |
-| **Active App Tables with RLS** | 28 |
+| **Public Schema Tables** | 26 |
+| **Active App Tables Documented** | 26 |
+| **Archived Tables** | 9 (in `archive` schema) |
+| **Active App Tables with RLS** | 26 |
 | **Active App Tables without RLS** | 0 |
-| **Total Migrations** | 52 |
+| **Total Migrations** | 66 |
 | **Total Indexes** | 100+ |
 | **Database Triggers** | 11 |
 | **Installed Extensions** | 6 |
@@ -1076,4 +1077,4 @@ Migration names are preserved from Supabase metadata. They are historical breadc
 
 ---
 
-*Maintained as the live schema source of truth and verified against Supabase on 14/03/2026.*
+*Maintained as the live schema source of truth and verified against Supabase on 16/08/2026.*

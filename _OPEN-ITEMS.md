@@ -26,15 +26,15 @@ _Last reviewed: 16/08/2026_
 - [ ] `ValidationResult` shape vs SPEC-23 §1.1 (`schemaErrors/contentErrors/businessRuleErrors` split) — decide: fix code or update spec. Added 16/08/2026.
 
 ## Phase 3 — Database (production data must be preserved; incremental migrations only)
-- [ ] Add indexes on `test_attempts` (user_id, exam_source/test_number/skill, status) and check `speaking_sessions` watchdog index.
-- [ ] Decide + implement consolidation of `user_quotas`/`skill_quotas`/`user_subscriptions` counters.
-- [ ] Archive plan for dead tables (`chatbot_usage`, `abts_templates`, `model_runtime_status`, 6 speaking legacy) — export backup, then drop (no aggressive drops without backup).
-- [ ] Fix doc drift in `DATABASE_SCHEMA.md` (migration count 52 vs 53, missing 4 migrations, `FILL_BLANK` vs `FILL_IN_BLANK`, `GRADED` vs `COMPLETED`, skill case conventions).
-- [ ] Enum hygiene: `CreditCategory`/`WritingStatus`/skill case — align code or migrate data.
-- [ ] `sections.exam_source/test_number` legacy shim + dual-path repositories — plan removal (big; may move to Phase 4).
+- [x] Add indexes on `test_attempts` (user+status, lock-key), `user_answers` (user), `speaking_sessions` (status+updated_at for watchdog). Applied 16/08/2026 via migration `performance_indexes_20260816`. Resolved 16/08/2026.
+- [x] Archive dead tables. Moved 9 tables (`chatbot_usage`, `abts_templates`, `model_runtime_status`, 6 speaking legacy) to the `archive` schema. Data preserved in place; RLS policies moved with tables. Migration `archive_dead_tables_20260816`. Resolved 16/08/2026.
+- [x] Fix doc drift in `DATABASE_SCHEMA.md` (migration count 52→66, `FILL_BLANK`→`FILL_IN_BLANK`, `GRADED`→`COMPLETED`, `is_system`/`is_admin` clarified, archive status, missing migration rows). Resolved 16/08/2026.
+- [x] Enum hygiene: live data checked — zero legacy enum rows (`GRADED`, `FILL_BLANK`, lowercase `completed`, lowercase `skill_quotas.skill`). No data migration needed. Resolved 16/08/2026.
+- [ ] `sections.exam_source/test_number` legacy shim + dual-path repositories — plan removal (big; moves to Phase 4). Added 16/08/2026.
 
 ## Phase 4 — Deep refactor (optional later)
 - [ ] Merge 3 API client stacks (`lib/api`, `admin/api`, `admin/services/abtsApi`) into one token-acquisition path.
+- [ ] Consolidate the 3 overlapping usage counters (`user_quotas`, `skill_quotas`, `user_subscriptions` counters). Needs a data-audit + design decision first. Added 16/08/2026.
 - [ ] Unify admin CSS tokens (`admin-variables.css` vs dead `tokens.css`), kill duplicate modal systems.
 - [ ] Remove ~100 default React imports; convert 2 remaining Contexts to Zustand.
 - [ ] Port story: reconcile 3000 vs 5173 across `vite.config.js`, `docker-compose.yml`, `.env`, AGENTS.md.
